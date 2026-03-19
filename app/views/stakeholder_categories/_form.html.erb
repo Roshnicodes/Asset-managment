@@ -1,0 +1,19 @@
+<%= form_with(model: stakeholder_category) do |form| %>
+  <% if stakeholder_category.errors.any? %>
+    <div class="alert alert-danger">
+      <ul class="mb-0">
+        <% stakeholder_category.errors.each do |error| %>
+          <li><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+
+  <div class="mb-3">
+    <%= form.label :name, "Stakeholder Name", class: "form-label" %>
+    <%= form.text_field :name, class: "form-control", placeholder: "ASA / PGPL / PAPL" %>
+  </div>
+
+  <%= form.submit class: "btn btn-primary" %>
+<% end %>

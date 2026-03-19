@@ -1,0 +1,31 @@
+<h1>Approval Channel Master</h1>
+
+<%= link_to "Add Approval Channel", new_approval_channel_path, class: "btn btn-primary mb-3" %>
+
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>Form Name</th>
+      <th>Approval Type</th>
+      <th>Approval L1</th>
+      <th>Approval L2</th>
+      <th>Approval L3</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @approval_channels.each do |approval_channel| %>
+      <tr>
+        <td><%= approval_channel.form_name %></td>
+        <td><%= approval_channel.approval_type %></td>
+        <td><%= approval_channel.level_1_approver %></td>
+        <td><%= approval_channel.level_2_approver %></td>
+        <td><%= approval_channel.level_3_approver %></td>
+        <td>
+          <%= link_to "Edit", edit_approval_channel_path(approval_channel) %> |
+          <%= link_to "Delete", approval_channel, method: :delete, data: { turbo_confirm: "Delete this approval channel?" } %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

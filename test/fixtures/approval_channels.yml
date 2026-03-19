@@ -1,0 +1,15 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  form_name: MyString
+  approval_type: MyString
+  level_1_approver: MyString
+  level_2_approver: MyString
+  level_3_approver: MyString
+
+two:
+  form_name: MyString
+  approval_type: MyString
+  level_1_approver: MyString
+  level_2_approver: MyString
+  level_3_approver: MyString

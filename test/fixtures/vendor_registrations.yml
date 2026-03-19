@@ -1,0 +1,47 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  registration_type: one
+  company_name: MyString
+  firm: one
+  vendor_name: MyString
+  firm_type: MyString
+  gst_no: MyString
+  pan_no: MyString
+  email: MyString
+  mobile_no: MyString
+  state: one
+  district: one
+  block: one
+  pin_no: MyString
+  contact_person_name: MyString
+  contact_person_designation: MyString
+  msme: false
+  msme_number: MyString
+  company_status: MyString
+  business_description: MyText
+  submitted_at: 2026-03-19 11:20:03
+  submitted_ip: MyString
+
+two:
+  registration_type: two
+  company_name: MyString
+  firm: two
+  vendor_name: MyString
+  firm_type: MyString
+  gst_no: MyString
+  pan_no: MyString
+  email: MyString
+  mobile_no: MyString
+  state: two
+  district: two
+  block: two
+  pin_no: MyString
+  contact_person_name: MyString
+  contact_person_designation: MyString
+  msme: false
+  msme_number: MyString
+  company_status: MyString
+  business_description: MyText
+  submitted_at: 2026-03-19 11:20:03
+  submitted_ip: MyString

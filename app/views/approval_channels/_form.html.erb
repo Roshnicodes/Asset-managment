@@ -1,0 +1,38 @@
+<%= form_with(model: approval_channel) do |form| %>
+  <% if approval_channel.errors.any? %>
+    <div class="alert alert-danger">
+      <ul class="mb-0">
+        <% approval_channel.errors.each do |error| %>
+          <li><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="mb-3">
+    <%= form.label :form_name, class: "form-label" %>
+    <%= form.select :form_name, @form_names, { prompt: "Select form name" }, class: "form-control" %>
+  </div>
+
+  <div class="mb-3">
+    <%= form.label :approval_type, class: "form-label" %>
+    <%= form.select :approval_type, @approval_types, { prompt: "Select approval type" }, class: "form-control" %>
+  </div>
+
+  <div class="mb-3">
+    <%= form.label :level_1_approver, "Approval L1", class: "form-label" %>
+    <%= form.text_field :level_1_approver, class: "form-control" %>
+  </div>
+
+  <div class="mb-3">
+    <%= form.label :level_2_approver, "Approval L2", class: "form-label" %>
+    <%= form.text_field :level_2_approver, class: "form-control" %>
+  </div>
+
+  <div class="mb-3">
+    <%= form.label :level_3_approver, "Approval L3", class: "form-label" %>
+    <%= form.text_field :level_3_approver, class: "form-control" %>
+  </div>
+
+  <%= form.submit class: "btn btn-primary" %>
+<% end %>

@@ -1,0 +1,35 @@
+<h1>Vendor Registration Form</h1>
+
+<%= link_to "Add Vendor Registration", new_vendor_registration_path, class: "btn btn-primary mb-3" %>
+
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>Registration Type</th>
+      <th>Vendor Name</th>
+      <th>Company / Firm</th>
+      <th>State</th>
+      <th>Status</th>
+      <th>Submitted At</th>
+      <th>User IP</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @vendor_registrations.each do |vendor_registration| %>
+      <tr>
+        <td><%= vendor_registration.registration_type.name %></td>
+        <td><%= vendor_registration.vendor_name %></td>
+        <td><%= vendor_registration.company_name.presence || vendor_registration.firm&.name || "-" %></td>
+        <td><%= vendor_registration.state.name %></td>
+        <td><%= vendor_registration.company_status %></td>
+        <td><%= vendor_registration.submitted_at&.strftime("%d-%m-%Y %H:%M") %></td>
+        <td><%= vendor_registration.submitted_ip %></td>
+        <td>
+          <%= link_to "Edit", edit_vendor_registration_path(vendor_registration) %> |
+          <%= link_to "Delete", vendor_registration, method: :delete, data: { turbo_confirm: "Delete this vendor registration?" } %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
