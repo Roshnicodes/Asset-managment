@@ -1,21 +1,44 @@
-<nav class="navbar app-navbar px-4 py-3">
+<nav class="navbar app-navbar px-4 py-2">
   <a class="app-brand" href="<%= root_path %>">
-    <%= image_tag "asset-logo.svg", alt: "Asset Management Logo" %>
-    <span class="app-brand-text">
-      <span class="app-brand-title">Asset Management</span>
-      <span class="app-brand-subtitle">Office, Vendor, Product and Approval System</span>
-    </span>
+    <%= image_tag "asset-logo.png", alt: "ASA Logo", class: "app-logo-img" %>
   </a>
 
   <div class="ms-auto">
     <% if user_signed_in? %>
-      <div class="app-user-pill">
-        <%= app_icon(:vendor, classes: "app-user-icon") %>
-        <span><%= current_user.email %></span>
-        <%= link_to destroy_user_session_path, method: :delete, class: "btn btn-sm btn-brand-logout" do %>
-          <%= app_icon(:logout, classes: "app-logout-icon") %>
-          <span>Logout</span>
-        <% end %>
+      <div class="dropdown">
+        <div class="app-profile-toggle" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+          <div class="app-navbar-avatar-wrapper">
+            <%= image_tag "user-avatar.png", class: "app-avatar-img", alt: "User Profile" %>
+            <span class="avatar-chevron">▾</span>
+          </div>
+        </div>
+
+        <ul class="dropdown-menu dropdown-menu-end app-profile-dropdown border-0 shadow-lg p-0">
+          <li class="profile-dropdown-header bg-light bg-opacity-25 border-bottom p-3">
+            <div class="d-flex align-items-center gap-3">
+              <div class="header-avatar">
+                <%= image_tag "user-avatar.png", class: "rounded-circle border", width: 44, height: 44 %>
+              </div>
+              <div class="lh-sm">
+                <div class="fw-bold text-dark"><%= current_user.email.split('@').first.capitalize %></div>
+                <div class="text-muted small"><%= current_user.email %></div>
+              </div>
+            </div>
+          </li>
+          <li class="py-1">
+            <%= link_to profile_path, class: "dropdown-item d-flex align-items-center gap-2 py-2 px-3" do %>
+              <%= app_icon(:people, classes: "icon-sm text-brand-mid") %>
+              <span>Profile Settings</span>
+            <% end %>
+          </li>
+          <li><hr class="dropdown-divider my-0 opacity-10"></li>
+          <li class="py-1">
+            <%= link_to destroy_user_session_path, method: :delete, class: "dropdown-item d-flex align-items-center gap-2 py-2 px-3 text-danger" do %>
+              <%= app_icon(:logout, classes: "icon-sm") %>
+              <span>Logout Account</span>
+            <% end %>
+          </li>
+        </ul>
       </div>
     <% end %>
   </div>

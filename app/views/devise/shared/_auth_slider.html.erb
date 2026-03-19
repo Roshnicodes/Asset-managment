@@ -1,0 +1,45 @@
+<div class="auth-image-side" data-controller="auth-slider" data-auth-slider-interval-value="3500">
+  <div class="auth-slider-track">
+    <div class="auth-slide is-active auth-slide-forest" data-auth-slider-target="slide">
+      <div class="auth-slide-media auth-slide-media-image">
+        <img src="<%= asset_path('pexels-athena-2582937.jpg') %>" alt="Asset management workspace">
+      </div>
+      <div class="auth-image-overlay"></div>
+      <div class="auth-slide-content">
+        <span class="auth-slide-kicker">Smart Tracking</span>
+        <h2>Monitor assets with a calm, visual dashboard.</h2>
+        <p>Stay on top of movement, ownership, and performance from one place.</p>
+      </div>
+    </div>
+
+    <div class="auth-slide auth-slide-orbit" data-auth-slider-target="slide">
+      <div class="auth-slide-media auth-slide-media-image">
+        <img src="<%= asset_path('pexels-nikhil-pawar-1051632-13260076.jpg') %>" alt="Inventory product image">
+      </div>
+      <div class="auth-image-overlay"></div>
+      <div class="auth-slide-content">
+        <span class="auth-slide-kicker">Live Insights</span>
+        <h2>See asset health, movement, and value in real time.</h2>
+        <p>Built for teams that want cleaner workflows and better decisions.</p>
+      </div>
+    </div>
+
+    <div class="auth-slide auth-slide-focus" data-auth-slider-target="slide">
+      <div class="auth-slide-media auth-slide-media-image">
+        <img src="<%= asset_path('pexels-sejio402-6477204.jpg') %>" alt="Operations and product setup">
+      </div>
+      <div class="auth-image-overlay"></div>
+      <div class="auth-slide-content">
+        <span class="auth-slide-kicker">Smooth Workflow</span>
+        <h2>Keep teams aligned with a cleaner login experience.</h2>
+        <p>One place to access asset records, updates, and daily operations.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="auth-slider-dots">
+    <button type="button" class="auth-slider-dot is-active" data-auth-slider-target="dot" data-action="click->auth-slider#goTo" data-auth-slider-index-param="0" aria-label="Show slide 1"></button>
+    <button type="button" class="auth-slider-dot" data-auth-slider-target="dot" data-action="click->auth-slider#goTo" data-auth-slider-index-param="1" aria-label="Show slide 2"></button>
+    <button type="button" class="auth-slider-dot" data-auth-slider-target="dot" data-action="click->auth-slider#goTo" data-auth-slider-index-param="2" aria-label="Show slide 3"></button>
+  </div>
+</div>

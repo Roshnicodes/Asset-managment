@@ -1,0 +1,50 @@
+<div class="profile-page-wrapper">
+  <div class="profile-content-card">
+    <div class="profile-header-banner">
+      <div class="profile-cover"></div>
+      <div class="profile-avatar-large">
+        <%= image_tag "user-avatar.png", alt: "User Avatar" %>
+      </div>
+    </div>
+
+    <div class="profile-body p-4 p-md-5">
+      <div class="d-flex justify-content-between align-items-end mb-5">
+        <div>
+          <h1 class="profile-name"><%= current_user.email.split('@').first.capitalize %></h1>
+          <p class="profile-role text-muted">System User • Member since <%= current_user.created_at.strftime("%B %Y") %></p>
+        </div>
+        <div>
+          <%= link_to edit_profile_path, class: "btn btn-brand-outline px-4" do %>
+            <%= app_icon(:people, classes: "icon-sm me-2") %> Edit Profile
+          <% end %>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-md-6">
+          <div class="profile-data-card shadow-sm p-4 h-100">
+            <h5 class="section-title mb-4">Personal Information</h5>
+            <div class="info-group mb-3">
+              <label class="info-label text-muted d-block small">Email Address</label>
+              <div class="info-value fw-bold text-dark fs-5"><%= current_user.email %></div>
+            </div>
+            <div class="info-group mb-3">
+              <label class="info-label text-muted d-block small">Account ID</label>
+              <div class="info-value fw-mono">#USER-<%= current_user.id %></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="profile-data-card shadow-sm p-4 h-100">
+            <h5 class="section-title mb-4">Account Security</h5>
+            <p class="text-muted small">Manage your password and security settings to keep your account safe.</p>
+            <div class="d-grid mt-4">
+              <%= link_to "Change Password", edit_user_registration_path, class: "btn btn-light border-0 py-3 fw-bold" %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -24,7 +24,7 @@ module ApplicationHelper
   def app_icon(name, classes: "app-menu-icon")
     path = APP_SVG_ICONS.fetch(name.to_sym)
     content_tag(:svg, path.html_safe, class: classes, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor",
-      "stroke-width": "1.8", "stroke-linecap": "round", "stroke-linejoin": "round", aria: { hidden: true })
+      "stroke-width": "2.2", "stroke-linecap": "round", "stroke-linejoin": "round", aria: { hidden: true })
   end
 
   def app_nav_link(label, path, icon:, class_name: "nav-link")

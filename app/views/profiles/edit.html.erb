@@ -1,0 +1,90 @@
+<div class="profile-page-wrapper">
+  <div class="profile-content-card">
+    <div class="profile-header-banner">
+      <div class="profile-cover"></div>
+      <div class="profile-avatar-large">
+        <%= image_tag "user-avatar.png", alt: "User Avatar" %>
+      </div>
+    </div>
+
+    <div class="profile-body p-4 p-md-5">
+      <div class="d-flex justify-content-between align-items-start flex-column flex-md-row gap-4 mb-5">
+        <div>
+          <h1 class="profile-name"><%= current_user.email.split('@').first.capitalize %></h1>
+          <p class="profile-role text-muted">Update your account settings</p>
+        </div>
+
+        <div class="d-flex gap-2">
+          <%= link_to profile_path, class: "btn btn-light px-4 d-flex align-items-center" do %>
+            <%= app_icon(:people, classes: "icon-sm me-2") %> Back
+          <% end %>
+          <%= link_to edit_user_registration_path, class: "btn btn-brand-outline px-4 d-flex align-items-center" do %>
+            <%= app_icon(:approval, classes: "icon-sm me-2") %> Change Password
+          <% end %>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-5">
+          <div class="profile-data-card shadow-sm p-4 h-100">
+            <h5 class="section-title mb-4">Profile Summary</h5>
+            <p class="text-muted small mb-3">Your account details are shown below. Update your email or password on the right.</p>
+
+            <div class="info-group mb-3">
+              <label class="info-label text-muted d-block small">Email</label>
+              <div class="info-value fw-bold text-dark fs-5"><%= current_user.email %></div>
+            </div>
+
+            <div class="info-group mb-3">
+              <label class="info-label text-muted d-block small">Member since</label>
+              <div class="info-value fw-bold text-dark fs-5"><%= current_user.created_at.strftime("%B %Y") %></div>
+            </div>
+
+            <div class="info-group mb-0">
+              <label class="info-label text-muted d-block small">Account ID</label>
+              <div class="info-value fw-mono"><%= "#USER-#{current_user.id}" %></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-7">
+          <div class="profile-data-card shadow-sm p-4 h-100">
+            <h5 class="section-title mb-4">Edit Profile</h5>
+
+            <%= form_for(@user, url: profile_path, method: :patch, html: { class: "profile-form" }) do |f| %>
+              <%= render "devise/shared/error_messages", resource: @user %>
+
+              <div class="row g-4">
+                <div class="col-12">
+                  <div class="mb-3">
+                    <%= f.label :email, class: "form-label fw-bold small text-uppercase" %>
+                    <%= f.email_field :email, class: "form-control profile-form-control", placeholder: "Email address" %>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <%= f.label :password, "New password (leave blank to keep current)", class: "form-label fw-bold small text-uppercase" %>
+                    <%= f.password_field :password, class: "form-control profile-form-control", placeholder: "New password (optional)" %>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <%= f.label :password_confirmation, "Confirm new password", class: "form-label fw-bold small text-uppercase" %>
+                    <%= f.password_field :password_confirmation, class: "form-control profile-form-control", placeholder: "Confirm new password" %>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex gap-3 mt-4 flex-column flex-sm-row">
+                <%= f.submit "Save Changes", class: "btn btn-auth-submit px-5" %>
+                <%= link_to "Cancel", profile_path, class: "btn btn-light px-4 d-flex align-items-center" %>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

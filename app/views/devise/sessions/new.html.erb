@@ -1,40 +1,38 @@
-<div class="container mt-5" style="max-width: 400px;">
-
-  <div class="card shadow p-4">
-
-    <h3 class="text-center mb-4">Login</h3>
-
-    <%= form_for(resource, as: resource_name, url: session_path(resource_name)) do |f| %>
-
-      <div class="mb-3">
-        <%= f.label :email %>
-        <%= f.email_field :email, class: "form-control", placeholder: "Enter email" %>
+<div class="auth-wrapper">
+  <div class="auth-split-card">
+    <%= render "devise/shared/auth_slider" %>
+    
+    <div class="auth-form-side">
+      <div class="auth-header">
+        <h1 class="auth-title">Sign In</h1>
+        <p class="auth-subtitle">Welcome back to Asset Management</p>
       </div>
 
-      <div class="mb-3">
-        <%= f.label :password %>
-        <%= f.password_field :password, class: "form-control", placeholder: "Enter password" %>
+      <%= form_for(resource, as: resource_name, url: session_path(resource_name), html: { class: "auth-form" }) do |f| %>
+        <div class="form-group mb-4">
+          <%= f.label :email, "Your Email", class: "form-label" %>
+          <%= f.email_field :email, class: "form-control", placeholder: "yourname@example.com", autofocus: true %>
+        </div>
+
+        <div class="form-group mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <%= f.label :password, "Your Password", class: "form-label mb-0" %>
+            <%= link_to "Forgot?", new_user_password_path, class: "small text-brand-accent text-decoration-none fw-bold" %>
+          </div>
+          <%= f.password_field :password, class: "form-control", placeholder: "••••••••" %>
+        </div>
+
+        <div class="mb-4 form-check">
+          <%= f.check_box :remember_me, class: "form-check-input" %>
+          <%= f.label :remember_me, "Keep me logged in", class: "form-check-label small opacity-75" %>
+        </div>
+
+        <%= f.submit "SIGN IN", class: "btn-auth-submit" %>
+      <% end %>
+
+      <div class="auth-footer text-center">
+        <p>Don't have an account? <%= link_to "Sign Up", new_user_registration_path %></p>
       </div>
-
-      <div class="d-grid mb-3">
-        <%= f.submit "Login", class: "btn btn-primary" %>
-      </div>
-
-    <% end %>
-
-    <div class="text-center">
-
-      <p>
-        Don't have an account?
-        <%= link_to "Sign Up", new_user_registration_path, class: "text-primary" %>
-      </p>
-
-      <p>
-        <%= link_to "Forgot Password?", new_user_password_path %>
-      </p>
-
     </div>
-
   </div>
-
 </div>
