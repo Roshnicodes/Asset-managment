@@ -1,29 +1,71 @@
-<h1>Welcome to Asset Management System</h1>
-<p class="mb-4">Use the menu to manage office category, LG data, stakeholder categories, thematic products, approvals, and vendor registrations.</p>
+<div class="dashboard-page" data-controller="dashboard-live">
+  <section class="dashboard-hero">
+    <div class="dashboard-hero-copy">
+      <span class="dashboard-kicker">Command Center</span>
+      <h1>Welcome to Asset Management System</h1>
+      <p>Monitor setup, location mapping, product structures, and vendor workflows from one dynamic workspace.</p>
 
-<div class="row g-3">
-  <div class="col-md-4">
-    <div class="card">
-      <div class="card-body">
-        <h5 class="card-title">Core Setup</h5>
-        <p class="card-text">Office category, stakeholder categories, registration types, service types, units, documents, banks, approvals, thematic types, and firms.</p>
+      <div class="dashboard-quick-actions">
+        <% @quick_actions.each do |action| %>
+          <%= link_to action[:label], action[:path], class: "dashboard-action-pill" %>
+        <% end %>
       </div>
     </div>
-  </div>
-  <div class="col-md-4">
-    <div class="card">
-      <div class="card-body">
-        <h5 class="card-title">LG</h5>
-        <p class="card-text">State, district, and block are available under the LG section for vendor and office mapping.</p>
+
+    <div class="dashboard-live-card">
+      <p class="dashboard-live-label">Today</p>
+      <h2 data-dashboard-live-target="greeting">Good day</h2>
+      <p class="dashboard-live-time" data-dashboard-live-target="clock">--:--</p>
+      <p class="dashboard-live-meta">Stay aligned with approvals, assets, and vendor operations.</p>
+    </div>
+  </section>
+
+  <section class="dashboard-stats-grid">
+    <% @dashboard_stats.each do |stat| %>
+      <%= link_to stat[:path], class: "dashboard-stat-card dashboard-stat-card--#{stat[:tone]}" do %>
+        <span class="dashboard-stat-label"><%= stat[:label] %></span>
+        <strong class="dashboard-stat-value"><%= stat[:value] %></strong>
+        <span class="dashboard-stat-link">View module</span>
+      <% end %>
+    <% end %>
+  </section>
+
+  <section class="dashboard-content-grid">
+    <div class="dashboard-panel dashboard-panel-wide">
+      <div class="dashboard-panel-header">
+        <div>
+          <p class="dashboard-panel-eyebrow">Workflow Areas</p>
+          <h2>Key Modules</h2>
+        </div>
+      </div>
+
+      <div class="dashboard-module-grid">
+        <% @dashboard_sections.each do |section| %>
+          <div class="dashboard-module-card">
+            <h3><%= section[:title] %></h3>
+            <p><%= section[:description] %></p>
+            <%= link_to section[:cta], section[:path], class: "dashboard-inline-link" %>
+          </div>
+        <% end %>
       </div>
     </div>
-  </div>
-  <div class="col-md-4">
-    <div class="card">
-      <div class="card-body">
-        <h5 class="card-title">Vendor Registration</h5>
-        <p class="card-text">Register vendors with thematic selections, product selections, business details, and auto-captured submit IP and date time.</p>
+
+    <div class="dashboard-panel">
+      <div class="dashboard-panel-header">
+        <div>
+          <p class="dashboard-panel-eyebrow">System Health</p>
+          <h2>Live Summary</h2>
+        </div>
+      </div>
+
+      <div class="dashboard-health-stack">
+        <% @health_cards.each do |card| %>
+          <%= link_to card[:path], class: "dashboard-health-card" do %>
+            <span><%= card[:label] %></span>
+            <strong><%= card[:value] %></strong>
+          <% end %>
+        <% end %>
       </div>
     </div>
-  </div>
+  </section>
 </div>
