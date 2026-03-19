@@ -33,7 +33,7 @@
           </li>
           <li><hr class="dropdown-divider my-0 opacity-10"></li>
           <li class="py-1">
-            <%= link_to destroy_user_session_path, method: :delete, class: "dropdown-item d-flex align-items-center gap-2 py-2 px-3 text-danger" do %>
+            <%= button_to destroy_user_session_path, method: :delete, class: "dropdown-item d-flex align-items-center gap-2 py-2 px-3 text-danger border-0 bg-transparent w-100 text-start" do %>
               <%= app_icon(:logout, classes: "icon-sm") %>
               <span>Logout Account</span>
             <% end %>
