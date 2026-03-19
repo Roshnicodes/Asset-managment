@@ -1,0 +1,29 @@
+<h1>LG - Blocks</h1>
+
+<p class="text-muted">LG includes State, District, and Block.</p>
+
+<%= link_to "Add Block", new_block_path, class: "btn btn-primary mb-3" %>
+
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>State</th>
+      <th>District</th>
+      <th>Block</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @blocks.each do |block| %>
+      <tr>
+        <td><%= block.district.state.name %></td>
+        <td><%= block.district.name %></td>
+        <td><%= block.name %></td>
+        <td>
+          <%= link_to "Edit", edit_block_path(block) %> |
+          <%= link_to "Delete", block, method: :delete, data: { turbo_confirm: "Delete this block?" } %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

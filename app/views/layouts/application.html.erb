@@ -20,15 +20,11 @@
 
 <!-- NAVBAR -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-4">
-  <a class="navbar-brand" href="#">Asset System</a>
 
   <div class="ms-auto">
     <% if user_signed_in? %>
       <span class="text-white me-3"><%= current_user.email %></span>
       <%= link_to "Logout", destroy_user_session_path, method: :delete, class: "btn btn-danger" %>
-    <% else %>
-      <%= link_to "Login", new_user_session_path, class: "btn btn-primary me-2" %>
-      <%= link_to "Sign Up", new_user_registration_path, class: "btn btn-success" %>
     <% end %>
   </div>
 </nav>
@@ -48,28 +44,58 @@
           <%= link_to "Dashboard", root_path, class: "nav-link" %>
         </li>
 
-        <!-- MASTER DROPDOWN -->
         <li>
-          <a class="nav-link" data-bs-toggle="collapse" href="#masterMenu">
-            Masters ▼
+          <a class="nav-link" data-bs-toggle="collapse" href="#officeCategoryMenu">
+            Office Category ▼
           </a>
 
-          <div class="collapse" id="masterMenu">
+          <div class="collapse" id="officeCategoryMenu">
             <ul class="nav flex-column ms-3">
-
-              <li><%= link_to "States", states_path, class: "nav-link" %></li>
-              <li><%= link_to "Districts", districts_path, class: "nav-link" %></li>
               <li><%= link_to "PMU", pmus_path, class: "nav-link" %></li>
               <li><%= link_to "FCO", fcos_path, class: "nav-link" %></li>
               <li><%= link_to "TO", tos_path, class: "nav-link" %></li>
-
             </ul>
           </div>
         </li>
 
-        <!-- Other Modules -->
-        <li><%= link_to "Themes", themes_path, class: "nav-link" %></li>
-        <li><%= link_to "Products", products_path, class: "nav-link" %></li>
+        <li>
+          <a class="nav-link" data-bs-toggle="collapse" href="#lgMenu">
+            LG ▼
+          </a>
+
+          <div class="collapse" id="lgMenu">
+            <ul class="nav flex-column ms-3">
+              <li><%= link_to "State", states_path, class: "nav-link" %></li>
+              <li><%= link_to "District", districts_path, class: "nav-link" %></li>
+              <li><%= link_to "Block", blocks_path, class: "nav-link" %></li>
+            </ul>
+          </div>
+        </li>
+
+        <li>
+          <a class="nav-link" data-bs-toggle="collapse" href="#stakeholderMenu">
+            Stakeholder Categories ▼
+          </a>
+
+          <div class="collapse" id="stakeholderMenu">
+            <ul class="nav flex-column ms-3">
+              <li><%= link_to "Stakeholder Name", stakeholder_categories_path, class: "nav-link" %></li>
+            </ul>
+          </div>
+        </li>
+
+        <li><%= link_to "Registration Types", registration_types_path, class: "nav-link" %></li>
+        <li><%= link_to "Service Types", service_types_path, class: "nav-link" %></li>
+        <li><%= link_to "Vendor Thematic Types", themes_path, class: "nav-link" %></li>
+        <li><%= link_to "Product Entry", products_path, class: "nav-link" %></li>
+        <li><%= link_to "Product Variety Entry", product_varieties_path, class: "nav-link" %></li>
+        <li><%= link_to "Units", units_path, class: "nav-link" %></li>
+        <li><%= link_to "Documents", document_masters_path, class: "nav-link" %></li>
+        <li><%= link_to "Approval Channels", approval_channels_path, class: "nav-link" %></li>
+        <li><%= link_to "Firms", firms_path, class: "nav-link" %></li>
+        <li><%= link_to "Banks", vendor_bank_masters_path, class: "nav-link" %></li>
+
+        <li><%= link_to "Vendor Registration Form", vendor_registrations_path, class: "nav-link" %></li>
         <li><%= link_to "Assets", assets_path, class: "nav-link" %></li>
         <li><%= link_to "Allocation", allocations_path, class: "nav-link" %></li>
 

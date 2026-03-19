@@ -1,12 +1,12 @@
-<h1>Product List</h1>
+<h1>Product Entry</h1>
 
-<%= link_to "Add Product", new_product_path %>
+<%= link_to "Add Product", new_product_path, class: "btn btn-primary mb-3" %>
 
-<table border="1">
+<table class="table table-bordered">
 
 <tr>
 <th>Name</th>
-<th>Theme</th>
+<th>Thematic Type</th>
 <th>Action</th>
 </tr>
 
@@ -19,7 +19,7 @@
 
 <td>
 <%= link_to "Edit", edit_product_path(product) %> |
-<%= link_to "Delete", product, method: :delete %>
+<%= link_to "Delete", product, method: :delete, data: { turbo_confirm: "Delete this product?" } %>
 </td>
 
 </tr>

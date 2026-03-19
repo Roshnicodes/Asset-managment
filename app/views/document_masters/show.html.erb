@@ -1,0 +1,10 @@
+<p style="color: green"><%= notice %></p>
+
+<%= render @document_master %>
+
+<div>
+  <%= link_to "Edit this document master", edit_document_master_path(@document_master) %> |
+  <%= link_to "Back to document masters", document_masters_path %>
+
+  <%= button_to "Destroy this document master", @document_master, method: :delete %>
+</div>

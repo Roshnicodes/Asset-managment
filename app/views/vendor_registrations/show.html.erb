@@ -1,0 +1,10 @@
+<p style="color: green"><%= notice %></p>
+
+<%= render @vendor_registration %>
+
+<div>
+  <%= link_to "Edit this vendor registration", edit_vendor_registration_path(@vendor_registration) %> |
+  <%= link_to "Back to vendor registrations", vendor_registrations_path %>
+
+  <%= button_to "Destroy this vendor registration", @vendor_registration, method: :delete %>
+</div>

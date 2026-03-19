@@ -1,0 +1,27 @@
+<h1>Product Variety Entry</h1>
+
+<%= link_to "Add Product Variety", new_product_variety_path, class: "btn btn-primary mb-3" %>
+
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>Thematic Type</th>
+      <th>Product</th>
+      <th>Product Variety</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @product_varieties.each do |product_variety| %>
+      <tr>
+        <td><%= product_variety.theme.name %></td>
+        <td><%= product_variety.product.name %></td>
+        <td><%= product_variety.name %></td>
+        <td>
+          <%= link_to "Edit", edit_product_variety_path(product_variety) %> |
+          <%= link_to "Delete", product_variety, method: :delete, data: { turbo_confirm: "Delete this product variety?" } %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

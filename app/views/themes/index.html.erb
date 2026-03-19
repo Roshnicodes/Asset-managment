@@ -1,11 +1,11 @@
-<h1>Themes</h1>
+<h1>Vendor Thematic Types</h1>
 
-<%= link_to "Add Theme", new_theme_path %>
+<%= link_to "Add Thematic Type", new_theme_path, class: "btn btn-primary mb-3" %>
 
-<table border="1">
+<table class="table table-bordered">
 
 <tr>
-<th>Name</th>
+<th>Thematic Type Name</th>
 <th>Action</th>
 </tr>
 
@@ -17,7 +17,7 @@
 
 <td>
 <%= link_to "Edit", edit_theme_path(theme) %> |
-<%= link_to "Delete", theme, method: :delete %>
+<%= link_to "Delete", theme, method: :delete, data: { turbo_confirm: "Delete this thematic type?" } %>
 </td>
 
 </tr>

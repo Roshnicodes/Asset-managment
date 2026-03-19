@@ -1,0 +1,16 @@
+<p style="color: green"><%= notice %></p>
+
+<% content_for :title, "Registration types" %>
+
+<h1>Registration types</h1>
+
+<div id="registration_types">
+  <% @registration_types.each do |registration_type| %>
+    <%= render registration_type %>
+    <p>
+      <%= link_to "Show this registration type", registration_type %>
+    </p>
+  <% end %>
+</div>
+
+<%= link_to "New registration type", new_registration_type_path %>

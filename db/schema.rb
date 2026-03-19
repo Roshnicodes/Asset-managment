@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_17_041528) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_19_055008) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -24,6 +24,16 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_17_041528) do
     t.index ["to_id"], name: "index_allocations_on_to_id"
   end
 
+  create_table "approval_channels", force: :cascade do |t|
+    t.string "approval_type"
+    t.datetime "created_at", null: false
+    t.string "form_name"
+    t.string "level_1_approver"
+    t.string "level_2_approver"
+    t.string "level_3_approver"
+    t.datetime "updated_at", null: false
+  end
+
   create_table "assets", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
@@ -31,6 +41,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_17_041528) do
     t.string "serial_number"
     t.datetime "updated_at", null: false
     t.index ["product_id"], name: "index_assets_on_product_id"
+  end
+
+  create_table "blocks", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "district_id", null: false
+    t.string "name"
+    t.datetime "updated_at", null: false
+    t.index ["district_id"], name: "index_blocks_on_district_id"
   end
 
   create_table "districts", force: :cascade do |t|
@@ -41,12 +59,33 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_17_041528) do
     t.index ["state_id"], name: "index_districts_on_state_id"
   end
 
+  create_table "document_masters", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name"
+    t.datetime "updated_at", null: false
+  end
+
   create_table "fcos", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
     t.bigint "pmu_id", null: false
     t.datetime "updated_at", null: false
     t.index ["pmu_id"], name: "index_fcos_on_pmu_id"
+  end
+
+  create_table "firms", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name"
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "office_categories", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name"
+    t.string "office_level"
+    t.bigint "parent_id"
+    t.datetime "updated_at", null: false
+    t.index ["parent_id"], name: "index_office_categories_on_parent_id"
   end
 
   create_table "pmus", force: :cascade do |t|
@@ -57,6 +96,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_17_041528) do
     t.index ["district_id"], name: "index_pmus_on_district_id"
   end
 
+  create_table "product_varieties", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name"
+    t.bigint "product_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["product_id"], name: "index_product_varieties_on_product_id"
+  end
+
   create_table "products", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "description"
@@ -64,6 +111,26 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_17_041528) do
     t.bigint "theme_id", null: false
     t.datetime "updated_at", null: false
     t.index ["theme_id"], name: "index_products_on_theme_id"
+  end
+
+  create_table "registration_types", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name"
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "service_types", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name"
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "stakeholder_categories", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name"
+    t.bigint "office_category_id"
+    t.datetime "updated_at", null: false
+    t.index ["office_category_id"], name: "index_stakeholder_categories_on_office_category_id"
   end
 
   create_table "states", force: :cascade do |t|
@@ -86,6 +153,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_17_041528) do
     t.index ["fco_id"], name: "index_tos_on_fco_id"
   end
 
+  create_table "units", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name"
+    t.datetime "updated_at", null: false
+  end
+
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "email", default: "", null: false
@@ -98,12 +171,97 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_17_041528) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  create_table "vendor_bank_masters", force: :cascade do |t|
+    t.string "account_number"
+    t.string "account_type"
+    t.text "bank_address"
+    t.string "bank_name"
+    t.datetime "created_at", null: false
+    t.string "ifsc_code"
+    t.datetime "updated_at", null: false
+    t.bigint "vendor_registration_id", null: false
+    t.index ["vendor_registration_id"], name: "index_vendor_bank_masters_on_vendor_registration_id"
+  end
+
+  create_table "vendor_registration_product_varieties", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "product_variety_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "vendor_registration_id", null: false
+    t.index ["product_variety_id"], name: "idx_on_product_variety_id_c5a5c5dc8f"
+    t.index ["vendor_registration_id"], name: "idx_on_vendor_registration_id_03a9031881"
+  end
+
+  create_table "vendor_registration_products", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "product_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "vendor_registration_id", null: false
+    t.index ["product_id"], name: "index_vendor_registration_products_on_product_id"
+    t.index ["vendor_registration_id"], name: "index_vendor_registration_products_on_vendor_registration_id"
+  end
+
+  create_table "vendor_registration_themes", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "theme_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "vendor_registration_id", null: false
+    t.index ["theme_id"], name: "index_vendor_registration_themes_on_theme_id"
+    t.index ["vendor_registration_id"], name: "index_vendor_registration_themes_on_vendor_registration_id"
+  end
+
+  create_table "vendor_registrations", force: :cascade do |t|
+    t.bigint "block_id", null: false
+    t.text "business_description"
+    t.string "company_name"
+    t.string "company_status"
+    t.string "contact_person_designation"
+    t.string "contact_person_name"
+    t.datetime "created_at", null: false
+    t.bigint "district_id", null: false
+    t.string "email"
+    t.bigint "firm_id"
+    t.string "firm_type"
+    t.string "gst_no"
+    t.string "mobile_no"
+    t.boolean "msme"
+    t.string "msme_number"
+    t.string "pan_no"
+    t.string "pin_no"
+    t.bigint "registration_type_id", null: false
+    t.bigint "state_id", null: false
+    t.datetime "submitted_at", null: false
+    t.string "submitted_ip", null: false
+    t.datetime "updated_at", null: false
+    t.string "vendor_name"
+    t.index ["block_id"], name: "index_vendor_registrations_on_block_id"
+    t.index ["district_id"], name: "index_vendor_registrations_on_district_id"
+    t.index ["firm_id"], name: "index_vendor_registrations_on_firm_id"
+    t.index ["registration_type_id"], name: "index_vendor_registrations_on_registration_type_id"
+    t.index ["state_id"], name: "index_vendor_registrations_on_state_id"
+  end
+
   add_foreign_key "allocations", "assets"
   add_foreign_key "allocations", "tos"
   add_foreign_key "assets", "products"
+  add_foreign_key "blocks", "districts"
   add_foreign_key "districts", "states"
   add_foreign_key "fcos", "pmus"
   add_foreign_key "pmus", "districts"
+  add_foreign_key "product_varieties", "products"
   add_foreign_key "products", "themes"
+  add_foreign_key "stakeholder_categories", "office_categories"
   add_foreign_key "tos", "fcos"
+  add_foreign_key "vendor_bank_masters", "vendor_registrations"
+  add_foreign_key "vendor_registration_product_varieties", "product_varieties"
+  add_foreign_key "vendor_registration_product_varieties", "vendor_registrations"
+  add_foreign_key "vendor_registration_products", "products"
+  add_foreign_key "vendor_registration_products", "vendor_registrations"
+  add_foreign_key "vendor_registration_themes", "themes"
+  add_foreign_key "vendor_registration_themes", "vendor_registrations"
+  add_foreign_key "vendor_registrations", "blocks"
+  add_foreign_key "vendor_registrations", "districts"
+  add_foreign_key "vendor_registrations", "firms"
+  add_foreign_key "vendor_registrations", "registration_types"
+  add_foreign_key "vendor_registrations", "states"
 end

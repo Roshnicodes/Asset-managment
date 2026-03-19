@@ -1,0 +1,43 @@
+<%= form_with(model: vendor_bank_master) do |form| %>
+  <% if vendor_bank_master.errors.any? %>
+    <div class="alert alert-danger">
+      <ul class="mb-0">
+        <% vendor_bank_master.errors.each do |error| %>
+          <li><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="mb-3">
+    <%= form.label :vendor_registration_id, "Select Vendor / Employee Name", class: "form-label" %>
+    <%= form.collection_select :vendor_registration_id, @vendor_registrations, :id, :display_name, { prompt: "Select vendor" }, class: "form-control" %>
+  </div>
+
+  <div class="mb-3">
+    <%= form.label :bank_name, class: "form-label" %>
+    <%= form.text_field :bank_name, class: "form-control" %>
+  </div>
+
+  <div class="mb-3">
+    <%= form.label :bank_address, class: "form-label" %>
+    <%= form.text_area :bank_address, class: "form-control", rows: 3 %>
+  </div>
+
+  <div class="mb-3">
+    <%= form.label :ifsc_code, "Bank IFSC Code", class: "form-label" %>
+    <%= form.text_field :ifsc_code, class: "form-control" %>
+  </div>
+
+  <div class="mb-3">
+    <%= form.label :account_number, "Account No", class: "form-label" %>
+    <%= form.text_field :account_number, class: "form-control" %>
+  </div>
+
+  <div class="mb-3">
+    <%= form.label :account_type, "Bank Type Category", class: "form-label" %>
+    <%= form.select :account_type, VendorBankMaster::ACCOUNT_TYPES, { prompt: "Select account type" }, class: "form-control" %>
+  </div>
+
+  <%= form.submit class: "btn btn-primary" %>
+<% end %>

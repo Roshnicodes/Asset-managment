@@ -1,0 +1,28 @@
+<%= form_with(model: office_category) do |form| %>
+  <% if office_category.errors.any? %>
+    <div class="alert alert-danger">
+      <ul class="mb-0">
+        <% office_category.errors.each do |error| %>
+          <li><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="mb-3">
+    <%= form.label :name, "Category Name", class: "form-label" %>
+    <%= form.text_field :name, class: "form-control" %>
+  </div>
+
+  <div class="mb-3">
+    <%= form.label :office_level, class: "form-label" %>
+    <%= form.select :office_level, OfficeCategory::OFFICE_LEVELS, { prompt: "Select office level" }, class: "form-control" %>
+  </div>
+
+  <div class="mb-3">
+    <%= form.label :parent_id, "Parent Category", class: "form-label" %>
+    <%= form.collection_select :parent_id, @parent_categories.reject { |category| category.id == office_category.id }, :id, :name, { prompt: "Select parent category" }, class: "form-control" %>
+  </div>
+
+  <%= form.submit class: "btn btn-primary" %>
+<% end %>

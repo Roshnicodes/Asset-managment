@@ -1,0 +1,16 @@
+<p style="color: green"><%= notice %></p>
+
+<% content_for :title, "Document masters" %>
+
+<h1>Document masters</h1>
+
+<div id="document_masters">
+  <% @document_masters.each do |document_master| %>
+    <%= render document_master %>
+    <p>
+      <%= link_to "Show this document master", document_master %>
+    </p>
+  <% end %>
+</div>
+
+<%= link_to "New document master", new_document_master_path %>

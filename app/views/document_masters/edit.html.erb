@@ -1,0 +1,12 @@
+<% content_for :title, "Editing document master" %>
+
+<h1>Editing document master</h1>
+
+<%= render "form", document_master: @document_master %>
+
+<br>
+
+<div>
+  <%= link_to "Show this document master", @document_master %> |
+  <%= link_to "Back to document masters", document_masters_path %>
+</div>

@@ -1,0 +1,10 @@
+<p style="color: green"><%= notice %></p>
+
+<%= render @vendor_bank_master %>
+
+<div>
+  <%= link_to "Edit this vendor bank master", edit_vendor_bank_master_path(@vendor_bank_master) %> |
+  <%= link_to "Back to vendor bank masters", vendor_bank_masters_path %>
+
+  <%= button_to "Destroy this vendor bank master", @vendor_bank_master, method: :delete %>
+</div>

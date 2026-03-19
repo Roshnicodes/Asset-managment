@@ -1,0 +1,2 @@
+json.extract! vendor_registration, :id, :registration_type_id, :company_name, :firm_id, :vendor_name, :firm_type, :gst_no, :pan_no, :email, :mobile_no, :state_id, :district_id, :block_id, :pin_no, :contact_person_name, :contact_person_designation, :msme, :msme_number, :company_status, :business_description, :submitted_at, :submitted_ip, :created_at, :updated_at
+json.url vendor_registration_url(vendor_registration, format: :json)

@@ -1,0 +1,17 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  vendor_registration: one
+  bank_name: MyString
+  bank_address: MyText
+  ifsc_code: MyString
+  account_number: MyString
+  account_type: MyString
+
+two:
+  vendor_registration: two
+  bank_name: MyString
+  bank_address: MyText
+  ifsc_code: MyString
+  account_number: MyString
+  account_type: MyString

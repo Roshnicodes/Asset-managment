@@ -1,4 +1,16 @@
 Rails.application.routes.draw do
+  resources :vendor_registrations
+  resources :vendor_bank_masters
+  resources :approval_channels
+  resources :firms
+  resources :product_varieties
+  resources :service_types
+  resources :document_masters
+  resources :units
+  resources :stakeholder_categories
+  resources :registration_types
+  resources :office_categories
+  resources :blocks
   devise_for :users
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 

@@ -1,0 +1,29 @@
+<h1>Office Category</h1>
+
+<p class="text-muted">Use this for PMU, FCO, and TO categories.</p>
+
+<%= link_to "Add Office Category", new_office_category_path, class: "btn btn-primary mb-3" %>
+
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>Category Name</th>
+      <th>Office Level</th>
+      <th>Parent Category</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @office_categories.each do |office_category| %>
+      <tr>
+        <td><%= office_category.name %></td>
+        <td><%= office_category.office_level %></td>
+        <td><%= office_category.parent&.name || "-" %></td>
+        <td>
+          <%= link_to "Edit", edit_office_category_path(office_category) %> |
+          <%= link_to "Delete", office_category, method: :delete, data: { turbo_confirm: "Delete this office category?" } %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

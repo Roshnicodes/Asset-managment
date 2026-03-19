@@ -1,0 +1,10 @@
+<p style="color: green"><%= notice %></p>
+
+<%= render @stakeholder_category %>
+
+<div>
+  <%= link_to "Edit this stakeholder category", edit_stakeholder_category_path(@stakeholder_category) %> |
+  <%= link_to "Back to stakeholder categories", stakeholder_categories_path %>
+
+  <%= button_to "Destroy this stakeholder category", @stakeholder_category, method: :delete %>
+</div>

@@ -1,0 +1,2 @@
+module DocumentMastersHelper
+end

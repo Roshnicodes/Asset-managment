@@ -1,0 +1,10 @@
+<p style="color: green"><%= notice %></p>
+
+<%= render @approval_channel %>
+
+<div>
+  <%= link_to "Edit this approval channel", edit_approval_channel_path(@approval_channel) %> |
+  <%= link_to "Back to approval channels", approval_channels_path %>
+
+  <%= button_to "Destroy this approval channel", @approval_channel, method: :delete %>
+</div>

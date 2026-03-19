@@ -1,0 +1,2 @@
+module VendorBankMastersHelper
+end

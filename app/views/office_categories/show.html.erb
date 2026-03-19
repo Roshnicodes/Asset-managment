@@ -1,0 +1,10 @@
+<p style="color: green"><%= notice %></p>
+
+<%= render @office_category %>
+
+<div>
+  <%= link_to "Edit this office category", edit_office_category_path(@office_category) %> |
+  <%= link_to "Back to office categories", office_categories_path %>
+
+  <%= button_to "Destroy this office category", @office_category, method: :delete %>
+</div>
