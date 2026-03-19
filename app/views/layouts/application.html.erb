@@ -18,107 +18,27 @@
 
 <body>
 
-<!-- NAVBAR -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark px-4">
+<%= render "layouts/navbar" %>
 
-  <div class="ms-auto">
-    <% if user_signed_in? %>
-      <span class="text-white me-3"><%= current_user.email %></span>
-      <%= link_to "Logout", destroy_user_session_path, method: :delete, class: "btn btn-danger" %>
-    <% end %>
-  </div>
-</nav>
+<div class="app-shell">
 
-<div class="d-flex">
+  <%= render("layouts/sidebar") if user_signed_in? %>
 
-  <!-- SIDEBAR -->
-  <% if user_signed_in? %>
-  <div class="bg-light border-end" style="width: 250px; min-height: 100vh;">
-    <div class="p-3">
-      <h5 class="mb-3">Menu</h5>
+  <main class="app-main">
+    <div class="app-content">
 
-      <ul class="nav flex-column">
+      <!-- FLASH -->
+      <% if notice %>
+        <div class="alert alert-success"><%= notice %></div>
+      <% end %>
 
-        <!-- Dashboard -->
-        <li>
-          <%= link_to "Dashboard", root_path, class: "nav-link" %>
-        </li>
+      <% if alert %>
+        <div class="alert alert-danger"><%= alert %></div>
+      <% end %>
 
-        <li>
-          <a class="nav-link" data-bs-toggle="collapse" href="#officeCategoryMenu">
-            Office Category ▼
-          </a>
-
-          <div class="collapse" id="officeCategoryMenu">
-            <ul class="nav flex-column ms-3">
-              <li><%= link_to "PMU", pmus_path, class: "nav-link" %></li>
-              <li><%= link_to "FCO", fcos_path, class: "nav-link" %></li>
-              <li><%= link_to "TO", tos_path, class: "nav-link" %></li>
-            </ul>
-          </div>
-        </li>
-
-        <li>
-          <a class="nav-link" data-bs-toggle="collapse" href="#lgMenu">
-            LG ▼
-          </a>
-
-          <div class="collapse" id="lgMenu">
-            <ul class="nav flex-column ms-3">
-              <li><%= link_to "State", states_path, class: "nav-link" %></li>
-              <li><%= link_to "District", districts_path, class: "nav-link" %></li>
-              <li><%= link_to "Block", blocks_path, class: "nav-link" %></li>
-            </ul>
-          </div>
-        </li>
-
-        <li>
-          <a class="nav-link" data-bs-toggle="collapse" href="#stakeholderMenu">
-            Stakeholder Categories ▼
-          </a>
-
-          <div class="collapse" id="stakeholderMenu">
-            <ul class="nav flex-column ms-3">
-              <li><%= link_to "Stakeholder Name", stakeholder_categories_path, class: "nav-link" %></li>
-            </ul>
-          </div>
-        </li>
-
-        <li><%= link_to "Registration Types", registration_types_path, class: "nav-link" %></li>
-        <li><%= link_to "Service Types", service_types_path, class: "nav-link" %></li>
-        <li><%= link_to "Vendor Thematic Types", themes_path, class: "nav-link" %></li>
-        <li><%= link_to "Product Entry", products_path, class: "nav-link" %></li>
-        <li><%= link_to "Product Variety Entry", product_varieties_path, class: "nav-link" %></li>
-        <li><%= link_to "Units", units_path, class: "nav-link" %></li>
-        <li><%= link_to "Documents", document_masters_path, class: "nav-link" %></li>
-        <li><%= link_to "Approval Channels", approval_channels_path, class: "nav-link" %></li>
-        <li><%= link_to "Firms", firms_path, class: "nav-link" %></li>
-        <li><%= link_to "Banks", vendor_bank_masters_path, class: "nav-link" %></li>
-
-        <li><%= link_to "Vendor Registration Form", vendor_registrations_path, class: "nav-link" %></li>
-        <li><%= link_to "Assets", assets_path, class: "nav-link" %></li>
-        <li><%= link_to "Allocation", allocations_path, class: "nav-link" %></li>
-
-      </ul>
+      <%= yield %>
     </div>
-  </div>
-  <% end %>
-
-  <!-- MAIN CONTENT -->
-  <div class="p-4 w-100">
-
-    <!-- FLASH -->
-    <% if notice %>
-      <div class="alert alert-success"><%= notice %></div>
-    <% end %>
-
-    <% if alert %>
-      <div class="alert alert-danger"><%= alert %></div>
-    <% end %>
-
-    <%= yield %>
-
-  </div>
+  </main>
 
 </div>
 

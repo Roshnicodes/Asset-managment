@@ -1,0 +1,22 @@
+<nav class="navbar app-navbar px-4 py-3">
+  <a class="app-brand" href="<%= root_path %>">
+    <%= image_tag "asset-logo.svg", alt: "Asset Management Logo" %>
+    <span class="app-brand-text">
+      <span class="app-brand-title">Asset Management</span>
+      <span class="app-brand-subtitle">Office, Vendor, Product and Approval System</span>
+    </span>
+  </a>
+
+  <div class="ms-auto">
+    <% if user_signed_in? %>
+      <div class="app-user-pill">
+        <%= app_icon(:vendor, classes: "app-user-icon") %>
+        <span><%= current_user.email %></span>
+        <%= link_to destroy_user_session_path, method: :delete, class: "btn btn-sm btn-brand-logout" do %>
+          <%= app_icon(:logout, classes: "app-logout-icon") %>
+          <span>Logout</span>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</nav>

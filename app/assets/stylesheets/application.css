@@ -12,3 +12,222 @@
  *= require_tree .
  *= require_self
  */
+
+:root {
+  --shell-bg: #eef4ef;
+  --surface: #ffffff;
+  --surface-soft: #f6fbf7;
+  --border-soft: #d8e7db;
+  --brand-deep: #0d5c63;
+  --brand-mid: #4a7c59;
+  --brand-accent: #f2b134;
+  --text-main: #1e2d24;
+  --text-soft: #5f7066;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(74, 124, 89, 0.10), transparent 32%),
+    radial-gradient(circle at top right, rgba(13, 92, 99, 0.10), transparent 26%),
+    var(--shell-bg);
+  color: var(--text-main);
+}
+
+.app-navbar {
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid var(--border-soft);
+  box-shadow: 0 10px 30px rgba(33, 58, 43, 0.06);
+  backdrop-filter: blur(10px);
+}
+
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  text-decoration: none;
+}
+
+.app-brand img {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  box-shadow: 0 14px 24px rgba(13, 92, 99, 0.18);
+}
+
+.app-brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.app-brand-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--brand-deep);
+  line-height: 1.1;
+}
+
+.app-brand-subtitle {
+  font-size: 0.82rem;
+  color: var(--text-soft);
+}
+
+.app-user-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.75rem 0.55rem 1rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--brand-deep);
+  font-weight: 600;
+}
+
+.app-user-icon,
+.app-logout-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.app-shell {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.app-sidebar {
+  width: 320px;
+  min-height: calc(100vh - 120px);
+  padding: 1rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(241, 248, 242, 0.96)),
+    var(--surface);
+  box-shadow: 0 24px 50px rgba(49, 81, 62, 0.08);
+}
+
+.app-sidebar-header {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.app-sidebar-header h5 {
+  margin: 0;
+  font-weight: 700;
+  color: var(--brand-deep);
+}
+
+.app-sidebar-header p {
+  margin: 0.35rem 0 0;
+  font-size: 0.84rem;
+  color: var(--text-soft);
+}
+
+.app-sidebar .nav-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.3rem;
+  padding: 0.8rem 0.95rem;
+  border-radius: 18px;
+  color: var(--text-main);
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.18s ease;
+}
+
+.app-link-wrap,
+.app-link-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.app-link-wrap {
+  min-width: 0;
+}
+
+.app-link-label {
+  line-height: 1.25;
+  white-space: normal;
+  text-align: left;
+}
+
+.app-menu-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: var(--brand-deep);
+}
+
+.app-sidebar .nav-link:hover,
+.app-sidebar .nav-link:focus {
+  background: rgba(13, 92, 99, 0.09);
+  color: var(--brand-deep);
+}
+
+.app-sidebar .nav-link.dropdown-toggle-link::after {
+  content: "▾";
+  font-size: 0.8rem;
+  color: var(--text-soft);
+}
+
+.app-sidebar .submenu {
+  margin: 0 0 0.6rem 0.7rem;
+  padding-left: 0.9rem;
+  border-left: 2px solid rgba(13, 92, 99, 0.12);
+}
+
+.app-sidebar .submenu .nav-link {
+  margin-bottom: 0.2rem;
+  padding: 0.62rem 0.8rem;
+  font-size: 0.94rem;
+  font-weight: 500;
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.app-content {
+  min-height: calc(100vh - 120px);
+  padding: 1.75rem;
+  border: 1px solid rgba(216, 231, 219, 0.9);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 24px 55px rgba(44, 69, 54, 0.07);
+}
+
+.btn-brand-logout {
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #d85f52, #b43c31);
+  color: #fff;
+}
+
+.btn-brand-logout:hover {
+  color: #fff;
+  opacity: 0.94;
+}
+
+@media (max-width: 991px) {
+  .app-shell {
+    flex-direction: column;
+    padding: 1rem;
+  }
+
+  .app-sidebar {
+    width: 100%;
+    min-height: auto;
+  }
+
+  .app-content {
+    min-height: auto;
+  }
+}
