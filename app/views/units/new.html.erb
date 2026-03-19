@@ -1,11 +1,6 @@
-<% content_for :title, "New unit" %>
-
-<h1>New unit</h1>
+<div class="app-page-header">
+  <h2>New Unit</h2>
+  <%= link_to "Back", units_path, class: "app-back-link" %>
+</div>
 
 <%= render "form", unit: @unit %>
-
-<br>
-
-<div>
-  <%= link_to "Back to units", units_path %>
-</div>

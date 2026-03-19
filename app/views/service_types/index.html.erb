@@ -1,16 +1,26 @@
-<p style="color: green"><%= notice %></p>
-
-<% content_for :title, "Service types" %>
-
-<h1>Service types</h1>
-
-<div id="service_types">
-  <% @service_types.each do |service_type| %>
-    <%= render service_type %>
-    <p>
-      <%= link_to "Show this service type", service_type %>
-    </p>
-  <% end %>
+<div class="app-toolbar">
+  <h1>Service Types</h1>
+  <%= link_to "Add Service Type", new_service_type_path, class: "app-primary-btn" %>
 </div>
 
-<%= link_to "New service type", new_service_type_path %>
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>Service Type Name</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @service_types.each do |service_type| %>
+        <tr>
+          <td><%= service_type.name %></td>
+          <td class="app-row-actions">
+            <%= link_to "Edit", edit_service_type_path(service_type) %> |
+            <%= link_to "Delete", service_type, method: :delete, data: { turbo_confirm: "Delete this service type?" } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

@@ -1,29 +1,28 @@
-<h1>TO List</h1>
+<div class="app-toolbar">
+  <h1>TO</h1>
+  <%= link_to "Add TO", new_to_path, class: "app-primary-btn" %>
+</div>
 
-<%= link_to "Add TO", new_to_path %>
-
-<table border="1">
-
-<tr>
-<th>Name</th>
-<th>FCO</th>
-<th>Action</th>
-</tr>
-
-<% @tos.each do |to| %>
-
-<tr>
-
-<td><%= to.name %></td>
-<td><%= to.fco.name %></td>
-
-<td>
-<%= link_to "Edit", edit_to_path(to) %> |
-<%= link_to "Delete", to, method: :delete %>
-</td>
-
-</tr>
-
-<% end %>
-
-</table>
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>TO Name</th>
+        <th>FCO</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @tos.each do |to| %>
+        <tr>
+          <td><%= to.name %></td>
+          <td><%= to.fco.name %></td>
+          <td class="app-row-actions">
+            <%= link_to "Edit", edit_to_path(to) %> |
+            <%= link_to "Delete", to, method: :delete, data: { turbo_confirm: "Delete this TO?" } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

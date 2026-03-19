@@ -1,17 +1,24 @@
 <%= form_with(model: allocation, local: true) do |f| %>
+  <div class="app-form-card">
+    <div class="app-form-grid two-col">
+      <div class="app-form-field">
+        <%= f.label :asset_id, "Asset" %>
+        <%= f.collection_select :asset_id, Asset.order(:name), :id, :name, { prompt: "Select asset" }, class: "form-control" %>
+      </div>
 
-  <div class="mb-3">
-    <%= f.label :asset_id %>
-    <%= f.number_field :asset_id, class: "form-control" %>
+      <div class="app-form-field">
+        <%= f.label :to_id, "TO" %>
+        <%= f.collection_select :to_id, To.order(:name), :id, :name, { prompt: "Select TO" }, class: "form-control" %>
+      </div>
+
+      <div class="app-form-field">
+        <%= f.label :allocated_at, "Allocation Date" %>
+        <%= f.date_field :allocated_at %>
+      </div>
+    </div>
+
+    <div class="app-form-actions">
+      <%= f.submit "Save Allocation", class: "app-form-submit" %>
+    </div>
   </div>
-
-  <div class="mb-3">
-    <%= f.label :user_id %>
-    <%= f.number_field :user_id, class: "form-control" %>
-  </div>
-
-  <div class="d-grid">
-    <%= f.submit class: "btn btn-success" %>
-  </div>
-
 <% end %>

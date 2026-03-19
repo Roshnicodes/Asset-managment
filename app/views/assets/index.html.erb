@@ -1,31 +1,30 @@
-<h1>Asset List</h1>
+<div class="app-toolbar">
+  <h1>Assets</h1>
+  <%= link_to "Add Asset", new_asset_path, class: "app-primary-btn" %>
+</div>
 
-<%= link_to "Add Asset", new_asset_path %>
-
-<table border="1">
-
-<tr>
-<th>Name</th>
-<th>Product</th>
-<th>Serial</th>
-<th>Action</th>
-</tr>
-
-<% @assets.each do |asset| %>
-
-<tr>
-
-<td><%= asset.name %></td>
-<td><%= asset.product.name %></td>
-<td><%= asset.serial_number %></td>
-
-<td>
-<%= link_to "Edit", edit_asset_path(asset) %> |
-<%= link_to "Delete", asset, method: :delete %>
-</td>
-
-</tr>
-
-<% end %>
-
-</table>
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>Asset Name</th>
+        <th>Product</th>
+        <th>Serial Number</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @assets.each do |asset| %>
+        <tr>
+          <td><%= asset.name %></td>
+          <td><%= asset.product.name %></td>
+          <td><%= asset.serial_number.presence || "-" %></td>
+          <td class="app-row-actions">
+            <%= link_to "Edit", edit_asset_path(asset) %> |
+            <%= link_to "Delete", asset, method: :delete, data: { turbo_confirm: "Delete this asset?" } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

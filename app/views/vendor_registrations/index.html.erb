@@ -1,8 +1,10 @@
-<h1>Vendor Registration Form</h1>
+<div class="app-toolbar">
+  <h1>Vendor Registration Form</h1>
+  <%= link_to "Add Vendor Registration", new_vendor_registration_path, class: "app-primary-btn" %>
+</div>
 
-<%= link_to "Add Vendor Registration", new_vendor_registration_path, class: "btn btn-primary mb-3" %>
-
-<table class="table table-bordered">
+<div class="app-table-wrap">
+<table class="table app-table">
   <thead>
     <tr>
       <th>Registration Type</th>
@@ -25,7 +27,7 @@
         <td><%= vendor_registration.company_status %></td>
         <td><%= vendor_registration.submitted_at&.strftime("%d-%m-%Y %H:%M") %></td>
         <td><%= vendor_registration.submitted_ip %></td>
-        <td>
+        <td class="app-row-actions">
           <%= link_to "Edit", edit_vendor_registration_path(vendor_registration) %> |
           <%= link_to "Delete", vendor_registration, method: :delete, data: { turbo_confirm: "Delete this vendor registration?" } %>
         </td>
@@ -33,3 +35,4 @@
     <% end %>
   </tbody>
 </table>
+</div>

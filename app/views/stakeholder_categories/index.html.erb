@@ -1,25 +1,29 @@
-<h1>Stakeholder Categories</h1>
+<div class="app-toolbar">
+  <div>
+    <h1>Stakeholder Categories</h1>
+    <p class="app-section-note">Examples: ASA, PGPL, PAPL.</p>
+  </div>
+  <%= link_to "Add Stakeholder Category", new_stakeholder_category_path, class: "app-primary-btn" %>
+</div>
 
-<p class="text-muted">Examples: ASA, PGPL, PAPL.</p>
-
-<%= link_to "Add Stakeholder Category", new_stakeholder_category_path, class: "btn btn-primary mb-3" %>
-
-<table class="table table-bordered">
-  <thead>
-    <tr>
-      <th>Stakeholder Name</th>
-      <th>Action</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @stakeholder_categories.each do |stakeholder_category| %>
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
       <tr>
-        <td><%= stakeholder_category.name %></td>
-        <td>
-          <%= link_to "Edit", edit_stakeholder_category_path(stakeholder_category) %> |
-          <%= link_to "Delete", stakeholder_category, method: :delete, data: { turbo_confirm: "Delete this stakeholder category?" } %>
-        </td>
+        <th>Stakeholder Name</th>
+        <th>Action</th>
       </tr>
-    <% end %>
-  </tbody>
-</table>
+    </thead>
+    <tbody>
+      <% @stakeholder_categories.each do |stakeholder_category| %>
+        <tr>
+          <td><%= stakeholder_category.name %></td>
+          <td class="app-row-actions">
+            <%= link_to "Edit", edit_stakeholder_category_path(stakeholder_category) %> |
+            <%= link_to "Delete", stakeholder_category, method: :delete, data: { turbo_confirm: "Delete this stakeholder category?" } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

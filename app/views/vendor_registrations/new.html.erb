@@ -1,3 +1,6 @@
-<h2>Vendor Registration Form</h2>
+<div class="app-page-header">
+  <h2>Vendor Registration Form</h2>
+  <%= link_to "Back", vendor_registrations_path, class: "app-back-link" %>
+</div>
 
 <%= render "form", vendor_registration: @vendor_registration %>

@@ -1,11 +1,6 @@
-<% content_for :title, "New firm" %>
-
-<h1>New firm</h1>
+<div class="app-page-header">
+  <h2>New Firm</h2>
+  <%= link_to "Back", firms_path, class: "app-back-link" %>
+</div>
 
 <%= render "form", firm: @firm %>
-
-<br>
-
-<div>
-  <%= link_to "Back to firms", firms_path %>
-</div>

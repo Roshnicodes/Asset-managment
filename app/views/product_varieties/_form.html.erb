@@ -1,23 +1,30 @@
 <%= form_with(model: product_variety) do |form| %>
-  <% if product_variety.errors.any? %>
-    <div class="alert alert-danger">
-      <ul class="mb-0">
-        <% product_variety.errors.each do |error| %>
-          <li><%= error.full_message %></li>
-        <% end %>
-      </ul>
+  <div class="app-form-card">
+    <% if product_variety.errors.any? %>
+      <div class="app-form-errors">
+        <h2><%= pluralize(product_variety.errors.count, "error") %> found</h2>
+        <ul>
+          <% product_variety.errors.each do |error| %>
+            <li><%= error.full_message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="app-form-grid two-col">
+      <div class="app-form-field">
+        <%= form.label :product_id, "Product" %>
+        <%= form.grouped_collection_select :product_id, @themes, :products, :name, :id, :name, { prompt: "Select product" }, class: "form-control" %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :name, "Product Variety" %>
+        <%= form.text_field :name, class: "form-control" %>
+      </div>
     </div>
-  <% end %>
 
-  <div class="mb-3">
-    <%= form.label :product_id, "Product", class: "form-label" %>
-    <%= form.grouped_collection_select :product_id, @themes, :products, :name, :id, :name, { prompt: "Select product" }, class: "form-control" %>
+    <div class="app-form-actions">
+      <%= form.submit "Save Product Variety", class: "app-form-submit" %>
+    </div>
   </div>
-
-  <div class="mb-3">
-    <%= form.label :name, "Product Variety", class: "form-label" %>
-    <%= form.text_field :name, class: "form-control" %>
-  </div>
-
-  <%= form.submit class: "btn btn-primary" %>
 <% end %>

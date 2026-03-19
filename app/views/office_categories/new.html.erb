@@ -1,3 +1,6 @@
-<h2>Add Office Category</h2>
+<div class="app-page-header">
+  <h2>Add Office Category</h2>
+  <%= link_to "Back", office_categories_path, class: "app-back-link" %>
+</div>
 
 <%= render "form", office_category: @office_category %>

@@ -1,16 +1,26 @@
-<p style="color: green"><%= notice %></p>
-
-<% content_for :title, "Units" %>
-
-<h1>Units</h1>
-
-<div id="units">
-  <% @units.each do |unit| %>
-    <%= render unit %>
-    <p>
-      <%= link_to "Show this unit", unit %>
-    </p>
-  <% end %>
+<div class="app-toolbar">
+  <h1>Units</h1>
+  <%= link_to "Add Unit", new_unit_path, class: "app-primary-btn" %>
 </div>
 
-<%= link_to "New unit", new_unit_path %>
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>Unit Name</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @units.each do |unit| %>
+        <tr>
+          <td><%= unit.name %></td>
+          <td class="app-row-actions">
+            <%= link_to "Edit", edit_unit_path(unit) %> |
+            <%= link_to "Delete", unit, method: :delete, data: { turbo_confirm: "Delete this unit?" } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

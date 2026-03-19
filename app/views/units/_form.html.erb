@@ -1,22 +1,25 @@
 <%= form_with(model: unit) do |form| %>
-  <% if unit.errors.any? %>
-    <div style="color: red">
-      <h2><%= pluralize(unit.errors.count, "error") %> prohibited this unit from being saved:</h2>
+  <div class="app-form-card">
+    <% if unit.errors.any? %>
+      <div class="app-form-errors">
+        <h2><%= pluralize(unit.errors.count, "error") %> found</h2>
+        <ul>
+          <% unit.errors.each do |error| %>
+            <li><%= error.full_message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
 
-      <ul>
-        <% unit.errors.each do |error| %>
-          <li><%= error.full_message %></li>
-        <% end %>
-      </ul>
+    <div class="app-form-grid">
+      <div class="app-form-field">
+        <%= form.label :name, "Unit Name" %>
+        <%= form.text_field :name %>
+      </div>
     </div>
-  <% end %>
 
-  <div>
-    <%= form.label :name, style: "display: block" %>
-    <%= form.text_field :name %>
-  </div>
-
-  <div>
-    <%= form.submit %>
+    <div class="app-form-actions">
+      <%= form.submit "Save Unit", class: "app-form-submit" %>
+    </div>
   </div>
 <% end %>

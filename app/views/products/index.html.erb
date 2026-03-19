@@ -1,29 +1,28 @@
-<h1>Product Entry</h1>
+<div class="app-toolbar">
+  <h1>Product Entry</h1>
+  <%= link_to "Add Product", new_product_path, class: "app-primary-btn" %>
+</div>
 
-<%= link_to "Add Product", new_product_path, class: "btn btn-primary mb-3" %>
-
-<table class="table table-bordered">
-
-<tr>
-<th>Name</th>
-<th>Thematic Type</th>
-<th>Action</th>
-</tr>
-
-<% @products.each do |product| %>
-
-<tr>
-
-<td><%= product.name %></td>
-<td><%= product.theme.name %></td>
-
-<td>
-<%= link_to "Edit", edit_product_path(product) %> |
-<%= link_to "Delete", product, method: :delete, data: { turbo_confirm: "Delete this product?" } %>
-</td>
-
-</tr>
-
-<% end %>
-
-</table>
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>Product Name</th>
+        <th>Thematic Type</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @products.each do |product| %>
+        <tr>
+          <td><%= product.name %></td>
+          <td><%= product.theme.name %></td>
+          <td class="app-row-actions">
+            <%= link_to "Edit", edit_product_path(product) %> |
+            <%= link_to "Delete", product, method: :delete, data: { turbo_confirm: "Delete this product?" } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

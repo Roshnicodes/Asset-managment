@@ -1,11 +1,6 @@
-<% content_for :title, "New service type" %>
-
-<h1>New service type</h1>
+<div class="app-page-header">
+  <h2>New Service Type</h2>
+  <%= link_to "Back", service_types_path, class: "app-back-link" %>
+</div>
 
 <%= render "form", service_type: @service_type %>
-
-<br>
-
-<div>
-  <%= link_to "Back to service types", service_types_path %>
-</div>

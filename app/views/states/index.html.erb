@@ -1,25 +1,29 @@
-<h1>LG - States</h1>
+<div class="app-toolbar">
+  <div>
+    <h1>LG - States</h1>
+    <p class="app-section-note">LG includes State, District, and Block.</p>
+  </div>
+  <%= link_to "Add State", new_state_path, class: "app-primary-btn" %>
+</div>
 
-<p class="text-muted">LG includes State, District, and Block.</p>
-
-<%= link_to "Add State", new_state_path %>
-
-<table border="1">
-<tr>
-<th>Name</th>
-<th>Action</th>
-</tr>
-
-<% @states.each do |state| %>
-<tr>
-<td><%= state.name %></td>
-
-<td>
-<%= link_to "Edit", edit_state_path(state) %> |
-<%= link_to "Delete", state, method: :delete, data: { confirm: "Are you sure?" } %>
-</td>
-
-</tr>
-<% end %>
-
-</table>
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>State Name</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @states.each do |state| %>
+        <tr>
+          <td><%= state.name %></td>
+          <td class="app-row-actions">
+            <%= link_to "Edit", edit_state_path(state) %> |
+            <%= link_to "Delete", state, method: :delete, data: { turbo_confirm: "Delete this state?" } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

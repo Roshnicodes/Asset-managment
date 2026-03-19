@@ -1,27 +1,26 @@
-<h1>Vendor Thematic Types</h1>
+<div class="app-toolbar">
+  <h1>Vendor Thematic Types</h1>
+  <%= link_to "Add Thematic Type", new_theme_path, class: "app-primary-btn" %>
+</div>
 
-<%= link_to "Add Thematic Type", new_theme_path, class: "btn btn-primary mb-3" %>
-
-<table class="table table-bordered">
-
-<tr>
-<th>Thematic Type Name</th>
-<th>Action</th>
-</tr>
-
-<% @themes.each do |theme| %>
-
-<tr>
-
-<td><%= theme.name %></td>
-
-<td>
-<%= link_to "Edit", edit_theme_path(theme) %> |
-<%= link_to "Delete", theme, method: :delete, data: { turbo_confirm: "Delete this thematic type?" } %>
-</td>
-
-</tr>
-
-<% end %>
-
-</table>
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>Thematic Type Name</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @themes.each do |theme| %>
+        <tr>
+          <td><%= theme.name %></td>
+          <td class="app-row-actions">
+            <%= link_to "Edit", edit_theme_path(theme) %> |
+            <%= link_to "Delete", theme, method: :delete, data: { turbo_confirm: "Delete this thematic type?" } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

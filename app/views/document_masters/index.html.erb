@@ -1,16 +1,26 @@
-<p style="color: green"><%= notice %></p>
-
-<% content_for :title, "Document masters" %>
-
-<h1>Document masters</h1>
-
-<div id="document_masters">
-  <% @document_masters.each do |document_master| %>
-    <%= render document_master %>
-    <p>
-      <%= link_to "Show this document master", document_master %>
-    </p>
-  <% end %>
+<div class="app-toolbar">
+  <h1>Documents</h1>
+  <%= link_to "Add Document", new_document_master_path, class: "app-primary-btn" %>
 </div>
 
-<%= link_to "New document master", new_document_master_path %>
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>Document Name</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @document_masters.each do |document_master| %>
+        <tr>
+          <td><%= document_master.name %></td>
+          <td class="app-row-actions">
+            <%= link_to "Edit", edit_document_master_path(document_master) %> |
+            <%= link_to "Delete", document_master, method: :delete, data: { turbo_confirm: "Delete this document?" } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

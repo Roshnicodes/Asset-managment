@@ -1,15 +1,19 @@
-<%= form_with model:@fco do |f| %>
+<%= form_with model: @fco do |f| %>
+  <div class="app-form-card">
+    <div class="app-form-grid two-col">
+      <div class="app-form-field">
+        <%= f.label :pmu_id, "PMU" %>
+        <%= f.collection_select :pmu_id, Pmu.order(:name), :id, :name, { prompt: "Select PMU" } %>
+      </div>
 
-<%= f.label :name %>
-<%= f.text_field :name %>
+      <div class="app-form-field">
+        <%= f.label :name, "FCO Name" %>
+        <%= f.text_field :name %>
+      </div>
+    </div>
 
-<br><br>
-
-<%= f.label :pmu %>
-<%= f.collection_select :pmu_id, Pmu.all, :id, :name %>
-
-<br><br>
-
-<%= f.submit %>
-
+    <div class="app-form-actions">
+      <%= f.submit "Save FCO", class: "app-form-submit" %>
+    </div>
+  </div>
 <% end %>

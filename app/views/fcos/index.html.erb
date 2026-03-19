@@ -1,29 +1,28 @@
-<h1>FCO List</h1>
+<div class="app-toolbar">
+  <h1>FCO</h1>
+  <%= link_to "Add FCO", new_fco_path, class: "app-primary-btn" %>
+</div>
 
-<%= link_to "Add FCO", new_fco_path %>
-
-<table border="1">
-
-<tr>
-<th>Name</th>
-<th>PMU</th>
-<th>Action</th>
-</tr>
-
-<% @fcos.each do |fco| %>
-
-<tr>
-
-<td><%= fco.name %></td>
-<td><%= fco.pmu.name %></td>
-
-<td>
-<%= link_to "Edit", edit_fco_path(fco) %> |
-<%= link_to "Delete", fco, method: :delete %>
-</td>
-
-</tr>
-
-<% end %>
-
-</table>
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>FCO Name</th>
+        <th>PMU</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @fcos.each do |fco| %>
+        <tr>
+          <td><%= fco.name %></td>
+          <td><%= fco.pmu.name %></td>
+          <td class="app-row-actions">
+            <%= link_to "Edit", edit_fco_path(fco) %> |
+            <%= link_to "Delete", fco, method: :delete, data: { turbo_confirm: "Delete this FCO?" } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

@@ -1,30 +1,29 @@
-<h1>Asset Allocation</h1>
+<div class="app-toolbar">
+  <h1>Asset Allocation</h1>
+  <%= link_to "Allocate Asset", new_allocation_path, class: "app-primary-btn" %>
+</div>
 
-<%= link_to "Allocate Asset", new_allocation_path %>
-
-<table border="1">
-
-<tr>
-<th>Asset</th>
-<th>TO</th>
-<th>Date</th>
-<th>Action</th>
-</tr>
-
-<% @allocations.each do |allocation| %>
-
-<tr>
-
-<td><%= allocation.asset.name %></td>
-<td><%= allocation.to.name %></td>
-<td><%= allocation.allocated_at %></td>
-
-<td>
-<%= link_to "Delete", allocation, method: :delete %>
-</td>
-
-</tr>
-
-<% end %>
-
-</table>
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>Asset</th>
+        <th>TO</th>
+        <th>Allocation Date</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @allocations.each do |allocation| %>
+        <tr>
+          <td><%= allocation.asset.name %></td>
+          <td><%= allocation.to.name %></td>
+          <td><%= allocation.allocated_at&.strftime("%d-%m-%Y") || "-" %></td>
+          <td class="app-row-actions">
+            <%= link_to "Delete", allocation, method: :delete, data: { turbo_confirm: "Delete this allocation?" } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

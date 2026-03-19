@@ -1,31 +1,31 @@
-<h1>LG - Districts</h1>
+<div class="app-toolbar">
+  <div>
+    <h1>LG - Districts</h1>
+    <p class="app-section-note">LG includes State, District, and Block.</p>
+  </div>
+  <%= link_to "Add District", new_district_path, class: "app-primary-btn" %>
+</div>
 
-<p class="text-muted">LG includes State, District, and Block.</p>
-
-<%= link_to "Add District", new_district_path %>
-
-<table border="1">
-
-<tr>
-<th>Name</th>
-<th>State</th>
-<th>Action</th>
-</tr>
-
-<% @districts.each do |district| %>
-
-<tr>
-
-<td><%= district.name %></td>
-<td><%= district.state.name %></td>
-
-<td>
-<%= link_to "Edit", edit_district_path(district) %> |
-<%= link_to "Delete", district, method: :delete %>
-</td>
-
-</tr>
-
-<% end %>
-
-</table>
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>District Name</th>
+        <th>State</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @districts.each do |district| %>
+        <tr>
+          <td><%= district.name %></td>
+          <td><%= district.state.name %></td>
+          <td class="app-row-actions">
+            <%= link_to "Edit", edit_district_path(district) %> |
+            <%= link_to "Delete", district, method: :delete, data: { turbo_confirm: "Delete this district?" } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

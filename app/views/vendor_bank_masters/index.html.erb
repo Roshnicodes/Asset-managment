@@ -1,8 +1,10 @@
-<h1>Vendor Bank Master</h1>
+<div class="app-toolbar">
+  <h1>Vendor Bank Master</h1>
+  <%= link_to "Add Vendor Bank Detail", new_vendor_bank_master_path, class: "app-primary-btn" %>
+</div>
 
-<%= link_to "Add Vendor Bank Detail", new_vendor_bank_master_path, class: "btn btn-primary mb-3" %>
-
-<table class="table table-bordered">
+<div class="app-table-wrap">
+<table class="table app-table">
   <thead>
     <tr>
       <th>Vendor / Employee Name</th>
@@ -21,7 +23,7 @@
         <td><%= vendor_bank_master.ifsc_code %></td>
         <td><%= vendor_bank_master.account_number %></td>
         <td><%= vendor_bank_master.account_type %></td>
-        <td>
+        <td class="app-row-actions">
           <%= link_to "Edit", edit_vendor_bank_master_path(vendor_bank_master) %> |
           <%= link_to "Delete", vendor_bank_master, method: :delete, data: { turbo_confirm: "Delete this bank record?" } %>
         </td>
@@ -29,3 +31,4 @@
     <% end %>
   </tbody>
 </table>
+</div>

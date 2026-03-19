@@ -1,23 +1,19 @@
 <%= form_with(model: block) do |form| %>
-  <% if block.errors.any? %>
-    <div class="alert alert-danger">
-      <ul class="mb-0">
-        <% block.errors.each do |error| %>
-          <li><%= error.full_message %></li>
-        <% end %>
-      </ul>
+  <div class="app-form-card">
+    <div class="app-form-grid two-col">
+      <div class="app-form-field">
+        <%= form.label :district_id, "District" %>
+        <%= form.collection_select :district_id, @districts, :id, :name, { prompt: "Select district" } %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :name, "Block Name" %>
+        <%= form.text_field :name, placeholder: "Enter block name" %>
+      </div>
     </div>
-  <% end %>
 
-  <div class="mb-3">
-    <%= form.label :district_id, class: "form-label" %>
-    <%= form.collection_select :district_id, @districts, :id, :name, { prompt: "Select district" }, class: "form-control" %>
+    <div class="app-form-actions">
+      <%= form.submit "Save Block", class: "app-form-submit" %>
+    </div>
   </div>
-
-  <div class="mb-3">
-    <%= form.label :name, "Block Name", class: "form-label" %>
-    <%= form.text_field :name, class: "form-control" %>
-  </div>
-
-  <%= form.submit class: "btn btn-primary" %>
 <% end %>

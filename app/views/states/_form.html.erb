@@ -1,10 +1,14 @@
-<%= form_with model:@state do |f| %>
+<%= form_with model: @state do |f| %>
+  <div class="app-form-card">
+    <div class="app-form-grid">
+      <div class="app-form-field">
+        <%= f.label :name, "State Name" %>
+        <%= f.text_field :name %>
+      </div>
+    </div>
 
-<%= f.label :name %>
-<%= f.text_field :name %>
-
-<br><br>
-
-<%= f.submit %>
-
+    <div class="app-form-actions">
+      <%= f.submit "Save State", class: "app-form-submit" %>
+    </div>
+  </div>
 <% end %>

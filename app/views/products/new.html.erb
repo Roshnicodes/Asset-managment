@@ -1,5 +1,6 @@
-<h2>Add Product Entry</h2>
+<div class="app-page-header">
+  <h2>Add Product Entry</h2>
+  <%= link_to "Back", products_path, class: "app-back-link" %>
+</div>
 
 <%= render "form", product: @product %>
-
-<%= link_to "Back", products_path %>

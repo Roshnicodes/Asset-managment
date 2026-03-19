@@ -1,17 +1,19 @@
 <%= form_with(model: asset, local: true) do |f| %>
+  <div class="app-form-card">
+    <div class="app-form-grid two-col">
+      <div class="app-form-field">
+        <%= f.label :product_id, "Product" %>
+        <%= f.collection_select :product_id, Product.order(:name), :id, :name, { prompt: "Select product" }, class: "form-control" %>
+      </div>
 
-  <div class="mb-3">
-    <%= f.label :name %>
-    <%= f.text_field :name, class: "form-control" %>
+      <div class="app-form-field">
+        <%= f.label :name, "Asset Name" %>
+        <%= f.text_field :name, class: "form-control" %>
+      </div>
+    </div>
+
+    <div class="app-form-actions">
+      <%= f.submit "Save Asset", class: "app-form-submit" %>
+    </div>
   </div>
-
-  <div class="mb-3">
-    <%= f.label :product_id %>
-    <%= f.collection_select :product_id, Product.all, :id, :name, {prompt: "Select Product"}, class: "form-control" %>
-  </div>
-
-  <div class="d-grid">
-    <%= f.submit "Create Asset", class: "btn btn-primary" %>
-  </div>
-
 <% end %>

@@ -1,15 +1,19 @@
-<%= form_with model:@pmu do |f| %>
+<%= form_with model: @pmu do |f| %>
+  <div class="app-form-card">
+    <div class="app-form-grid two-col">
+      <div class="app-form-field">
+        <%= f.label :district_id, "District" %>
+        <%= f.collection_select :district_id, District.order(:name), :id, :name, { prompt: "Select district" } %>
+      </div>
 
-<%= f.label :name %>
-<%= f.text_field :name %>
+      <div class="app-form-field">
+        <%= f.label :name, "PMU Name" %>
+        <%= f.text_field :name %>
+      </div>
+    </div>
 
-<br><br>
-
-<%= f.label :district %>
-<%= f.collection_select :district_id, District.all, :id, :name %>
-
-<br><br>
-
-<%= f.submit %>
-
+    <div class="app-form-actions">
+      <%= f.submit "Save PMU", class: "app-form-submit" %>
+    </div>
+  </div>
 <% end %>

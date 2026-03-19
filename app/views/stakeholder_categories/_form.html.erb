@@ -1,19 +1,25 @@
 <%= form_with(model: stakeholder_category) do |form| %>
-  <% if stakeholder_category.errors.any? %>
-    <div class="alert alert-danger">
-      <ul class="mb-0">
-        <% stakeholder_category.errors.each do |error| %>
-          <li><%= error.full_message %></li>
-        <% end %>
-      </ul>
+  <div class="app-form-card">
+    <% if stakeholder_category.errors.any? %>
+      <div class="app-form-errors">
+        <h2><%= pluralize(stakeholder_category.errors.count, "error") %> found</h2>
+        <ul>
+          <% stakeholder_category.errors.each do |error| %>
+            <li><%= error.full_message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="app-form-grid">
+      <div class="app-form-field">
+        <%= form.label :name, "Stakeholder Name" %>
+        <%= form.text_field :name, class: "form-control", placeholder: "ASA / PGPL / PAPL" %>
+      </div>
     </div>
-  <% end %>
 
-
-  <div class="mb-3">
-    <%= form.label :name, "Stakeholder Name", class: "form-label" %>
-    <%= form.text_field :name, class: "form-control", placeholder: "ASA / PGPL / PAPL" %>
+    <div class="app-form-actions">
+      <%= form.submit "Save Stakeholder", class: "app-form-submit" %>
+    </div>
   </div>
-
-  <%= form.submit class: "btn btn-primary" %>
 <% end %>

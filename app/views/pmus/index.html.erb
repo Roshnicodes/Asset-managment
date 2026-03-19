@@ -1,26 +1,28 @@
-<h1>PMU List</h1>
+<div class="app-toolbar">
+  <h1>PMU</h1>
+  <%= link_to "Add PMU", new_pmu_path, class: "app-primary-btn" %>
+</div>
 
-<%= link_to "Add PMU", new_pmu_path %>
-
-<table border="1">
-<tr>
-<th>Name</th>
-<th>District</th>
-<th>Action</th>
-</tr>
-
-<% @pmus.each do |pmu| %>
-<tr>
-
-<td><%= pmu.name %></td>
-<td><%= pmu.district.name %></td>
-
-<td>
-<%= link_to "Edit", edit_pmu_path(pmu) %> |
-<%= link_to "Delete", pmu, method: :delete, data: {confirm:"Are you sure"} %>
-</td>
-
-</tr>
-<% end %>
-
-</table>
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>PMU Name</th>
+        <th>District</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @pmus.each do |pmu| %>
+        <tr>
+          <td><%= pmu.name %></td>
+          <td><%= pmu.district.name %></td>
+          <td class="app-row-actions">
+            <%= link_to "Edit", edit_pmu_path(pmu) %> |
+            <%= link_to "Delete", pmu, method: :delete, data: { turbo_confirm: "Delete this PMU?" } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

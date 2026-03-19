@@ -1,16 +1,26 @@
-<p style="color: green"><%= notice %></p>
-
-<% content_for :title, "Firms" %>
-
-<h1>Firms</h1>
-
-<div id="firms">
-  <% @firms.each do |firm| %>
-    <%= render firm %>
-    <p>
-      <%= link_to "Show this firm", firm %>
-    </p>
-  <% end %>
+<div class="app-toolbar">
+  <h1>Firms</h1>
+  <%= link_to "Add Firm", new_firm_path, class: "app-primary-btn" %>
 </div>
 
-<%= link_to "New firm", new_firm_path %>
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>Firm Name</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @firms.each do |firm| %>
+        <tr>
+          <td><%= firm.name %></td>
+          <td class="app-row-actions">
+            <%= link_to "Edit", edit_firm_path(firm) %> |
+            <%= link_to "Delete", firm, method: :delete, data: { turbo_confirm: "Delete this firm?" } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

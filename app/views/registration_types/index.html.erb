@@ -1,16 +1,26 @@
-<p style="color: green"><%= notice %></p>
-
-<% content_for :title, "Registration types" %>
-
-<h1>Registration types</h1>
-
-<div id="registration_types">
-  <% @registration_types.each do |registration_type| %>
-    <%= render registration_type %>
-    <p>
-      <%= link_to "Show this registration type", registration_type %>
-    </p>
-  <% end %>
+<div class="app-toolbar">
+  <h1>Registration Types</h1>
+  <%= link_to "Add Registration Type", new_registration_type_path, class: "app-primary-btn" %>
 </div>
 
-<%= link_to "New registration type", new_registration_type_path %>
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>Registration Type Name</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @registration_types.each do |registration_type| %>
+        <tr>
+          <td><%= registration_type.name %></td>
+          <td class="app-row-actions">
+            <%= link_to "Edit", edit_registration_type_path(registration_type) %> |
+            <%= link_to "Delete", registration_type, method: :delete, data: { turbo_confirm: "Delete this registration type?" } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

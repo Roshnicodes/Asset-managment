@@ -1,15 +1,19 @@
-<%= form_with model:@district do |f| %>
+<%= form_with model: @district do |f| %>
+  <div class="app-form-card">
+    <div class="app-form-grid two-col">
+      <div class="app-form-field">
+        <%= f.label :state_id, "State" %>
+        <%= f.collection_select :state_id, State.order(:name), :id, :name, { prompt: "Select state" } %>
+      </div>
 
-<%= f.label :name %>
-<%= f.text_field :name %>
+      <div class="app-form-field">
+        <%= f.label :name, "District Name" %>
+        <%= f.text_field :name %>
+      </div>
+    </div>
 
-<br>
-
-<%= f.label :state %>
-<%= f.collection_select :state_id, State.all, :id, :name %>
-
-<br><br>
-
-<%= f.submit %>
-
+    <div class="app-form-actions">
+      <%= f.submit "Save District", class: "app-form-submit" %>
+    </div>
+  </div>
 <% end %>

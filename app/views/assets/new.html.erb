@@ -1,5 +1,6 @@
-<h2>Add Asset</h2>
+<div class="app-page-header">
+  <h2>Add Asset</h2>
+  <%= link_to "Back", assets_path, class: "app-back-link" %>
+</div>
 
 <%= render "form", asset: @asset %>
-
-<%= link_to "Back", assets_path %>
