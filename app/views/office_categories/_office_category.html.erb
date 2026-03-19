@@ -1,17 +1,18 @@
-<div id="<%= dom_id office_category %>">
-  <div>
-    <strong>Name:</strong>
-    <%= office_category.name %>
-  </div>
+<div id="<%= dom_id office_category %>" class="app-detail-card">
+  <div class="app-detail-grid">
+    <div class="app-detail-item">
+      <div class="app-detail-label">Category Name</div>
+      <div class="app-detail-value"><%= office_category.name %></div>
+    </div>
 
-  <div>
-    <strong>Office level:</strong>
-    <%= office_category.office_level %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Office Level</div>
+      <div class="app-detail-value"><%= office_category.office_level %></div>
+    </div>
 
-  <div>
-    <strong>Parent:</strong>
-    <%= office_category.parent_id %>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Parent Category</div>
+      <div class="app-detail-value"><%= office_category.parent&.name || "None" %></div>
+    </div>
   </div>
-
 </div>

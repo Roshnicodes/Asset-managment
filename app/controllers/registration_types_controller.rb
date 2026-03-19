@@ -1,13 +1,9 @@
 class RegistrationTypesController < ApplicationController
-  before_action :set_registration_type, only: %i[ show edit update destroy ]
+  before_action :set_registration_type, only: %i[ edit update destroy ]
 
   # GET /registration_types or /registration_types.json
   def index
     @registration_types = RegistrationType.all
-  end
-
-  # GET /registration_types/1 or /registration_types/1.json
-  def show
   end
 
   # GET /registration_types/new
@@ -25,7 +21,7 @@ class RegistrationTypesController < ApplicationController
 
     respond_to do |format|
       if @registration_type.save
-        format.html { redirect_to @registration_type, notice: "Registration type was successfully created." }
+        format.html { redirect_to registration_types_path, notice: "Registration type was successfully created." }
         format.json { render :show, status: :created, location: @registration_type }
       else
         format.html { render :new, status: :unprocessable_entity }
@@ -38,7 +34,7 @@ class RegistrationTypesController < ApplicationController
   def update
     respond_to do |format|
       if @registration_type.update(registration_type_params)
-        format.html { redirect_to @registration_type, notice: "Registration type was successfully updated.", status: :see_other }
+        format.html { redirect_to registration_types_path, notice: "Registration type was successfully updated.", status: :see_other }
         format.json { render :show, status: :ok, location: @registration_type }
       else
         format.html { render :edit, status: :unprocessable_entity }

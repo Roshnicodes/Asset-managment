@@ -1,13 +1,9 @@
 class ServiceTypesController < ApplicationController
-  before_action :set_service_type, only: %i[ show edit update destroy ]
+  before_action :set_service_type, only: %i[ edit update destroy ]
 
   # GET /service_types or /service_types.json
   def index
     @service_types = ServiceType.all
-  end
-
-  # GET /service_types/1 or /service_types/1.json
-  def show
   end
 
   # GET /service_types/new
@@ -25,7 +21,7 @@ class ServiceTypesController < ApplicationController
 
     respond_to do |format|
       if @service_type.save
-        format.html { redirect_to @service_type, notice: "Service type was successfully created." }
+        format.html { redirect_to service_types_path, notice: "Service type was successfully created." }
         format.json { render :show, status: :created, location: @service_type }
       else
         format.html { render :new, status: :unprocessable_entity }
@@ -38,7 +34,7 @@ class ServiceTypesController < ApplicationController
   def update
     respond_to do |format|
       if @service_type.update(service_type_params)
-        format.html { redirect_to @service_type, notice: "Service type was successfully updated.", status: :see_other }
+        format.html { redirect_to service_types_path, notice: "Service type was successfully updated.", status: :see_other }
         format.json { render :show, status: :ok, location: @service_type }
       else
         format.html { render :edit, status: :unprocessable_entity }

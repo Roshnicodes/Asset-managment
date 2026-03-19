@@ -1,107 +1,108 @@
-<div id="<%= dom_id vendor_registration %>">
-  <div>
-    <strong>Registration type:</strong>
-    <%= vendor_registration.registration_type_id %>
-  </div>
+<div id="<%= dom_id vendor_registration %>" class="app-detail-card">
+  <div class="app-detail-grid">
+    <div class="app-detail-item">
+      <div class="app-detail-label">Registration Type</div>
+      <div class="app-detail-value"><%= vendor_registration.registration_type&.name %></div>
+    </div>
 
-  <div>
-    <strong>Company name:</strong>
-    <%= vendor_registration.company_name %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Firm</div>
+      <div class="app-detail-value"><%= vendor_registration.firm&.name %></div>
+    </div>
 
-  <div>
-    <strong>Firm:</strong>
-    <%= vendor_registration.firm_id %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Company Name</div>
+      <div class="app-detail-value"><%= vendor_registration.company_name %></div>
+    </div>
 
-  <div>
-    <strong>Vendor name:</strong>
-    <%= vendor_registration.vendor_name %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Vendor Name</div>
+      <div class="app-detail-value"><%= vendor_registration.vendor_name %></div>
+    </div>
 
-  <div>
-    <strong>Firm type:</strong>
-    <%= vendor_registration.firm_type %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Firm Type</div>
+      <div class="app-detail-value"><%= vendor_registration.firm_type %></div>
+    </div>
 
-  <div>
-    <strong>Gst no:</strong>
-    <%= vendor_registration.gst_no %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">GST No</div>
+      <div class="app-detail-value"><%= vendor_registration.gst_no %></div>
+    </div>
 
-  <div>
-    <strong>Pan no:</strong>
-    <%= vendor_registration.pan_no %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">PAN No</div>
+      <div class="app-detail-value"><%= vendor_registration.pan_no %></div>
+    </div>
 
-  <div>
-    <strong>Email:</strong>
-    <%= vendor_registration.email %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Email</div>
+      <div class="app-detail-value"><%= vendor_registration.email %></div>
+    </div>
 
-  <div>
-    <strong>Mobile no:</strong>
-    <%= vendor_registration.mobile_no %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Mobile No</div>
+      <div class="app-detail-value"><%= vendor_registration.mobile_no %></div>
+    </div>
 
-  <div>
-    <strong>State:</strong>
-    <%= vendor_registration.state_id %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">State</div>
+      <div class="app-detail-value"><%= vendor_registration.state&.name %></div>
+    </div>
 
-  <div>
-    <strong>District:</strong>
-    <%= vendor_registration.district_id %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">District</div>
+      <div class="app-detail-value"><%= vendor_registration.district&.name %></div>
+    </div>
 
-  <div>
-    <strong>Block:</strong>
-    <%= vendor_registration.block_id %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Block</div>
+      <div class="app-detail-value"><%= vendor_registration.block&.name %></div>
+    </div>
 
-  <div>
-    <strong>Pin no:</strong>
-    <%= vendor_registration.pin_no %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">PIN No</div>
+      <div class="app-detail-value"><%= vendor_registration.pin_no %></div>
+    </div>
 
-  <div>
-    <strong>Contact person name:</strong>
-    <%= vendor_registration.contact_person_name %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Contact Person</div>
+      <div class="app-detail-value"><%= vendor_registration.contact_person_name %></div>
+    </div>
 
-  <div>
-    <strong>Contact person designation:</strong>
-    <%= vendor_registration.contact_person_designation %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Contact Designation</div>
+      <div class="app-detail-value"><%= vendor_registration.contact_person_designation %></div>
+    </div>
 
-  <div>
-    <strong>Msme:</strong>
-    <%= vendor_registration.msme %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">MSME</div>
+      <div class="app-detail-value"><%= vendor_registration.msme ? "Yes" : "No" %></div>
+    </div>
 
-  <div>
-    <strong>Msme number:</strong>
-    <%= vendor_registration.msme_number %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">MSME Number</div>
+      <div class="app-detail-value"><%= vendor_registration.msme_number.presence || "-" %></div>
+    </div>
 
-  <div>
-    <strong>Company status:</strong>
-    <%= vendor_registration.company_status %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Company Status</div>
+      <div class="app-detail-value"><%= vendor_registration.company_status %></div>
+    </div>
 
-  <div>
-    <strong>Business description:</strong>
-    <%= vendor_registration.business_description %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Business Description</div>
+      <div class="app-detail-value"><%= vendor_registration.business_description %></div>
+    </div>
 
-  <div>
-    <strong>Submitted at:</strong>
-    <%= vendor_registration.submitted_at %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Submitted At</div>
+      <div class="app-detail-value"><%= vendor_registration.submitted_at %></div>
+    </div>
 
-  <div>
-    <strong>Submitted ip:</strong>
-    <%= vendor_registration.submitted_ip %>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Submitted IP</div>
+      <div class="app-detail-value"><%= vendor_registration.submitted_ip %></div>
+    </div>
   </div>
-
 </div>

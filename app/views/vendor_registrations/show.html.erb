@@ -1,10 +1,11 @@
-<p style="color: green"><%= notice %></p>
+<div class="app-page-header">
+  <h2>Vendor Registration Details</h2>
+  <%= link_to "Back", vendor_registrations_path, class: "app-back-link" %>
+</div>
 
 <%= render @vendor_registration %>
 
-<div>
-  <%= link_to "Edit this vendor registration", edit_vendor_registration_path(@vendor_registration) %> |
-  <%= link_to "Back to vendor registrations", vendor_registrations_path %>
-
-  <%= button_to "Destroy this vendor registration", @vendor_registration, method: :delete %>
+<div class="app-detail-actions">
+  <%= link_to "Edit", edit_vendor_registration_path(@vendor_registration), class: "app-secondary-btn" %>
+  <%= button_to "Delete", @vendor_registration, method: :delete, data: { turbo_confirm: "Delete this vendor registration?" }, class: "app-danger-btn" %>
 </div>

@@ -1,13 +1,9 @@
 class DocumentMastersController < ApplicationController
-  before_action :set_document_master, only: %i[ show edit update destroy ]
+  before_action :set_document_master, only: %i[ edit update destroy ]
 
   # GET /document_masters or /document_masters.json
   def index
     @document_masters = DocumentMaster.all
-  end
-
-  # GET /document_masters/1 or /document_masters/1.json
-  def show
   end
 
   # GET /document_masters/new
@@ -25,7 +21,7 @@ class DocumentMastersController < ApplicationController
 
     respond_to do |format|
       if @document_master.save
-        format.html { redirect_to @document_master, notice: "Document master was successfully created." }
+        format.html { redirect_to document_masters_path, notice: "Document master was successfully created." }
         format.json { render :show, status: :created, location: @document_master }
       else
         format.html { render :new, status: :unprocessable_entity }
@@ -38,7 +34,7 @@ class DocumentMastersController < ApplicationController
   def update
     respond_to do |format|
       if @document_master.update(document_master_params)
-        format.html { redirect_to @document_master, notice: "Document master was successfully updated.", status: :see_other }
+        format.html { redirect_to document_masters_path, notice: "Document master was successfully updated.", status: :see_other }
         format.json { render :show, status: :ok, location: @document_master }
       else
         format.html { render :edit, status: :unprocessable_entity }

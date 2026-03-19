@@ -1,10 +1,11 @@
-<p style="color: green"><%= notice %></p>
+<div class="app-page-header">
+  <h2>Stakeholder Details</h2>
+  <%= link_to "Back", stakeholder_categories_path, class: "app-back-link" %>
+</div>
 
 <%= render @stakeholder_category %>
 
-<div>
-  <%= link_to "Edit this stakeholder category", edit_stakeholder_category_path(@stakeholder_category) %> |
-  <%= link_to "Back to stakeholder categories", stakeholder_categories_path %>
-
-  <%= button_to "Destroy this stakeholder category", @stakeholder_category, method: :delete %>
+<div class="app-detail-actions">
+  <%= link_to "Edit", edit_stakeholder_category_path(@stakeholder_category), class: "app-secondary-btn" %>
+  <%= button_to "Delete", @stakeholder_category, method: :delete, data: { turbo_confirm: "Delete this stakeholder?" }, class: "app-danger-btn" %>
 </div>

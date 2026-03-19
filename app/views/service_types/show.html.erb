@@ -1,10 +1,11 @@
-<p style="color: green"><%= notice %></p>
+<div class="app-page-header">
+  <h2>Service Type Details</h2>
+  <%= link_to "Back", service_types_path, class: "app-back-link" %>
+</div>
 
 <%= render @service_type %>
 
-<div>
-  <%= link_to "Edit this service type", edit_service_type_path(@service_type) %> |
-  <%= link_to "Back to service types", service_types_path %>
-
-  <%= button_to "Destroy this service type", @service_type, method: :delete %>
+<div class="app-detail-actions">
+  <%= link_to "Edit", edit_service_type_path(@service_type), class: "app-secondary-btn" %>
+  <%= button_to "Delete", @service_type, method: :delete, data: { turbo_confirm: "Delete this service type?" }, class: "app-danger-btn" %>
 </div>

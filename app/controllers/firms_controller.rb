@@ -1,13 +1,9 @@
 class FirmsController < ApplicationController
-  before_action :set_firm, only: %i[ show edit update destroy ]
+  before_action :set_firm, only: %i[ edit update destroy ]
 
   # GET /firms or /firms.json
   def index
     @firms = Firm.all
-  end
-
-  # GET /firms/1 or /firms/1.json
-  def show
   end
 
   # GET /firms/new
@@ -25,7 +21,7 @@ class FirmsController < ApplicationController
 
     respond_to do |format|
       if @firm.save
-        format.html { redirect_to @firm, notice: "Firm was successfully created." }
+        format.html { redirect_to firms_path, notice: "Firm was successfully created." }
         format.json { render :show, status: :created, location: @firm }
       else
         format.html { render :new, status: :unprocessable_entity }
@@ -38,7 +34,7 @@ class FirmsController < ApplicationController
   def update
     respond_to do |format|
       if @firm.update(firm_params)
-        format.html { redirect_to @firm, notice: "Firm was successfully updated.", status: :see_other }
+        format.html { redirect_to firms_path, notice: "Firm was successfully updated.", status: :see_other }
         format.json { render :show, status: :ok, location: @firm }
       else
         format.html { render :edit, status: :unprocessable_entity }

@@ -1,27 +1,28 @@
-<div id="<%= dom_id approval_channel %>">
-  <div>
-    <strong>Form name:</strong>
-    <%= approval_channel.form_name %>
-  </div>
+<div id="<%= dom_id approval_channel %>" class="app-detail-card">
+  <div class="app-detail-grid">
+    <div class="app-detail-item">
+      <div class="app-detail-label">Form Name</div>
+      <div class="app-detail-value"><%= approval_channel.form_name %></div>
+    </div>
 
-  <div>
-    <strong>Approval type:</strong>
-    <%= approval_channel.approval_type %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Approval Type</div>
+      <div class="app-detail-value"><%= approval_channel.approval_type %></div>
+    </div>
 
-  <div>
-    <strong>Level 1 approver:</strong>
-    <%= approval_channel.level_1_approver %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Level 1 Approver</div>
+      <div class="app-detail-value"><%= approval_channel.level_1_approver.presence || "-" %></div>
+    </div>
 
-  <div>
-    <strong>Level 2 approver:</strong>
-    <%= approval_channel.level_2_approver %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Level 2 Approver</div>
+      <div class="app-detail-value"><%= approval_channel.level_2_approver.presence || "-" %></div>
+    </div>
 
-  <div>
-    <strong>Level 3 approver:</strong>
-    <%= approval_channel.level_3_approver %>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Level 3 Approver</div>
+      <div class="app-detail-value"><%= approval_channel.level_3_approver.presence || "-" %></div>
+    </div>
   </div>
-
 </div>

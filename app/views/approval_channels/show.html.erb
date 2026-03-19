@@ -1,10 +1,11 @@
-<p style="color: green"><%= notice %></p>
+<div class="app-page-header">
+  <h2>Approval Channel Details</h2>
+  <%= link_to "Back", approval_channels_path, class: "app-back-link" %>
+</div>
 
 <%= render @approval_channel %>
 
-<div>
-  <%= link_to "Edit this approval channel", edit_approval_channel_path(@approval_channel) %> |
-  <%= link_to "Back to approval channels", approval_channels_path %>
-
-  <%= button_to "Destroy this approval channel", @approval_channel, method: :delete %>
+<div class="app-detail-actions">
+  <%= link_to "Edit", edit_approval_channel_path(@approval_channel), class: "app-secondary-btn" %>
+  <%= button_to "Delete", @approval_channel, method: :delete, data: { turbo_confirm: "Delete this approval channel?" }, class: "app-danger-btn" %>
 </div>

@@ -1,12 +1,18 @@
-<div id="<%= dom_id product_variety %>">
-  <div>
-    <strong>Name:</strong>
-    <%= product_variety.name %>
-  </div>
+<div id="<%= dom_id product_variety %>" class="app-detail-card">
+  <div class="app-detail-grid">
+    <div class="app-detail-item">
+      <div class="app-detail-label">Product Variety</div>
+      <div class="app-detail-value"><%= product_variety.name %></div>
+    </div>
 
-  <div>
-    <strong>Product:</strong>
-    <%= product_variety.product_id %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Product</div>
+      <div class="app-detail-value"><%= product_variety.product&.name %></div>
+    </div>
 
+    <div class="app-detail-item">
+      <div class="app-detail-label">Theme</div>
+      <div class="app-detail-value"><%= product_variety.product&.theme&.name %></div>
+    </div>
+  </div>
 </div>

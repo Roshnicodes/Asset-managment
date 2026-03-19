@@ -1,10 +1,11 @@
-<p style="color: green"><%= notice %></p>
+<div class="app-page-header">
+  <h2>Unit Details</h2>
+  <%= link_to "Back", units_path, class: "app-back-link" %>
+</div>
 
 <%= render @unit %>
 
-<div>
-  <%= link_to "Edit this unit", edit_unit_path(@unit) %> |
-  <%= link_to "Back to units", units_path %>
-
-  <%= button_to "Destroy this unit", @unit, method: :delete %>
+<div class="app-detail-actions">
+  <%= link_to "Edit", edit_unit_path(@unit), class: "app-secondary-btn" %>
+  <%= button_to "Delete", @unit, method: :delete, data: { turbo_confirm: "Delete this unit?" }, class: "app-danger-btn" %>
 </div>

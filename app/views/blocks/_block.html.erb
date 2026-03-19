@@ -1,12 +1,18 @@
-<div id="<%= dom_id block %>">
-  <div>
-    <strong>Name:</strong>
-    <%= block.name %>
-  </div>
+<div id="<%= dom_id block %>" class="app-detail-card">
+  <div class="app-detail-grid">
+    <div class="app-detail-item">
+      <div class="app-detail-label">Block Name</div>
+      <div class="app-detail-value"><%= block.name %></div>
+    </div>
 
-  <div>
-    <strong>District:</strong>
-    <%= block.district_id %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">District</div>
+      <div class="app-detail-value"><%= block.district&.name %></div>
+    </div>
 
+    <div class="app-detail-item">
+      <div class="app-detail-label">State</div>
+      <div class="app-detail-value"><%= block.district&.state&.name %></div>
+    </div>
+  </div>
 </div>

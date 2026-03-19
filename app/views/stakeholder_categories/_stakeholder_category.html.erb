@@ -1,12 +1,13 @@
-<div id="<%= dom_id stakeholder_category %>">
-  <div>
-    <strong>Name:</strong>
-    <%= stakeholder_category.name %>
-  </div>
+<div id="<%= dom_id stakeholder_category %>" class="app-detail-card">
+  <div class="app-detail-grid">
+    <div class="app-detail-item">
+      <div class="app-detail-label">Stakeholder Name</div>
+      <div class="app-detail-value"><%= stakeholder_category.name %></div>
+    </div>
 
-  <div>
-    <strong>Office category:</strong>
-    <%= stakeholder_category.office_category_id %>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Office Category</div>
+      <div class="app-detail-value"><%= stakeholder_category.office_category&.name || "Not linked" %></div>
+    </div>
   </div>
-
 </div>

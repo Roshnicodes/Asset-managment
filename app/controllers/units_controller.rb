@@ -1,13 +1,9 @@
 class UnitsController < ApplicationController
-  before_action :set_unit, only: %i[ show edit update destroy ]
+  before_action :set_unit, only: %i[ edit update destroy ]
 
   # GET /units or /units.json
   def index
     @units = Unit.all
-  end
-
-  # GET /units/1 or /units/1.json
-  def show
   end
 
   # GET /units/new
@@ -25,7 +21,7 @@ class UnitsController < ApplicationController
 
     respond_to do |format|
       if @unit.save
-        format.html { redirect_to @unit, notice: "Unit was successfully created." }
+        format.html { redirect_to units_path, notice: "Unit was successfully created." }
         format.json { render :show, status: :created, location: @unit }
       else
         format.html { render :new, status: :unprocessable_entity }
@@ -38,7 +34,7 @@ class UnitsController < ApplicationController
   def update
     respond_to do |format|
       if @unit.update(unit_params)
-        format.html { redirect_to @unit, notice: "Unit was successfully updated.", status: :see_other }
+        format.html { redirect_to units_path, notice: "Unit was successfully updated.", status: :see_other }
         format.json { render :show, status: :ok, location: @unit }
       else
         format.html { render :edit, status: :unprocessable_entity }

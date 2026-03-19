@@ -1,10 +1,11 @@
-<p style="color: green"><%= notice %></p>
+<div class="app-page-header">
+  <h2>Registration Type Details</h2>
+  <%= link_to "Back", registration_types_path, class: "app-back-link" %>
+</div>
 
 <%= render @registration_type %>
 
-<div>
-  <%= link_to "Edit this registration type", edit_registration_type_path(@registration_type) %> |
-  <%= link_to "Back to registration types", registration_types_path %>
-
-  <%= button_to "Destroy this registration type", @registration_type, method: :delete %>
+<div class="app-detail-actions">
+  <%= link_to "Edit", edit_registration_type_path(@registration_type), class: "app-secondary-btn" %>
+  <%= button_to "Delete", @registration_type, method: :delete, data: { turbo_confirm: "Delete this registration type?" }, class: "app-danger-btn" %>
 </div>

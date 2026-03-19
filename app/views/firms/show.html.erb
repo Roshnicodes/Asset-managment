@@ -1,10 +1,11 @@
-<p style="color: green"><%= notice %></p>
+<div class="app-page-header">
+  <h2>Firm Details</h2>
+  <%= link_to "Back", firms_path, class: "app-back-link" %>
+</div>
 
 <%= render @firm %>
 
-<div>
-  <%= link_to "Edit this firm", edit_firm_path(@firm) %> |
-  <%= link_to "Back to firms", firms_path %>
-
-  <%= button_to "Destroy this firm", @firm, method: :delete %>
+<div class="app-detail-actions">
+  <%= link_to "Edit", edit_firm_path(@firm), class: "app-secondary-btn" %>
+  <%= button_to "Delete", @firm, method: :delete, data: { turbo_confirm: "Delete this firm?" }, class: "app-danger-btn" %>
 </div>

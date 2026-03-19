@@ -71,12 +71,18 @@ class VendorRegistrationsController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def vendor_registration_params
-      params.expect(vendor_registration: [
+      permitted_params = params.require(:vendor_registration).permit(
         :registration_type_id, :company_name, :firm_id, :vendor_name, :firm_type, :gst_no, :pan_no,
         :email, :mobile_no, :state_id, :district_id, :block_id, :pin_no, :contact_person_name,
         :contact_person_designation, :msme, :msme_number, :company_status, :business_description,
-        { theme_ids: [], product_ids: [], product_variety_ids: [] }
-      ])
+        theme_ids: [], product_ids: [], product_variety_ids: []
+      )
+
+      %i[theme_ids product_ids product_variety_ids].each do |association_key|
+        permitted_params[association_key] = Array(permitted_params[association_key]).reject(&:blank?)
+      end
+
+      permitted_params
     end
 
     def load_form_collections

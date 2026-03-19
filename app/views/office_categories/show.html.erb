@@ -1,10 +1,11 @@
-<p style="color: green"><%= notice %></p>
+<div class="app-page-header">
+  <h2>Office Category Details</h2>
+  <%= link_to "Back", office_categories_path, class: "app-back-link" %>
+</div>
 
 <%= render @office_category %>
 
-<div>
-  <%= link_to "Edit this office category", edit_office_category_path(@office_category) %> |
-  <%= link_to "Back to office categories", office_categories_path %>
-
-  <%= button_to "Destroy this office category", @office_category, method: :delete %>
+<div class="app-detail-actions">
+  <%= link_to "Edit", edit_office_category_path(@office_category), class: "app-secondary-btn" %>
+  <%= button_to "Delete", @office_category, method: :delete, data: { turbo_confirm: "Delete this office category?" }, class: "app-danger-btn" %>
 </div>

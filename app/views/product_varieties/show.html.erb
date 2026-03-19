@@ -1,10 +1,11 @@
-<p style="color: green"><%= notice %></p>
+<div class="app-page-header">
+  <h2>Product Variety Details</h2>
+  <%= link_to "Back", product_varieties_path, class: "app-back-link" %>
+</div>
 
 <%= render @product_variety %>
 
-<div>
-  <%= link_to "Edit this product variety", edit_product_variety_path(@product_variety) %> |
-  <%= link_to "Back to product varieties", product_varieties_path %>
-
-  <%= button_to "Destroy this product variety", @product_variety, method: :delete %>
+<div class="app-detail-actions">
+  <%= link_to "Edit", edit_product_variety_path(@product_variety), class: "app-secondary-btn" %>
+  <%= button_to "Delete", @product_variety, method: :delete, data: { turbo_confirm: "Delete this product variety?" }, class: "app-danger-btn" %>
 </div>

@@ -1,32 +1,33 @@
-<div id="<%= dom_id vendor_bank_master %>">
-  <div>
-    <strong>Vendor registration:</strong>
-    <%= vendor_bank_master.vendor_registration_id %>
-  </div>
+<div id="<%= dom_id vendor_bank_master %>" class="app-detail-card">
+  <div class="app-detail-grid">
+    <div class="app-detail-item">
+      <div class="app-detail-label">Vendor</div>
+      <div class="app-detail-value"><%= vendor_bank_master.vendor_registration&.display_name %></div>
+    </div>
 
-  <div>
-    <strong>Bank name:</strong>
-    <%= vendor_bank_master.bank_name %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Bank Name</div>
+      <div class="app-detail-value"><%= vendor_bank_master.bank_name %></div>
+    </div>
 
-  <div>
-    <strong>Bank address:</strong>
-    <%= vendor_bank_master.bank_address %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Bank Address</div>
+      <div class="app-detail-value"><%= vendor_bank_master.bank_address %></div>
+    </div>
 
-  <div>
-    <strong>Ifsc code:</strong>
-    <%= vendor_bank_master.ifsc_code %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">IFSC Code</div>
+      <div class="app-detail-value"><%= vendor_bank_master.ifsc_code %></div>
+    </div>
 
-  <div>
-    <strong>Account number:</strong>
-    <%= vendor_bank_master.account_number %>
-  </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Account Number</div>
+      <div class="app-detail-value"><%= vendor_bank_master.account_number %></div>
+    </div>
 
-  <div>
-    <strong>Account type:</strong>
-    <%= vendor_bank_master.account_type %>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Account Type</div>
+      <div class="app-detail-value"><%= vendor_bank_master.account_type %></div>
+    </div>
   </div>
-
 </div>

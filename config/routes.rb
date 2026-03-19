@@ -2,13 +2,13 @@ Rails.application.routes.draw do
   resources :vendor_registrations
   resources :vendor_bank_masters
   resources :approval_channels
-  resources :firms
+  resources :firms, except: :show
   resources :product_varieties
-  resources :service_types
-  resources :document_masters
-  resources :units
+  resources :service_types, except: :show
+  resources :document_masters, except: :show
+  resources :units, except: :show
   resources :stakeholder_categories
-  resources :registration_types
+  resources :registration_types, except: :show
   resources :office_categories
   resources :blocks
   devise_for :users

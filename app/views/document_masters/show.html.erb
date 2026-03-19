@@ -1,10 +1,11 @@
-<p style="color: green"><%= notice %></p>
+<div class="app-page-header">
+  <h2>Document Details</h2>
+  <%= link_to "Back", document_masters_path, class: "app-back-link" %>
+</div>
 
 <%= render @document_master %>
 
-<div>
-  <%= link_to "Edit this document master", edit_document_master_path(@document_master) %> |
-  <%= link_to "Back to document masters", document_masters_path %>
-
-  <%= button_to "Destroy this document master", @document_master, method: :delete %>
+<div class="app-detail-actions">
+  <%= link_to "Edit", edit_document_master_path(@document_master), class: "app-secondary-btn" %>
+  <%= button_to "Delete", @document_master, method: :delete, data: { turbo_confirm: "Delete this document?" }, class: "app-danger-btn" %>
 </div>
