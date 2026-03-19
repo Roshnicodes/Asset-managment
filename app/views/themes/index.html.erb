@@ -1,0 +1,27 @@
+<h1>Themes</h1>
+
+<%= link_to "Add Theme", new_theme_path %>
+
+<table border="1">
+
+<tr>
+<th>Name</th>
+<th>Action</th>
+</tr>
+
+<% @themes.each do |theme| %>
+
+<tr>
+
+<td><%= theme.name %></td>
+
+<td>
+<%= link_to "Edit", edit_theme_path(theme) %> |
+<%= link_to "Delete", theme, method: :delete %>
+</td>
+
+</tr>
+
+<% end %>
+
+</table>

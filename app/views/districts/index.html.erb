@@ -1,0 +1,29 @@
+<h1>Districts</h1>
+
+<%= link_to "Add District", new_district_path %>
+
+<table border="1">
+
+<tr>
+<th>Name</th>
+<th>State</th>
+<th>Action</th>
+</tr>
+
+<% @districts.each do |district| %>
+
+<tr>
+
+<td><%= district.name %></td>
+<td><%= district.state.name %></td>
+
+<td>
+<%= link_to "Edit", edit_district_path(district) %> |
+<%= link_to "Delete", district, method: :delete %>
+</td>
+
+</tr>
+
+<% end %>
+
+</table>

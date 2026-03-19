@@ -1,0 +1,17 @@
+<%= form_with(model: asset, local: true) do |f| %>
+
+  <div class="mb-3">
+    <%= f.label :name %>
+    <%= f.text_field :name, class: "form-control" %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :product_id %>
+    <%= f.collection_select :product_id, Product.all, :id, :name, {prompt: "Select Product"}, class: "form-control" %>
+  </div>
+
+  <div class="d-grid">
+    <%= f.submit "Create Asset", class: "btn btn-primary" %>
+  </div>
+
+<% end %>

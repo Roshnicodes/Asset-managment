@@ -1,0 +1,29 @@
+<h1>FCO List</h1>
+
+<%= link_to "Add FCO", new_fco_path %>
+
+<table border="1">
+
+<tr>
+<th>Name</th>
+<th>PMU</th>
+<th>Action</th>
+</tr>
+
+<% @fcos.each do |fco| %>
+
+<tr>
+
+<td><%= fco.name %></td>
+<td><%= fco.pmu.name %></td>
+
+<td>
+<%= link_to "Edit", edit_fco_path(fco) %> |
+<%= link_to "Delete", fco, method: :delete %>
+</td>
+
+</tr>
+
+<% end %>
+
+</table>

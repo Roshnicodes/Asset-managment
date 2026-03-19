@@ -1,0 +1,2 @@
+module PmusHelper
+end

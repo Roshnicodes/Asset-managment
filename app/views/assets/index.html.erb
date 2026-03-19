@@ -1,0 +1,31 @@
+<h1>Asset List</h1>
+
+<%= link_to "Add Asset", new_asset_path %>
+
+<table border="1">
+
+<tr>
+<th>Name</th>
+<th>Product</th>
+<th>Serial</th>
+<th>Action</th>
+</tr>
+
+<% @assets.each do |asset| %>
+
+<tr>
+
+<td><%= asset.name %></td>
+<td><%= asset.product.name %></td>
+<td><%= asset.serial_number %></td>
+
+<td>
+<%= link_to "Edit", edit_asset_path(asset) %> |
+<%= link_to "Delete", asset, method: :delete %>
+</td>
+
+</tr>
+
+<% end %>
+
+</table>

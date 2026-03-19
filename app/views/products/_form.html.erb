@@ -1,0 +1,17 @@
+<%= form_with(model: product, local: true) do |f| %>
+
+  <div class="mb-3">
+    <%= f.label :name %>
+    <%= f.text_field :name, class: "form-control" %>
+  </div>
+
+  <div class="mb-3">
+    <%= f.label :theme_id %>
+    <%= f.collection_select :theme_id, Theme.all, :id, :name, {prompt: "Select Theme"}, class: "form-control" %>
+  </div>
+
+  <div class="d-grid">
+    <%= f.submit class: "btn btn-primary" %>
+  </div>
+
+<% end %>

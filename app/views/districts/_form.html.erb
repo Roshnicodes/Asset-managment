@@ -1,0 +1,15 @@
+<%= form_with model:@district do |f| %>
+
+<%= f.label :name %>
+<%= f.text_field :name %>
+
+<br>
+
+<%= f.label :state %>
+<%= f.collection_select :state_id, State.all, :id, :name %>
+
+<br><br>
+
+<%= f.submit %>
+
+<% end %>

@@ -1,0 +1,30 @@
+<h1>Asset Allocation</h1>
+
+<%= link_to "Allocate Asset", new_allocation_path %>
+
+<table border="1">
+
+<tr>
+<th>Asset</th>
+<th>TO</th>
+<th>Date</th>
+<th>Action</th>
+</tr>
+
+<% @allocations.each do |allocation| %>
+
+<tr>
+
+<td><%= allocation.asset.name %></td>
+<td><%= allocation.to.name %></td>
+<td><%= allocation.allocated_at %></td>
+
+<td>
+<%= link_to "Delete", allocation, method: :delete %>
+</td>
+
+</tr>
+
+<% end %>
+
+</table>

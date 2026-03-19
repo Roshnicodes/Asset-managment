@@ -1,0 +1,26 @@
+<h1>PMU List</h1>
+
+<%= link_to "Add PMU", new_pmu_path %>
+
+<table border="1">
+<tr>
+<th>Name</th>
+<th>District</th>
+<th>Action</th>
+</tr>
+
+<% @pmus.each do |pmu| %>
+<tr>
+
+<td><%= pmu.name %></td>
+<td><%= pmu.district.name %></td>
+
+<td>
+<%= link_to "Edit", edit_pmu_path(pmu) %> |
+<%= link_to "Delete", pmu, method: :delete, data: {confirm:"Are you sure"} %>
+</td>
+
+</tr>
+<% end %>
+
+</table>

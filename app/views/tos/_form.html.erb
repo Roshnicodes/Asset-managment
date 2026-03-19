@@ -1,0 +1,15 @@
+<%= form_with model:@to do |f| %>
+
+<%= f.label :name %>
+<%= f.text_field :name %>
+
+<br><br>
+
+<%= f.label :fco %>
+<%= f.collection_select :fco_id, Fco.all, :id, :name %>
+
+<br><br>
+
+<%= f.submit %>
+
+<% end %>
