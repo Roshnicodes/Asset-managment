@@ -1,5 +1,12 @@
+<% approval_request = vendor_registration.approval_request %>
+
 <div id="<%= dom_id vendor_registration %>" class="app-detail-card">
   <div class="app-detail-grid">
+    <div class="app-detail-item">
+      <div class="app-detail-label">Stakeholder</div>
+      <div class="app-detail-value"><%= vendor_registration.stakeholder_category&.name || "-" %></div>
+    </div>
+
     <div class="app-detail-item">
       <div class="app-detail-label">Registration Type</div>
       <div class="app-detail-value"><%= vendor_registration.registration_type&.name %></div>
@@ -104,5 +111,68 @@
       <div class="app-detail-label">Submitted IP</div>
       <div class="app-detail-value"><%= vendor_registration.submitted_ip %></div>
     </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">Selected Themes</div>
+      <div class="app-detail-value"><%= vendor_registration.themes.map(&:name).presence&.join(", ") || "-" %></div>
+    </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">Selected Products</div>
+      <div class="app-detail-value"><%= vendor_registration.products.map(&:name).presence&.join(", ") || "-" %></div>
+    </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">Selected Product Varieties</div>
+      <div class="app-detail-value"><%= vendor_registration.product_varieties.map(&:name).presence&.join(", ") || "-" %></div>
+    </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">Approval Status</div>
+      <div class="app-detail-value"><%= vendor_registration.approval_request&.status&.capitalize || "Not Started" %></div>
+    </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">Current Approver</div>
+      <div class="app-detail-value"><%= vendor_registration.approval_request&.current_approver_label || "-" %></div>
+    </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">Approval Trail</div>
+      <div class="app-detail-value"><%= approval_request&.approval_history_label || "-" %></div>
+    </div>
   </div>
 </div>
+
+<% if approval_request.present? %>
+  <div class="app-detail-card app-approval-timeline-card">
+    <div class="app-page-header">
+      <h3>Approval Timeline</h3>
+    </div>
+
+    <div class="app-approval-timeline">
+      <% approval_request.approval_steps.each do |step| %>
+        <div class="app-approval-step app-approval-step--<%= step.status %>">
+          <div class="app-approval-step-head">
+            <span class="app-approval-step-level">L<%= step.level %></span>
+            <span class="app-approval-step-name"><%= step.employee_master.name %></span>
+            <span class="app-approval-step-status"><%= step.status.capitalize %></span>
+          </div>
+
+          <div class="app-approval-step-meta">
+            <span><strong>Designation:</strong> <%= step.employee_master.designation.presence || "Employee" %></span>
+            <% if step.actioned_at.present? %>
+              <span><strong>Action Time:</strong> <%= step.actioned_at.strftime("%d-%m-%Y %H:%M") %></span>
+            <% end %>
+          </div>
+
+          <% if step.remark.present? %>
+            <div class="app-approval-step-remark">
+              <strong>Remark:</strong> <%= step.remark %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>

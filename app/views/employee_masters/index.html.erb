@@ -1,9 +1,12 @@
 <div class="app-toolbar">
   <div>
     <h1>Employee Master</h1>
-    <p class="app-section-note">Manual entry and Excel / CSV upload are both available.</p>
+    <p class="app-section-note">Manual entry and Excel / CSV upload are both available. Employee email ID automatically becomes approval login ID.</p>
   </div>
-  <%= link_to "Add Employee", new_employee_master_path, class: "app-primary-btn" %>
+  <div class="app-toolbar-actions">
+    <%= button_to "Sync Approval Logins", sync_logins_employee_masters_path, method: :post, class: "app-secondary-btn" %>
+    <%= link_to "Add Employee", new_employee_master_path, class: "app-primary-btn" %>
+  </div>
 </div>
 
 <div class="app-form-card app-form-card-wide" style="margin-bottom: 1rem;">
@@ -26,6 +29,16 @@
   <% end %>
 </div>
 
+<div class="app-form-card app-form-card-wide" style="margin-bottom: 1rem;">
+  <div class="app-page-header">
+    <h3>Approval Login Flow</h3>
+  </div>
+  <p class="app-section-note" style="margin-bottom: 0;">
+    When an employee has an email ID, the system automatically creates a login for that email.
+    Default first-time password is <strong>Welcome@123</strong>. After first login, the employee can change password using Forgot Password.
+  </p>
+</div>
+
 <div class="app-table-wrap">
   <table class="table app-table">
     <thead>
@@ -36,6 +49,7 @@
         <th>Designation</th>
         <th>Location</th>
         <th>Email ID</th>
+        <th>Login Status</th>
         <th>Action</th>
       </tr>
     </thead>
@@ -48,6 +62,7 @@
           <td><%= employee_master.designation %></td>
           <td><%= employee_master.location %></td>
           <td><%= employee_master.email_id %></td>
+          <td><%= employee_master.login_ready? ? "Ready" : "Not Ready" %></td>
           <td class="app-row-actions">
             <%= link_to "Edit", edit_employee_master_path(employee_master) %> |
             <%= button_to "Delete", employee_master_path(employee_master), method: :delete, data: { turbo_confirm: "Delete this employee?" }, class: "app-action-button app-delete-button" %>

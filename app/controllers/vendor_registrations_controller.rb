@@ -29,6 +29,7 @@ class VendorRegistrationsController < ApplicationController
 
     respond_to do |format|
       if @vendor_registration.save
+        ApprovalRequestBuilder.create_for!(@vendor_registration, form_name: "Vendor Registration")
         format.html { redirect_to vendor_registrations_path, notice: "Vendor registration was successfully created." }
         format.json { render :show, status: :created, location: @vendor_registration }
       else

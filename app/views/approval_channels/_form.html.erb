@@ -10,6 +10,9 @@
         </ul>
       </div>
     <% end %>
+    <p class="app-section-note">
+      Select only those employees whose email ID is saved in Employee Master. Their login is created automatically and approvals move one level at a time.
+    </p>
 
     <div class="app-form-grid two-col">
       <div class="app-form-field">
@@ -29,17 +32,17 @@
 
       <div class="app-form-field">
         <%= form.label :level_1_approver, "Approval L1" %>
-        <%= form.text_field :level_1_approver, class: "form-control" %>
+        <%= form.collection_select :level_1_employee_id, EmployeeMaster.order(:name), :id, :name, { prompt: "Select L1 employee" }, class: "form-control" %>
       </div>
 
       <div class="app-form-field">
         <%= form.label :level_2_approver, "Approval L2" %>
-        <%= form.text_field :level_2_approver, class: "form-control" %>
+        <%= form.collection_select :level_2_employee_id, EmployeeMaster.order(:name), :id, :name, { prompt: "Select L2 employee" }, class: "form-control" %>
       </div>
 
       <div class="app-form-field">
         <%= form.label :level_3_approver, "Approval L3" %>
-        <%= form.text_field :level_3_approver, class: "form-control" %>
+        <%= form.collection_select :level_3_employee_id, EmployeeMaster.order(:name), :id, :name, { prompt: "Select L3 employee" }, class: "form-control" %>
       </div>
     </div>
 

@@ -24,6 +24,7 @@ class ApprovalChannelsController < ApplicationController
   # POST /approval_channels or /approval_channels.json
   def create
     @approval_channel = ApprovalChannel.new(approval_channel_params)
+    sync_approver_names(@approval_channel)
 
     respond_to do |format|
       if @approval_channel.save
@@ -39,6 +40,7 @@ class ApprovalChannelsController < ApplicationController
 
   # PATCH/PUT /approval_channels/1 or /approval_channels/1.json
   def update
+    sync_approver_names(@approval_channel)
     respond_to do |format|
       if @approval_channel.update(approval_channel_params)
         format.html { redirect_to approval_channels_path, notice: "Approval channel was successfully updated.", status: :see_other }
@@ -69,11 +71,18 @@ class ApprovalChannelsController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def approval_channel_params
-      params.expect(approval_channel: [ :form_name, :approval_type, :level_1_approver, :level_2_approver, :level_3_approver, :stakeholder_category_id ])
+      params.expect(approval_channel: [ :form_name, :approval_type, :level_1_approver, :level_2_approver, :level_3_approver, :stakeholder_category_id, :level_1_employee_id, :level_2_employee_id, :level_3_employee_id ])
     end
 
     def load_select_options
       @form_names = ApprovalChannel::FORM_NAMES
       @approval_types = ApprovalChannel::APPROVAL_TYPES
+    end
+
+    def sync_approver_names(approval_channel)
+      approval_channel.assign_attributes(approval_channel_params)
+      approval_channel.level_1_approver = approval_channel.level_1_employee&.name
+      approval_channel.level_2_approver = approval_channel.level_2_employee&.name
+      approval_channel.level_3_approver = approval_channel.level_3_employee&.name
     end
 end

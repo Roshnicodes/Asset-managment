@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_23_111000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_23_114500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -57,11 +57,43 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_111000) do
     t.datetime "created_at", null: false
     t.string "form_name"
     t.string "level_1_approver"
+    t.bigint "level_1_employee_id"
     t.string "level_2_approver"
+    t.bigint "level_2_employee_id"
     t.string "level_3_approver"
+    t.bigint "level_3_employee_id"
     t.bigint "stakeholder_category_id"
     t.datetime "updated_at", null: false
+    t.index ["level_1_employee_id"], name: "index_approval_channels_on_level_1_employee_id"
+    t.index ["level_2_employee_id"], name: "index_approval_channels_on_level_2_employee_id"
+    t.index ["level_3_employee_id"], name: "index_approval_channels_on_level_3_employee_id"
     t.index ["stakeholder_category_id"], name: "index_approval_channels_on_stakeholder_category_id"
+  end
+
+  create_table "approval_requests", force: :cascade do |t|
+    t.bigint "approvable_id", null: false
+    t.string "approvable_type", null: false
+    t.bigint "approval_channel_id", null: false
+    t.datetime "created_at", null: false
+    t.integer "current_level"
+    t.string "form_name", null: false
+    t.string "status", default: "pending", null: false
+    t.datetime "updated_at", null: false
+    t.index ["approvable_type", "approvable_id"], name: "index_approval_requests_on_approvable"
+    t.index ["approval_channel_id"], name: "index_approval_requests_on_approval_channel_id"
+  end
+
+  create_table "approval_steps", force: :cascade do |t|
+    t.datetime "actioned_at"
+    t.bigint "approval_request_id", null: false
+    t.datetime "created_at", null: false
+    t.bigint "employee_master_id", null: false
+    t.integer "level", null: false
+    t.text "remark"
+    t.string "status", default: "waiting", null: false
+    t.datetime "updated_at", null: false
+    t.index ["approval_request_id"], name: "index_approval_steps_on_approval_request_id"
+    t.index ["employee_master_id"], name: "index_approval_steps_on_employee_master_id"
   end
 
   create_table "assets", force: :cascade do |t|
@@ -124,6 +156,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_111000) do
     t.bigint "stakeholder_category_id"
     t.datetime "updated_at", null: false
     t.index ["stakeholder_category_id"], name: "index_firms_on_stakeholder_category_id"
+  end
+
+  create_table "notifications", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "message"
+    t.bigint "notifiable_id", null: false
+    t.string "notifiable_type", null: false
+    t.string "status", default: "unread", null: false
+    t.string "title", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["notifiable_type", "notifiable_id"], name: "index_notifications_on_notifiable"
+    t.index ["user_id"], name: "index_notifications_on_user_id"
   end
 
   create_table "office_categories", force: :cascade do |t|
@@ -316,7 +361,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_111000) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "allocations", "assets"
   add_foreign_key "allocations", "tos"
+  add_foreign_key "approval_channels", "employee_masters", column: "level_1_employee_id"
+  add_foreign_key "approval_channels", "employee_masters", column: "level_2_employee_id"
+  add_foreign_key "approval_channels", "employee_masters", column: "level_3_employee_id"
   add_foreign_key "approval_channels", "stakeholder_categories"
+  add_foreign_key "approval_requests", "approval_channels"
+  add_foreign_key "approval_steps", "approval_requests"
+  add_foreign_key "approval_steps", "employee_masters"
   add_foreign_key "assets", "products"
   add_foreign_key "blocks", "districts"
   add_foreign_key "districts", "states"
@@ -324,6 +375,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_111000) do
   add_foreign_key "employee_masters", "stakeholder_categories"
   add_foreign_key "fcos", "pmus"
   add_foreign_key "firms", "stakeholder_categories"
+  add_foreign_key "notifications", "users"
   add_foreign_key "office_categories", "stakeholder_categories"
   add_foreign_key "pmus", "blocks"
   add_foreign_key "pmus", "districts"

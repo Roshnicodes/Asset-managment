@@ -1,0 +1,89 @@
+<div class="app-toolbar">
+  <div>
+    <h1>My Approvals</h1>
+    <p class="app-section-note">Pending, approved, and rejected requests based on your employee login.</p>
+  </div>
+</div>
+
+<div class="app-page-header">
+  <h2>Pending</h2>
+</div>
+
+<div class="app-table-wrap" style="margin-bottom: 1.5rem;">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>Form</th>
+        <th>Reference</th>
+        <th>Status</th>
+        <th>Current Level</th>
+        <th>Current Approver</th>
+        <th>Approval Trail</th>
+        <th>View</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @pending_approval_requests.each do |approval_request| %>
+        <tr>
+          <td><%= approval_request.form_name %></td>
+          <td><%= approval_request.reference_label %></td>
+          <td><%= approval_request.status.capitalize %></td>
+          <td>L<%= approval_request.current_level %></td>
+          <td><%= approval_request.current_approver_label %></td>
+          <td><%= approval_request.approval_history_label %></td>
+          <td>
+            <% if approval_request.approvable.is_a?(VendorRegistration) %>
+              <%= link_to "View", vendor_registration_path(approval_request.approvable), class: "app-action-button" %>
+            <% else %>
+              -
+            <% end %>
+          </td>
+          <td>
+            <%= form_with url: approve_approval_request_path(approval_request), method: :patch, local: true, class: "d-inline" do |form| %>
+              <%= form.text_field :remark, placeholder: "Optional remark" %>
+              <%= form.submit "Approve", class: "app-form-submit" %>
+            <% end %>
+
+            <%= form_with url: reject_approval_request_path(approval_request), method: :patch, local: true, class: "d-inline" do |form| %>
+              <%= form.text_field :remark, placeholder: "Reject remark" %>
+              <%= form.submit "Reject", class: "app-action-button app-delete-button" %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<div class="app-page-header">
+  <h2>Processed</h2>
+</div>
+
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>Form</th>
+        <th>Reference</th>
+        <th>Final Status</th>
+        <th>Your Decision</th>
+        <th>Remark</th>
+        <th>Approval Trail</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @processed_approval_requests.each do |approval_request| %>
+        <% step = approval_request.approval_steps.find { |item| item.employee_master_id == current_employee_master.id && item.status != "pending" } %>
+        <tr>
+          <td><%= approval_request.form_name %></td>
+          <td><%= approval_request.reference_label %></td>
+          <td><%= approval_request.status.capitalize %></td>
+          <td><%= step&.status&.capitalize %></td>
+          <td><%= step&.remark.presence || "-" %></td>
+          <td><%= approval_request.approval_history_label %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

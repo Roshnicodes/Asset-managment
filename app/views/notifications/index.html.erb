@@ -1,0 +1,31 @@
+<div class="app-toolbar">
+  <div>
+    <h1>Notifications</h1>
+    <p class="app-section-note">Approval alerts and workflow updates.</p>
+  </div>
+</div>
+
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Message</th>
+        <th>Status</th>
+        <th>Time</th>
+        <th>Open</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @notifications.each do |notification| %>
+        <tr>
+          <td><%= notification.title %></td>
+          <td><%= notification.message %></td>
+          <td><%= notification.status.capitalize %></td>
+          <td><%= notification.created_at.strftime("%d-%m-%Y %H:%M") %></td>
+          <td><%= link_to "Open", notification_target_path(notification), class: "app-action-button" %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

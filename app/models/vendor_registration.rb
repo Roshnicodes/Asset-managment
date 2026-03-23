@@ -12,6 +12,7 @@ class VendorRegistration < ApplicationRecord
   has_many :vendor_registration_product_varieties, dependent: :destroy
   has_many :product_varieties, through: :vendor_registration_product_varieties
   has_many :vendor_bank_masters, dependent: :destroy
+  has_one :approval_request, as: :approvable, dependent: :destroy
 
   validates :vendor_name, :email, :mobile_no, :company_status, presence: true
 

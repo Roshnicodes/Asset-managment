@@ -371,6 +371,36 @@ body.auth-page-body {
   background: #fff;
 }
 
+.app-notification-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--brand-deep);
+  text-decoration: none;
+}
+
+.app-notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -2px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #b43c31;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+}
+
 .app-page-header {
   display: flex;
   align-items: center;
@@ -507,6 +537,19 @@ body.auth-page-body {
   margin-top: 1.25rem;
 }
 
+.app-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.app-field-hint {
+  display: block;
+  margin-top: 0.4rem;
+  color: var(--text-soft);
+  font-size: 0.84rem;
+}
+
 .app-form-submit {
   min-width: 140px;
   padding: 0.75rem 1.1rem;
@@ -564,6 +607,94 @@ body.auth-page-body {
   align-items: center;
   gap: 0.75rem;
   margin-top: 1.25rem;
+}
+
+.app-approval-timeline-card {
+  margin-top: 1.25rem;
+}
+
+.app-approval-timeline {
+  display: grid;
+  gap: 1rem;
+}
+
+.app-approval-step {
+  padding: 1rem 1.1rem;
+  border: 1px solid #dde9df;
+  border-left: 5px solid #b7cab9;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.app-approval-step--approved {
+  border-left-color: #3f8c5a;
+  background: #f6fcf7;
+}
+
+.app-approval-step--rejected {
+  border-left-color: #c85a4f;
+  background: #fff7f6;
+}
+
+.app-approval-step--pending {
+  border-left-color: #0d5c63;
+  background: #f4fbfb;
+}
+
+.app-approval-step--waiting {
+  border-left-color: #c7d4c8;
+  background: #fbfdfb;
+}
+
+.app-approval-step-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.55rem;
+}
+
+.app-approval-step-level {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.2rem;
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(13, 92, 99, 0.12);
+  color: var(--brand-deep);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.app-approval-step-name {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.app-approval-step-status {
+  padding: 0.24rem 0.65rem;
+  border-radius: 999px;
+  background: #eef3ef;
+  color: var(--text-soft);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.app-approval-step-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  color: var(--text-soft);
+  font-size: 0.92rem;
+}
+
+.app-approval-step-remark {
+  margin-top: 0.7rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 14px;
+  background: #f8faf8;
+  color: var(--text-main);
 }
 
 .app-secondary-btn,

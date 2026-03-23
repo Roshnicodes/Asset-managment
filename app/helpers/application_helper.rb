@@ -40,4 +40,13 @@ module ApplicationHelper
       safe_join([content_tag(:span, safe_join([app_icon(icon), content_tag(:span, label, class: "app-link-label")]), class: "app-link-wrap")])
     end
   end
+
+  def notification_target_path(notification)
+    approval_request = notification.notifiable if notification.notifiable.is_a?(ApprovalRequest)
+    approvable = approval_request&.approvable
+
+    return vendor_registration_path(approvable) if approvable.is_a?(VendorRegistration)
+
+    approval_requests_path
+  end
 end

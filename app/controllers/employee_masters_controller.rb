@@ -17,7 +17,7 @@ class EmployeeMastersController < ApplicationController
     @employee_master = EmployeeMaster.new(employee_master_params)
 
     if @employee_master.save
-      redirect_to employee_masters_path, notice: "Employee master created successfully."
+      redirect_to employee_masters_path, notice: "Employee master created successfully. Login access is ready for this employee."
     else
       render :new, status: :unprocessable_entity
     end
@@ -25,7 +25,7 @@ class EmployeeMastersController < ApplicationController
 
   def update
     if @employee_master.update(employee_master_params)
-      redirect_to employee_masters_path, notice: "Employee master updated successfully."
+      redirect_to employee_masters_path, notice: "Employee master updated successfully. Login access has been synced."
     else
       render :edit, status: :unprocessable_entity
     end
@@ -43,9 +43,19 @@ class EmployeeMastersController < ApplicationController
     end
 
     imported_count = import_rows(params[:file])
-    redirect_to employee_masters_path, notice: "#{imported_count} employees imported successfully."
+    redirect_to employee_masters_path, notice: "#{imported_count} employees imported successfully. Login access was created for employees with email IDs."
   rescue StandardError => error
     redirect_to employee_masters_path, alert: "Import failed: #{error.message}"
+  end
+
+  def sync_logins
+    synced_count = EmployeeMaster.where.not(email_id: [nil, ""]).find_each.count do |employee|
+      EmployeeLoginProvisioner.provision_for!(employee)
+    end
+
+    redirect_to employee_masters_path, notice: "#{synced_count} employee logins are ready now."
+  rescue StandardError => error
+    redirect_to employee_masters_path, alert: "Login sync failed: #{error.message}"
   end
 
   private
