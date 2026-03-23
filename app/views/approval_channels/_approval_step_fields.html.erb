@@ -1,0 +1,34 @@
+<div class="app-approval-step-row" data-approval-step-row>
+  <%= form.hidden_field :_destroy, value: "false", data: { approval_step_destroy: true } %>
+
+  <div class="app-form-grid app-approval-step-grid">
+    <div class="app-form-field">
+      <%= form.label :step_number, "Step No." %>
+      <%= form.number_field :step_number, min: 1, class: "form-control", data: { approval_step_number: true } %>
+    </div>
+
+    <div class="app-form-field">
+      <%= form.label :from_user_id, "From User" %>
+      <%= form.collection_select :from_user_id, employee_options, :id, :name, { prompt: "Blank for first step" }, class: "form-control" %>
+    </div>
+
+    <div class="app-form-field">
+      <%= form.label :to_responsible_user_id, "To Responsible User" %>
+      <%= form.collection_select :to_responsible_user_id, employee_options, :id, :name, { prompt: "Select responsible user" }, class: "form-control" %>
+    </div>
+
+    <div class="app-form-field">
+      <%= form.label :previous_action, "Previous Action" %>
+      <%= form.text_field :previous_action, class: "form-control", placeholder: "Blank for first step" %>
+    </div>
+
+    <div class="app-form-field">
+      <%= form.label :current_action, "Current Action" %>
+      <%= form.text_field :current_action, class: "form-control", placeholder: "Proposal Create / Technical Approval" %>
+    </div>
+  </div>
+
+  <div class="app-approval-step-row-actions">
+    <button type="button" class="app-action-button app-delete-button" data-remove-approval-step>Remove</button>
+  </div>
+</div>

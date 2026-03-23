@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_23_114500) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_23_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -52,6 +52,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_114500) do
     t.index ["to_id"], name: "index_allocations_on_to_id"
   end
 
+  create_table "approval_channel_steps", force: :cascade do |t|
+    t.bigint "approval_channel_id", null: false
+    t.datetime "created_at", null: false
+    t.string "current_action", null: false
+    t.bigint "from_user_id"
+    t.string "previous_action"
+    t.integer "step_number", null: false
+    t.bigint "to_responsible_user_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["approval_channel_id", "step_number"], name: "idx_on_approval_channel_id_step_number_b6413af533", unique: true
+    t.index ["approval_channel_id"], name: "index_approval_channel_steps_on_approval_channel_id"
+    t.index ["from_user_id"], name: "index_approval_channel_steps_on_from_user_id"
+    t.index ["to_responsible_user_id"], name: "index_approval_channel_steps_on_to_responsible_user_id"
+  end
+
   create_table "approval_channels", force: :cascade do |t|
     t.string "approval_type"
     t.datetime "created_at", null: false
@@ -87,13 +102,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_114500) do
     t.datetime "actioned_at"
     t.bigint "approval_request_id", null: false
     t.datetime "created_at", null: false
+    t.string "current_action"
     t.bigint "employee_master_id", null: false
+    t.bigint "from_user_id"
     t.integer "level", null: false
+    t.string "previous_action"
     t.text "remark"
     t.string "status", default: "waiting", null: false
     t.datetime "updated_at", null: false
     t.index ["approval_request_id"], name: "index_approval_steps_on_approval_request_id"
     t.index ["employee_master_id"], name: "index_approval_steps_on_employee_master_id"
+    t.index ["from_user_id"], name: "index_approval_steps_on_from_user_id"
   end
 
   create_table "assets", force: :cascade do |t|
@@ -130,16 +149,30 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_114500) do
   end
 
   create_table "employee_masters", force: :cascade do |t|
+    t.bigint "block_id"
     t.datetime "created_at", null: false
     t.string "designation"
+    t.bigint "district_id"
     t.string "email_id"
-    t.string "employee_code", null: false
+    t.string "employee_code"
+    t.text "full_address"
+    t.string "gram_panchayat"
     t.string "location"
+    t.string "mobile_no"
     t.string "name", null: false
+    t.string "office"
+    t.string "parent_office"
+    t.string "pincode"
     t.bigint "stakeholder_category_id", null: false
+    t.bigint "state_id"
     t.datetime "updated_at", null: false
+    t.string "user_type"
+    t.string "village"
+    t.index ["block_id"], name: "index_employee_masters_on_block_id"
+    t.index ["district_id"], name: "index_employee_masters_on_district_id"
     t.index ["employee_code"], name: "index_employee_masters_on_employee_code", unique: true
     t.index ["stakeholder_category_id"], name: "index_employee_masters_on_stakeholder_category_id"
+    t.index ["state_id"], name: "index_employee_masters_on_state_id"
   end
 
   create_table "fcos", force: :cascade do |t|
@@ -361,6 +394,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_114500) do
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "allocations", "assets"
   add_foreign_key "allocations", "tos"
+  add_foreign_key "approval_channel_steps", "approval_channels"
+  add_foreign_key "approval_channel_steps", "employee_masters", column: "from_user_id"
+  add_foreign_key "approval_channel_steps", "employee_masters", column: "to_responsible_user_id"
   add_foreign_key "approval_channels", "employee_masters", column: "level_1_employee_id"
   add_foreign_key "approval_channels", "employee_masters", column: "level_2_employee_id"
   add_foreign_key "approval_channels", "employee_masters", column: "level_3_employee_id"
@@ -368,11 +404,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_114500) do
   add_foreign_key "approval_requests", "approval_channels"
   add_foreign_key "approval_steps", "approval_requests"
   add_foreign_key "approval_steps", "employee_masters"
+  add_foreign_key "approval_steps", "employee_masters", column: "from_user_id"
   add_foreign_key "assets", "products"
   add_foreign_key "blocks", "districts"
   add_foreign_key "districts", "states"
   add_foreign_key "document_masters", "stakeholder_categories"
+  add_foreign_key "employee_masters", "blocks"
+  add_foreign_key "employee_masters", "districts"
   add_foreign_key "employee_masters", "stakeholder_categories"
+  add_foreign_key "employee_masters", "states"
   add_foreign_key "fcos", "pmus"
   add_foreign_key "firms", "stakeholder_categories"
   add_foreign_key "notifications", "users"

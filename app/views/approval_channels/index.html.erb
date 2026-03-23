@@ -9,23 +9,33 @@
     <tr>
       <th>Form Name</th>
       <th>Stakeholder</th>
-      <th>Approval Type</th>
-      <th>Configured Approvers</th>
+      <th>From User</th>
+      <th>To Responsible User</th>
+      <th>Previous Action</th>
+      <th>Current Action</th>
       <th>Action</th>
     </tr>
   </thead>
   <tbody>
     <% @approval_channels.each do |approval_channel| %>
-      <tr>
-        <td><%= approval_channel.form_name %></td>
-        <td><%= approval_channel.stakeholder_category&.name || "-" %></td>
-        <td><%= approval_channel.approval_type %></td>
-        <td><%= approval_channel.configured_levels_label.presence || "-" %></td>
-        <td class="app-row-actions">
-          <%= link_to "Edit", edit_approval_channel_path(approval_channel) %> |
-          <%= button_to "Delete", approval_channel_path(approval_channel), method: :delete, data: { turbo_confirm: "Delete this approval channel?" }, class: "app-action-button app-delete-button" %>
-        </td>
-      </tr>
+      <% approval_channel.flow_steps.each_with_index do |step, index| %>
+        <tr>
+          <% if index.zero? %>
+            <td rowspan="<%= approval_channel.flow_steps.size %>"><%= approval_channel.form_name %></td>
+            <td rowspan="<%= approval_channel.flow_steps.size %>"><%= approval_channel.stakeholder_category&.name || "-" %></td>
+          <% end %>
+          <td><%= step.try(:from_user)&.name || "Blank" %></td>
+          <td><%= step.to_responsible_user.name %></td>
+          <td><%= step.previous_action.presence || "Blank" %></td>
+          <td><%= step.current_action %></td>
+          <% if index.zero? %>
+            <td rowspan="<%= approval_channel.flow_steps.size %>" class="app-row-actions">
+              <%= link_to "Edit", edit_approval_channel_path(approval_channel) %> |
+              <%= button_to "Delete", approval_channel_path(approval_channel), method: :delete, data: { turbo_confirm: "Delete this approval channel?" }, class: "app-action-button app-delete-button" %>
+            </td>
+          <% end %>
+        </tr>
+      <% end %>
     <% end %>
   </tbody>
 </table>

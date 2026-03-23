@@ -18,6 +18,7 @@
         <th>Status</th>
         <th>Current Level</th>
         <th>Current Approver</th>
+        <th>Current Action</th>
         <th>Approval Trail</th>
         <th>View</th>
         <th>Action</th>
@@ -31,6 +32,7 @@
           <td><%= approval_request.status.capitalize %></td>
           <td>L<%= approval_request.current_level %></td>
           <td><%= approval_request.current_approver_label %></td>
+          <td><%= approval_request.current_step&.current_action_label || "-" %></td>
           <td><%= approval_request.approval_history_label %></td>
           <td>
             <% if approval_request.approvable.is_a?(VendorRegistration) %>

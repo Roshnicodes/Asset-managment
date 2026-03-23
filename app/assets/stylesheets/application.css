@@ -697,6 +697,25 @@ body.auth-page-body {
   color: var(--text-main);
 }
 
+.app-approval-step-row {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid #dfeae1;
+  border-radius: 20px;
+  background: #fff;
+}
+
+.app-approval-step-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.app-approval-step-row-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+
 .app-secondary-btn,
 .app-danger-btn {
   display: inline-flex;

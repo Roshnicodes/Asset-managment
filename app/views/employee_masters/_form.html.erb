@@ -11,19 +11,19 @@
       </div>
     <% end %>
 
-    <div class="app-form-grid two-col">
+    <div class="app-form-grid three-col">
       <div class="app-form-field">
         <%= form.label :stakeholder_category_id, "Stakeholder" %>
         <%= form.collection_select :stakeholder_category_id, StakeholderCategory.order(:name), :id, :name, { prompt: "Select stakeholder" } %>
       </div>
 
       <div class="app-form-field">
-        <%= form.label :employee_code, "Employee ID" %>
-        <%= form.text_field :employee_code %>
+        <%= form.label :user_type, "User Type" %>
+        <%= form.select :user_type, EmployeeMaster::USER_TYPES, { prompt: "Select user type" } %>
       </div>
 
       <div class="app-form-field">
-        <%= form.label :name, "Employee Name" %>
+        <%= form.label :name, "User Name" %>
         <%= form.text_field :name %>
       </div>
 
@@ -33,14 +33,75 @@
       </div>
 
       <div class="app-form-field">
+        <%= form.label :email_id, "Email ID" %>
+        <%= form.email_field :email_id %>
+        <small class="app-field-hint">This email will be used as the employee approval login.</small>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :password, "Password" %>
+        <%= form.password_field :password, autocomplete: "new-password" %>
+        <small class="app-field-hint">Leave blank to use the default password.</small>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :password_confirmation, "Confirmed Password" %>
+        <%= form.password_field :password_confirmation, autocomplete: "new-password" %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :mobile_no, "Mobile No" %>
+        <%= form.telephone_field :mobile_no %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :state_id, "State" %>
+        <%= form.collection_select :state_id, @states || State.order(:name), :id, :name, { prompt: "Select state" } %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :district_id, "District" %>
+        <%= form.collection_select :district_id, @districts || District.order(:name), :id, :name, { prompt: "Select district" } %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :block_id, "Block" %>
+        <%= form.collection_select :block_id, @blocks || Block.order(:name), :id, :name, { prompt: "Select block" } %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :gram_panchayat, "Gram Panchayat" %>
+        <%= form.text_field :gram_panchayat %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :village, "Village" %>
+        <%= form.text_field :village %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :parent_office, "Parent Office" %>
+        <%= form.text_field :parent_office %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :office, "Office" %>
+        <%= form.text_field :office %>
+      </div>
+
+      <div class="app-form-field">
         <%= form.label :location, "Employee Location" %>
         <%= form.text_field :location %>
       </div>
 
       <div class="app-form-field">
-        <%= form.label :email_id, "Employee Email ID" %>
-        <%= form.email_field :email_id %>
-        <small class="app-field-hint">This email will be used as the employee approval login.</small>
+        <%= form.label :pincode, "Pincode" %>
+        <%= form.text_field :pincode %>
+      </div>
+
+      <div class="app-form-field" style="grid-column: 1 / -1;">
+        <%= form.label :full_address, "Full Address" %>
+        <%= form.text_area :full_address, rows: 4 %>
       </div>
     </div>
 

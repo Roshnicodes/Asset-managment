@@ -8,9 +8,11 @@ class EmployeeMastersController < ApplicationController
 
   def new
     @employee_master = EmployeeMaster.new
+    load_location_collections
   end
 
   def edit
+    load_location_collections
   end
 
   def create
@@ -19,6 +21,7 @@ class EmployeeMastersController < ApplicationController
     if @employee_master.save
       redirect_to employee_masters_path, notice: "Employee master created successfully. Login access is ready for this employee."
     else
+      load_location_collections
       render :new, status: :unprocessable_entity
     end
   end
@@ -27,6 +30,7 @@ class EmployeeMastersController < ApplicationController
     if @employee_master.update(employee_master_params)
       redirect_to employee_masters_path, notice: "Employee master updated successfully. Login access has been synced."
     else
+      load_location_collections
       render :edit, status: :unprocessable_entity
     end
   end
@@ -65,7 +69,11 @@ class EmployeeMastersController < ApplicationController
   end
 
   def employee_master_params
-    params.require(:employee_master).permit(:stakeholder_category_id, :employee_code, :name, :designation, :location, :email_id)
+    params.require(:employee_master).permit(
+      :stakeholder_category_id, :user_type, :name, :designation, :email_id, :password, :password_confirmation,
+      :mobile_no, :state_id, :district_id, :block_id, :gram_panchayat, :village, :parent_office, :office,
+      :location, :full_address, :pincode
+    )
   end
 
   def import_rows(file)
@@ -77,13 +85,36 @@ class EmployeeMastersController < ApplicationController
       next if row.values.all?(&:blank?)
 
       stakeholder = StakeholderCategory.find_by(name: row["stakeholder"].to_s.strip)
-      employee = EmployeeMaster.find_or_initialize_by(employee_code: row["employee_id"].to_s.strip)
+      state = State.find_by(name: row["state"].to_s.strip)
+      district = District.find_by(name: row["district"].to_s.strip)
+      block = Block.find_by(name: row["block"].to_s.strip)
+      lookup_email = row["email_id"].presence || row["employee_email_id"].presence
+
+      employee = if lookup_email.present?
+        EmployeeMaster.find_or_initialize_by(email_id: lookup_email.to_s.strip)
+      elsif row["employee_id"].present?
+        EmployeeMaster.find_or_initialize_by(employee_code: row["employee_id"].to_s.strip)
+      else
+        EmployeeMaster.find_or_initialize_by(name: row["user_name"].presence || row["employee_name"].to_s.strip)
+      end
+
       employee.assign_attributes(
         stakeholder_category: stakeholder,
-        name: row["employee_name"],
+        user_type: row["user_type"].presence || "User",
+        name: row["user_name"].presence || row["employee_name"],
         designation: row["designation"],
         location: row["employee_location"] || row["location"],
-        email_id: row["employee_email_id"]
+        email_id: lookup_email,
+        mobile_no: row["mobile_no"],
+        state: state,
+        district: district,
+        block: block,
+        gram_panchayat: row["gram_panchayat"],
+        village: row["village"],
+        parent_office: row["parent_office"],
+        office: row["office"],
+        full_address: row["full_address"],
+        pincode: row["pincode"]
       )
       employee.save!
       imported_count += 1
@@ -119,12 +150,30 @@ class EmployeeMastersController < ApplicationController
 
     case value
     when "stakeholder" then "stakeholder"
+    when "user type", "user_type" then "user_type"
     when "employee id", "employee_id", "emp id", "emp_id" then "employee_id"
+    when "user name", "user_name" then "user_name"
     when "employee name", "employee_name", "emp name", "emp_name" then "employee_name"
     when "designation" then "designation"
     when "employee location", "employee_location", "location" then "employee_location"
     when "employee email id", "employee_email_id", "email", "email id" then "employee_email_id"
+    when "mobile", "mobile no", "mobile_no", "phone" then "mobile_no"
+    when "state" then "state"
+    when "district" then "district"
+    when "block" then "block"
+    when "gram panchayat", "gram_panchayat" then "gram_panchayat"
+    when "village" then "village"
+    when "parent office", "parent_office" then "parent_office"
+    when "office" then "office"
+    when "full address", "full_address", "address" then "full_address"
+    when "pincode", "pin code", "pin" then "pincode"
     else value.tr(" ", "_")
     end
+  end
+
+  def load_location_collections
+    @states = State.order(:name)
+    @districts = District.includes(:state).order(:name)
+    @blocks = Block.includes(district: :state).order(:name)
   end
 end

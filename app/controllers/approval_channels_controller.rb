@@ -13,6 +13,8 @@ class ApprovalChannelsController < ApplicationController
   # GET /approval_channels/new
   def new
     @approval_channel = ApprovalChannel.new
+    @approval_channel.approval_type = "Sequential"
+    @approval_channel.approval_channel_steps.build(step_number: 1, current_action: "Proposal Create")
     load_select_options
   end
 
@@ -24,7 +26,6 @@ class ApprovalChannelsController < ApplicationController
   # POST /approval_channels or /approval_channels.json
   def create
     @approval_channel = ApprovalChannel.new(approval_channel_params)
-    sync_approver_names(@approval_channel)
 
     respond_to do |format|
       if @approval_channel.save
@@ -40,7 +41,6 @@ class ApprovalChannelsController < ApplicationController
 
   # PATCH/PUT /approval_channels/1 or /approval_channels/1.json
   def update
-    sync_approver_names(@approval_channel)
     respond_to do |format|
       if @approval_channel.update(approval_channel_params)
         format.html { redirect_to approval_channels_path, notice: "Approval channel was successfully updated.", status: :see_other }
@@ -71,18 +71,17 @@ class ApprovalChannelsController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def approval_channel_params
-      params.expect(approval_channel: [ :form_name, :approval_type, :level_1_approver, :level_2_approver, :level_3_approver, :stakeholder_category_id, :level_1_employee_id, :level_2_employee_id, :level_3_employee_id ])
+      params.require(:approval_channel).permit(
+        :form_name,
+        :approval_type,
+        :stakeholder_category_id,
+        approval_channel_steps_attributes: [:id, :step_number, :from_user_id, :to_responsible_user_id, :previous_action, :current_action, :_destroy]
+      )
     end
 
     def load_select_options
       @form_names = ApprovalChannel::FORM_NAMES
       @approval_types = ApprovalChannel::APPROVAL_TYPES
-    end
-
-    def sync_approver_names(approval_channel)
-      approval_channel.assign_attributes(approval_channel_params)
-      approval_channel.level_1_approver = approval_channel.level_1_employee&.name
-      approval_channel.level_2_approver = approval_channel.level_2_employee&.name
-      approval_channel.level_3_approver = approval_channel.level_3_employee&.name
+      @employee_options = EmployeeMaster.order(:name)
     end
 end

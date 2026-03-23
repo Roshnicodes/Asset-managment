@@ -6,15 +6,15 @@ class NotificationDispatcher
     reference_name = approval_request.reference_label
     message =
       if previous_step.present?
-        "#{reference_name} was approved by #{previous_step.employee_master.name} and is now waiting for your L#{approval_step.level} approval."
+        "#{reference_name} moved from #{previous_step.current_action_label} to #{approval_step.current_action_label} after approval by #{previous_step.employee_master.name}."
       else
-        "#{reference_name} has been submitted and is waiting for your L#{approval_step.level} approval."
+        "#{reference_name} has been submitted and is waiting for your action: #{approval_step.current_action_label}."
       end
 
     Notification.create!(
       user: user,
       notifiable: approval_request,
-      title: "#{approval_request.form_name} approval pending",
+      title: "#{approval_request.form_name} - #{approval_step.current_action_label}",
       message: message
     )
   end

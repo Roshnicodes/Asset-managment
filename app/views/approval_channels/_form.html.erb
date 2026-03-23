@@ -11,7 +11,8 @@
       </div>
     <% end %>
     <p class="app-section-note">
-      Select only those employees whose email ID is saved in Employee Master. Their login is created automatically and approvals move one level at a time.
+      Configure dynamic approval flow using From User, To Responsible User, Previous Action, and Current Action.
+      First step can keep Previous Action blank. Each next step should carry forward the previous Current Action.
     </p>
 
     <div class="app-form-grid two-col">
@@ -21,28 +22,32 @@
       </div>
 
       <div class="app-form-field">
-        <%= form.label :approval_type, "Approval Type" %>
-        <%= form.select :approval_type, @approval_types, { prompt: "Select approval type" }, class: "form-control" %>
-      </div>
-
-      <div class="app-form-field">
         <%= form.label :stakeholder_category_id, "Stakeholder" %>
         <%= form.collection_select :stakeholder_category_id, StakeholderCategory.order(:name), :id, :name, { prompt: "Select stakeholder" }, class: "form-control" %>
       </div>
+    </div>
 
-      <div class="app-form-field">
-        <%= form.label :level_1_approver, "Approval L1" %>
-        <%= form.collection_select :level_1_employee_id, EmployeeMaster.order(:name), :id, :name, { prompt: "Select L1 employee" }, class: "form-control" %>
+    <%= form.hidden_field :approval_type, value: approval_channel.approval_type.presence || "Sequential" %>
+
+    <div class="app-page-header" style="margin-top: 1rem;">
+      <h3>Approval Channel Configuration</h3>
+    </div>
+
+    <div class="app-approval-channel-steps" data-approval-steps>
+      <div class="app-approval-step-list" data-approval-step-list>
+        <%= form.fields_for :approval_channel_steps do |step_form| %>
+          <%= render "approval_step_fields", form: step_form, employee_options: @employee_options %>
+        <% end %>
       </div>
 
-      <div class="app-form-field">
-        <%= form.label :level_2_approver, "Approval L2" %>
-        <%= form.collection_select :level_2_employee_id, EmployeeMaster.order(:name), :id, :name, { prompt: "Select L2 employee" }, class: "form-control" %>
-      </div>
+      <template data-approval-step-template>
+        <%= form.fields_for :approval_channel_steps, ApprovalChannelStep.new, child_index: "NEW_RECORD" do |step_form| %>
+          <%= render "approval_step_fields", form: step_form, employee_options: @employee_options %>
+        <% end %>
+      </template>
 
-      <div class="app-form-field">
-        <%= form.label :level_3_approver, "Approval L3" %>
-        <%= form.collection_select :level_3_employee_id, EmployeeMaster.order(:name), :id, :name, { prompt: "Select L3 employee" }, class: "form-control" %>
+      <div class="app-form-actions" style="justify-content: flex-start;">
+        <button type="button" class="app-secondary-btn" data-add-approval-step>Add Step</button>
       </div>
     </div>
 

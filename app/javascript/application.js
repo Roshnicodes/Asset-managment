@@ -65,5 +65,50 @@ const setupTableSearch = () => {
   })
 }
 
+const setupApprovalChannelSteps = () => {
+  document.querySelectorAll("[data-approval-steps]").forEach((container) => {
+    if (container.dataset.ready === "true") return
+
+    const list = container.querySelector("[data-approval-step-list]")
+    const template = container.querySelector("[data-approval-step-template]")
+    const addButton = container.querySelector("[data-add-approval-step]")
+    if (!list || !template || !addButton) return
+
+    const renumberSteps = () => {
+      list.querySelectorAll("[data-approval-step-row]").forEach((row, index) => {
+        const stepInput = row.querySelector("[data-approval-step-number]")
+        if (stepInput && !stepInput.value) stepInput.value = index + 1
+      })
+    }
+
+    addButton.addEventListener("click", () => {
+      const uniqueKey = `${Date.now()}-${Math.floor(Math.random() * 1000)}`
+      const html = template.innerHTML.replace(/NEW_RECORD/g, uniqueKey)
+      list.insertAdjacentHTML("beforeend", html)
+      renumberSteps()
+    })
+
+    container.addEventListener("click", (event) => {
+      const removeButton = event.target.closest("[data-remove-approval-step]")
+      if (!removeButton) return
+
+      const row = removeButton.closest("[data-approval-step-row]")
+      if (!row) return
+
+      const destroyField = row.querySelector("[data-approval-step-destroy]")
+      if (destroyField) {
+        destroyField.value = "1"
+        row.style.display = "none"
+      } else {
+        row.remove()
+      }
+    })
+
+    renumberSteps()
+    container.dataset.ready = "true"
+  })
+}
+
 document.addEventListener("turbo:load", setupVendorRegistrationSelections)
 document.addEventListener("turbo:load", setupTableSearch)
+document.addEventListener("turbo:load", setupApprovalChannelSteps)

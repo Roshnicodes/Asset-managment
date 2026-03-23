@@ -16,12 +16,14 @@ class ApprovalRequest < ApplicationRecord
   end
 
   def current_approver_label
-    current_step&.action_label || "-"
+    return "-" unless current_step
+
+    "#{current_step.action_label} - #{current_step.current_action_label}"
   end
 
   def approval_history_label
     approval_steps.map do |step|
-      detail = "L#{step.level} #{step.action_label}: #{step.status.capitalize}"
+      detail = "Step #{step.level} #{step.action_label} [#{step.previous_action_label} -> #{step.current_action_label}]: #{step.status.capitalize}"
       detail = "#{detail} on #{step.actioned_at.strftime('%d-%m-%Y %H:%M')}" if step.actioned_at.present?
       step.remark.present? ? "#{detail} (#{step.remark})" : detail
     end.join(" | ")

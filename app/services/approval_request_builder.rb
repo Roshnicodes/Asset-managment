@@ -5,13 +5,8 @@ class ApprovalRequestBuilder
 
     return nil unless approval_channel
 
-    employees = [
-      approval_channel.level_1_employee,
-      approval_channel.level_2_employee,
-      approval_channel.level_3_employee
-    ].compact
-
-    return nil if employees.empty?
+    channel_steps = approval_channel.flow_steps
+    return nil if channel_steps.empty?
 
     approval_request = ApprovalRequest.create!(
       approval_channel: approval_channel,
@@ -21,10 +16,13 @@ class ApprovalRequestBuilder
       current_level: 1
     )
 
-    employees.each_with_index do |employee, index|
+    channel_steps.each_with_index do |channel_step, index|
       approval_request.approval_steps.create!(
-        employee_master: employee,
-        level: index + 1,
+        employee_master: channel_step.to_responsible_user,
+        from_user: channel_step.try(:from_user),
+        previous_action: channel_step.previous_action,
+        current_action: channel_step.current_action,
+        level: channel_step.step_number || index + 1,
         status: index.zero? ? "pending" : "waiting"
       )
     end

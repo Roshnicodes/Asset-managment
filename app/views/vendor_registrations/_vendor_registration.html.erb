@@ -160,6 +160,8 @@
           </div>
 
           <div class="app-approval-step-meta">
+            <span><strong>Previous Action:</strong> <%= step.previous_action_label %></span>
+            <span><strong>Current Action:</strong> <%= step.current_action_label %></span>
             <span><strong>Designation:</strong> <%= step.employee_master.designation.presence || "Employee" %></span>
             <% if step.actioned_at.present? %>
               <span><strong>Action Time:</strong> <%= step.actioned_at.strftime("%d-%m-%Y %H:%M") %></span>
