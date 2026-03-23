@@ -285,6 +285,22 @@ body.auth-page-body {
   box-shadow: 0 16px 38px rgba(44, 69, 54, 0.05);
 }
 
+.app-table-search {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.8rem;
+}
+
+.app-table-search-input {
+  width: min(320px, 100%);
+  min-height: 44px;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #cfe0d2;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--text-main);
+}
+
 .app-table {
   margin: 0;
 }
@@ -315,6 +331,44 @@ body.auth-page-body {
 
 .app-row-actions a:last-child {
   color: #b43c31;
+}
+
+.app-row-actions form {
+  display: inline;
+}
+
+.app-row-actions .app-action-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--brand-deep);
+  font-weight: 600;
+}
+
+.app-row-actions .app-action-button.app-delete-button {
+  color: #b43c31;
+}
+
+.app-stakeholder-logo-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--border-soft);
+  background: #fff;
+}
+
+.app-logo-preview {
+  margin-top: 1rem;
+}
+
+.app-stakeholder-logo-preview {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background: #fff;
 }
 
 .app-page-header {

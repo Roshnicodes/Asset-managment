@@ -23,6 +23,11 @@
       </div>
 
       <div class="app-form-field">
+        <%= form.label :stakeholder_category_id, "Stakeholder" %>
+        <%= form.collection_select :stakeholder_category_id, StakeholderCategory.order(:name), :id, :name, { prompt: "Select stakeholder" }, class: "form-control" %>
+      </div>
+
+      <div class="app-form-field">
         <%= form.label :level_1_approver, "Approval L1" %>
         <%= form.text_field :level_1_approver, class: "form-control" %>
       </div>

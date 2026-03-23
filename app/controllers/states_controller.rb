@@ -4,6 +4,10 @@ class StatesController < ApplicationController
     @states = State.all
   end
 
+  def show
+    redirect_to states_path
+  end
+
   def new
     @state = State.new
   end

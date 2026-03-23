@@ -5,6 +5,11 @@
         <%= f.label :name, "Thematic Type Name" %>
         <%= f.text_field :name, class: "form-control" %>
       </div>
+
+      <div class="app-form-field">
+        <%= f.label :stakeholder_category_id, "Stakeholder" %>
+        <%= f.collection_select :stakeholder_category_id, StakeholderCategory.order(:name), :id, :name, { prompt: "Select stakeholder" } %>
+      </div>
     </div>
 
     <div class="app-form-actions">

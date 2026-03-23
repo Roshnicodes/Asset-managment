@@ -1,5 +1,10 @@
 Rails.application.routes.draw do
   resources :vendor_registrations
+  resources :employee_masters do
+    collection do
+      post :import
+    end
+  end
   resources :vendor_bank_masters
   resources :approval_channels
   resources :firms, except: :show

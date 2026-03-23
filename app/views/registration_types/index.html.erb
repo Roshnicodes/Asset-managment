@@ -17,7 +17,7 @@
           <td><%= registration_type.name %></td>
           <td class="app-row-actions">
             <%= link_to "Edit", edit_registration_type_path(registration_type) %> |
-            <%= link_to "Delete", registration_type, method: :delete, data: { turbo_confirm: "Delete this registration type?" } %>
+            <%= button_to "Delete", registration_type_path(registration_type), method: :delete, data: { turbo_confirm: "Delete this registration type?" }, class: "app-action-button app-delete-button" %>
           </td>
         </tr>
       <% end %>

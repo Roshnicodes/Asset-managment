@@ -61,6 +61,6 @@ class RegistrationTypesController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def registration_type_params
-      params.expect(registration_type: [ :name ])
+      params.expect(registration_type: [ :name, :stakeholder_category_id ])
     end
 end

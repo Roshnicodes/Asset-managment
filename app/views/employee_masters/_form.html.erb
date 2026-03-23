@@ -1,0 +1,50 @@
+<%= form_with(model: employee_master) do |form| %>
+  <div class="app-form-card">
+    <% if employee_master.errors.any? %>
+      <div class="app-form-errors">
+        <h2><%= pluralize(employee_master.errors.count, "error") %> found</h2>
+        <ul>
+          <% employee_master.errors.each do |error| %>
+            <li><%= error.full_message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="app-form-grid two-col">
+      <div class="app-form-field">
+        <%= form.label :stakeholder_category_id, "Stakeholder" %>
+        <%= form.collection_select :stakeholder_category_id, StakeholderCategory.order(:name), :id, :name, { prompt: "Select stakeholder" } %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :employee_code, "Employee ID" %>
+        <%= form.text_field :employee_code %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :name, "Employee Name" %>
+        <%= form.text_field :name %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :designation, "Designation" %>
+        <%= form.text_field :designation %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :location, "Employee Location" %>
+        <%= form.text_field :location %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :email_id, "Employee Email ID" %>
+        <%= form.email_field :email_id %>
+      </div>
+    </div>
+
+    <div class="app-form-actions">
+      <%= form.submit "Save Employee", class: "app-form-submit" %>
+    </div>
+  </div>
+<% end %>

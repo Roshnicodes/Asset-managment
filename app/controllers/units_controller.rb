@@ -61,6 +61,6 @@ class UnitsController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def unit_params
-      params.expect(unit: [ :name ])
+      params.expect(unit: [ :name, :stakeholder_category_id ])
     end
 end

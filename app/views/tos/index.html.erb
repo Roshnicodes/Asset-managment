@@ -7,19 +7,27 @@
   <table class="table app-table">
     <thead>
       <tr>
-        <th>TO Name</th>
+        <th>State</th>
+        <th>District</th>
+        <th>Block</th>
+        <th>PMU</th>
         <th>FCO</th>
+        <th>TO Name</th>
         <th>Action</th>
       </tr>
     </thead>
     <tbody>
       <% @tos.each do |to| %>
         <tr>
-          <td><%= to.name %></td>
+          <td><%= to.state.name %></td>
+          <td><%= to.district.name %></td>
+          <td><%= to.block&.name || "-" %></td>
+          <td><%= to.fco.pmu.name %></td>
           <td><%= to.fco.name %></td>
+          <td><%= to.name %></td>
           <td class="app-row-actions">
             <%= link_to "Edit", edit_to_path(to) %> |
-            <%= link_to "Delete", to, method: :delete, data: { turbo_confirm: "Delete this TO?" } %>
+            <%= button_to "Delete", to_path(to), method: :delete, data: { turbo_confirm: "Delete this TO?" }, class: "app-action-button app-delete-button" %>
           </td>
         </tr>
       <% end %>

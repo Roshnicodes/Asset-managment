@@ -11,6 +11,10 @@
     <thead>
       <tr>
         <th>Stakeholder Name</th>
+        <th>Contact No</th>
+        <th>Email ID</th>
+        <th>Logo</th>
+        <th>Address</th>
         <th>Action</th>
       </tr>
     </thead>
@@ -18,9 +22,21 @@
       <% @stakeholder_categories.each do |stakeholder_category| %>
         <tr>
           <td><%= stakeholder_category.name %></td>
+          <td><%= stakeholder_category.contact_no %></td>
+          <td><%= stakeholder_category.email_id %></td>
+          <td>
+            <% if stakeholder_category.logo_file.attached? %>
+              <%= image_tag stakeholder_category.logo_file, class: "app-stakeholder-logo-thumb", alt: "Stakeholder logo" %>
+            <% elsif stakeholder_category.logo_url.present? %>
+              <%= image_tag stakeholder_category.logo_url, class: "app-stakeholder-logo-thumb", alt: "Stakeholder logo" %>
+            <% else %>
+              -
+            <% end %>
+          </td>
+          <td><%= stakeholder_category.address %></td>
           <td class="app-row-actions">
             <%= link_to "Edit", edit_stakeholder_category_path(stakeholder_category) %> |
-            <%= link_to "Delete", stakeholder_category, method: :delete, data: { turbo_confirm: "Delete this stakeholder category?" } %>
+            <%= button_to "Delete", stakeholder_category_path(stakeholder_category), method: :delete, data: { turbo_confirm: "Delete this stakeholder category?" }, class: "app-action-button app-delete-button" %>
           </td>
         </tr>
       <% end %>

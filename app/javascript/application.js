@@ -36,4 +36,34 @@ const setupVendorRegistrationSelections = () => {
   syncSelections()
 }
 
+const setupTableSearch = () => {
+  document.querySelectorAll(".app-table-wrap").forEach((tableWrap, index) => {
+    if (tableWrap.dataset.searchReady === "true") return
+
+    const table = tableWrap.querySelector("table")
+    const tbody = tableWrap.querySelector("tbody")
+    if (!table || !tbody) return
+
+    const searchBar = document.createElement("div")
+    searchBar.className = "app-table-search"
+    searchBar.innerHTML = `
+      <input type="search" class="app-table-search-input" placeholder="Search in this table...">
+    `
+
+    const input = searchBar.querySelector("input")
+    input.addEventListener("input", () => {
+      const query = input.value.trim().toLowerCase()
+
+      tbody.querySelectorAll("tr").forEach((row) => {
+        const text = row.innerText.toLowerCase()
+        row.style.display = text.includes(query) ? "" : "none"
+      })
+    })
+
+    tableWrap.parentNode.insertBefore(searchBar, tableWrap)
+    tableWrap.dataset.searchReady = "true"
+  })
+}
+
 document.addEventListener("turbo:load", setupVendorRegistrationSelections)
+document.addEventListener("turbo:load", setupTableSearch)

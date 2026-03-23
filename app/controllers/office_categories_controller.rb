@@ -69,7 +69,7 @@ class OfficeCategoriesController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def office_category_params
-      params.expect(office_category: [ :name, :office_level, :parent_id ])
+      params.expect(office_category: [ :name, :office_level, :parent_id, :stakeholder_category_id ])
     end
 
     def load_parent_categories

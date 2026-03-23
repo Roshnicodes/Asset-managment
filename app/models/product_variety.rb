@@ -1,5 +1,6 @@
 class ProductVariety < ApplicationRecord
   belongs_to :product
+  belongs_to :stakeholder_category, optional: true
   has_many :vendor_registration_product_varieties, dependent: :destroy
   has_many :vendor_registrations, through: :vendor_registration_product_varieties
 

@@ -1,5 +1,6 @@
 class Product < ApplicationRecord
   belongs_to :theme
+  belongs_to :stakeholder_category, optional: true
   has_many :assets, dependent: :restrict_with_error
   has_many :product_varieties, dependent: :restrict_with_error
   has_many :vendor_registration_products, dependent: :destroy

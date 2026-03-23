@@ -69,7 +69,7 @@ class ApprovalChannelsController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def approval_channel_params
-      params.expect(approval_channel: [ :form_name, :approval_type, :level_1_approver, :level_2_approver, :level_3_approver ])
+      params.expect(approval_channel: [ :form_name, :approval_type, :level_1_approver, :level_2_approver, :level_3_approver, :stakeholder_category_id ])
     end
 
     def load_select_options

@@ -22,7 +22,7 @@
           <td><%= district.state.name %></td>
           <td class="app-row-actions">
             <%= link_to "Edit", edit_district_path(district) %> |
-            <%= link_to "Delete", district, method: :delete, data: { turbo_confirm: "Delete this district?" } %>
+            <%= button_to "Delete", district_path(district), method: :delete, data: { turbo_confirm: "Delete this district?" }, class: "app-action-button app-delete-button" %>
           </td>
         </tr>
       <% end %>

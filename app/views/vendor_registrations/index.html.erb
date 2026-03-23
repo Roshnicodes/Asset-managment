@@ -7,6 +7,7 @@
 <table class="table app-table">
   <thead>
     <tr>
+      <th>Stakeholder</th>
       <th>Registration Type</th>
       <th>Vendor Name</th>
       <th>Company / Firm</th>
@@ -20,6 +21,7 @@
   <tbody>
     <% @vendor_registrations.each do |vendor_registration| %>
       <tr>
+        <td><%= vendor_registration.stakeholder_category&.name || "-" %></td>
         <td><%= vendor_registration.registration_type.name %></td>
         <td><%= vendor_registration.vendor_name %></td>
         <td><%= vendor_registration.company_name.presence || vendor_registration.firm&.name || "-" %></td>
@@ -29,7 +31,7 @@
         <td><%= vendor_registration.submitted_ip %></td>
         <td class="app-row-actions">
           <%= link_to "Edit", edit_vendor_registration_path(vendor_registration) %> |
-          <%= link_to "Delete", vendor_registration, method: :delete, data: { turbo_confirm: "Delete this vendor registration?" } %>
+          <%= button_to "Delete", vendor_registration_path(vendor_registration), method: :delete, data: { turbo_confirm: "Delete this vendor registration?" }, class: "app-action-button app-delete-button" %>
         </td>
       </tr>
     <% end %>

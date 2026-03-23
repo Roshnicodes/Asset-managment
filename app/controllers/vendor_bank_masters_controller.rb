@@ -69,7 +69,7 @@ class VendorBankMastersController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def vendor_bank_master_params
-      params.expect(vendor_bank_master: [ :vendor_registration_id, :bank_name, :bank_address, :ifsc_code, :account_number, :account_type ])
+      params.expect(vendor_bank_master: [ :vendor_registration_id, :bank_name, :bank_address, :ifsc_code, :account_number, :account_type, :stakeholder_category_id ])
     end
 
     def load_vendor_registrations

@@ -61,6 +61,6 @@ class DocumentMastersController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def document_master_params
-      params.expect(document_master: [ :name ])
+      params.expect(document_master: [ :name, :stakeholder_category_id ])
     end
 end

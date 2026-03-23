@@ -1,4 +1,6 @@
 class ApprovalChannel < ApplicationRecord
+  belongs_to :stakeholder_category, optional: true
+
   FORM_NAMES = [
     "Vendor Registration",
     "Product Entry",

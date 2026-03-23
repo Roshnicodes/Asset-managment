@@ -16,6 +16,11 @@
         <%= form.label :name, "Firm Name" %>
         <%= form.text_field :name %>
       </div>
+
+      <div class="app-form-field">
+        <%= form.label :stakeholder_category_id, "Stakeholder" %>
+        <%= form.collection_select :stakeholder_category_id, StakeholderCategory.order(:name), :id, :name, { prompt: "Select stakeholder" } %>
+      </div>
     </div>
 
     <div class="app-form-actions">

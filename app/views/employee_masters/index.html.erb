@@ -1,0 +1,59 @@
+<div class="app-toolbar">
+  <div>
+    <h1>Employee Master</h1>
+    <p class="app-section-note">Manual entry and Excel / CSV upload are both available.</p>
+  </div>
+  <%= link_to "Add Employee", new_employee_master_path, class: "app-primary-btn" %>
+</div>
+
+<div class="app-form-card app-form-card-wide" style="margin-bottom: 1rem;">
+  <%= form_with url: import_employee_masters_path, multipart: true, local: true do |form| %>
+    <div class="app-form-grid two-col">
+      <div class="app-form-field">
+        <%= form.label :file, "Upload Excel / CSV" %>
+        <%= form.file_field :file, accept: ".csv,.xls,.xlsx" %>
+      </div>
+
+      <div class="app-form-field">
+        <label>Sample Columns</label>
+        <input type="text" value="stakeholder, employee_id, employee_name, designation, employee_location, employee_email_id" readonly>
+      </div>
+    </div>
+
+    <div class="app-form-actions">
+      <%= form.submit "Upload File", class: "app-form-submit" %>
+    </div>
+  <% end %>
+</div>
+
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>Stakeholder</th>
+        <th>Employee ID</th>
+        <th>Employee Name</th>
+        <th>Designation</th>
+        <th>Location</th>
+        <th>Email ID</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @employee_masters.each do |employee_master| %>
+        <tr>
+          <td><%= employee_master.stakeholder_category.name %></td>
+          <td><%= employee_master.employee_code %></td>
+          <td><%= employee_master.name %></td>
+          <td><%= employee_master.designation %></td>
+          <td><%= employee_master.location %></td>
+          <td><%= employee_master.email_id %></td>
+          <td class="app-row-actions">
+            <%= link_to "Edit", edit_employee_master_path(employee_master) %> |
+            <%= button_to "Delete", employee_master_path(employee_master), method: :delete, data: { turbo_confirm: "Delete this employee?" }, class: "app-action-button app-delete-button" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

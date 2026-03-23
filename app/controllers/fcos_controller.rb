@@ -1,12 +1,12 @@
 class FcosController < ApplicationController
 
   def index
-    @fcos = Fco.all
+    @fcos = Fco.includes(pmu: { district: :state }).order(:name)
   end
 
   def new
     @fco = Fco.new
-    @pmus = Pmu.all
+    @pmus = Pmu.includes(:block, district: :state).order(:name)
   end
 
   def create
@@ -21,7 +21,7 @@ class FcosController < ApplicationController
 
   def edit
     @fco = Fco.find(params[:id])
-    @pmus = Pmu.all
+    @pmus = Pmu.includes(:block, district: :state).order(:name)
   end
 
   def update

@@ -25,7 +25,7 @@
         <td><%= vendor_bank_master.account_type %></td>
         <td class="app-row-actions">
           <%= link_to "Edit", edit_vendor_bank_master_path(vendor_bank_master) %> |
-          <%= link_to "Delete", vendor_bank_master, method: :delete, data: { turbo_confirm: "Delete this bank record?" } %>
+          <%= button_to "Delete", vendor_bank_master_path(vendor_bank_master), method: :delete, data: { turbo_confirm: "Delete this bank record?" }, class: "app-action-button app-delete-button" %>
         </td>
       </tr>
     <% end %>

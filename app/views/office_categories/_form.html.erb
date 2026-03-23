@@ -15,6 +15,11 @@
         <%= form.label :parent_id, "Parent Category" %>
         <%= form.collection_select :parent_id, @parent_categories.reject { |category| category.id == office_category.id }, :id, :name, { prompt: "Select parent category" } %>
       </div>
+
+      <div class="app-form-field">
+        <%= form.label :stakeholder_category_id, "Stakeholder" %>
+        <%= form.collection_select :stakeholder_category_id, StakeholderCategory.order(:name), :id, :name, { prompt: "Select stakeholder" } %>
+      </div>
     </div>
 
     <div class="app-form-actions">

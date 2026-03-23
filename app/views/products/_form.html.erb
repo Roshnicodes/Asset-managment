@@ -12,6 +12,11 @@
       </div>
 
       <div class="app-form-field">
+        <%= f.label :stakeholder_category_id, "Stakeholder" %>
+        <%= f.collection_select :stakeholder_category_id, StakeholderCategory.order(:name), :id, :name, { prompt: "Select stakeholder" }, class: "form-control" %>
+      </div>
+
+      <div class="app-form-field">
         <%= f.label :description, "Description" %>
         <%= f.text_area :description, class: "form-control", rows: 3 %>
       </div>

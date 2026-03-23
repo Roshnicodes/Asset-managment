@@ -3,7 +3,7 @@
     <div class="app-form-grid two-col">
       <div class="app-form-field">
         <%= f.label :fco_id, "FCO" %>
-        <%= f.collection_select :fco_id, Fco.order(:name), :id, :name, { prompt: "Select FCO" } %>
+        <%= f.select :fco_id, options_for_select(@fcos.map { |fco| ["#{fco.state.name} / #{fco.district.name} / #{fco.block&.name || '-'} / #{fco.pmu.name} / #{fco.name}", fco.id] }, @to.fco_id), { prompt: "Select FCO" } %>
       </div>
 
       <div class="app-form-field">

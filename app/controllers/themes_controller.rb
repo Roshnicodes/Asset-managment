@@ -41,7 +41,7 @@ class ThemesController < ApplicationController
   private
     
   def theme_params
-    params.require(:theme).permit(:name)            
+    params.require(:theme).permit(:name, :stakeholder_category_id)
   end
 
 end

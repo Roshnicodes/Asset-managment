@@ -61,6 +61,6 @@ class FirmsController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def firm_params
-      params.expect(firm: [ :name ])
+      params.expect(firm: [ :name, :stakeholder_category_id ])
     end
 end

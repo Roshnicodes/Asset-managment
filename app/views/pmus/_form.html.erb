@@ -2,8 +2,8 @@
   <div class="app-form-card">
     <div class="app-form-grid two-col">
       <div class="app-form-field">
-        <%= f.label :district_id, "District" %>
-        <%= f.collection_select :district_id, District.order(:name), :id, :name, { prompt: "Select district" } %>
+        <%= f.label :block_id, "Block" %>
+        <%= f.select :block_id, options_for_select(@blocks.map { |block| ["#{block.district.state.name} / #{block.district.name} / #{block.name}", block.id] }, @pmu.block_id), { prompt: "Select block" } %>
       </div>
 
       <div class="app-form-field">

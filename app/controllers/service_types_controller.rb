@@ -61,6 +61,6 @@ class ServiceTypesController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def service_type_params
-      params.expect(service_type: [ :name ])
+      params.expect(service_type: [ :name, :stakeholder_category_id ])
     end
 end

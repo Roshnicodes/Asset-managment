@@ -1,4 +1,4 @@
-<%= form_with(model: stakeholder_category) do |form| %>
+<%= form_with(model: stakeholder_category, local: true, html: { multipart: true }) do |form| %>
   <div class="app-form-card">
     <% if stakeholder_category.errors.any? %>
       <div class="app-form-errors">
@@ -11,12 +11,49 @@
       </div>
     <% end %>
 
-    <div class="app-form-grid">
+    <div class="app-form-grid two-col">
       <div class="app-form-field">
         <%= form.label :name, "Stakeholder Name" %>
         <%= form.text_field :name, class: "form-control", placeholder: "ASA / PGPL / PAPL" %>
       </div>
+
+      <div class="app-form-field">
+        <%= form.label :contact_no, "Contact No" %>
+        <%= form.text_field :contact_no %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :email_id, "Email ID" %>
+        <%= form.email_field :email_id %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :logo_url, "Logo URL" %>
+        <%= form.text_field :logo_url, placeholder: "https://example.com/logo.png" %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :logo_file, "Logo Image Upload" %>
+        <%= form.file_field :logo_file, accept: "image/*" %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :address, "Address" %>
+        <%= form.text_area :address, rows: 3 %>
+      </div>
     </div>
+
+    <% if stakeholder_category.logo_file.attached? %>
+      <div class="app-logo-preview">
+        <%= image_tag stakeholder_category.logo_file, class: "app-stakeholder-logo-preview", alt: "Stakeholder logo" %>
+        <p class="app-section-note">Current uploaded logo: <%= stakeholder_category.logo_file.filename %></p>
+      </div>
+    <% elsif stakeholder_category.logo_url.present? %>
+      <div class="app-logo-preview">
+        <%= image_tag stakeholder_category.logo_url, class: "app-stakeholder-logo-preview", alt: "Stakeholder logo" %>
+        <p class="app-section-note">Current logo URL: <%= stakeholder_category.logo_url %></p>
+      </div>
+    <% end %>
 
     <div class="app-form-actions">
       <%= form.submit "Save Stakeholder", class: "app-form-submit" %>

@@ -7,19 +7,23 @@
   <table class="table app-table">
     <thead>
       <tr>
-        <th>PMU Name</th>
+        <th>State</th>
         <th>District</th>
+        <th>Block</th>
+        <th>PMU Name</th>
         <th>Action</th>
       </tr>
     </thead>
     <tbody>
       <% @pmus.each do |pmu| %>
         <tr>
+          <td><%= pmu.state.name %></td>
+          <td><%= pmu.location_district.name %></td>
+          <td><%= pmu.block&.name || "-" %></td>
           <td><%= pmu.name %></td>
-          <td><%= pmu.district.name %></td>
           <td class="app-row-actions">
             <%= link_to "Edit", edit_pmu_path(pmu) %> |
-            <%= link_to "Delete", pmu, method: :delete, data: { turbo_confirm: "Delete this PMU?" } %>
+            <%= button_to "Delete", pmu_path(pmu), method: :delete, data: { turbo_confirm: "Delete this PMU?" }, class: "app-action-button app-delete-button" %>
           </td>
         </tr>
       <% end %>

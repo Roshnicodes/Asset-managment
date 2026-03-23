@@ -25,7 +25,7 @@
         <td><%= approval_channel.level_3_approver %></td>
         <td class="app-row-actions">
           <%= link_to "Edit", edit_approval_channel_path(approval_channel) %> |
-          <%= link_to "Delete", approval_channel, method: :delete, data: { turbo_confirm: "Delete this approval channel?" } %>
+          <%= button_to "Delete", approval_channel_path(approval_channel), method: :delete, data: { turbo_confirm: "Delete this approval channel?" }, class: "app-action-button app-delete-button" %>
         </td>
       </tr>
     <% end %>

@@ -1,12 +1,12 @@
 class TosController < ApplicationController
 
   def index
-    @tos = To.all
+    @tos = To.includes(fco: { pmu: { district: :state } }).order(:name)
   end
 
   def new
     @to = To.new
-    @fcos = Fco.all
+    @fcos = Fco.includes(pmu: [:block, { district: :state }]).order(:name)
   end
 
   def create
@@ -21,7 +21,7 @@ class TosController < ApplicationController
 
   def edit
     @to = To.find(params[:id])
-    @fcos = Fco.all
+    @fcos = Fco.includes(pmu: [:block, { district: :state }]).order(:name)
   end
 
   def update

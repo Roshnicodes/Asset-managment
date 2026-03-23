@@ -3,7 +3,7 @@
     <div class="app-form-grid two-col">
       <div class="app-form-field">
         <%= f.label :pmu_id, "PMU" %>
-        <%= f.collection_select :pmu_id, Pmu.order(:name), :id, :name, { prompt: "Select PMU" } %>
+        <%= f.select :pmu_id, options_for_select(@pmus.map { |pmu| ["#{pmu.state.name} / #{pmu.location_district.name} / #{pmu.block&.name || '-'} / #{pmu.name}", pmu.id] }, @fco.pmu_id), { prompt: "Select PMU" } %>
       </div>
 
       <div class="app-form-field">

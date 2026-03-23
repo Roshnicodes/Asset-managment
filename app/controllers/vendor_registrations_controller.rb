@@ -3,7 +3,7 @@ class VendorRegistrationsController < ApplicationController
 
   # GET /vendor_registrations or /vendor_registrations.json
   def index
-    @vendor_registrations = VendorRegistration.includes(:registration_type, :firm, :state, :district, :block).order(created_at: :desc)
+    @vendor_registrations = VendorRegistration.includes(:stakeholder_category, :registration_type, :firm, :state, :district, :block).order(created_at: :desc)
   end
 
   # GET /vendor_registrations/1 or /vendor_registrations/1.json
@@ -72,7 +72,7 @@ class VendorRegistrationsController < ApplicationController
     # Only allow a list of trusted parameters through.
     def vendor_registration_params
       permitted_params = params.require(:vendor_registration).permit(
-        :registration_type_id, :company_name, :firm_id, :vendor_name, :firm_type, :gst_no, :pan_no,
+        :stakeholder_category_id, :registration_type_id, :company_name, :firm_id, :vendor_name, :firm_type, :gst_no, :pan_no,
         :email, :mobile_no, :state_id, :district_id, :block_id, :pin_no, :contact_person_name,
         :contact_person_designation, :msme, :msme_number, :company_status, :business_description,
         theme_ids: [], product_ids: [], product_variety_ids: []
@@ -86,6 +86,7 @@ class VendorRegistrationsController < ApplicationController
     end
 
     def load_form_collections
+      @stakeholder_categories = StakeholderCategory.order(:name)
       @registration_types = RegistrationType.order(:name)
       @firms = Firm.order(:name)
       @states = State.order(:name)

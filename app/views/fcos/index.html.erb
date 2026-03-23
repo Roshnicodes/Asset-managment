@@ -7,19 +7,25 @@
   <table class="table app-table">
     <thead>
       <tr>
-        <th>FCO Name</th>
+        <th>State</th>
+        <th>District</th>
+        <th>Block</th>
         <th>PMU</th>
+        <th>FCO Name</th>
         <th>Action</th>
       </tr>
     </thead>
     <tbody>
       <% @fcos.each do |fco| %>
         <tr>
-          <td><%= fco.name %></td>
+          <td><%= fco.state.name %></td>
+          <td><%= fco.district.name %></td>
+          <td><%= fco.block&.name || "-" %></td>
           <td><%= fco.pmu.name %></td>
+          <td><%= fco.name %></td>
           <td class="app-row-actions">
             <%= link_to "Edit", edit_fco_path(fco) %> |
-            <%= link_to "Delete", fco, method: :delete, data: { turbo_confirm: "Delete this FCO?" } %>
+            <%= button_to "Delete", fco_path(fco), method: :delete, data: { turbo_confirm: "Delete this FCO?" }, class: "app-action-button app-delete-button" %>
           </td>
         </tr>
       <% end %>

@@ -69,7 +69,7 @@ class ProductVarietiesController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def product_variety_params
-      params.expect(product_variety: [ :name, :product_id ])
+      params.expect(product_variety: [ :name, :product_id, :stakeholder_category_id ])
     end
 
     def load_themes

@@ -18,6 +18,11 @@
 
     <div class="app-form-grid two-col">
       <div class="app-form-field">
+        <%= form.label :stakeholder_category_id, "Stakeholder Name" %>
+        <%= form.collection_select :stakeholder_category_id, @stakeholder_categories, :id, :name, { prompt: "Select stakeholder" } %>
+      </div>
+
+      <div class="app-form-field">
         <%= form.label :registration_type_id, "Registration Type" %>
         <%= form.collection_select :registration_type_id, @registration_types, :id, :name, { prompt: "Select registration type" } %>
       </div>

@@ -3,11 +3,12 @@ class StakeholderCategoriesController < ApplicationController
 
   # GET /stakeholder_categories or /stakeholder_categories.json
   def index
-    @stakeholder_categories = StakeholderCategory.includes(:office_category).order(:name)
+    @stakeholder_categories = StakeholderCategory.includes(:office_category, logo_file_attachment: :blob).order(:name)
   end
 
   # GET /stakeholder_categories/1 or /stakeholder_categories/1.json
   def show
+    redirect_to stakeholder_categories_path
   end
 
   # GET /stakeholder_categories/new
@@ -69,7 +70,7 @@ class StakeholderCategoriesController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def stakeholder_category_params
-      params.expect(stakeholder_category: [ :name, :office_category_id ])
+      params.expect(stakeholder_category: [ :name, :office_category_id, :address, :logo_url, :logo_file, :contact_no, :email_id ])
     end
 
     def load_office_categories

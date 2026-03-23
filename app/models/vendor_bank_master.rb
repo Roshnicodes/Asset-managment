@@ -1,4 +1,5 @@
 class VendorBankMaster < ApplicationRecord
+  belongs_to :stakeholder_category, optional: true
   belongs_to :vendor_registration
 
   ACCOUNT_TYPES = ["Current", "Saving"].freeze
