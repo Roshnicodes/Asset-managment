@@ -1,4 +1,5 @@
 class VendorRegistration < ApplicationRecord
+  belongs_to :user, optional: true
   belongs_to :stakeholder_category, optional: true
   belongs_to :registration_type
   belongs_to :firm, optional: true

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_24_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_24_122000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -394,6 +394,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_24_120000) do
     t.datetime "submitted_at", null: false
     t.string "submitted_ip", null: false
     t.datetime "updated_at", null: false
+    t.bigint "user_id"
     t.string "vendor_name"
     t.index ["block_id"], name: "index_vendor_registrations_on_block_id"
     t.index ["district_id"], name: "index_vendor_registrations_on_district_id"
@@ -401,6 +402,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_24_120000) do
     t.index ["registration_type_id"], name: "index_vendor_registrations_on_registration_type_id"
     t.index ["stakeholder_category_id"], name: "index_vendor_registrations_on_stakeholder_category_id"
     t.index ["state_id"], name: "index_vendor_registrations_on_state_id"
+    t.index ["user_id"], name: "index_vendor_registrations_on_user_id"
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
@@ -458,4 +460,5 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_24_120000) do
   add_foreign_key "vendor_registrations", "registration_types"
   add_foreign_key "vendor_registrations", "stakeholder_categories"
   add_foreign_key "vendor_registrations", "states"
+  add_foreign_key "vendor_registrations", "users"
 end

@@ -5,8 +5,9 @@ class User < ApplicationRecord
          :recoverable, :rememberable, :validatable
 
   has_many :notifications, dependent: :destroy
+  has_many :vendor_registrations, dependent: :destroy
 
   def employee_master
-    EmployeeMaster.find_by(email_id: email)
+    EmployeeMaster.where("LOWER(email_id) = ?", email.downcase).first
   end
 end

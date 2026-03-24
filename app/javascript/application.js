@@ -154,6 +154,45 @@ const setupApprovalChannelSteps = () => {
   })
 }
 
+const setupVendorApprovalSelections = () => {
+  const selectAllCheckbox = document.getElementById("select_all_checkbox");
+  const rowCheckboxes = document.querySelectorAll(".row-approval-checkbox");
+  const button = document.getElementById("send_for_approval_button");
+
+  if (!button) return;
+
+  const toggleButton = () => {
+    const anyChecked = Array.from(rowCheckboxes).some(cb => cb.checked);
+    if (anyChecked) {
+      button.classList.remove("d-none");
+    } else {
+      button.classList.add("d-none");
+    }
+  }
+
+  if (selectAllCheckbox) {
+    selectAllCheckbox.addEventListener("change", function() {
+      rowCheckboxes.forEach(cb => cb.checked = this.checked);
+      toggleButton();
+    });
+  }
+
+  rowCheckboxes.forEach(cb => {
+    cb.addEventListener("change", function() {
+      if (!this.checked && selectAllCheckbox) selectAllCheckbox.checked = false;
+      
+      const allChecked = Array.from(rowCheckboxes).every(cb => cb.checked);
+      if (allChecked && selectAllCheckbox) selectAllCheckbox.checked = true;
+      
+      toggleButton();
+    });
+  });
+
+  // Initial state check
+  toggleButton();
+}
+
 document.addEventListener("turbo:load", setupVendorRegistrationSelections)
 document.addEventListener("turbo:load", setupTableSearch)
 document.addEventListener("turbo:load", setupApprovalChannelSteps)
+document.addEventListener("turbo:load", setupVendorApprovalSelections)

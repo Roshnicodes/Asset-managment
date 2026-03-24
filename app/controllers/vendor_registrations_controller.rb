@@ -3,7 +3,12 @@ class VendorRegistrationsController < ApplicationController
 
   # GET /vendor_registrations or /vendor_registrations.json
   def index
-    @vendor_registrations = VendorRegistration.includes(:stakeholder_category, :registration_type, :firm, :state, :district, :block).order(created_at: :desc)
+    # Admin sees all, User sees only their own registrations
+    if current_user.email == "admin@example.com" || current_user.employee_master&.user_type == "Admin"
+      @vendor_registrations = VendorRegistration.includes(:stakeholder_category, :registration_type, :firm, :state, :district, :block).order(created_at: :desc)
+    else
+      @vendor_registrations = current_user.vendor_registrations.includes(:stakeholder_category, :registration_type, :firm, :state, :district, :block).order(created_at: :desc)
+    end
   end
 
   # POST /vendor_registrations/send_for_approval
@@ -36,6 +41,7 @@ class VendorRegistrationsController < ApplicationController
   # POST /vendor_registrations or /vendor_registrations.json
   def create
     @vendor_registration = VendorRegistration.new(vendor_registration_params)
+    @vendor_registration.user = current_user
     @vendor_registration.submitted_at ||= Time.current
     @vendor_registration.submitted_ip ||= request.remote_ip
 

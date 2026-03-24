@@ -1,14 +1,16 @@
-<div class="app-page-header">
-  <h2>Vendor Registration Details</h2>
-  <%= link_to "Back", vendor_registrations_path, class: "app-back-link" %>
+<div class="app-page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+  <div>
+    <h2 style="margin: 0; font-size: 1.8rem; color: #1a3a2a;">Vendor Registration Details</h2>
+    <p style="margin: 0.5rem 0 0 0; color: #6b8e7f; font-size: 0.95rem;"><%= @vendor_registration.vendor_name %></p>
+  </div>
+  <div style="display: flex; gap: 1rem; align-items: center;">
+    <%= link_to "← Back", vendor_registrations_path, class: "app-back-link" %>
+    <%= link_to "Edit", edit_vendor_registration_path(@vendor_registration), class: "app-primary-btn", style: "padding: 0.75rem 1.5rem; font-weight: 600;" %>
+    <%= button_to "Delete", @vendor_registration, method: :delete, data: { turbo_confirm: "Are you sure you want to delete this vendor registration?" }, class: "app-danger-btn", style: "padding: 0.75rem 1.5rem; font-weight: 600;" %>
+  </div>
 </div>
 
 <%= render @vendor_registration %>
-
-<div class="app-detail-actions">
-  <%= link_to "Edit", edit_vendor_registration_path(@vendor_registration), class: "app-secondary-btn" %>
-  <%= button_to "Delete", @vendor_registration, method: :delete, data: { turbo_confirm: "Delete this vendor registration?" }, class: "app-danger-btn" %>
-</div>
 
 <% if @vendor_registration.approval_request && @vendor_registration.approval_request.current_step&.employee_master_id == current_employee_master&.id && @vendor_registration.approval_request.status == "pending" %>
   <div class="app-form-card" style="margin-top: 2rem;">

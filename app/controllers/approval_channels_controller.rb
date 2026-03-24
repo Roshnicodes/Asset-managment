@@ -25,7 +25,6 @@ class ApprovalChannelsController < ApplicationController
 
   # POST /approval_channels or /approval_channels.json
   def create
-    File.write("/home/papl/Asset-managment/tmp/last_params.txt", params.to_unsafe_h.inspect)
     @approval_channel = ApprovalChannel.new(approval_channel_params)
 
     respond_to do |format|

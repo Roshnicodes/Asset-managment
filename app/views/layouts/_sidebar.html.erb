@@ -2,45 +2,53 @@
   <ul class="nav flex-column">
     <li><%= app_nav_link("Dashboard", root_path, icon: :dashboard, identifier: "dashboard") %></li>
     
-    <li>
-      <%= app_dropdown_toggle("User Rights", "userManagementMenu", icon: :people, identifier: "dashboard") %>
-      <div class="collapse submenu h-auto" id="userManagementMenu">
-        <ul class="nav flex-column">
-          <li><%= link_to "Role Based Access Control", menu_permissions_path, class: "nav-link" %></li>
-        </ul>
-      </div>
-    </li>
+    <% if can_view_menu?("rbac_master") %>
+      <li>
+        <%= app_dropdown_toggle("User Rights", "userManagementMenu", icon: :people, identifier: "rbac_master") %>
+        <div class="collapse submenu h-auto" id="userManagementMenu">
+          <ul class="nav flex-column">
+            <li><%= link_to "Role Based Access Control", menu_permissions_path, class: "nav-link" %></li>
+          </ul>
+        </div>
+      </li>
+    <% end %>
 
-    <li>
-      <%= app_dropdown_toggle("Office Category", "officeCategoryMenu", icon: :office, identifier: "office_category_main") %>
-      <div class="collapse submenu" id="officeCategoryMenu">
-        <ul class="nav flex-column">
-          <li><%= app_nav_link("PMU", pmus_path, icon: :office, identifier: "office_pmu") %></li>
-          <li><%= app_nav_link("FCO", fcos_path, icon: :office, identifier: "office_fco") %></li>
-          <li><%= app_nav_link("TO", tos_path, icon: :office, identifier: "office_to") %></li>
-        </ul>
-      </div>
-    </li>
+    <% if can_view_menu?("office_category_main") %>
+      <li>
+        <%= app_dropdown_toggle("Office Category", "officeCategoryMenu", icon: :office, identifier: "office_category_main") %>
+        <div class="collapse submenu" id="officeCategoryMenu">
+          <ul class="nav flex-column">
+            <li><%= app_nav_link("PMU", pmus_path, icon: :office, identifier: "office_pmu") %></li>
+            <li><%= app_nav_link("FCO", fcos_path, icon: :office, identifier: "office_fco") %></li>
+            <li><%= app_nav_link("TO", tos_path, icon: :office, identifier: "office_to") %></li>
+          </ul>
+        </div>
+      </li>
+    <% end %>
 
-    <li>
-      <%= app_dropdown_toggle("LG", "lgMenu", icon: :map, identifier: "lg_main") %>
-      <div class="collapse submenu" id="lgMenu">
-        <ul class="nav flex-column">
-          <li><%= app_nav_link("State", states_path, icon: :map, identifier: "lg_state") %></li>
-          <li><%= app_nav_link("District", districts_path, icon: :map, identifier: "lg_district") %></li>
-          <li><%= app_nav_link("Block", blocks_path, icon: :map, identifier: "lg_block") %></li>
-        </ul>
-      </div>
-    </li>
+    <% if can_view_menu?("lg_main") %>
+      <li>
+        <%= app_dropdown_toggle("LG", "lgMenu", icon: :map, identifier: "lg_main") %>
+        <div class="collapse submenu" id="lgMenu">
+          <ul class="nav flex-column">
+            <li><%= app_nav_link("State", states_path, icon: :map, identifier: "lg_state") %></li>
+            <li><%= app_nav_link("District", districts_path, icon: :map, identifier: "lg_district") %></li>
+            <li><%= app_nav_link("Block", blocks_path, icon: :map, identifier: "lg_block") %></li>
+          </ul>
+        </div>
+      </li>
+    <% end %>
 
-    <li>
-      <%= app_dropdown_toggle("Stakeholder Categories", "stakeholderMenu", icon: :people, identifier: "stakeholder_categories") %>
-      <div class="collapse submenu" id="stakeholderMenu">
-        <ul class="nav flex-column">
-          <li><%= app_nav_link("Stakeholder Name", stakeholder_categories_path, icon: :people, identifier: "stakeholder_categories") %></li>
-        </ul>
-      </div>
-    </li>
+    <% if can_view_menu?("stakeholder_categories") %>
+      <li>
+        <%= app_dropdown_toggle("Stakeholder Categories", "stakeholderMenu", icon: :people, identifier: "stakeholder_categories") %>
+        <div class="collapse submenu" id="stakeholderMenu">
+          <ul class="nav flex-column">
+            <li><%= app_nav_link("Stakeholder Name", stakeholder_categories_path, icon: :people, identifier: "stakeholder_categories") %></li>
+          </ul>
+        </div>
+      </li>
+    <% end %>
 
     <li><%= app_nav_link("Registration Types", registration_types_path, icon: :registration, identifier: "registration_types") %></li>
     <li><%= app_nav_link("Service Types", service_types_path, icon: :service, identifier: "service_types") %></li>

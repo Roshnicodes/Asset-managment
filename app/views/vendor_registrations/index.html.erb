@@ -8,10 +8,16 @@
   </div>
 </div>
 
+<style>
+  .sticky-top { position: sticky; top: 0; z-index: 100; }
+  .app-table thead th { background: #f8fcf9 !important; border-bottom: 2px solid #eef3ef !important; }
+  .app-table-wrap { max-height: calc(100vh - 250px); overflow-y: auto; overflow-x: auto; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+</style>
+
 <%= form_tag send_for_approval_vendor_registrations_path, method: :post, id: "send-approval-form" do %>
 <div class="app-table-wrap">
 <table class="table app-table">
-  <thead>
+  <thead class="sticky-top">
     <tr>
       <th>
         <input type="checkbox" id="select_all_checkbox" style="cursor: pointer;">
@@ -65,38 +71,3 @@
 </table>
 </div>
 <% end %>
-
-<script>
-  document.addEventListener("DOMContentLoaded", function() {
-    const selectAllCheckbox = document.getElementById("select_all_checkbox");
-    const rowCheckboxes = document.querySelectorAll(".row-approval-checkbox");
-    const button = document.getElementById("send_for_approval_button");
-
-    function toggleButton() {
-      const anyChecked = Array.from(rowCheckboxes).some(cb => cb.checked);
-      if (anyChecked) {
-        button.classList.remove("d-none");
-      } else {
-        button.classList.add("d-none");
-      }
-    }
-
-    if (selectAllCheckbox) {
-      selectAllCheckbox.addEventListener("change", function() {
-        rowCheckboxes.forEach(cb => cb.checked = this.checked);
-        toggleButton();
-      });
-    }
-
-    rowCheckboxes.forEach(cb => {
-      cb.addEventListener("change", function() {
-        if (!this.checked && selectAllCheckbox) selectAllCheckbox.checked = false;
-        
-        const allChecked = Array.from(rowCheckboxes).every(cb => cb.checked);
-        if (allChecked && selectAllCheckbox) selectAllCheckbox.checked = true;
-        
-        toggleButton();
-      });
-    });
-  });
-</script>

@@ -51,12 +51,18 @@ module ApplicationHelper
 
   def can_view_menu?(identifier)
     return true if identifier.nil?
+    return true if identifier == "dashboard"
     return true if current_user.email == "admin@example.com"
-    employee = current_user.employee_master
-    return true unless employee
     
+    employee = current_user.employee_master
+    return false unless employee
+
+    # If User Type is Admin, show all menus
+    return true if employee.user_type == "Admin"
+    
+    # If User Type is User, check permissions
     role_perms = MenuPermission.where(stakeholder_category_id: employee.stakeholder_category_id, designation: employee.designation)
-    return true if role_perms.empty?
+    return false if role_perms.empty? # By default, when new employee logs in, nothing is visible
     
     perm = role_perms.find_by(menu_identifier: identifier)
     perm ? perm.can_view? : false
