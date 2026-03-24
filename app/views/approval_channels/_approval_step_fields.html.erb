@@ -8,12 +8,12 @@
 
     <div class="app-form-field">
       <%= form.label :from_user_id, "From User" %>
-      <%= form.collection_select :from_user_id, employee_options, :id, :name, { prompt: "Blank for first step" }, class: "form-control" %>
+      <%= form.collection_select :from_user_id, employee_options, :id, :name, { prompt: "Blank for first step" }, class: "form-control", data: { approval_from_user: true } %>
     </div>
 
     <div class="app-form-field">
       <%= form.label :to_responsible_user_id, "To Responsible User" %>
-      <%= form.collection_select :to_responsible_user_id, employee_options, :id, :name, { prompt: "Select responsible user" }, class: "form-control" %>
+      <%= form.collection_select :to_responsible_user_id, employee_options, :id, :name, { prompt: "Select responsible user" }, class: "form-control", data: { approval_to_user: true } %>
     </div>
 
     <div class="app-form-field">

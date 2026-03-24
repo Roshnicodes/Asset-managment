@@ -85,14 +85,33 @@ const setupApprovalChannelSteps = () => {
         if (stepInput) stepInput.value = index + 1
 
         const prevInput = row.querySelector("[data-approval-previous-action]")
+        const fromUserInput = row.querySelector("[data-approval-from-user]")
+        
         if (index === 0) {
           if (prevInput) prevInput.value = "NA"
         } else {
           const prevRow = rows[index - 1]
           const prevCurrentActionInput = prevRow.querySelector("[data-approval-current-action]")
+          const prevToUserInput = prevRow.querySelector("[data-approval-to-user]")
+
           if (prevInput && prevCurrentActionInput) {
             prevInput.value = prevCurrentActionInput.value || ""
           }
+
+          // Sync From User with previous step's To User (Chain flow)
+          if (fromUserInput && prevToUserInput && prevToUserInput.value && !fromUserInput.value) {
+            fromUserInput.value = prevToUserInput.value
+          }
+        }
+
+        // Action consistency check
+        const currentActionSelect = row.querySelector("[data-approval-current-action]")
+        if (currentActionSelect && prevInput && currentActionSelect.value === prevInput.value && prevInput.value !== "NA" && prevInput.value !== "") {
+          currentActionSelect.style.borderColor = "#d85f52"
+          currentActionSelect.style.backgroundColor = "#fff5f4"
+        } else if (currentActionSelect) {
+          currentActionSelect.style.borderColor = ""
+          currentActionSelect.style.backgroundColor = ""
         }
       })
     }

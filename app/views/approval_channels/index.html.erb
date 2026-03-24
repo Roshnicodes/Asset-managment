@@ -18,22 +18,24 @@
   </thead>
   <tbody>
     <% @approval_channels.each do |approval_channel| %>
-      <% approval_channel.flow_steps.each_with_index do |step, index| %>
+      <% approval_channel.flow_steps.each do |step| %>
         <tr>
-          <% if index.zero? %>
-            <td rowspan="<%= approval_channel.flow_steps.size %>"><%= approval_channel.form_name %></td>
-            <td rowspan="<%= approval_channel.flow_steps.size %>"><%= approval_channel.stakeholder_category&.name || "-" %></td>
-          <% end %>
-          <td><%= step.try(:from_user)&.name || "Blank" %></td>
+          <td><%= approval_channel.form_name %></td>
+          <td><%= approval_channel.stakeholder_category&.name || "-" %></td>
+          <td><%= step.try(:from_user)&.name || "System" %></td>
           <td><%= step.to_responsible_user.name %></td>
-          <td><%= step.previous_action.presence || (index.zero? ? "NA" : "Blank") %></td>
+          <td><%= step.previous_action.presence || "NA" %></td>
           <td><%= step.current_action %></td>
-          <% if index.zero? %>
-            <td rowspan="<%= approval_channel.flow_steps.size %>" class="app-row-actions">
-              <%= link_to "Edit", edit_approval_channel_path(approval_channel) %> |
-              <%= button_to "Delete", approval_channel_path(approval_channel), method: :delete, data: { turbo_confirm: "Delete this approval channel?" }, class: "app-action-button app-delete-button" %>
-            </td>
-          <% end %>
+          <td class="app-row-actions">
+            <div class="d-flex align-items-center gap-2">
+              <%= link_to edit_approval_channel_path(approval_channel), class: "app-action-icon text-warning", title: "Edit" do %>
+                <%= app_icon(:pencil, size: 18) %>
+              <% end %>
+              <%= button_to approval_channel_path(approval_channel), method: :delete, data: { turbo_confirm: "Delete this entire approval channel?" }, class: "app-action-icon text-danger", title: "Delete" do %>
+                <%= app_icon(:trash, size: 18) %>
+              <% end %>
+            </div>
+          </td>
         </tr>
       <% end %>
     <% end %>

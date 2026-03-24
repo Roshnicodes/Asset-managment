@@ -2,6 +2,7 @@ class ApprovalChannel < ApplicationRecord
   LegacyFlowStep = Struct.new(:step_number, :previous_action, :current_action, :to_responsible_user, :from_user, keyword_init: true)
 
   belongs_to :stakeholder_category, optional: true
+  belongs_to :theme, optional: true
   belongs_to :level_1_employee, class_name: "EmployeeMaster", optional: true
   belongs_to :level_2_employee, class_name: "EmployeeMaster", optional: true
   belongs_to :level_3_employee, class_name: "EmployeeMaster", optional: true
@@ -31,11 +32,18 @@ class ApprovalChannel < ApplicationRecord
   ].freeze
 
   validates :form_name, :approval_type, presence: true
+  validate :theme_must_be_present_for_vendor_registration
   validate :at_least_one_approval_step_selected
   validate :approval_step_users_must_have_login_email
   validate :approval_steps_must_be_unique_and_ordered
 
   after_commit :provision_approver_logins, on: %i[create update]
+
+  def theme_must_be_present_for_vendor_registration
+    return unless form_name == "Vendor Registration"
+
+    errors.add(:theme, "must be selected for Vendor Registration") if theme_id.blank?
+  end
 
   def configured_approvers
     if active_approval_channel_steps.any?

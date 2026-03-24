@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_23_171500) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_24_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -78,11 +78,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_171500) do
     t.string "level_3_approver"
     t.bigint "level_3_employee_id"
     t.bigint "stakeholder_category_id"
+    t.bigint "theme_id"
     t.datetime "updated_at", null: false
     t.index ["level_1_employee_id"], name: "index_approval_channels_on_level_1_employee_id"
     t.index ["level_2_employee_id"], name: "index_approval_channels_on_level_2_employee_id"
     t.index ["level_3_employee_id"], name: "index_approval_channels_on_level_3_employee_id"
     t.index ["stakeholder_category_id"], name: "index_approval_channels_on_stakeholder_category_id"
+    t.index ["theme_id"], name: "index_approval_channels_on_theme_id"
   end
 
   create_table "approval_requests", force: :cascade do |t|
@@ -412,6 +414,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_171500) do
   add_foreign_key "approval_channels", "employee_masters", column: "level_2_employee_id"
   add_foreign_key "approval_channels", "employee_masters", column: "level_3_employee_id"
   add_foreign_key "approval_channels", "stakeholder_categories"
+  add_foreign_key "approval_channels", "themes"
   add_foreign_key "approval_requests", "approval_channels"
   add_foreign_key "approval_steps", "approval_requests"
   add_foreign_key "approval_steps", "employee_masters"

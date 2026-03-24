@@ -30,13 +30,6 @@ class MenuPermission < ApplicationRecord
     "Units" => "units",
     "Documents" => "documents",
     "Approval Channels" => "approval_channels",
-    "My Approvals" => {
-      "main" => "my_approvals_main",
-      "Pending Approvals" => "approvals_pending",
-      "Approved" => "approvals_approved",
-      "Rejected" => "approvals_rejected",
-      "All Approvals" => "approvals_all"
-    },
     "Firms" => "firms",
     "Employee Master" => "employee_master",
     "Banks" => "banks",

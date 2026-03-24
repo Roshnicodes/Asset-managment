@@ -73,6 +73,7 @@ class ApprovalChannelsController < ApplicationController
     def approval_channel_params
       params.require(:approval_channel).permit(
         :form_name,
+        :theme_id,
         :approval_type,
         :stakeholder_category_id,
         approval_channel_steps_attributes: [:id, :step_number, :from_user_id, :to_responsible_user_id, :previous_action, :current_action, :_destroy]
@@ -80,6 +81,7 @@ class ApprovalChannelsController < ApplicationController
     end
 
     def load_select_options
+      @themes = Theme.order(:name)
       @form_names = ApprovalChannel::FORM_NAMES
       @approval_types = ApprovalChannel::APPROVAL_TYPES
       @approval_actions = ApprovalChannel::APPROVAL_ACTIONS

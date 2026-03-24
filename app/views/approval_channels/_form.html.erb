@@ -18,7 +18,13 @@
     <div class="app-form-grid two-col">
       <div class="app-form-field">
         <%= form.label :form_name, "Form Name" %>
-        <%= form.select :form_name, @form_names, { prompt: "Select form name" }, class: "form-control" %>
+        <%= form.select :form_name, @form_names, { prompt: "Select form name" }, class: "form-control", id: "approval_channel_form_name" %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :theme_id, "Thematic Type" %>
+        <%= form.collection_select :theme_id, @themes, :id, :name, { prompt: "Select thematic type" }, class: "form-control", id: "approval_channel_theme_id" %>
+        <p class="form-text text-muted" style="font-size: 0.9rem;">Applicable mainly for Vendor Registration preferences.</p>
       </div>
 
       <div class="app-form-field">
@@ -26,6 +32,26 @@
         <%= form.collection_select :stakeholder_category_id, StakeholderCategory.order(:name), :id, :name, { prompt: "Select stakeholder" }, class: "form-control" %>
       </div>
     </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        var formNameEl = document.getElementById("approval_channel_form_name");
+        var themeEl = document.getElementById("approval_channel_theme_id");
+        var themeContainer = themeEl.closest('.app-form-field');
+
+        function toggleThemeField() {
+          if (formNameEl.value === "Vendor Registration") {
+            themeContainer.style.display = "block";
+          } else {
+            themeContainer.style.display = "none";
+            themeEl.value = "";
+          }
+        }
+
+        toggleThemeField();
+        formNameEl.addEventListener("change", toggleThemeField);
+      });
+    </script>
 
     <%= form.hidden_field :approval_type, value: approval_channel.approval_type.presence || "Sequential" %>
 

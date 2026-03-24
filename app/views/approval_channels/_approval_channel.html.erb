@@ -11,18 +11,36 @@
     </div>
 
     <div class="app-detail-item">
-      <div class="app-detail-label">Level 1 Approver</div>
-      <div class="app-detail-value"><%= approval_channel.level_1_approver.presence || "-" %></div>
+      <div class="app-detail-label">Thematic Type</div>
+      <div class="app-detail-value"><%= approval_channel.theme&.name || "-" %></div>
     </div>
 
-    <div class="app-detail-item">
-      <div class="app-detail-label">Level 2 Approver</div>
-      <div class="app-detail-value"><%= approval_channel.level_2_approver.presence || "-" %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Level 3 Approver</div>
-      <div class="app-detail-value"><%= approval_channel.level_3_approver.presence || "-" %></div>
+    <div class="app-detail-item" style="grid-column: span 2;">
+      <div class="app-detail-label">Approval Flow Steps</div>
+      <div class="app-table-wrap mt-2">
+        <table class="table app-table mb-0">
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th>From User</th>
+              <th>To Responsible User</th>
+              <th>Previous Action</th>
+              <th>Current Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% approval_channel.flow_steps.each do |step| %>
+              <tr>
+                <td><%= step.step_number %></td>
+                <td><%= step.try(:from_user)&.name || "System/Submitter" %></td>
+                <td><%= step.to_responsible_user.name %></td>
+                <td><%= step.previous_action.presence || "NA" %></td>
+                <td><%= step.current_action %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>

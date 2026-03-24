@@ -6,7 +6,7 @@ class ApprovalChannelStep < ApplicationRecord
   validates :step_number, :current_action, presence: true
   validates :step_number, uniqueness: { scope: :approval_channel_id }
   validate :first_step_previous_action_should_be_blank
-  validate :users_must_be_different
+  validate :actions_must_be_different
 
   scope :ordered, -> { order(:step_number) }
 
@@ -23,10 +23,11 @@ class ApprovalChannelStep < ApplicationRecord
     errors.add(:previous_action, "must be blank or 'NA' for the first approval step")
   end
 
-  def users_must_be_different
-    return if from_user_id.blank? || to_responsible_user_id.blank?
-    return unless from_user_id == to_responsible_user_id
+  def actions_must_be_different
+    return if previous_action.blank? || current_action.blank?
+    return if previous_action == "NA"
+    return unless previous_action == current_action
 
-    errors.add(:to_responsible_user_id, "must be different from From User")
+    errors.add(:current_action, "must be different from Previous Action")
   end
 end

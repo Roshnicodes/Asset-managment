@@ -50,63 +50,6 @@
     <li><%= app_nav_link("Units", units_path, icon: :unit, identifier: "units") %></li>
     <li><%= app_nav_link("Documents", document_masters_path, icon: :document, identifier: "documents") %></li>
     <li><%= app_nav_link("Approval Channels", approval_channels_path, icon: :approval, identifier: "approval_channels") %></li>
-    
-    <li>
-      <%= app_dropdown_toggle("My Approvals", "myApprovalsMenu", icon: :approval, identifier: "my_approvals_main") %>
-      <div class="collapse submenu h-auto" id="myApprovalsMenu">
-        <ul class="nav flex-column">
-          <% if can_view_menu?("approvals_pending") %>
-          <li>
-            <%= link_to approval_requests_path(status: "pending"), class: "nav-link" do %>
-              <span class="app-link-wrap">
-                <%= app_icon(:approval) %>
-                <span class="app-link-label">
-                  Pending Approvals
-                  <% if pending_approvals_count.positive? %>
-                    <span class="badge bg-danger ms-2"><%= pending_approvals_count %></span>
-                  <% end %>
-                </span>
-              </span>
-            <% end %>
-          </li>
-          <% end %>
-          
-          <% if can_view_menu?("approvals_approved") %>
-          <li>
-            <%= link_to approval_requests_path(status: "approved"), class: "nav-link" do %>
-              <span class="app-link-wrap">
-                <%= app_icon(:approval) %>
-                <span class="app-link-label">
-                  Approved
-                  <% if approved_approvals_count.positive? %>
-                    <span class="badge bg-success ms-2"><%= approved_approvals_count %></span>
-                  <% end %>
-                </span>
-              </span>
-            <% end %>
-          </li>
-          <% end %>
-
-          <% if can_view_menu?("approvals_rejected") %>
-          <li>
-            <%= link_to approval_requests_path(status: "rejected"), class: "nav-link" do %>
-              <span class="app-link-wrap">
-                <%= app_icon(:approval) %>
-                <span class="app-link-label">
-                  Rejected
-                  <% if rejected_approvals_count.positive? %>
-                    <span class="badge bg-warning ms-2"><%= rejected_approvals_count %></span>
-                  <% end %>
-                </span>
-              </span>
-            <% end %>
-          </li>
-          <% end %>
-          <li><%= app_nav_link("All Approvals", approval_requests_path, icon: :approval, identifier: "approvals_all") %></li>
-        </ul>
-      </div>
-    </li>
-    
     <li><%= app_nav_link("Firms", firms_path, icon: :firm, identifier: "firms") %></li>
     <li><%= app_nav_link("Employee Master", employee_masters_path, icon: :people, identifier: "employee_master") %></li>
     <li><%= app_nav_link("Banks", vendor_bank_masters_path, icon: :bank, identifier: "banks") %></li>
