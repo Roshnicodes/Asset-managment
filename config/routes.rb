@@ -8,7 +8,12 @@ Rails.application.routes.draw do
     end
   end
   resources :vendor_registrations do
+    member do
+      post :send_for_approval
+    end
+
     collection do
+      get :list
       post :send_for_approval
     end
   end

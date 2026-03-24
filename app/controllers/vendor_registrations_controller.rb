@@ -3,21 +3,76 @@ class VendorRegistrationsController < ApplicationController
 
   # GET /vendor_registrations or /vendor_registrations.json
   def index
-    # Admin sees all, User sees only their own registrations
+    base_scope = VendorRegistration.includes(
+      :stakeholder_category,
+      :registration_type,
+      :firm,
+      :state,
+      :district,
+      :block,
+      approval_request: :approval_steps
+    )
+
     if current_user.email == "admin@example.com" || current_user.employee_master&.user_type == "Admin"
-      @vendor_registrations = VendorRegistration.includes(:stakeholder_category, :registration_type, :firm, :state, :district, :block).order(created_at: :desc)
+      @vendor_registrations = base_scope.order(created_at: :desc)
     else
-      @vendor_registrations = current_user.vendor_registrations.includes(:stakeholder_category, :registration_type, :firm, :state, :district, :block).order(created_at: :desc)
+      @vendor_registrations = base_scope.where(user_id: current_user.id).order(created_at: :desc)
+    end
+  end
+
+  def list
+    base_scope = VendorRegistration.includes(
+      :stakeholder_category,
+      :registration_type,
+      :firm,
+      :state,
+      :district,
+      :block,
+      approval_request: :approval_steps
+    )
+
+    if current_user.email == "admin@example.com" || current_user.employee_master&.user_type == "Admin"
+      @vendor_registrations = base_scope.joins(:approval_request).distinct.order(created_at: :desc)
+    else
+      own_ids = base_scope.where(user_id: current_user.id).joins(:approval_request).select(:id)
+      involved_ids = if current_employee_master.present?
+        VendorRegistration.joins(approval_request: :approval_steps)
+          .where(approval_steps: { employee_master_id: current_employee_master.id })
+          .select(:id)
+      else
+        VendorRegistration.none.select(:id)
+      end
+
+      @vendor_registrations = base_scope.where(id: own_ids).or(base_scope.where(id: involved_ids)).distinct.order(created_at: :desc)
     end
   end
 
   # POST /vendor_registrations/send_for_approval
   def send_for_approval
-    if params[:vendor_registration_ids].present?
-      VendorRegistration.where(id: params[:vendor_registration_ids]).each do |vendor|
-        ApprovalRequestBuilder.create_for!(vendor, form_name: "Vendor Registration") unless vendor.approval_request
+    vendor_ids = if params[:id].present?
+      [params[:id]]
+    else
+      Array(params[:vendor_registration_ids]).reject(&:blank?)
+    end
+
+    if vendor_ids.present?
+      sent_count = 0
+      failed_count = 0
+
+      VendorRegistration.where(id: vendor_ids).each do |vendor|
+        next if vendor.approval_request.present?
+
+        approval_request = ApprovalRequestBuilder.create_for!(vendor, form_name: "Vendor Registration")
+        approval_request.present? ? sent_count += 1 : failed_count += 1
       end
-      redirect_to vendor_registrations_path, notice: "Selected Vendor Registrations sent for approval successfully."
+
+      if sent_count.positive? && failed_count.zero?
+        redirect_to list_vendor_registrations_path, notice: "Selected Vendor Registrations sent for approval successfully."
+      elsif sent_count.positive?
+        redirect_to list_vendor_registrations_path, alert: "#{sent_count} registration(s) sent for approval, but #{failed_count} could not be mapped to a valid approval channel."
+      else
+        redirect_to vendor_registrations_path, alert: "No approval request was created. Please check Theme, Stakeholder, and Approval Channel steps."
+      end
     else
       redirect_to vendor_registrations_path, alert: "No Vendor Registrations were selected."
     end

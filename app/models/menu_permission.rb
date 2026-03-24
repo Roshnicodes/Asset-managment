@@ -33,7 +33,11 @@ class MenuPermission < ApplicationRecord
     "Firms" => "firms",
     "Employee Master" => "employee_master",
     "Banks" => "banks",
-    "Vendor Registration Form" => "vendor_registration",
+    "Vendor Registration Form" => {
+      "main" => "vendor_registration_main",
+      "Vendor Registration" => "vendor_registration",
+      "Vendor Registration List" => "vendor_registration_list"
+    },
     "Assets" => "assets",
     "Allocation" => "allocation"
   }.freeze

@@ -21,9 +21,17 @@ class ApprovalRequest < ApplicationRecord
     "#{current_step.action_label} - #{current_step.current_action_label}"
   end
 
+  def status_label
+    status == "rejected" ? "Returned" : status.capitalize
+  end
+
+  def latest_remark
+    approval_steps.where.not(remark: [nil, ""]).order(actioned_at: :desc, updated_at: :desc).pick(:remark)
+  end
+
   def approval_history_label
     approval_steps.map do |step|
-      detail = "Step #{step.level} #{step.action_label} [#{step.previous_action_label} -> #{step.current_action_label}]: #{step.status.capitalize}"
+      detail = "Step #{step.level} #{step.action_label} [#{step.previous_action_label} -> #{step.current_action_label}]: #{step.effective_status_label}"
       detail = "#{detail} on #{step.actioned_at.strftime('%d-%m-%Y %H:%M')}" if step.actioned_at.present?
       step.remark.present? ? "#{detail} (#{step.remark})" : detail
     end.join(" | ")

@@ -1,30 +1,33 @@
 class ApprovalRequestBuilder
   def self.create_for!(record, form_name:)
-    query = ApprovalChannel.where(form_name: form_name)
-    if form_name == "Vendor Registration" && record.respond_to?(:theme_ids) && record.theme_ids.any?
-      query = query.where(theme_id: record.theme_ids).or(query.where(theme_id: nil))
-    else
-      query = query.where(theme_id: nil)
-    end
-
-    # Prioritize specifically for this stakeholder category if it exists
     stakeholder_category_id = record.try(:stakeholder_category_id)
-    query = query.where(stakeholder_category_id: stakeholder_category_id) if stakeholder_category_id.present?
+    theme_ids = record.try(:theme_ids).presence || []
 
-    # Find the creator of the record
-    creator_employee = record.try(:user)&.employee_master
+    candidate_scope = ApprovalChannel
+      .includes(:approval_channel_steps)
+      .where(form_name: form_name)
 
-    # Filter by creator: find channel where at least one step has from_user = creator_employee
-    # Or more precisely, where the first step should start from this creator.
-    approval_channel = if creator_employee
-      query.joins(:approval_channel_steps)
-           .where(approval_channel_steps: { step_number: 1, from_user_id: creator_employee.id })
-           .first
+    if stakeholder_category_id.present?
+      candidate_scope = candidate_scope.where(stakeholder_category_id: [stakeholder_category_id, nil])
     end
 
-    # Fallback to general lookup if no specific creator-based channel found
-    approval_channel ||= query.find_by(stakeholder_category_id: stakeholder_category_id)
-    approval_channel ||= query.find_by(stakeholder_category_id: nil) if stakeholder_category_id.nil?
+    if theme_ids.any?
+      candidate_scope = candidate_scope.where(theme_id: theme_ids + [nil])
+    else
+      theme_scoped_channels = candidate_scope.where(theme_id: nil)
+      candidate_scope = theme_scoped_channels.exists? ? theme_scoped_channels : candidate_scope
+    end
+
+    candidate_channels = candidate_scope.to_a
+    return nil if candidate_channels.empty?
+
+    creator_employee = creator_employee_for(record)
+    approval_channel = select_approval_channel(
+      candidate_channels: candidate_channels,
+      creator_employee: creator_employee,
+      stakeholder_category_id: stakeholder_category_id,
+      theme_ids: theme_ids
+    )
 
     return nil unless approval_channel
 
@@ -93,5 +96,55 @@ class ApprovalRequestBuilder
     end
 
     approval_request
+  end
+
+  def self.creator_employee_for(record)
+    user = record.try(:user)
+    return unless user
+
+    user.employee_master || EmployeeMaster.find_by("LOWER(email_id) = ?", user.email.to_s.downcase)
+  end
+
+  def self.select_approval_channel(candidate_channels:, creator_employee:, stakeholder_category_id:, theme_ids:)
+    usable_channels = candidate_channels.select { |channel| channel.flow_steps.any? }
+    return nil if usable_channels.empty?
+
+    usable_channels.max_by do |channel|
+      first_step = channel.flow_steps.first
+
+      [
+        creator_match_score(first_step, creator_employee),
+        exact_stakeholder_score(channel, stakeholder_category_id),
+        exact_theme_score(channel, theme_ids),
+        channel.flow_steps.size,
+        channel.id
+      ]
+    end
+  end
+
+  def self.creator_match_score(first_step, creator_employee)
+    return 0 unless first_step && creator_employee
+
+    from_user_id = first_step.try(:from_user_id) || first_step.try(:from_user)&.id
+    to_user_id = first_step.try(:to_responsible_user_id) || first_step.try(:to_responsible_user)&.id
+
+    from_match = from_user_id.to_i == creator_employee.id ? 2 : 0
+    to_match = to_user_id.to_i == creator_employee.id ? 1 : 0
+    from_match + to_match
+  end
+
+  def self.exact_stakeholder_score(channel, stakeholder_category_id)
+    return 0 if stakeholder_category_id.blank?
+    return 2 if channel.stakeholder_category_id == stakeholder_category_id
+    return 1 if channel.stakeholder_category_id.nil?
+
+    0
+  end
+
+  def self.exact_theme_score(channel, theme_ids)
+    return 1 if channel.theme_id.nil?
+    return 3 if theme_ids.include?(channel.theme_id)
+
+    0
   end
 end

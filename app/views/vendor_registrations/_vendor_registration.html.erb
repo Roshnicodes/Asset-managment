@@ -137,7 +137,7 @@
            else 'bg-secondary bg-opacity-10 text-secondary border-secondary'
            end %>
         <span class="badge border <%= status_class %> fw-semibold px-3 py-2" style="font-size: 0.9rem;">
-          <%= vendor_registration.approval_request&.status&.capitalize || "Not Started" %>
+          <%= vendor_registration.approval_request&.status_label || "Not Started" %>
         </span>
       </div>
     </div>
@@ -170,7 +170,12 @@
                  end %>
               <div class="badge border <%= step_class %> px-3 py-2 text-start d-flex flex-column gap-1" style="font-style: normal; font-weight: normal; font-size: 0.85rem; line-height: 1.2;">
                 <span class="fw-bold border-bottom pb-1 mb-1">Step <%= step.level %>: <%= step.employee_master.name %></span>
-                <span><%= step.current_action_label %>: <strong><%= step.effective_status.capitalize %></strong></span>
+                <span>
+                  <%= step.current_action_label %>
+                  <% if step.show_status_in_trail? %>
+                    : <strong><%= step.effective_status_label %></strong>
+                  <% end %>
+                </span>
                 <% if step.actioned_at.present? %>
                   <span class="small opacity-75"><%= step.actioned_at.strftime("%d-%m-%Y %H:%M") %></span>
                 <% end %>
@@ -209,7 +214,7 @@
               <span class="text-muted small ms-1">(<%= step.employee_master.designation.presence || "Employee" %>)</span>
             </div>
             <div class="fw-bold px-3 py-1 rounded-pill border" style="background: white; border-color: <%= step_theme[:border] %> !important; color: <%= step_theme[:text] %>; font-size: 0.85rem;">
-              <span class="me-1"><%= step_theme[:icon] %></span> <%= step.effective_status.capitalize %>
+              <span class="me-1"><%= step_theme[:icon] %></span> <%= step.effective_status_label %>
             </div>
           </div>
 

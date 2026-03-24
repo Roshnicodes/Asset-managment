@@ -1,13 +1,13 @@
 <div class="app-toolbar">
   <div>
-    <h1>My Approvals</h1>
+    <h1><%= @form_name.presence || "My Approvals" %></h1>
     <p class="app-section-note">Pending, approved, rejected, or all requests for your login.</p>
   </div>
 </div>
 
 <div class="mb-3">
   <% %w[pending approved rejected all].each do |s| %>
-    <%= link_to s.titleize, approval_requests_path(status: s), class: "btn btn-sm me-2 #{'btn-primary' if @status == s} #{'btn-outline-primary' unless @status == s}" %>
+    <%= link_to s.titleize, approval_requests_path(status: s, form_name: @form_name), class: "btn btn-sm me-2 #{'btn-primary' if @status == s} #{'btn-outline-primary' unless @status == s}" %>
   <% end %>
 </div>
 
@@ -55,8 +55,8 @@
               <% end %>
 
               <%= form_with url: reject_approval_request_path(approval_request), method: :patch, local: true, class: "d-inline" do |form| %>
-                <%= form.text_field :remark, placeholder: "Reject remark" %>
-                <%= form.submit "Reject", class: "app-action-button app-delete-button" %>
+                <%= form.text_field :remark, placeholder: "Return remark", required: true %>
+                <%= form.submit "Return", class: "app-action-button app-delete-button" %>
               <% end %>
             </td>
           </tr>
@@ -81,6 +81,7 @@
           <th>Your Decision</th>
           <th>Remark</th>
           <th>Approval Trail</th>
+          <th>View</th>
         </tr>
       </thead>
       <tbody>
@@ -93,9 +94,16 @@
             <td><%= step&.status&.capitalize %></td>
             <td><%= step&.remark.presence || "-" %></td>
             <td><%= approval_request.approval_history_label %></td>
+            <td>
+              <% if approval_request.approvable.is_a?(VendorRegistration) %>
+                <%= link_to "View", vendor_registration_path(approval_request.approvable), class: "app-action-button" %>
+              <% else %>
+                -
+              <% end %>
+            </td>
           </tr>
         <% end %>
       </tbody>
     </table>
   </div>
-
+<% end %>

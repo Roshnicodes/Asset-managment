@@ -63,6 +63,11 @@ module ApplicationHelper
     # If User Type is User, check permissions
     role_perms = MenuPermission.where(stakeholder_category_id: employee.stakeholder_category_id, designation: employee.designation)
     return false if role_perms.empty? # By default, when new employee logs in, nothing is visible
+
+    if identifier == "vendor_registration_main"
+      return true if role_perms.find_by(menu_identifier: "vendor_registration")&.can_view?
+      return true if role_perms.find_by(menu_identifier: "vendor_registration_list")&.can_view?
+    end
     
     perm = role_perms.find_by(menu_identifier: identifier)
     perm ? perm.can_view? : false

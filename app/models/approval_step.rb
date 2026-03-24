@@ -24,4 +24,16 @@ class ApprovalStep < ApplicationRecord
     is_initial_step = (level == 1 && (previous_action.to_s.strip == "NA" || previous_action.to_s.strip.blank?) && current_action.to_s.strip == "Proposal Create")
     is_initial_step ? "approved" : status
   end
+
+  def effective_status_label
+    effective_status == "rejected" ? "Returned" : effective_status.capitalize
+  end
+
+  def proposal_create_step?
+    level == 1 && current_action.to_s.strip == "Proposal Create"
+  end
+
+  def show_status_in_trail?
+    !proposal_create_step?
+  end
 end

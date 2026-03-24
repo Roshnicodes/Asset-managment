@@ -3,10 +3,12 @@ class ApprovalRequestsController < ApplicationController
   before_action :ensure_employee_user!
 
   def index
-    @status = params[:status].presence || "pending"
+    @status = params[:status].presence || default_status
+    @form_name = params[:form_name].presence
     is_admin = current_user.email == "admin@example.com"
 
     base_requests = ApprovalRequest.includes(:approvable, :approval_steps).order(created_at: :desc)
+    base_requests = base_requests.where(form_name: @form_name) if @form_name.present?
     
     unless is_admin
       base_requests = base_requests.joins(:approval_steps).where(approval_steps: { employee_master_id: current_employee_master.id })
@@ -33,21 +35,21 @@ class ApprovalRequestsController < ApplicationController
 
   def approve
     @approval_request.approve!(employee: current_employee_master, remark: params[:remark].presence)
-    redirect_to approval_requests_path, notice: "Approval moved to next level successfully."
+    redirect_to approval_requests_path(status: "all", form_name: @approval_request.form_name), notice: "Approval moved to next level successfully."
   rescue ActiveRecord::RecordNotFound
-    redirect_to approval_requests_path, alert: "No pending approval found for your login."
+    redirect_to approval_requests_path(status: "pending", form_name: @approval_request.form_name), alert: "No pending approval found for your login."
   end
 
   def reject
     if params[:remark].blank?
-      redirect_to approval_requests_path, alert: "Remark is required for rejection."
+      redirect_to approval_requests_path(status: "pending", form_name: @approval_request.form_name), alert: "Remark is required for rejection."
       return
     end
 
     @approval_request.reject!(employee: current_employee_master, remark: params[:remark])
-    redirect_to approval_requests_path, notice: "Request rejected successfully."
+    redirect_to approval_requests_path(status: "all", form_name: @approval_request.form_name), notice: "Request rejected successfully."
   rescue ActiveRecord::RecordNotFound
-    redirect_to approval_requests_path, alert: "No pending approval found for your login."
+    redirect_to approval_requests_path(status: "pending", form_name: @approval_request.form_name), alert: "No pending approval found for your login."
   end
 
   private
@@ -61,5 +63,9 @@ class ApprovalRequestsController < ApplicationController
     return if current_employee_master.present?
 
     redirect_to root_path, alert: "Your login is not mapped to any employee master email."
+  end
+
+  def default_status
+    params[:form_name].present? ? "all" : "pending"
   end
 end

@@ -1,11 +1,14 @@
 module ApprovalRequestsHelper
-  def pending_approvals_count
+  def pending_approvals_count(form_name = nil)
+    scope = ApprovalRequest.where(status: "pending")
+    scope = scope.where(form_name: form_name) if form_name.present?
+
     if current_user.email == "admin@example.com"
-      return ApprovalRequest.where(status: "pending").count
+      return scope.count
     end
     return 0 unless current_employee_master.present?
     
-    ApprovalRequest.joins(:approval_steps)
+    scope.joins(:approval_steps)
       .where(approval_steps: { employee_master_id: current_employee_master.id, status: "pending" })
       .distinct
       .count

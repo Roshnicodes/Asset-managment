@@ -61,7 +61,21 @@
     <li><%= app_nav_link("Firms", firms_path, icon: :firm, identifier: "firms") %></li>
     <li><%= app_nav_link("Employee Master", employee_masters_path, icon: :people, identifier: "employee_master") %></li>
     <li><%= app_nav_link("Banks", vendor_bank_masters_path, icon: :bank, identifier: "banks") %></li>
-    <li><%= app_nav_link("Vendor Registration Form", vendor_registrations_path, icon: :vendor, identifier: "vendor_registration") %></li>
+    <% if can_view_menu?("vendor_registration_main") || can_view_menu?("vendor_registration") || can_view_menu?("vendor_registration_list") %>
+      <li>
+        <%= app_dropdown_toggle("Vendor Registration Form", "vendorRegistrationMenu", icon: :vendor, identifier: "vendor_registration_main") %>
+        <div class="collapse submenu h-auto" id="vendorRegistrationMenu">
+          <ul class="nav flex-column">
+            <% if can_view_menu?("vendor_registration") %>
+              <li><%= link_to "Vendor Registration", vendor_registrations_path, class: "nav-link" %></li>
+            <% end %>
+            <% if can_view_menu?("vendor_registration_list") || can_view_menu?("vendor_registration") %>
+              <li><%= link_to "Vendor Registration List", list_vendor_registrations_path, class: "nav-link" %></li>
+            <% end %>
+          </ul>
+        </div>
+      </li>
+    <% end %>
     <li><%= app_nav_link("Assets", assets_path, icon: :asset, identifier: "assets") %></li>
     <li><%= app_nav_link("Allocation", allocations_path, icon: :allocation, identifier: "allocation") %></li>
     <%= button_to destroy_user_session_path, method: :delete, class: "dropdown-item d-flex align-items-center gap-2 py-2 px-3 text-danger border-0 bg-transparent w-100 text-start" do %>

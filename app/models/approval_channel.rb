@@ -7,6 +7,7 @@ class ApprovalChannel < ApplicationRecord
   belongs_to :level_2_employee, class_name: "EmployeeMaster", optional: true
   belongs_to :level_3_employee, class_name: "EmployeeMaster", optional: true
   has_many :approval_channel_steps, -> { order(:step_number) }, dependent: :destroy, inverse_of: :approval_channel
+  has_many :approval_requests, dependent: :destroy
 
   accepts_nested_attributes_for :approval_channel_steps, allow_destroy: true, reject_if: :all_blank
 
