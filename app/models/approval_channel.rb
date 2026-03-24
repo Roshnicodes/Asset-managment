@@ -19,6 +19,16 @@ class ApprovalChannel < ApplicationRecord
   ].freeze
 
   APPROVAL_TYPES = ["Sequential", "Parallel"].freeze
+  APPROVAL_ACTIONS = [
+    "Proposal Create",
+    "Technical Approval",
+    "Managing Director",
+    "Finance Approval",
+    "L1 Approval",
+    "L2 Approval",
+    "L3 Approval",
+    "Final Approval"
+  ].freeze
 
   validates :form_name, :approval_type, presence: true
   validate :at_least_one_approval_step_selected
@@ -89,7 +99,7 @@ class ApprovalChannel < ApplicationRecord
     configured_approvers.each_with_index.map do |employee, index|
       LegacyFlowStep.new(
         step_number: index + 1,
-        previous_action: index.zero? ? nil : "L#{index} Approved",
+        previous_action: index.zero? ? "NA" : "L#{index} Approved",
         current_action: index.zero? ? "Proposal Create" : "L#{index + 1} Approval",
         to_responsible_user: employee,
         from_user: nil

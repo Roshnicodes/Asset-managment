@@ -2,9 +2,8 @@
   <%= form.hidden_field :_destroy, value: "false", data: { approval_step_destroy: true } %>
 
   <div class="app-form-grid app-approval-step-grid">
-    <div class="app-form-field">
-      <%= form.label :step_number, "Step No." %>
-      <%= form.number_field :step_number, min: 1, class: "form-control", data: { approval_step_number: true } %>
+    <div style="display: none;">
+      <%= form.number_field :step_number, min: 1, data: { approval_step_number: true } %>
     </div>
 
     <div class="app-form-field">
@@ -19,12 +18,12 @@
 
     <div class="app-form-field">
       <%= form.label :previous_action, "Previous Action" %>
-      <%= form.text_field :previous_action, class: "form-control", placeholder: "Blank for first step" %>
+      <%= form.text_field :previous_action, class: "form-control", placeholder: "NA for first step", data: { approval_previous_action: true }, readonly: true %>
     </div>
 
     <div class="app-form-field">
-      <%= form.label :current_action, "Current Action" %>
-      <%= form.text_field :current_action, class: "form-control", placeholder: "Proposal Create / Technical Approval" %>
+      <%= form.label :current_action, "Current Action <span style='color: #d85f52;'>*</span>".html_safe %>
+      <%= form.select :current_action, @approval_actions, { prompt: "Select Action" }, { class: "form-control", data: { approval_current_action: true } } %>
     </div>
   </div>
 

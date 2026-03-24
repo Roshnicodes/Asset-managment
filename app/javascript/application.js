@@ -74,18 +74,40 @@ const setupApprovalChannelSteps = () => {
     const addButton = container.querySelector("[data-add-approval-step]")
     if (!list || !template || !addButton) return
 
-    const renumberSteps = () => {
-      list.querySelectorAll("[data-approval-step-row]").forEach((row, index) => {
-        const stepInput = row.querySelector("[data-approval-step-number]")
-        if (stepInput && !stepInput.value) stepInput.value = index + 1
+    const renumberAndSyncSteps = () => {
+      const rows = Array.from(list.querySelectorAll("[data-approval-step-row]")).filter(row => {
+        const destroyField = row.querySelector("[data-approval-step-destroy]")
+        return !destroyField || destroyField.value !== "1"
       })
+
+      rows.forEach((row, index) => {
+        const stepInput = row.querySelector("[data-approval-step-number]")
+        if (stepInput) stepInput.value = index + 1
+
+        const prevInput = row.querySelector("[data-approval-previous-action]")
+        if (index === 0) {
+          if (prevInput) prevInput.value = "NA"
+        } else {
+          const prevRow = rows[index - 1]
+          const prevCurrentActionInput = prevRow.querySelector("[data-approval-current-action]")
+          if (prevInput && prevCurrentActionInput) {
+            prevInput.value = prevCurrentActionInput.value || ""
+          }
+        }
+      })
+    }
+
+    const handleInput = (event) => {
+      if (event.target.closest("[data-approval-current-action]")) {
+        renumberAndSyncSteps()
+      }
     }
 
     addButton.addEventListener("click", () => {
       const uniqueKey = `${Date.now()}-${Math.floor(Math.random() * 1000)}`
       const html = template.innerHTML.replace(/NEW_RECORD/g, uniqueKey)
       list.insertAdjacentHTML("beforeend", html)
-      renumberSteps()
+      renumberAndSyncSteps()
     })
 
     container.addEventListener("click", (event) => {
@@ -102,9 +124,13 @@ const setupApprovalChannelSteps = () => {
       } else {
         row.remove()
       }
+      renumberAndSyncSteps()
     })
 
-    renumberSteps()
+    container.addEventListener("input", handleInput)
+    container.addEventListener("change", handleInput)
+
+    renumberAndSyncSteps()
     container.dataset.ready = "true"
   })
 }

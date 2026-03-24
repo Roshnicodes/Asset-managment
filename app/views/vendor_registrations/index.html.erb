@@ -7,6 +7,7 @@
 <table class="table app-table">
   <thead>
     <tr>
+      <th>View</th>
       <th>Stakeholder</th>
       <th>Registration Type</th>
       <th>Vendor Name</th>
@@ -16,13 +17,17 @@
       <th>Approval Status</th>
       <th>Approval Trail</th>
       <th>Submitted At</th>
-      <th>User IP</th>
       <th>Action</th>
     </tr>
   </thead>
   <tbody>
     <% @vendor_registrations.each do |vendor_registration| %>
       <tr>
+        <td>
+          <%= link_to vendor_registration_path(vendor_registration), class: "app-action-icon text-primary", title: "View" do %>
+            <%= app_icon(:eye, size: 18) %>
+          <% end %>
+        </td>
         <td><%= vendor_registration.stakeholder_category&.name || "-" %></td>
         <td><%= vendor_registration.registration_type.name %></td>
         <td><%= vendor_registration.vendor_name %></td>
@@ -32,11 +37,15 @@
         <td><%= vendor_registration.approval_request&.status&.capitalize || "Not Started" %></td>
         <td><%= vendor_registration.approval_request&.approval_history_label || "-" %></td>
         <td><%= vendor_registration.submitted_at&.strftime("%d-%m-%Y %H:%M") %></td>
-        <td><%= vendor_registration.submitted_ip %></td>
         <td class="app-row-actions">
-          <%= link_to "View", vendor_registration_path(vendor_registration) %> |
-          <%= link_to "Edit", edit_vendor_registration_path(vendor_registration) %> |
-          <%= button_to "Delete", vendor_registration_path(vendor_registration), method: :delete, data: { turbo_confirm: "Delete this vendor registration?" }, class: "app-action-button app-delete-button" %>
+          <div class="d-flex align-items-center gap-2">
+            <%= link_to edit_vendor_registration_path(vendor_registration), class: "app-action-icon text-warning", title: "Edit" do %>
+              <%= app_icon(:pencil, size: 18) %>
+            <% end %>
+            <%= button_to vendor_registration_path(vendor_registration), method: :delete, data: { turbo_confirm: "Delete this vendor registration?" }, class: "app-action-icon text-danger", title: "Delete" do %>
+              <%= app_icon(:trash, size: 18) %>
+            <% end %>
+          </div>
         </td>
       </tr>
     <% end %>

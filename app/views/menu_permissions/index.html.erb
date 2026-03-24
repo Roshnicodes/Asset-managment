@@ -1,0 +1,85 @@
+<div class="app-toolbar">
+  <h1>Role Based Access Control</h1>
+</div>
+
+<div class="app-form-card app-form-card-wide mb-4">
+  <%= form_with url: menu_permissions_path, method: :get, local: true, class: "app-form-grid three-col" do |f| %>
+    <div class="app-form-field">
+      <%= f.label :stakeholder_category_id, "Stakeholder Category <span class='text-danger'>*</span>".html_safe %>
+      <% options = StakeholderCategory.order(:name).map { |s| ["#{s.name} (ID: #{s.id})", s.id] } %>
+      <%= f.select :stakeholder_category_id, options, { prompt: "Select Stakeholder Category", selected: params[:stakeholder_category_id] }, { class: "form-control", onchange: "this.form.submit()" } %>
+    </div>
+
+    <div class="app-form-field">
+      <%= f.label :designation, "Role (Designation) <span class='text-danger'>*</span>".html_safe %>
+      <% designations = EmployeeMaster.where.not(designation: [nil, ""]).pluck(:designation).uniq.sort %>
+      <%= f.select :designation, designations, { prompt: "Select Role", selected: params[:designation] }, { class: "form-control", onchange: "this.form.submit()" } %>
+    </div>
+  <% end %>
+</div>
+
+<% if @current_stakeholder && @current_designation %>
+  <%= form_with url: menu_permissions_path, method: :post, local: true do |f| %>
+    <%= f.hidden_field :stakeholder_category_id, value: @current_stakeholder.id %>
+    <%= f.hidden_field :designation, value: @current_designation %>
+
+    <div class="app-table-wrap">
+      <table class="table app-table">
+        <thead class="sticky-top">
+          <tr>
+            <th style="width: 250px;">Menu</th>
+            <th>Sub Menu Permissions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% MenuPermission::SIDEBAR_MENUS.each do |label, value| %>
+            <tr>
+              <% if value.is_a?(Hash) %>
+                <td class="fw-bold bg-light bg-opacity-50">
+                  <div class="d-flex align-items-center gap-2">
+                    <%= check_box_tag "menu_ids[]", value["main"], @permissions[value["main"]], id: "menu_#{value["main"]}", class: "form-check-input" %>
+                    <label for="menu_<%= value["main"] %>" class="m-0"><%= label %></label>
+                  </div>
+                </td>
+                <td>
+                  <div class="d-flex flex-wrap gap-4">
+                    <% value.each do |sub_label, sub_id| %>
+                      <% next if sub_label == "main" %>
+                      <div class="d-inline-flex align-items-center gap-2">
+                        <%= check_box_tag "menu_ids[]", sub_id, @permissions[sub_id], id: "menu_#{sub_id}", class: "form-check-input" %>
+                        <label for="menu_<%= sub_id %>" class="form-check-label m-0 text-muted"><%= sub_label %></label>
+                      </div>
+                    <% end %>
+                  </div>
+                </td>
+              <% else %>
+                <td class="fw-bold">
+                  <div class="d-inline-flex align-items-center gap-2">
+                    <%= check_box_tag "menu_ids[]", value, @permissions[value], id: "menu_#{value}", class: "form-check-input" %>
+                    <label for="menu_<%= value %>" class="m-0"><%= label %></label>
+                  </div>
+                </td>
+                <td class="text-muted small">Standard Menu</td>
+              <% end %>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="app-form-actions mt-4 bg-white p-3 border-top sticky-bottom">
+      <button type="submit" class="app-form-submit px-5 shadow-sm">Save Access Control</button>
+    </div>
+  <% end %>
+<% else %>
+  <div class="alert alert-info py-4 text-center">
+    <div class="mb-2"><%= app_icon(:people, size: 32) %></div>
+    Please select a Stakeholder Category and Role to manage their menu access.
+  </div>
+<% end %>
+
+<style>
+  .sticky-top { position: sticky; top: 0; z-index: 100; }
+  .sticky-bottom { position: sticky; bottom: 0; z-index: 100; box-shadow: 0 -4px 12px rgba(0,0,0,0.05); }
+  .app-table thead th { background: #f4faf6; }
+</style>

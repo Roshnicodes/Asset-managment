@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
   resources :notifications, only: [:index]
+  resources :menu_permissions, only: [:index, :create]
   resources :approval_requests, only: [:index] do
     member do
       patch :approve

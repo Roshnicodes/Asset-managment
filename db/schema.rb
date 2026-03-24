@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_23_130000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_23_171500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -189,6 +189,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_130000) do
     t.bigint "stakeholder_category_id"
     t.datetime "updated_at", null: false
     t.index ["stakeholder_category_id"], name: "index_firms_on_stakeholder_category_id"
+  end
+
+  create_table "menu_permissions", force: :cascade do |t|
+    t.boolean "can_view", default: false
+    t.datetime "created_at", null: false
+    t.string "designation", null: false
+    t.string "menu_identifier", null: false
+    t.bigint "stakeholder_category_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["stakeholder_category_id", "designation", "menu_identifier"], name: "idx_menu_permissions_composite", unique: true
+    t.index ["stakeholder_category_id"], name: "index_menu_permissions_on_stakeholder_category_id"
   end
 
   create_table "notifications", force: :cascade do |t|
@@ -415,6 +426,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_23_130000) do
   add_foreign_key "employee_masters", "states"
   add_foreign_key "fcos", "pmus"
   add_foreign_key "firms", "stakeholder_categories"
+  add_foreign_key "menu_permissions", "stakeholder_categories"
   add_foreign_key "notifications", "users"
   add_foreign_key "office_categories", "stakeholder_categories"
   add_foreign_key "pmus", "blocks"

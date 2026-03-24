@@ -1,4 +1,5 @@
 class ApplicationController < ActionController::Base
+  include ApprovalRequestsHelper
   before_action :authenticate_user!, unless: :devise_controller?
   allow_browser versions: :modern
 

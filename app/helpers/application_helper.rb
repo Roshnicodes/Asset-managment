@@ -18,16 +18,22 @@ module ApplicationHelper
     vendor: '<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/><path d="M5 20a7 7 0 0 1 14 0"/><path d="M18 8h3"/><path d="M19.5 6.5v3"/>',
     asset: '<rect x="5" y="5" width="14" height="14" rx="3"/><path d="M9 9h6v6H9z"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/>',
     allocation: '<path d="M5 7h8a3 3 0 0 1 0 6H7"/><path d="M11 17H5a3 3 0 0 1 0-6h2"/><path d="m13 14 3 3 4-4"/>',
-    logout: '<path d="M10 6H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3"/><path d="M14 16l4-4-4-4"/><path d="M18 12h-8"/>'
+    logout: '<path d="M10 6H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3"/><path d="M14 16l4-4-4-4"/><path d="M18 12h-8"/>',
+    eye: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+    pencil: '<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>',
+    trash: '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>'
   }.freeze
 
-  def app_icon(name, classes: "app-menu-icon")
+  def app_icon(name, classes: "app-menu-icon", size: 24)
     path = APP_SVG_ICONS.fetch(name.to_sym)
     content_tag(:svg, path.html_safe, class: classes, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor",
+      width: size, height: size,
       "stroke-width": "2.2", "stroke-linecap": "round", "stroke-linejoin": "round", aria: { hidden: true })
   end
 
-  def app_nav_link(label, path, icon:, class_name: "nav-link")
+  def app_nav_link(label, path, icon:, identifier: nil, class_name: "nav-link")
+    return unless can_view_menu?(identifier)
+
     link_to path, class: class_name do
       content_tag(:span, class: "app-link-wrap") do
         safe_join([app_icon(icon), content_tag(:span, label, class: "app-link-label")])
@@ -35,10 +41,25 @@ module ApplicationHelper
     end
   end
 
-  def app_dropdown_toggle(label, target_id, icon:)
+  def app_dropdown_toggle(label, target_id, icon:, identifier: nil)
+    return unless can_view_menu?(identifier)
+
     content_tag(:a, class: "nav-link dropdown-toggle-link", data: { bs_toggle: "collapse" }, href: "##{target_id}") do
       safe_join([content_tag(:span, safe_join([app_icon(icon), content_tag(:span, label, class: "app-link-label")]), class: "app-link-wrap")])
     end
+  end
+
+  def can_view_menu?(identifier)
+    return true if identifier.nil?
+    return true if current_user.email == "admin@example.com"
+    employee = current_user.employee_master
+    return true unless employee
+    
+    role_perms = MenuPermission.where(stakeholder_category_id: employee.stakeholder_category_id, designation: employee.designation)
+    return true if role_perms.empty?
+    
+    perm = role_perms.find_by(menu_identifier: identifier)
+    perm ? perm.can_view? : false
   end
 
   def notification_target_path(notification)

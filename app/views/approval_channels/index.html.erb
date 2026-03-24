@@ -26,7 +26,7 @@
           <% end %>
           <td><%= step.try(:from_user)&.name || "Blank" %></td>
           <td><%= step.to_responsible_user.name %></td>
-          <td><%= step.previous_action.presence || "Blank" %></td>
+          <td><%= step.previous_action.presence || (index.zero? ? "NA" : "Blank") %></td>
           <td><%= step.current_action %></td>
           <% if index.zero? %>
             <td rowspan="<%= approval_channel.flow_steps.size %>" class="app-row-actions">

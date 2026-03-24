@@ -1,52 +1,121 @@
 <aside class="app-sidebar">
   <ul class="nav flex-column">
-    <li><%= app_nav_link("Dashboard", root_path, icon: :dashboard) %></li>
+    <li><%= app_nav_link("Dashboard", root_path, icon: :dashboard, identifier: "dashboard") %></li>
+    
+    <li>
+      <%= app_dropdown_toggle("User Rights", "userManagementMenu", icon: :people, identifier: "dashboard") %>
+      <div class="collapse submenu h-auto" id="userManagementMenu">
+        <ul class="nav flex-column">
+          <li><%= link_to "Role Based Access Control", menu_permissions_path, class: "nav-link" %></li>
+        </ul>
+      </div>
+    </li>
 
     <li>
-      <%= app_dropdown_toggle("Office Category", "officeCategoryMenu", icon: :office) %>
+      <%= app_dropdown_toggle("Office Category", "officeCategoryMenu", icon: :office, identifier: "office_category_main") %>
       <div class="collapse submenu" id="officeCategoryMenu">
         <ul class="nav flex-column">
-          <li><%= app_nav_link("PMU", pmus_path, icon: :office) %></li>
-          <li><%= app_nav_link("FCO", fcos_path, icon: :office) %></li>
-          <li><%= app_nav_link("TO", tos_path, icon: :office) %></li>
+          <li><%= app_nav_link("PMU", pmus_path, icon: :office, identifier: "office_pmu") %></li>
+          <li><%= app_nav_link("FCO", fcos_path, icon: :office, identifier: "office_fco") %></li>
+          <li><%= app_nav_link("TO", tos_path, icon: :office, identifier: "office_to") %></li>
         </ul>
       </div>
     </li>
 
     <li>
-      <%= app_dropdown_toggle("LG", "lgMenu", icon: :map) %>
+      <%= app_dropdown_toggle("LG", "lgMenu", icon: :map, identifier: "lg_main") %>
       <div class="collapse submenu" id="lgMenu">
         <ul class="nav flex-column">
-          <li><%= app_nav_link("State", states_path, icon: :map) %></li>
-          <li><%= app_nav_link("District", districts_path, icon: :map) %></li>
-          <li><%= app_nav_link("Block", blocks_path, icon: :map) %></li>
+          <li><%= app_nav_link("State", states_path, icon: :map, identifier: "lg_state") %></li>
+          <li><%= app_nav_link("District", districts_path, icon: :map, identifier: "lg_district") %></li>
+          <li><%= app_nav_link("Block", blocks_path, icon: :map, identifier: "lg_block") %></li>
         </ul>
       </div>
     </li>
 
     <li>
-      <%= app_dropdown_toggle("Stakeholder Categories", "stakeholderMenu", icon: :people) %>
+      <%= app_dropdown_toggle("Stakeholder Categories", "stakeholderMenu", icon: :people, identifier: "stakeholder_categories") %>
       <div class="collapse submenu" id="stakeholderMenu">
         <ul class="nav flex-column">
-          <li><%= app_nav_link("Stakeholder Name", stakeholder_categories_path, icon: :people) %></li>
+          <li><%= app_nav_link("Stakeholder Name", stakeholder_categories_path, icon: :people, identifier: "stakeholder_categories") %></li>
         </ul>
       </div>
     </li>
 
-    <li><%= app_nav_link("Registration Types", registration_types_path, icon: :registration) %></li>
-    <li><%= app_nav_link("Service Types", service_types_path, icon: :service) %></li>
-    <li><%= app_nav_link("Vendor Thematic Types", themes_path, icon: :theme) %></li>
-    <li><%= app_nav_link("Product Entry", products_path, icon: :product) %></li>
-    <li><%= app_nav_link("Product Variety Entry", product_varieties_path, icon: :layers) %></li>
-    <li><%= app_nav_link("Units", units_path, icon: :unit) %></li>
-    <li><%= app_nav_link("Documents", document_masters_path, icon: :document) %></li>
-    <li><%= app_nav_link("Approval Channels", approval_channels_path, icon: :approval) %></li>
-    <li><%= app_nav_link("My Approvals", approval_requests_path, icon: :approval) %></li>
-    <li><%= app_nav_link("Firms", firms_path, icon: :firm) %></li>
-    <li><%= app_nav_link("Employee Master", employee_masters_path, icon: :people) %></li>
-    <li><%= app_nav_link("Banks", vendor_bank_masters_path, icon: :bank) %></li>
-    <li><%= app_nav_link("Vendor Registration Form", vendor_registrations_path, icon: :vendor) %></li>
-    <li><%= app_nav_link("Assets", assets_path, icon: :asset) %></li>
-    <li><%= app_nav_link("Allocation", allocations_path, icon: :allocation) %></li>
+    <li><%= app_nav_link("Registration Types", registration_types_path, icon: :registration, identifier: "registration_types") %></li>
+    <li><%= app_nav_link("Service Types", service_types_path, icon: :service, identifier: "service_types") %></li>
+    <li><%= app_nav_link("Vendor Thematic Types", themes_path, icon: :theme, identifier: "vendor_themes") %></li>
+    <li><%= app_nav_link("Product Entry", products_path, icon: :product, identifier: "products") %></li>
+    <li><%= app_nav_link("Product Variety Entry", product_varieties_path, icon: :layers, identifier: "product_varieties") %></li>
+    <li><%= app_nav_link("Units", units_path, icon: :unit, identifier: "units") %></li>
+    <li><%= app_nav_link("Documents", document_masters_path, icon: :document, identifier: "documents") %></li>
+    <li><%= app_nav_link("Approval Channels", approval_channels_path, icon: :approval, identifier: "approval_channels") %></li>
+    
+    <li>
+      <%= app_dropdown_toggle("My Approvals", "myApprovalsMenu", icon: :approval, identifier: "my_approvals_main") %>
+      <div class="collapse submenu h-auto" id="myApprovalsMenu">
+        <ul class="nav flex-column">
+          <% if can_view_menu?("approvals_pending") %>
+          <li>
+            <%= link_to approval_requests_path(status: "pending"), class: "nav-link" do %>
+              <span class="app-link-wrap">
+                <%= app_icon(:approval) %>
+                <span class="app-link-label">
+                  Pending Approvals
+                  <% if pending_approvals_count.positive? %>
+                    <span class="badge bg-danger ms-2"><%= pending_approvals_count %></span>
+                  <% end %>
+                </span>
+              </span>
+            <% end %>
+          </li>
+          <% end %>
+          
+          <% if can_view_menu?("approvals_approved") %>
+          <li>
+            <%= link_to approval_requests_path(status: "approved"), class: "nav-link" do %>
+              <span class="app-link-wrap">
+                <%= app_icon(:approval) %>
+                <span class="app-link-label">
+                  Approved
+                  <% if approved_approvals_count.positive? %>
+                    <span class="badge bg-success ms-2"><%= approved_approvals_count %></span>
+                  <% end %>
+                </span>
+              </span>
+            <% end %>
+          </li>
+          <% end %>
+
+          <% if can_view_menu?("approvals_rejected") %>
+          <li>
+            <%= link_to approval_requests_path(status: "rejected"), class: "nav-link" do %>
+              <span class="app-link-wrap">
+                <%= app_icon(:approval) %>
+                <span class="app-link-label">
+                  Rejected
+                  <% if rejected_approvals_count.positive? %>
+                    <span class="badge bg-warning ms-2"><%= rejected_approvals_count %></span>
+                  <% end %>
+                </span>
+              </span>
+            <% end %>
+          </li>
+          <% end %>
+          <li><%= app_nav_link("All Approvals", approval_requests_path, icon: :approval, identifier: "approvals_all") %></li>
+        </ul>
+      </div>
+    </li>
+    
+    <li><%= app_nav_link("Firms", firms_path, icon: :firm, identifier: "firms") %></li>
+    <li><%= app_nav_link("Employee Master", employee_masters_path, icon: :people, identifier: "employee_master") %></li>
+    <li><%= app_nav_link("Banks", vendor_bank_masters_path, icon: :bank, identifier: "banks") %></li>
+    <li><%= app_nav_link("Vendor Registration Form", vendor_registrations_path, icon: :vendor, identifier: "vendor_registration") %></li>
+    <li><%= app_nav_link("Assets", assets_path, icon: :asset, identifier: "assets") %></li>
+    <li><%= app_nav_link("Allocation", allocations_path, icon: :allocation, identifier: "allocation") %></li>
+    <%= button_to destroy_user_session_path, method: :delete, class: "dropdown-item d-flex align-items-center gap-2 py-2 px-3 text-danger border-0 bg-transparent w-100 text-start" do %>
+      <%= app_icon(:logout, classes: "icon-sm") %>
+      <span>Logout Account</span>
+    <% end %>
   </ul>
 </aside>

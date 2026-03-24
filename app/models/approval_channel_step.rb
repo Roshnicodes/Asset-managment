@@ -18,9 +18,9 @@ class ApprovalChannelStep < ApplicationRecord
   private
 
   def first_step_previous_action_should_be_blank
-    return unless step_number.to_i == 1 && previous_action.present?
+    return unless step_number.to_i == 1 && previous_action.present? && previous_action != "NA"
 
-    errors.add(:previous_action, "must be blank for the first approval step")
+    errors.add(:previous_action, "must be blank or 'NA' for the first approval step")
   end
 
   def users_must_be_different

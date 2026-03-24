@@ -82,6 +82,7 @@ class ApprovalChannelsController < ApplicationController
     def load_select_options
       @form_names = ApprovalChannel::FORM_NAMES
       @approval_types = ApprovalChannel::APPROVAL_TYPES
+      @approval_actions = ApprovalChannel::APPROVAL_ACTIONS
       @employee_options = EmployeeMaster.order(:name)
     end
 end
