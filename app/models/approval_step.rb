@@ -18,4 +18,10 @@ class ApprovalStep < ApplicationRecord
   def previous_action_label
     previous_action.presence || "-"
   end
+
+  def effective_status
+    # UI-level override: Step 1 (Proposal Create) should always show as approved
+    is_initial_step = (level == 1 && (previous_action.to_s.strip == "NA" || previous_action.to_s.strip.blank?) && current_action.to_s.strip == "Proposal Create")
+    is_initial_step ? "approved" : status
+  end
 end

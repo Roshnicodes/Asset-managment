@@ -741,6 +741,11 @@ body.auth-page-body {
   font-weight: 700;
 }
 
+.app-approval-step--approved .app-approval-step-status { background: #e6f4ea; color: #1e7e34; }
+.app-approval-step--pending .app-approval-step-status { background: #e8f0fe; color: #1967d2; }
+.app-approval-step--rejected .app-approval-step-status { background: #fce8e6; color: #d93025; }
+.app-approval-step--waiting .app-approval-step-status { background: #f1f3f4; color: #5f6368; }
+
 .app-approval-step-meta {
   display: flex;
   flex-wrap: wrap;
