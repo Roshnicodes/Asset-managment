@@ -1,12 +1,21 @@
 <div class="app-toolbar">
-  <h1>Vendor Registration Form</h1>
-  <%= link_to "Add Vendor Registration", new_vendor_registration_path, class: "app-primary-btn" %>
+  <div class="d-flex align-items-center gap-3" style="width:100%">
+    <h1 class="mb-0" style="white-space: nowrap;">Vendor Registration Form</h1>
+    <div style="margin-left:auto; display:flex; gap:.5rem; align-items:center;">
+      <%= link_to "Add Vendor Registration", new_vendor_registration_path, class: "app-primary-btn" %>
+      <button type="submit" form="send-approval-form" class="app-secondary-btn d-none" id="send_for_approval_button">Send for Approval</button>
+    </div>
+  </div>
 </div>
 
+<%= form_tag send_for_approval_vendor_registrations_path, method: :post, id: "send-approval-form" do %>
 <div class="app-table-wrap">
 <table class="table app-table">
   <thead>
     <tr>
+      <th>
+        <input type="checkbox" id="select_all_checkbox" style="cursor: pointer;">
+      </th>
       <th>View</th>
       <th>Stakeholder</th>
       <th>Registration Type</th>
@@ -23,6 +32,9 @@
   <tbody>
     <% @vendor_registrations.each do |vendor_registration| %>
       <tr>
+        <td>
+          <input type="checkbox" name="vendor_registration_ids[]" value="<%= vendor_registration.id %>" class="row-approval-checkbox" style="cursor: pointer;">
+        </td>
         <td>
           <%= link_to vendor_registration_path(vendor_registration), class: "app-action-icon text-primary", title: "View" do %>
             <%= app_icon(:eye, size: 18) %>
@@ -52,3 +64,39 @@
   </tbody>
 </table>
 </div>
+<% end %>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const selectAllCheckbox = document.getElementById("select_all_checkbox");
+    const rowCheckboxes = document.querySelectorAll(".row-approval-checkbox");
+    const button = document.getElementById("send_for_approval_button");
+
+    function toggleButton() {
+      const anyChecked = Array.from(rowCheckboxes).some(cb => cb.checked);
+      if (anyChecked) {
+        button.classList.remove("d-none");
+      } else {
+        button.classList.add("d-none");
+      }
+    }
+
+    if (selectAllCheckbox) {
+      selectAllCheckbox.addEventListener("change", function() {
+        rowCheckboxes.forEach(cb => cb.checked = this.checked);
+        toggleButton();
+      });
+    }
+
+    rowCheckboxes.forEach(cb => {
+      cb.addEventListener("change", function() {
+        if (!this.checked && selectAllCheckbox) selectAllCheckbox.checked = false;
+        
+        const allChecked = Array.from(rowCheckboxes).every(cb => cb.checked);
+        if (allChecked && selectAllCheckbox) selectAllCheckbox.checked = true;
+        
+        toggleButton();
+      });
+    });
+  });
+</script>

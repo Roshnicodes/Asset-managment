@@ -9,3 +9,22 @@
   <%= link_to "Edit", edit_vendor_registration_path(@vendor_registration), class: "app-secondary-btn" %>
   <%= button_to "Delete", @vendor_registration, method: :delete, data: { turbo_confirm: "Delete this vendor registration?" }, class: "app-danger-btn" %>
 </div>
+
+<% if @vendor_registration.approval_request && @vendor_registration.approval_request.current_step&.employee_master_id == current_employee_master&.id && @vendor_registration.approval_request.status == "pending" %>
+  <div class="app-form-card" style="margin-top: 2rem;">
+    <h3>Pending Approval Action (<%= @vendor_registration.approval_request.current_step.current_action %>)</h3>
+    <p class="app-section-note">You are the designated approver for this step. Please provide your decision.</p>
+
+    <div class="d-flex align-items-center gap-3 mt-3">
+      <%= form_with url: approve_approval_request_path(@vendor_registration.approval_request), method: :patch, local: true, class: "d-inline-flex gap-2 align-items-center" do |form| %>
+        <%= form.text_field :remark, placeholder: "Optional remark", class: "form-control", style: "width: 250px;" %>
+        <%= form.submit "Approve", class: "app-primary-btn px-4" %>
+      <% end %>
+
+      <%= form_with url: reject_approval_request_path(@vendor_registration.approval_request), method: :patch, local: true, class: "d-inline-flex gap-2 align-items-center" do |form| %>
+        <%= form.text_field :remark, placeholder: "Return remark (required)", class: "form-control", style: "width: 250px;", required: true %>
+        <%= form.submit "Return", class: "app-danger-btn px-4" %>
+      <% end %>
+    </div>
+  </div>
+<% end %>

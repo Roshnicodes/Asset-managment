@@ -7,7 +7,11 @@ Rails.application.routes.draw do
       patch :reject
     end
   end
-  resources :vendor_registrations
+  resources :vendor_registrations do
+    collection do
+      post :send_for_approval
+    end
+  end
   resources :employee_masters do
     collection do
       post :import

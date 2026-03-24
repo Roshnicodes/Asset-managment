@@ -1,7 +1,14 @@
 class ApprovalRequestBuilder
   def self.create_for!(record, form_name:)
-    approval_channel = ApprovalChannel.find_by(form_name: form_name, stakeholder_category_id: record.try(:stakeholder_category_id)) ||
-      ApprovalChannel.find_by(form_name: form_name, stakeholder_category_id: nil)
+    query = ApprovalChannel.where(form_name: form_name)
+    if form_name == "Vendor Registration" && record.respond_to?(:theme_ids) && record.theme_ids.any?
+      query = query.where(theme_id: record.theme_ids).or(query.where(theme_id: nil))
+    else
+      query = query.where(theme_id: nil)
+    end
+
+    approval_channel = query.find_by(stakeholder_category_id: record.try(:stakeholder_category_id)) ||
+                       query.find_by(stakeholder_category_id: nil)
 
     return nil unless approval_channel
 

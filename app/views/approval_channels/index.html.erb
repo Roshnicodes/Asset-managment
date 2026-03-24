@@ -7,7 +7,7 @@
 <table class="table app-table">
   <thead>
     <tr>
-      <th>Form Name</th>
+      <th>Thematic Name</th>
       <th>Stakeholder</th>
       <th>From User</th>
       <th>To Responsible User</th>
@@ -18,24 +18,32 @@
   </thead>
   <tbody>
     <% @approval_channels.each do |approval_channel| %>
-      <% approval_channel.flow_steps.each do |step| %>
+      <% steps = approval_channel.flow_steps %>
+      <% steps.each_with_index do |step, index| %>
         <tr>
-          <td><%= approval_channel.form_name %></td>
-          <td><%= approval_channel.stakeholder_category&.name || "-" %></td>
+          <% if index == 0 %>
+            <td rowspan="<%= steps.size %>" style="vertical-align: middle;">
+              <strong><%= approval_channel.form_name %></strong>
+              <div class="text-muted small"><%= "(#{approval_channel.theme&.name})" if approval_channel.theme_id.present? %></div>
+            </td>
+            <td rowspan="<%= steps.size %>" style="vertical-align: middle;"><%= approval_channel.stakeholder_category&.name || "-" %></td>
+          <% end %>
           <td><%= step.try(:from_user)&.name || "System" %></td>
           <td><%= step.to_responsible_user.name %></td>
           <td><%= step.previous_action.presence || "NA" %></td>
           <td><%= step.current_action %></td>
-          <td class="app-row-actions">
-            <div class="d-flex align-items-center gap-2">
-              <%= link_to edit_approval_channel_path(approval_channel), class: "app-action-icon text-warning", title: "Edit" do %>
-                <%= app_icon(:pencil, size: 18) %>
-              <% end %>
-              <%= button_to approval_channel_path(approval_channel), method: :delete, data: { turbo_confirm: "Delete this entire approval channel?" }, class: "app-action-icon text-danger", title: "Delete" do %>
-                <%= app_icon(:trash, size: 18) %>
-              <% end %>
-            </div>
-          </td>
+          <% if index == 0 %>
+            <td class="app-row-actions" rowspan="<%= steps.size %>" style="vertical-align: middle;">
+              <div class="d-flex align-items-center gap-2">
+                <%= link_to edit_approval_channel_path(approval_channel), class: "app-action-icon text-warning", title: "Edit" do %>
+                  <%= app_icon(:pencil, size: 18) %>
+                <% end %>
+                <%= button_to approval_channel_path(approval_channel), method: :delete, data: { turbo_confirm: "Delete this entire approval channel?" }, class: "app-action-icon text-danger", title: "Delete" do %>
+                  <%= app_icon(:trash, size: 18) %>
+                <% end %>
+              </div>
+            </td>
+          <% end %>
         </tr>
       <% end %>
     <% end %>

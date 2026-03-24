@@ -6,6 +6,18 @@ class VendorRegistrationsController < ApplicationController
     @vendor_registrations = VendorRegistration.includes(:stakeholder_category, :registration_type, :firm, :state, :district, :block).order(created_at: :desc)
   end
 
+  # POST /vendor_registrations/send_for_approval
+  def send_for_approval
+    if params[:vendor_registration_ids].present?
+      VendorRegistration.where(id: params[:vendor_registration_ids]).each do |vendor|
+        ApprovalRequestBuilder.create_for!(vendor, form_name: "Vendor Registration") unless vendor.approval_request
+      end
+      redirect_to vendor_registrations_path, notice: "Selected Vendor Registrations sent for approval successfully."
+    else
+      redirect_to vendor_registrations_path, alert: "No Vendor Registrations were selected."
+    end
+  end
+
   # GET /vendor_registrations/1 or /vendor_registrations/1.json
   def show
   end

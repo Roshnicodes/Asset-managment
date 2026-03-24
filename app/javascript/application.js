@@ -123,7 +123,7 @@ const setupApprovalChannelSteps = () => {
     }
 
     addButton.addEventListener("click", () => {
-      const uniqueKey = `${Date.now()}-${Math.floor(Math.random() * 1000)}`
+      const uniqueKey = `${Date.now()}${Math.floor(Math.random() * 1000)}`
       const html = template.innerHTML.replace(/NEW_RECORD/g, uniqueKey)
       list.insertAdjacentHTML("beforeend", html)
       renumberAndSyncSteps()
