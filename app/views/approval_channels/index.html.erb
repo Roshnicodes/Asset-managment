@@ -7,7 +7,8 @@
 <table class="table app-table">
   <thead>
     <tr>
-      <th>Thematic Name</th>
+      <th>Form Name</th>
+      <th>Thematic Type</th>
       <th>Stakeholder</th>
       <th>From User</th>
       <th>To Responsible User</th>
@@ -22,10 +23,8 @@
       <% steps.each_with_index do |step, index| %>
         <tr>
           <% if index == 0 %>
-            <td rowspan="<%= steps.size %>" style="vertical-align: middle;">
-              <strong><%= approval_channel.form_name %></strong>
-              <div class="text-muted small"><%= "(#{approval_channel.theme&.name})" if approval_channel.theme_id.present? %></div>
-            </td>
+            <td rowspan="<%= steps.size %>" style="vertical-align: middle;"><%= approval_channel.form_name %></td>
+            <td rowspan="<%= steps.size %>" style="vertical-align: middle;"><%= approval_channel.theme&.name || "-" %></td>
             <td rowspan="<%= steps.size %>" style="vertical-align: middle;"><%= approval_channel.stakeholder_category&.name || "-" %></td>
           <% end %>
           <td><%= step.try(:from_user)&.name || "System" %></td>
