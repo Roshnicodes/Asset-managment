@@ -7,7 +7,7 @@ class ApprovalRequestsController < ApplicationController
     @form_name = params[:form_name].presence
     is_admin = current_user.email == "admin@example.com"
 
-    base_requests = ApprovalRequest.includes(:approvable, :approval_steps).order(created_at: :desc)
+    base_requests = ApprovalRequest.preload(:approvable, :approval_steps).order(created_at: :desc)
     base_requests = base_requests.where(form_name: @form_name) if @form_name.present?
     
     unless is_admin
