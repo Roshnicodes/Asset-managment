@@ -58,6 +58,15 @@
     <li><%= app_nav_link("Units", units_path, icon: :unit, identifier: "units") %></li>
     <li><%= app_nav_link("Documents", document_masters_path, icon: :document, identifier: "documents") %></li>
     <li><%= app_nav_link("Approval Channels", approval_channels_path, icon: :approval, identifier: "approval_channels") %></li>
+    <li>
+      <%= app_dropdown_toggle("Quotation Proposal", "quotationProposalMenu", icon: :document, identifier: "quotation_proposals") %>
+      <div class="collapse submenu h-auto" id="quotationProposalMenu">
+        <ul class="nav flex-column">
+          <li><%= link_to "Create Quotation Proposal", quotation_proposals_path, class: "nav-link" %></li>
+          <li><%= link_to "Quotation Proposal List", list_quotation_proposals_path, class: "nav-link" %></li>
+        </ul>
+      </div>
+    </li>
     <li><%= app_nav_link("Firms", firms_path, icon: :firm, identifier: "firms") %></li>
     <li><%= app_nav_link("Employee Master", employee_masters_path, icon: :people, identifier: "employee_master") %></li>
     <li><%= app_nav_link("Banks", vendor_bank_masters_path, icon: :bank, identifier: "banks") %></li>

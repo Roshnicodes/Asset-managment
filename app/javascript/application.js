@@ -192,7 +192,153 @@ const setupVendorApprovalSelections = () => {
   toggleButton();
 }
 
+const setupQuotationApprovalSelections = () => {
+  const selectAllCheckbox = document.getElementById("quotation_select_all_checkbox");
+  const rowCheckboxes = document.querySelectorAll(".quotation-approval-checkbox");
+  const button = document.getElementById("send_quotation_for_approval_button");
+
+  if (!button) return;
+
+  const toggleButton = () => {
+    const anyChecked = Array.from(rowCheckboxes).some(cb => cb.checked);
+    button.classList.toggle("d-none", !anyChecked);
+  }
+
+  if (selectAllCheckbox) {
+    selectAllCheckbox.addEventListener("change", function() {
+      rowCheckboxes.forEach(cb => cb.checked = this.checked);
+      toggleButton();
+    });
+  }
+
+  rowCheckboxes.forEach(cb => {
+    cb.addEventListener("change", function() {
+      if (!this.checked && selectAllCheckbox) selectAllCheckbox.checked = false;
+      const allChecked = Array.from(rowCheckboxes).every(box => box.checked);
+      if (allChecked && selectAllCheckbox) selectAllCheckbox.checked = true;
+      toggleButton();
+    });
+  });
+
+  toggleButton();
+}
+
+const setupQuotationProposalForm = () => {
+  const themeSelect = document.getElementById("quotation_proposal_theme_id")
+  const vendorDropdown = document.querySelector("[data-quotation-vendor-dropdown]")
+
+  if (themeSelect && vendorDropdown) {
+    const trigger = vendorDropdown.querySelector("[data-quotation-vendor-trigger]")
+    const label = vendorDropdown.querySelector("[data-quotation-vendor-label]")
+    const search = vendorDropdown.querySelector("[data-quotation-vendor-search]")
+    const selectedWrap = vendorDropdown.querySelector("[data-quotation-vendor-selected]")
+    const vendorOptions = Array.from(vendorDropdown.querySelectorAll("[data-vendor-option]"))
+
+    const updateLabel = () => {
+      const selected = vendorOptions.filter((option) => option.querySelector(".quotation-vendor-checkbox")?.checked)
+      label.textContent = selected.length > 0 ? `${selected.length} vendor(s) selected` : "Select vendors"
+
+      if (selectedWrap) {
+        selectedWrap.innerHTML = ""
+
+        selected.forEach((option) => {
+          const checkbox = option.querySelector(".quotation-vendor-checkbox")
+          const strong = option.querySelector("strong")
+          const chip = document.createElement("button")
+          chip.type = "button"
+          chip.className = "app-selected-vendor-chip"
+          chip.textContent = strong ? strong.textContent : option.innerText.trim()
+          chip.addEventListener("click", () => {
+            if (checkbox) {
+              checkbox.checked = false
+              updateLabel()
+            }
+          })
+          selectedWrap.appendChild(chip)
+        })
+      }
+    }
+
+    const syncVendors = () => {
+      const selectedThemeId = themeSelect.value
+      const query = (search?.value || "").trim().toLowerCase()
+
+      vendorOptions.forEach((option) => {
+        const themeIds = (option.dataset.themeIds || "").split(",").filter(Boolean)
+        const text = option.innerText.toLowerCase()
+        const matchesTheme = selectedThemeId === "" || themeIds.includes(selectedThemeId)
+        const matchesSearch = query === "" || text.includes(query)
+        const shouldShow = matchesTheme && matchesSearch
+        const checkbox = option.querySelector(".quotation-vendor-checkbox")
+
+        option.classList.toggle("is-hidden", !shouldShow)
+        if (!matchesTheme && checkbox) checkbox.checked = false
+      })
+
+      updateLabel()
+    }
+
+    trigger?.addEventListener("click", () => {
+      vendorDropdown.classList.toggle("is-open")
+    })
+
+    vendorOptions.forEach((option) => {
+      const checkbox = option.querySelector(".quotation-vendor-checkbox")
+      checkbox?.addEventListener("change", () => {
+        updateLabel()
+        syncVendors()
+      })
+    })
+
+    search?.addEventListener("input", syncVendors)
+    themeSelect.addEventListener("change", syncVendors)
+
+    document.addEventListener("click", (event) => {
+      if (!vendorDropdown.contains(event.target)) {
+        vendorDropdown.classList.remove("is-open")
+      }
+    })
+
+    syncVendors()
+  }
+
+  document.querySelectorAll("[data-quotation-items]").forEach((container) => {
+    if (container.dataset.ready === "true") return
+
+    const list = container.querySelector("[data-quotation-item-list]")
+    const template = container.querySelector("[data-quotation-item-template]")
+    const addButton = container.querySelector("[data-add-quotation-item]")
+    if (!list || !template || !addButton) return
+
+    addButton.addEventListener("click", () => {
+      const uniqueKey = `${Date.now()}-${Math.floor(Math.random() * 1000)}`
+      const html = template.innerHTML.replace(/NEW_ITEM/g, uniqueKey)
+      list.insertAdjacentHTML("beforeend", html)
+    })
+
+    container.addEventListener("click", (event) => {
+      const removeButton = event.target.closest("[data-remove-quotation-item]")
+      if (!removeButton) return
+
+      const row = removeButton.closest("[data-quotation-item-row]")
+      if (!row) return
+
+      const destroyField = row.querySelector("[data-quotation-item-destroy]")
+      if (destroyField) {
+        destroyField.value = "1"
+        row.style.display = "none"
+      } else {
+        row.remove()
+      }
+    })
+
+    container.dataset.ready = "true"
+  })
+}
+
 document.addEventListener("turbo:load", setupVendorRegistrationSelections)
 document.addEventListener("turbo:load", setupTableSearch)
 document.addEventListener("turbo:load", setupApprovalChannelSteps)
+document.addEventListener("turbo:load", setupQuotationProposalForm)
 document.addEventListener("turbo:load", setupVendorApprovalSelections)
+document.addEventListener("turbo:load", setupQuotationApprovalSelections)

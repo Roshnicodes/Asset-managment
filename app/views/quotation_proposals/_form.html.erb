@@ -1,0 +1,95 @@
+<%= form_with(model: quotation_proposal) do |form| %>
+  <div class="app-form-card app-form-card-wide">
+    <% if quotation_proposal.errors.any? %>
+      <div class="app-form-errors">
+        <h2><%= pluralize(quotation_proposal.errors.count, "error") %> found</h2>
+        <ul>
+          <% quotation_proposal.errors.each do |error| %>
+            <li><%= error.full_message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="app-form-grid two-col">
+      <div class="app-form-field">
+        <%= form.label :theme_id, "Select Theme" %>
+        <%= form.collection_select :theme_id, @themes, :id, :name, { prompt: "Select theme" }, id: "quotation_proposal_theme_id" %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :subject, "Quotation Subject" %>
+        <%= form.text_field :subject %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :proposal_end_date, "Proposal Ending Date" %>
+        <%= form.date_field :proposal_end_date %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :remark, "Proposal Remark" %>
+        <%= form.text_area :remark, rows: 3 %>
+      </div>
+    </div>
+
+    <div class="app-page-header" style="margin-top: 1rem;">
+      <h3>Select Vendors</h3>
+    </div>
+
+    <p class="app-checkbox-note">Theme select karne ke baad us theme se related vendors hi dropdown me visible rahenge. Simple click se multiple vendors select kar sakte ho.</p>
+    <div class="app-form-field">
+      <label>Vendor List</label>
+      <div class="app-multiselect-dropdown" data-quotation-vendor-dropdown>
+        <div class="app-selected-vendors" data-quotation-vendor-selected></div>
+
+        <button type="button" class="app-multiselect-trigger" data-quotation-vendor-trigger>
+          <span data-quotation-vendor-label>Select vendors</span>
+        </button>
+
+        <div class="app-multiselect-panel" data-quotation-vendor-panel>
+          <input type="search" class="app-multiselect-search" placeholder="Search vendor..." data-quotation-vendor-search>
+
+          <div class="app-multiselect-options">
+            <% @vendors.each do |vendor| %>
+              <% theme_ids = vendor.themes.map(&:id).join(",") %>
+              <label class="app-multiselect-option" data-theme-ids="<%= theme_ids %>" data-vendor-option>
+                <%= check_box_tag "quotation_proposal[vendor_registration_ids][]", vendor.id, quotation_proposal.vendor_registration_ids.include?(vendor.id), class: "quotation-vendor-checkbox" %>
+                <span>
+                  <strong><%= vendor.display_name %></strong><br>
+                  <small><%= vendor.email %></small>
+                </span>
+              </label>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-page-header" style="margin-top: 1rem;">
+      <h3>Proposal Items</h3>
+    </div>
+
+    <div class="app-quotation-items" data-quotation-items>
+      <div data-quotation-item-list>
+        <%= form.fields_for :quotation_proposal_items do |item_form| %>
+          <%= render "quotation_proposal_item_fields", form: item_form %>
+        <% end %>
+      </div>
+
+      <template data-quotation-item-template>
+        <%= form.fields_for :quotation_proposal_items, QuotationProposalItem.new, child_index: "NEW_ITEM" do |item_form| %>
+          <%= render "quotation_proposal_item_fields", form: item_form %>
+        <% end %>
+      </template>
+
+      <div class="app-form-actions" style="justify-content: flex-start;">
+        <button type="button" class="app-secondary-btn" data-add-quotation-item>Add Item</button>
+      </div>
+    </div>
+
+    <div class="app-form-actions">
+      <%= form.submit "Save Quotation Proposal", class: "app-form-submit" %>
+    </div>
+  </div>
+<% end %>

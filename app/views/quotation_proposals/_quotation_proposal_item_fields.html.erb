@@ -1,0 +1,29 @@
+<div class="app-quotation-item-row" data-quotation-item-row>
+  <%= form.hidden_field :_destroy, value: "false", data: { quotation_item_destroy: true } %>
+
+  <div class="app-form-grid four-col">
+    <div class="app-form-field">
+      <%= form.label :item_name, "Item Name" %>
+      <%= form.text_field :item_name %>
+    </div>
+
+    <div class="app-form-field">
+      <%= form.label :unit_id, "Unit" %>
+      <%= form.collection_select :unit_id, @units, :id, :name, { prompt: "Select unit" } %>
+    </div>
+
+    <div class="app-form-field">
+      <%= form.label :quantity, "Quantity" %>
+      <%= form.number_field :quantity, step: :any, min: 0.01 %>
+    </div>
+
+    <div class="app-form-field">
+      <%= form.label :remark, "Item Remark" %>
+      <%= form.text_field :remark %>
+    </div>
+  </div>
+
+  <div class="app-approval-step-row-actions">
+    <button type="button" class="app-action-button app-delete-button" data-remove-quotation-item>Remove Item</button>
+  </div>
+</div>

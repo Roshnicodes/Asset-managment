@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_24_122001) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_25_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -259,6 +259,40 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_24_122001) do
     t.index ["theme_id"], name: "index_products_on_theme_id"
   end
 
+  create_table "quotation_proposal_items", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "item_name", null: false
+    t.decimal "quantity", precision: 12, scale: 2, default: "0.0", null: false
+    t.bigint "quotation_proposal_id", null: false
+    t.text "remark"
+    t.bigint "unit_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["quotation_proposal_id"], name: "index_quotation_proposal_items_on_quotation_proposal_id"
+    t.index ["unit_id"], name: "index_quotation_proposal_items_on_unit_id"
+  end
+
+  create_table "quotation_proposal_vendors", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "quotation_proposal_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "vendor_registration_id", null: false
+    t.index ["quotation_proposal_id", "vendor_registration_id"], name: "idx_quote_proposal_vendors_unique", unique: true
+    t.index ["quotation_proposal_id"], name: "index_quotation_proposal_vendors_on_quotation_proposal_id"
+    t.index ["vendor_registration_id"], name: "index_quotation_proposal_vendors_on_vendor_registration_id"
+  end
+
+  create_table "quotation_proposals", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.date "proposal_end_date", null: false
+    t.text "remark"
+    t.string "subject", null: false
+    t.bigint "theme_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.index ["theme_id"], name: "index_quotation_proposals_on_theme_id"
+    t.index ["user_id"], name: "index_quotation_proposals_on_user_id"
+  end
+
   create_table "registration_types", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "name"
@@ -440,6 +474,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_24_122001) do
   add_foreign_key "product_varieties", "stakeholder_categories"
   add_foreign_key "products", "stakeholder_categories"
   add_foreign_key "products", "themes"
+  add_foreign_key "quotation_proposal_items", "quotation_proposals"
+  add_foreign_key "quotation_proposal_items", "units"
+  add_foreign_key "quotation_proposal_vendors", "quotation_proposals"
+  add_foreign_key "quotation_proposal_vendors", "vendor_registrations"
+  add_foreign_key "quotation_proposals", "themes"
+  add_foreign_key "quotation_proposals", "users"
   add_foreign_key "registration_types", "stakeholder_categories"
   add_foreign_key "service_types", "stakeholder_categories"
   add_foreign_key "stakeholder_categories", "office_categories"

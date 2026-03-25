@@ -44,6 +44,8 @@
             <td>
               <% if approval_request.approvable.is_a?(VendorRegistration) %>
                 <%= link_to "View", vendor_registration_path(approval_request.approvable), class: "app-action-button" %>
+              <% elsif approval_request.approvable.is_a?(QuotationProposal) %>
+                <%= link_to "View", quotation_proposal_path(approval_request.approvable), class: "app-action-button" %>
               <% else %>
                 -
               <% end %>
@@ -97,6 +99,8 @@
             <td>
               <% if approval_request.approvable.is_a?(VendorRegistration) %>
                 <%= link_to "View", vendor_registration_path(approval_request.approvable), class: "app-action-button" %>
+              <% elsif approval_request.approvable.is_a?(QuotationProposal) %>
+                <%= link_to "View", quotation_proposal_path(approval_request.approvable), class: "app-action-button" %>
               <% else %>
                 -
               <% end %>

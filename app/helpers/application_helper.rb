@@ -78,6 +78,7 @@ module ApplicationHelper
     approvable = approval_request&.approvable
 
     return vendor_registration_path(approvable) if approvable.is_a?(VendorRegistration)
+    return quotation_proposal_path(approvable) if approvable.is_a?(QuotationProposal)
 
     approval_requests_path
   end
