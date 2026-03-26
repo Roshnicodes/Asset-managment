@@ -48,6 +48,7 @@ class ApprovalRequest < ApplicationRecord
       NotificationDispatcher.notify_approval_step(self, next_step, previous_step: step)
     else
       update!(current_level: nil, status: "approved")
+      approvable.generate_vendor_qr_tokens! if approvable.is_a?(QuotationProposal)
       NotificationDispatcher.notify_request_completed(self, status: "approved", actor: employee, remark: remark)
     end
   end

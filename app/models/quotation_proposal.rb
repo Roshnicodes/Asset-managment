@@ -21,6 +21,10 @@ class QuotationProposal < ApplicationRecord
     theme&.stakeholder_category_id
   end
 
+  def generate_vendor_qr_tokens!
+    quotation_proposal_vendors.find_each(&:ensure_qr_token!)
+  end
+
   private
 
   def must_have_at_least_one_vendor

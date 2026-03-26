@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  get "quotation-vendor-qr/:token", to: "quotation_vendor_qrs#show", as: :quotation_vendor_qr
   resources :notifications, only: [:index]
   resources :menu_permissions, only: [:index, :create]
   resources :quotation_proposals do

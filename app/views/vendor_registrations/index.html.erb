@@ -4,6 +4,8 @@
   .app-table-wrap { max-height: calc(100vh - 250px); overflow-y: auto; overflow-x: auto; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
 </style>
 
+<% sendable_vendor_registrations = @vendor_registrations.select { |vendor_registration| vendor_registration.approval_request.blank? } %>
+
 <div class="app-toolbar">
   <div class="d-flex align-items-center gap-3" style="width:100%">
     <div>
@@ -23,7 +25,9 @@
   <thead class="sticky-top">
     <tr>
       <th>
-        <input type="checkbox" id="select_all_checkbox" style="cursor: pointer;">
+        <% if sendable_vendor_registrations.any? %>
+          <input type="checkbox" id="select_all_checkbox" style="cursor: pointer;">
+        <% end %>
       </th>
       <th>View</th>
       <th>Stakeholder</th>
@@ -43,7 +47,9 @@
     <% @vendor_registrations.each do |vendor_registration| %>
       <tr>
         <td>
-          <input type="checkbox" name="vendor_registration_ids[]" value="<%= vendor_registration.id %>" class="row-approval-checkbox" style="cursor: pointer;" form="send-approval-form">
+          <% if vendor_registration.approval_request.blank? %>
+            <input type="checkbox" name="vendor_registration_ids[]" value="<%= vendor_registration.id %>" class="row-approval-checkbox" style="cursor: pointer;" form="send-approval-form">
+          <% end %>
         </td>
         <td>
           <%= link_to vendor_registration_path(vendor_registration), class: "app-action-icon text-primary", title: "View" do %>

@@ -34,6 +34,7 @@ gem "bootstrap"
 gem "sassc-rails"
 gem "jquery-rails"
 gem "roo"
+gem "rqrcode"
 
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false

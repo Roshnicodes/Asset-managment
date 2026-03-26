@@ -6,7 +6,7 @@ class Users::PasswordsController < Devise::PasswordsController
       # Generate token manually to allow an "instant" reset experience
       raw_token, enc_token = Devise.token_generator.generate(resource.class, :reset_password_token)
       resource.reset_password_token = enc_token
-      resource.reset_password_sent_at = Time.now.utc
+      resource.reset_password_sent_at = Time.current
       resource.save(validate: false)
 
       # Immediate redirect to the "Set New Password" page with the token
@@ -20,6 +20,17 @@ class Users::PasswordsController < Devise::PasswordsController
   end
 
   protected
+
+  def resource_params
+    permitted_attributes =
+      if action_name == "create"
+        [:email]
+      else
+        [:reset_password_token, :password, :password_confirmation]
+      end
+
+    params.fetch(resource_name, {}).permit(*permitted_attributes)
+  end
 
   def after_resetting_password_path_for(resource)
     root_path # Redirect to dashboard after successful reset

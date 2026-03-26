@@ -236,6 +236,35 @@
   </div>
 <% end %>
 
+<% if approval_request&.status == "approved" %>
+  <% @quotation_proposal.generate_vendor_qr_tokens! %>
+  <div class="app-detail-card" style="margin-top: 1.5rem;">
+    <div class="app-page-header" style="margin-bottom: 1rem;">
+      <div>
+        <h3 style="margin-bottom: 0.25rem;">Vendor QR Codes</h3>
+        <p class="app-section-note mb-0">Har approved vendor ka QR alag hai. Scan karne par vendor-specific quotation details open hongi.</p>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <% @quotation_proposal.quotation_proposal_vendors.includes(:vendor_registration).each do |proposal_vendor| %>
+        <% qr_url = quotation_vendor_qr_url(proposal_vendor.qr_token, host: request.host, port: request.optional_port, protocol: request.protocol) %>
+        <div class="col-md-6 col-xl-4">
+          <div class="app-detail-item h-100 d-flex flex-column align-items-center text-center">
+            <div class="app-detail-label">Vendor QR</div>
+            <div class="fw-semibold mb-3"><%= proposal_vendor.vendor_registration.display_name %></div>
+            <div class="p-3 border rounded-4 bg-white shadow-sm mb-3">
+              <%= qr_code_svg(qr_url, module_size: 3) %>
+            </div>
+            <div class="small text-muted mb-2" style="word-break: break-all;"><%= qr_url %></div>
+            <%= link_to "Open Vendor Link", quotation_vendor_qr_path(proposal_vendor.qr_token), class: "app-secondary-btn" %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
 <div class="app-page-header" style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
   <div>
     <h3 style="margin-bottom: 0.25rem;">Proposal Items</h3>

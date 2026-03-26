@@ -4,6 +4,8 @@
   .app-table-wrap { max-height: calc(100vh - 250px); overflow-y: auto; overflow-x: auto; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
 </style>
 
+<% sendable_quotation_proposals = @quotation_proposals.select { |quotation_proposal| quotation_proposal.approval_request.blank? } %>
+
 <div class="app-toolbar">
   <div class="d-flex align-items-center gap-3" style="width:100%">
     <div>
@@ -26,7 +28,11 @@
     <thead class="sticky-top">
       <tr>
         <% if can_view_menu?("quotation_proposal_form") %>
-          <th><input type="checkbox" id="quotation_select_all_checkbox" style="cursor: pointer;"></th>
+          <th>
+            <% if sendable_quotation_proposals.any? %>
+              <input type="checkbox" id="quotation_select_all_checkbox" style="cursor: pointer;">
+            <% end %>
+          </th>
         <% end %>
         <th>View</th>
         <th>Subject</th>
@@ -48,7 +54,9 @@
         <tr>
           <% if can_view_menu?("quotation_proposal_form") %>
             <td>
-              <input type="checkbox" name="quotation_proposal_ids[]" value="<%= quotation_proposal.id %>" class="quotation-approval-checkbox" style="cursor: pointer;" form="send-quotation-approval-form">
+              <% if quotation_proposal.approval_request.blank? %>
+                <input type="checkbox" name="quotation_proposal_ids[]" value="<%= quotation_proposal.id %>" class="quotation-approval-checkbox" style="cursor: pointer;" form="send-quotation-approval-form">
+              <% end %>
             </td>
           <% end %>
           <td>

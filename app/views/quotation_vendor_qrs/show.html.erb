@@ -1,0 +1,105 @@
+<div class="app-detail-card" style="margin-bottom: 1.5rem; padding: 1.25rem 1.5rem;">
+  <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+    <div class="d-flex align-items-center gap-3">
+      <div style="width: 84px; height: 84px; border-radius: 18px; background: #fff; border: 1px solid #d4e8df; display: flex; align-items: center; justify-content: center; padding: 0.75rem; box-shadow: 0 8px 20px rgba(26, 58, 42, 0.08);">
+        <% if @stakeholder_category&.logo_file&.attached? %>
+          <%= image_tag @stakeholder_category.logo_file, alt: "#{@stakeholder_category.name} Logo", style: "max-width: 100%; max-height: 100%; object-fit: contain;" %>
+        <% elsif @stakeholder_category&.logo_url.present? %>
+          <%= image_tag @stakeholder_category.logo_url, alt: "#{@stakeholder_category.name} Logo", style: "max-width: 100%; max-height: 100%; object-fit: contain;" %>
+        <% else %>
+          <%= image_tag "asset-logo.png", alt: "ASA Logo", style: "max-width: 100%; max-height: 100%; object-fit: contain;" %>
+        <% end %>
+      </div>
+
+      <div>
+        <div class="app-detail-label" style="margin-bottom: 0.2rem;">Stakeholder Branding</div>
+        <div class="fw-semibold" style="font-size: 1.1rem; color: #1a3a2a;">
+          <%= @stakeholder_category&.name || "ASA" %>
+        </div>
+        <div class="text-muted small">Vendor-specific approved quotation view</div>
+      </div>
+    </div>
+
+    <span class="badge border bg-success bg-opacity-10 text-success px-3 py-2" style="font-size: 0.9rem;">
+      Approved Quotation
+    </span>
+  </div>
+</div>
+
+<div class="app-page-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem;">
+  <div>
+    <h2 style="margin: 0; font-size: 1.8rem; color: #1a3a2a;">Vendor Quotation Details</h2>
+    <p style="margin: 0.5rem 0 0 0; color: #6b8e7f; font-size: 0.95rem;">
+      <%= @vendor_registration.display_name %> for <%= @quotation_proposal.subject %>
+    </p>
+  </div>
+</div>
+
+<div class="app-detail-card">
+  <div class="app-detail-grid">
+    <div class="app-detail-item">
+      <div class="app-detail-label">Vendor</div>
+      <div class="app-detail-value"><%= @vendor_registration.display_name %></div>
+    </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">Subject</div>
+      <div class="app-detail-value"><%= @quotation_proposal.subject %></div>
+    </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">Theme</div>
+      <div class="app-detail-value"><%= @quotation_proposal.theme.name %></div>
+    </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">Proposal End Date</div>
+      <div class="app-detail-value"><%= @quotation_proposal.proposal_end_date.strftime("%d-%m-%Y") %></div>
+    </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">Vendor Email</div>
+      <div class="app-detail-value"><%= @vendor_registration.email.presence || "-" %></div>
+    </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">Vendor Mobile</div>
+      <div class="app-detail-value"><%= @vendor_registration.mobile_no.presence || "-" %></div>
+    </div>
+
+    <div class="app-detail-item" style="grid-column: 1 / -1;">
+      <div class="app-detail-label">Remark</div>
+      <div class="app-detail-value"><%= @quotation_proposal.remark.presence || "-" %></div>
+    </div>
+  </div>
+</div>
+
+<div class="app-page-header" style="margin-top: 1.5rem;">
+  <div>
+    <h3 style="margin-bottom: 0.25rem;">Quoted Items</h3>
+    <p class="app-section-note mb-0">Vendor-specific QR scan se yahi approved quotation details visible hongi.</p>
+  </div>
+</div>
+
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>Item Name</th>
+        <th>Unit</th>
+        <th>Quantity</th>
+        <th>Remark</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @quotation_proposal.quotation_proposal_items.each do |item| %>
+        <tr>
+          <td><%= item.item_name %></td>
+          <td><%= item.unit.name %></td>
+          <td><%= item.quantity %></td>
+          <td><%= item.remark.presence || "-" %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

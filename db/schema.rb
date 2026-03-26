@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_25_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_26_093000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -273,9 +273,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_25_090000) do
 
   create_table "quotation_proposal_vendors", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.datetime "qr_generated_at"
+    t.string "qr_token"
     t.bigint "quotation_proposal_id", null: false
     t.datetime "updated_at", null: false
     t.bigint "vendor_registration_id", null: false
+    t.index ["qr_token"], name: "index_quotation_proposal_vendors_on_qr_token", unique: true
     t.index ["quotation_proposal_id", "vendor_registration_id"], name: "idx_quote_proposal_vendors_unique", unique: true
     t.index ["quotation_proposal_id"], name: "index_quotation_proposal_vendors_on_quotation_proposal_id"
     t.index ["vendor_registration_id"], name: "index_quotation_proposal_vendors_on_vendor_registration_id"
