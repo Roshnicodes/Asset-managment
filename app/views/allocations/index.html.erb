@@ -1,13 +1,27 @@
+<style>
+  .sticky-top { position: sticky; top: 0; z-index: 100; }
+  .app-table thead th { background: #f8fcf9 !important; border-bottom: 2px solid #eef3ef !important; }
+  .app-table-wrap { max-height: calc(100vh - 250px); overflow-y: auto; overflow-x: auto; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+</style>
+
 <div class="app-toolbar">
-  <h1>Asset Allocation</h1>
-  <%= link_to "Allocate Asset", new_allocation_path, class: "app-primary-btn" %>
+  <div class="d-flex align-items-center gap-3" style="width:100%">
+    <div>
+      <h1 class="mb-0" style="white-space: nowrap;">Asset Allocation</h1>
+      <p class="app-section-note mb-0">Track which asset is allocated to which TO and when the assignment was created.</p>
+    </div>
+    <div style="margin-left:auto; display:flex; gap:.5rem; align-items:center;">
+      <%= link_to "Allocate Asset", new_allocation_path, class: "app-primary-btn" %>
+    </div>
+  </div>
 </div>
 
 <div class="app-table-wrap">
   <table class="table app-table">
-    <thead>
+    <thead class="sticky-top">
       <tr>
         <th>Asset</th>
+        <th>Serial Number</th>
         <th>TO</th>
         <th>Allocation Date</th>
         <th>Action</th>
@@ -17,10 +31,15 @@
       <% @allocations.each do |allocation| %>
         <tr>
           <td><%= allocation.asset.name %></td>
+          <td><%= allocation.asset.serial_number.presence || "-" %></td>
           <td><%= allocation.to.name %></td>
           <td><%= allocation.allocated_at&.strftime("%d-%m-%Y") || "-" %></td>
           <td class="app-row-actions">
-            <%= link_to "Delete", allocation, method: :delete, data: { turbo_confirm: "Delete this allocation?" } %>
+            <div class="d-flex align-items-center gap-2">
+              <%= button_to allocation_path(allocation), method: :delete, data: { turbo_confirm: "Delete this allocation?" }, class: "app-action-icon text-danger", title: "Delete" do %>
+                <%= app_icon(:trash, size: 18) %>
+              <% end %>
+            </div>
           </td>
         </tr>
       <% end %>

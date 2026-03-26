@@ -33,6 +33,11 @@ class MenuPermission < ApplicationRecord
     "Firms" => "firms",
     "Employee Master" => "employee_master",
     "Banks" => "banks",
+    "Quotation Proposal" => {
+      "main" => "quotation_proposal_main",
+      "Quotation Proposal Form" => "quotation_proposal_form",
+      "Quotation Proposal List" => "quotation_proposal_list"
+    },
     "Vendor Registration Form" => {
       "main" => "vendor_registration_main",
       "Vendor Registration" => "vendor_registration",

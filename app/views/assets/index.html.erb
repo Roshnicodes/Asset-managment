@@ -1,11 +1,24 @@
+<style>
+  .sticky-top { position: sticky; top: 0; z-index: 100; }
+  .app-table thead th { background: #f8fcf9 !important; border-bottom: 2px solid #eef3ef !important; }
+  .app-table-wrap { max-height: calc(100vh - 250px); overflow-y: auto; overflow-x: auto; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+</style>
+
 <div class="app-toolbar">
-  <h1>Assets</h1>
-  <%= link_to "Add Asset", new_asset_path, class: "app-primary-btn" %>
+  <div class="d-flex align-items-center gap-3" style="width:100%">
+    <div>
+      <h1 class="mb-0" style="white-space: nowrap;">Assets</h1>
+      <p class="app-section-note mb-0">Maintain asset master records with linked products and unique identification details.</p>
+    </div>
+    <div style="margin-left:auto; display:flex; gap:.5rem; align-items:center;">
+      <%= link_to "Add Asset", new_asset_path, class: "app-primary-btn" %>
+    </div>
+  </div>
 </div>
 
 <div class="app-table-wrap">
   <table class="table app-table">
-    <thead>
+    <thead class="sticky-top">
       <tr>
         <th>Asset Name</th>
         <th>Product</th>
@@ -20,8 +33,14 @@
           <td><%= asset.product.name %></td>
           <td><%= asset.serial_number.presence || "-" %></td>
           <td class="app-row-actions">
-            <%= link_to "Edit", edit_asset_path(asset) %> |
-            <%= link_to "Delete", asset, method: :delete, data: { turbo_confirm: "Delete this asset?" } %>
+            <div class="d-flex align-items-center gap-2">
+              <%= link_to edit_asset_path(asset), class: "app-action-icon text-warning", title: "Edit" do %>
+                <%= app_icon(:pencil, size: 18) %>
+              <% end %>
+              <%= button_to asset_path(asset), method: :delete, data: { turbo_confirm: "Delete this asset?" }, class: "app-action-icon text-danger", title: "Delete" do %>
+                <%= app_icon(:trash, size: 18) %>
+              <% end %>
+            </div>
           </td>
         </tr>
       <% end %>

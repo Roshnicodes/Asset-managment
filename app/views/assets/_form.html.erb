@@ -1,5 +1,16 @@
 <%= form_with(model: asset, local: true) do |f| %>
   <div class="app-form-card">
+    <% if asset.errors.any? %>
+      <div class="app-form-errors">
+        <h2><%= pluralize(asset.errors.count, "error") %> found</h2>
+        <ul>
+          <% asset.errors.each do |error| %>
+            <li><%= error.full_message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
     <div class="app-form-grid two-col">
       <div class="app-form-field">
         <%= f.label :product_id, "Product" %>
@@ -9,6 +20,11 @@
       <div class="app-form-field">
         <%= f.label :name, "Asset Name" %>
         <%= f.text_field :name, class: "form-control" %>
+      </div>
+
+      <div class="app-form-field">
+        <%= f.label :serial_number, "Serial Number" %>
+        <%= f.text_field :serial_number, class: "form-control", placeholder: "Enter serial number" %>
       </div>
     </div>
 

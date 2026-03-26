@@ -68,6 +68,11 @@ module ApplicationHelper
       return true if role_perms.find_by(menu_identifier: "vendor_registration")&.can_view?
       return true if role_perms.find_by(menu_identifier: "vendor_registration_list")&.can_view?
     end
+
+    if identifier == "quotation_proposal_main"
+      return true if role_perms.find_by(menu_identifier: "quotation_proposal_form")&.can_view?
+      return true if role_perms.find_by(menu_identifier: "quotation_proposal_list")&.can_view?
+    end
     
     perm = role_perms.find_by(menu_identifier: identifier)
     perm ? perm.can_view? : false

@@ -1,5 +1,16 @@
 <%= form_with(model: allocation, local: true) do |f| %>
   <div class="app-form-card">
+    <% if allocation.errors.any? %>
+      <div class="app-form-errors">
+        <h2><%= pluralize(allocation.errors.count, "error") %> found</h2>
+        <ul>
+          <% allocation.errors.each do |error| %>
+            <li><%= error.full_message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
     <div class="app-form-grid two-col">
       <div class="app-form-field">
         <%= f.label :asset_id, "Asset" %>

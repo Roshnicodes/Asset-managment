@@ -1,5 +1,8 @@
 class QuotationProposalsController < ApplicationController
   before_action :set_quotation_proposal, only: %i[show edit update destroy send_for_approval]
+  before_action :authorize_quotation_form_access!, only: %i[index new create edit update destroy send_for_approval]
+  before_action :authorize_quotation_list_access!, only: %i[list]
+  before_action :authorize_quotation_view_access!, only: %i[show]
 
   def index
     @quotation_proposals = own_quotation_scope.order(created_at: :desc)
@@ -138,6 +141,44 @@ class QuotationProposalsController < ApplicationController
 
   def admin_user?
     current_user.email == "admin@example.com" || current_user.employee_master&.user_type == "Admin"
+  end
+
+  def can_access_menu?(identifier)
+    return true if admin_user?
+
+    employee = current_employee_master
+    return false unless employee
+
+    role_permissions = MenuPermission.where(
+      stakeholder_category_id: employee.stakeholder_category_id,
+      designation: employee.designation
+    )
+    return false if role_permissions.empty?
+
+    if identifier == "quotation_proposal_main"
+      return true if role_permissions.find_by(menu_identifier: "quotation_proposal_form")&.can_view?
+      return true if role_permissions.find_by(menu_identifier: "quotation_proposal_list")&.can_view?
+    end
+
+    role_permissions.find_by(menu_identifier: identifier)&.can_view? || false
+  end
+
+  def authorize_quotation_form_access!
+    return if can_access_menu?("quotation_proposal_form")
+
+    redirect_to root_path, alert: "You are not authorized to access Quotation Proposal form."
+  end
+
+  def authorize_quotation_list_access!
+    return if can_access_menu?("quotation_proposal_list") || can_access_menu?("quotation_proposal_form")
+
+    redirect_to root_path, alert: "You are not authorized to view Quotation Proposal list."
+  end
+
+  def authorize_quotation_view_access!
+    return if can_access_menu?("quotation_proposal_form") || can_access_menu?("quotation_proposal_list")
+
+    redirect_to root_path, alert: "You are not authorized to view this Quotation Proposal."
   end
 
   def create_quotation_approval_request(quotation_proposal)

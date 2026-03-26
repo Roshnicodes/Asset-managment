@@ -1,11 +1,19 @@
+<style>
+  .sticky-top { position: sticky; top: 0; z-index: 100; }
+  .app-table thead th { background: #f8fcf9 !important; border-bottom: 2px solid #eef3ef !important; }
+  .app-table-wrap { max-height: calc(100vh - 250px); overflow-y: auto; overflow-x: auto; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+</style>
+
 <div class="app-toolbar">
-  <div class="d-flex align-items-center gap-3" style="width: 100%;">
+  <div class="d-flex align-items-center gap-3" style="width: 100%">
     <div>
-    <h1>Quotation Proposals</h1>
-    <p class="app-section-note">Create quotation proposals, submit them for approval, and track remarks and approval trail.</p>
+      <h1 class="mb-0" style="white-space: nowrap;">Quotation Proposals</h1>
+      <p class="app-section-note mb-0">Create drafts, submit them for approval, and monitor proposal workflow in one place.</p>
     </div>
     <div style="margin-left:auto; display:flex; gap:.5rem; align-items:center;">
-      <%= link_to "Create Quotation Proposal", new_quotation_proposal_path, class: "app-primary-btn" %>
+      <% if can_view_menu?("quotation_proposal_form") %>
+        <%= link_to "Create Quotation Proposal", new_quotation_proposal_path, class: "app-primary-btn" %>
+      <% end %>
       <%= form_tag send_for_approval_quotation_proposals_path, method: :post, id: "send-quotation-approval-form", style: "display: inline;" do %>
         <button type="submit" class="app-secondary-btn d-none" id="send_quotation_for_approval_button">Send for Approval</button>
       <% end %>
@@ -15,9 +23,10 @@
 
 <div class="app-table-wrap">
   <table class="table app-table">
-    <thead>
+    <thead class="sticky-top">
       <tr>
         <th><input type="checkbox" id="quotation_select_all_checkbox" style="cursor: pointer;"></th>
+        <th>View</th>
         <th>Subject</th>
         <th>Theme</th>
         <th>Vendors</th>
@@ -35,6 +44,11 @@
         <tr>
           <td>
             <input type="checkbox" name="quotation_proposal_ids[]" value="<%= quotation_proposal.id %>" class="quotation-approval-checkbox" style="cursor: pointer;" form="send-quotation-approval-form">
+          </td>
+          <td>
+            <%= link_to quotation_proposal_path(quotation_proposal), class: "app-action-icon text-primary", title: "View" do %>
+              <%= app_icon(:eye, size: 18) %>
+            <% end %>
           </td>
           <td><%= quotation_proposal.subject %></td>
           <td><%= quotation_proposal.theme.name %></td>
@@ -81,12 +95,17 @@
           </td>
           <td><%= quotation_proposal.user&.email || "-" %></td>
           <td class="app-row-actions">
-            <%= link_to "View", quotation_proposal_path(quotation_proposal) %> |
-            <%= link_to "Edit", edit_quotation_proposal_path(quotation_proposal) %> |
-            <% if quotation_proposal.approval_request.blank? %>
-              <%= button_to "Send for Approval", send_for_approval_quotation_proposal_path(quotation_proposal), method: :post, class: "app-action-button", form: { class: "d-inline-block" } %>
-            <% end %>
-            <%= button_to "Delete", quotation_proposal_path(quotation_proposal), method: :delete, data: { turbo_confirm: "Delete this quotation proposal?" }, class: "app-action-button app-delete-button" %>
+            <div class="d-flex align-items-center gap-2">
+              <% if quotation_proposal.approval_request.blank? %>
+                <%= button_to "Send", send_for_approval_quotation_proposal_path(quotation_proposal), method: :post, class: "app-secondary-btn", title: "Send for Approval", form: { class: "d-inline-block" } %>
+              <% end %>
+              <%= link_to edit_quotation_proposal_path(quotation_proposal), class: "app-action-icon text-warning", title: "Edit" do %>
+                <%= app_icon(:pencil, size: 18) %>
+              <% end %>
+              <%= button_to quotation_proposal_path(quotation_proposal), method: :delete, data: { turbo_confirm: "Delete this quotation proposal?" }, class: "app-action-icon text-danger", title: "Delete" do %>
+                <%= app_icon(:trash, size: 18) %>
+              <% end %>
+            </div>
           </td>
         </tr>
       <% end %>
