@@ -1,5 +1,10 @@
 <div class="app-toolbar">
-  <h1>Role Based Access Control</h1>
+  <div class="d-flex align-items-center gap-3" style="width:100%">
+    <div>
+      <h1 class="mb-0" style="white-space: nowrap;">Role Based Access Control</h1>
+      <p class="app-section-note mb-0">Choose stakeholder and designation, then map exactly which menus and submenus that role can access.</p>
+    </div>
+  </div>
 </div>
 
 <div class="app-form-card app-form-card-wide mb-4">
@@ -19,6 +24,23 @@
 </div>
 
 <% if @current_stakeholder && @current_designation %>
+  <div class="app-detail-card" style="margin-bottom: 1rem; padding: 1rem 1.25rem;">
+    <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="badge border bg-success bg-opacity-10 text-success px-3 py-2" style="font-size: 0.9rem;">
+          Stakeholder: <%= @current_stakeholder.name %>
+        </span>
+        <span class="badge border bg-info bg-opacity-10 text-info px-3 py-2" style="font-size: 0.9rem;">
+          Role: <%= @current_designation %>
+        </span>
+        <span class="badge border bg-light text-dark px-3 py-2" style="font-size: 0.9rem;">
+          Menus: <%= MenuPermission::SIDEBAR_MENUS.size %>
+        </span>
+      </div>
+      <div class="text-muted small">Checked items will be visible in sidebar and permitted pages.</div>
+    </div>
+  </div>
+
   <%= form_with url: menu_permissions_path, method: :post, local: true do |f| %>
     <%= f.hidden_field :stakeholder_category_id, value: @current_stakeholder.id %>
     <%= f.hidden_field :designation, value: @current_designation %>
@@ -35,17 +57,17 @@
           <% MenuPermission::SIDEBAR_MENUS.each do |label, value| %>
             <tr>
               <% if value.is_a?(Hash) %>
-                <td class="fw-bold bg-light bg-opacity-50">
+                <td class="fw-bold" style="background: #f8fcf9;">
                   <div class="d-flex align-items-center gap-2">
                     <%= check_box_tag "menu_ids[]", value["main"], @permissions[value["main"]], id: "menu_#{value["main"]}", class: "form-check-input" %>
                     <label for="menu_<%= value["main"] %>" class="m-0"><%= label %></label>
                   </div>
                 </td>
                 <td>
-                  <div class="d-flex flex-wrap gap-4">
+                  <div class="d-flex flex-wrap gap-3">
                     <% value.each do |sub_label, sub_id| %>
                       <% next if sub_label == "main" %>
-                      <div class="d-inline-flex align-items-center gap-2">
+                      <div class="d-inline-flex align-items-center gap-2 px-2 py-1 rounded-3" style="background: #f8fbf9; border: 1px solid #e5f0e8;">
                         <%= check_box_tag "menu_ids[]", sub_id, @permissions[sub_id], id: "menu_#{sub_id}", class: "form-check-input" %>
                         <label for="menu_<%= sub_id %>" class="form-check-label m-0 text-muted"><%= sub_label %></label>
                       </div>
@@ -72,14 +94,16 @@
     </div>
   <% end %>
 <% else %>
-  <div class="alert alert-info py-4 text-center">
-    <div class="mb-2"><%= app_icon(:people, size: 32) %></div>
-    Please select a Stakeholder Category and Role to manage their menu access.
+  <div class="app-detail-card text-center" style="padding: 2.25rem 1.5rem;">
+    <div class="mb-3"><%= app_icon(:people, size: 32) %></div>
+    <h3 style="margin-bottom: 0.5rem; color: #1a3a2a;">Select Role Context</h3>
+    <p class="app-section-note mb-0">Choose a stakeholder category and designation first, then the permission matrix will load here.</p>
   </div>
 <% end %>
 
 <style>
   .sticky-top { position: sticky; top: 0; z-index: 100; }
   .sticky-bottom { position: sticky; bottom: 0; z-index: 100; box-shadow: 0 -4px 12px rgba(0,0,0,0.05); }
-  .app-table thead th { background: #f4faf6; }
+  .app-table thead th { background: #f8fcf9 !important; border-bottom: 2px solid #eef3ef !important; }
+  .app-table-wrap { max-height: calc(100vh - 290px); overflow-y: auto; overflow-x: auto; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
 </style>
