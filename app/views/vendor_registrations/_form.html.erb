@@ -46,7 +46,7 @@
 
       <div class="app-form-field">
         <%= form.label :firm_type, "Firm Type" %>
-        <%= form.text_field :firm_type %>
+        <%= form.select :firm_type, @firms.pluck(:name), { prompt: "Select firm type" }, { data: { vendor_firm_type: true } } %>
       </div>
     </div>
 
@@ -119,12 +119,12 @@
     <div class="app-form-grid three-col">
       <div class="app-form-field">
         <%= form.label :msme, "Is your firm MSME?" %>
-        <%= form.select :msme, [["Yes", true], ["No", false]], { prompt: "Select MSME status" } %>
+        <%= form.select :msme, [["Yes", true], ["No", false]], { prompt: "Select MSME status" }, { data: { msme_toggle: true } } %>
       </div>
 
       <div class="app-form-field">
         <%= form.label :msme_number, "MSME No" %>
-        <%= form.text_field :msme_number %>
+        <%= form.text_field :msme_number, data: { msme_number: true } %>
       </div>
 
       <div class="app-form-field">
@@ -185,6 +185,62 @@
         <%= form.label :business_description, "Brief Description of Business" %>
         <%= form.text_area :business_description, rows: 4 %>
       </div>
+    </div>
+
+    <div class="app-form-section">
+      <div class="app-form-section-title">Document Uploads</div>
+      <p class="app-form-section-note">Document master ke hisaab se uploads yahan dikhenge.</p>
+    </div>
+
+    <div class="app-form-grid four-col">
+      <% vendor_registration.document_masters_for_form(@document_masters).each do |document_master| %>
+        <% attachment_name = document_master.attachment_name %>
+        <% attachment = vendor_registration.document_attachment_for(document_master) %>
+        <% wrap_attributes = [] %>
+        <% wrap_attributes << 'data-aadhar-upload-wrap="true"' if attachment_name == "aadhar_document" %>
+        <% wrap_attributes << 'data-proprietor-only-document="true"' if attachment_name == "aadhar_document" %>
+        <% wrap_attributes << 'data-msme-certificate-wrap="true"' if attachment_name == "msme_certificate" %>
+        <% wrap_attributes << 'data-msme-only-document="true"' if document_master.msme_only? %>
+        <% wrapper_classes = ["app-form-field"] %>
+        <% wrapper_classes << "is-hidden" if attachment_name == "aadhar_document" && vendor_registration.firm_type.to_s.strip.casecmp("proprietor") != 0 %>
+        <div class="<%= wrapper_classes.join(" ") %>" <%= wrap_attributes.join(" ").html_safe %>>
+          <% if attachment_name.present? %>
+            <%= form.label attachment_name.to_sym, document_master.name %>
+            <%= form.file_field attachment_name.to_sym,
+                  accept: ".pdf,image/*",
+                  data: (
+                    if attachment_name == "aadhar_document"
+                      { aadhar_upload: true }
+                    elsif attachment_name == "msme_certificate"
+                      { msme_certificate: true }
+                    else
+                      {}
+                    end
+                  ) %>
+          <% else %>
+            <% input_id = "vendor_registration_document_uploads_#{document_master.id}" %>
+            <%= label_tag input_id, document_master.name %>
+            <%= file_field_tag "vendor_registration[document_uploads][#{document_master.id}]",
+                  accept: ".pdf,image/*",
+                  id: input_id %>
+          <% end %>
+          <p class="app-section-note" style="margin-top: 0.35rem;">
+            <%= document_master.mandatory? ? "Mandatory" : "Optional" %>
+          </p>
+          <% if attachment_name == "aadhar_document" %>
+            <p class="app-section-note">Aadhar upload sirf Proprietor firm type ke liye enable hoga.</p>
+          <% end %>
+          <% if attachment_name == "msme_certificate" %>
+            <p class="app-section-note">MSME status Yes hone par certificate upload required hoga.</p>
+          <% end %>
+          <% if attachment&.attached? %>
+            <p class="app-section-note" style="margin-top: 0.5rem;">
+              Current file:
+              <%= link_to attachment.filename.to_s, rails_blob_path(attachment, disposition: "attachment"), target: "_blank", rel: "noopener" %>
+            </p>
+          <% end %>
+        </div>
+      <% end %>
     </div>
 
     <p class="app-section-note">Submit time and user IP are saved automatically on submit.</p>

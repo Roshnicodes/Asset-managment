@@ -1,28 +1,20 @@
 <div class="app-toolbar">
-  <h1>Vendor Bank Master</h1>
-  <%= link_to "Add Vendor Bank Detail", new_vendor_bank_master_path, class: "app-primary-btn" %>
+  <h1>Bank Master</h1>
+  <%= link_to "Add Bank Name", new_vendor_bank_master_path, class: "app-primary-btn" %>
 </div>
 
 <div class="app-table-wrap">
 <table class="table app-table">
   <thead>
     <tr>
-      <th>Vendor / Employee Name</th>
       <th>Bank Name</th>
-      <th>IFSC Code</th>
-      <th>Account No</th>
-      <th>Account Type</th>
       <th>Action</th>
     </tr>
   </thead>
   <tbody>
     <% @vendor_bank_masters.each do |vendor_bank_master| %>
       <tr>
-        <td><%= vendor_bank_master.vendor_registration.display_name %></td>
         <td><%= vendor_bank_master.bank_name %></td>
-        <td><%= vendor_bank_master.ifsc_code %></td>
-        <td><%= vendor_bank_master.account_number %></td>
-        <td><%= vendor_bank_master.account_type %></td>
         <td class="app-row-actions">
           <%= link_to "Edit", edit_vendor_bank_master_path(vendor_bank_master) %> |
           <%= button_to "Delete", vendor_bank_master_path(vendor_bank_master), method: :delete, data: { turbo_confirm: "Delete this bank record?" }, class: "app-action-button app-delete-button" %>

@@ -21,6 +21,21 @@
         <%= form.label :stakeholder_category_id, "Stakeholder" %>
         <%= form.collection_select :stakeholder_category_id, StakeholderCategory.order(:name), :id, :name, { prompt: "Select stakeholder" } %>
       </div>
+
+      <div class="app-form-field">
+        <%= form.label :firm_id, "Firm Type" %>
+        <%= form.collection_select :firm_id, Firm.order(:name), :id, :name, { prompt: "All firm types" } %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :mandatory, "Mandatory" %>
+        <%= form.check_box :mandatory %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :msme_only, "MSME Only" %>
+        <%= form.check_box :msme_only %>
+      </div>
     </div>
 
     <div class="app-form-actions">

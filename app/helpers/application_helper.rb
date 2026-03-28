@@ -49,6 +49,20 @@ module ApplicationHelper
     end
   end
 
+  def navbar_logo_source
+    stakeholder = current_user&.employee_master&.stakeholder_category
+
+    return stakeholder.logo_file if stakeholder&.logo_file&.attached?
+    return stakeholder.logo_url if stakeholder&.logo_url.present?
+
+    "asset-logo.png"
+  end
+
+  def navbar_logo_alt
+    stakeholder_name = current_user&.employee_master&.stakeholder_category&.name
+    stakeholder_name.present? ? "#{stakeholder_name} Logo" : "Company Logo"
+  end
+
   def can_view_menu?(identifier)
     return true if identifier.nil?
     return true if identifier == "dashboard"

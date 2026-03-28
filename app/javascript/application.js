@@ -36,6 +36,82 @@ const setupVendorRegistrationSelections = () => {
   syncSelections()
 }
 
+const setupVendorDocumentToggle = () => {
+  const firmTypeInput = document.querySelector("[data-vendor-firm-type]")
+  const aadharInput = document.querySelector("[data-aadhar-upload]")
+  const aadharWrap = document.querySelector("[data-aadhar-upload-wrap]")
+  const proprietorOnlyDocumentWraps = Array.from(document.querySelectorAll("[data-proprietor-only-document]"))
+
+  if (!firmTypeInput) return
+
+  const syncAadharState = () => {
+    const isProprietor = firmTypeInput.value.toLowerCase().includes("propriet")
+
+    if (aadharInput) {
+      aadharInput.disabled = !isProprietor
+      aadharInput.required = false
+      if (!isProprietor) aadharInput.value = ""
+    }
+
+    if (aadharWrap) {
+      aadharWrap.classList.toggle("is-hidden", !isProprietor)
+      aadharWrap.hidden = !isProprietor
+    }
+
+    proprietorOnlyDocumentWraps.forEach((wrap) => {
+      wrap.classList.toggle("is-hidden", !isProprietor)
+      wrap.hidden = !isProprietor
+      wrap.querySelectorAll("input[type='file']").forEach((input) => {
+        input.disabled = !isProprietor
+        if (!isProprietor) input.value = ""
+      })
+    })
+  }
+
+  firmTypeInput.addEventListener("input", syncAadharState)
+  firmTypeInput.addEventListener("change", syncAadharState)
+  syncAadharState()
+}
+
+const setupMsmeToggle = () => {
+  const msmeSelect = document.querySelector("[data-msme-toggle]")
+  const msmeNumberInput = document.querySelector("[data-msme-number]")
+  const certificateInput = document.querySelector("[data-msme-certificate]")
+  const certificateWrap = document.querySelector("[data-msme-certificate-wrap]")
+  const msmeOnlyDocumentWraps = Array.from(document.querySelectorAll("[data-msme-only-document]"))
+
+  if (!msmeSelect || !msmeNumberInput) return
+
+  const syncMsmeState = () => {
+    const isMsme = msmeSelect.value === "true"
+
+    msmeNumberInput.disabled = !isMsme
+    msmeNumberInput.required = isMsme
+    if (!isMsme) msmeNumberInput.value = ""
+
+    if (certificateInput) {
+      certificateInput.disabled = !isMsme
+      certificateInput.required = isMsme
+      if (!isMsme) certificateInput.value = ""
+    }
+
+    if (certificateWrap) {
+      certificateWrap.classList.toggle("is-hidden", !isMsme)
+    }
+
+    msmeOnlyDocumentWraps.forEach((wrap) => {
+      wrap.classList.toggle("is-hidden", !isMsme)
+      wrap.querySelectorAll("input[type='file']").forEach((input) => {
+        input.disabled = !isMsme
+        if (!isMsme) input.value = ""
+      })
+    })
+  }
+
+  msmeSelect.addEventListener("change", syncMsmeState)
+  syncMsmeState()
+}
+
 const setupTableSearch = () => {
   document.querySelectorAll(".app-table-wrap").forEach((tableWrap, index) => {
     if (tableWrap.dataset.searchReady === "true") return
@@ -337,6 +413,8 @@ const setupQuotationProposalForm = () => {
 }
 
 document.addEventListener("turbo:load", setupVendorRegistrationSelections)
+document.addEventListener("turbo:load", setupVendorDocumentToggle)
+document.addEventListener("turbo:load", setupMsmeToggle)
 document.addEventListener("turbo:load", setupTableSearch)
 document.addEventListener("turbo:load", setupApprovalChannelSteps)
 document.addEventListener("turbo:load", setupQuotationProposalForm)

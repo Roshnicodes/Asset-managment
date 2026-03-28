@@ -4,5 +4,10 @@
       <div class="app-detail-label">Document Name</div>
       <div class="app-detail-value"><%= document_master.name %></div>
     </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">Firm Type</div>
+      <div class="app-detail-value"><%= document_master.firm&.name || "All" %></div>
+    </div>
   </div>
 </div>

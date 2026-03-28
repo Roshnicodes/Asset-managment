@@ -28,6 +28,11 @@
       </div>
 
       <div class="app-form-field">
+        <%= form.label :firm_type, "Firm Type" %>
+        <%= form.select :firm_type, Firm.order(:name).pluck(:name), { prompt: "Select firm type" } %>
+      </div>
+
+      <div class="app-form-field">
         <%= form.label :logo_url, "Logo URL" %>
         <%= form.text_field :logo_url, placeholder: "https://example.com/logo.png" %>
       </div>

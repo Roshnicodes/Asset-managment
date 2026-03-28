@@ -1,0 +1,26 @@
+<div class="app-form-grid two-col">
+  <div class="app-form-field">
+    <%= form.label :bank_name, "Bank Name" %>
+    <%= form.select :bank_name, VendorBankMaster.masters.pluck(:bank_name), { prompt: "Select bank name" } %>
+  </div>
+
+  <div class="app-form-field">
+    <%= form.label :account_type, "Bank Type Category" %>
+    <%= form.select :account_type, VendorBankMaster::ACCOUNT_TYPES, { prompt: "Select account type" } %>
+  </div>
+
+  <div class="app-form-field">
+    <%= form.label :account_number, "Account No" %>
+    <%= form.text_field :account_number %>
+  </div>
+
+  <div class="app-form-field">
+    <%= form.label :ifsc_code, "Bank IFSC Code" %>
+    <%= form.text_field :ifsc_code %>
+  </div>
+
+  <div class="app-form-field">
+    <%= form.label :bank_address, "Bank Address" %>
+    <%= form.text_area :bank_address, rows: 3 %>
+  </div>
+</div>

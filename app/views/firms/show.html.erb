@@ -1,5 +1,5 @@
 <div class="app-page-header">
-  <h2>Firm Details</h2>
+  <h2>Firm Type Details</h2>
   <%= link_to "Back", firms_path, class: "app-back-link" %>
 </div>
 
@@ -7,5 +7,5 @@
 
 <div class="app-detail-actions">
   <%= link_to "Edit", edit_firm_path(@firm), class: "app-secondary-btn" %>
-  <%= button_to "Delete", @firm, method: :delete, data: { turbo_confirm: "Delete this firm?" }, class: "app-danger-btn" %>
+  <%= button_to "Delete", @firm, method: :delete, data: { turbo_confirm: "Delete this firm type?" }, class: "app-danger-btn" %>
 </div>

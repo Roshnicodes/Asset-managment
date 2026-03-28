@@ -3,7 +3,7 @@ class DocumentMastersController < ApplicationController
 
   # GET /document_masters or /document_masters.json
   def index
-    @document_masters = DocumentMaster.all
+    @document_masters = DocumentMaster.includes(:firm, :stakeholder_category).order(:name)
   end
 
   # GET /document_masters/new
@@ -61,6 +61,6 @@ class DocumentMastersController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def document_master_params
-      params.expect(document_master: [ :name, :stakeholder_category_id ])
+      params.expect(document_master: [ :name, :mandatory, :msme_only, :stakeholder_category_id, :firm_id ])
     end
 end

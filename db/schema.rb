@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_26_093000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_28_154500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -144,9 +144,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_26_093000) do
 
   create_table "document_masters", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.string "document_key"
+    t.bigint "firm_id"
+    t.boolean "mandatory", default: false, null: false
+    t.boolean "msme_only", default: false, null: false
     t.string "name"
+    t.boolean "proprietor_only", default: false, null: false
     t.bigint "stakeholder_category_id"
     t.datetime "updated_at", null: false
+    t.index ["firm_id"], name: "index_document_masters_on_firm_id"
     t.index ["stakeholder_category_id"], name: "index_document_masters_on_stakeholder_category_id"
   end
 
@@ -317,6 +323,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_26_093000) do
     t.string "contact_no"
     t.datetime "created_at", null: false
     t.string "email_id"
+    t.string "firm_type"
     t.string "logo_url"
     t.string "name"
     t.bigint "office_category_id"
@@ -375,9 +382,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_26_093000) do
     t.string "ifsc_code"
     t.bigint "stakeholder_category_id"
     t.datetime "updated_at", null: false
-    t.bigint "vendor_registration_id", null: false
+    t.bigint "vendor_registration_id"
     t.index ["stakeholder_category_id"], name: "index_vendor_bank_masters_on_stakeholder_category_id"
     t.index ["vendor_registration_id"], name: "index_vendor_bank_masters_on_vendor_registration_id"
+  end
+
+  create_table "vendor_registration_documents", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "document_master_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "vendor_registration_id", null: false
+    t.index ["document_master_id"], name: "index_vendor_registration_documents_on_document_master_id"
+    t.index ["vendor_registration_id"], name: "index_vendor_registration_documents_on_vendor_registration_id"
   end
 
   create_table "vendor_registration_product_varieties", force: :cascade do |t|
@@ -410,7 +426,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_26_093000) do
   create_table "vendor_registrations", force: :cascade do |t|
     t.bigint "block_id", null: false
     t.text "business_description"
-    t.string "company_name"
     t.string "company_status"
     t.string "contact_person_designation"
     t.string "contact_person_name"
@@ -418,6 +433,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_26_093000) do
     t.bigint "district_id", null: false
     t.string "email"
     t.bigint "firm_id"
+    t.string "firm_name"
     t.string "firm_type"
     t.string "gst_no"
     t.string "mobile_no"
@@ -425,7 +441,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_26_093000) do
     t.string "msme_number"
     t.string "pan_no"
     t.string "pin_no"
-    t.bigint "registration_type_id", null: false
+    t.bigint "registration_type_id"
     t.bigint "stakeholder_category_id"
     t.bigint "state_id", null: false
     t.datetime "submitted_at", null: false
@@ -461,6 +477,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_26_093000) do
   add_foreign_key "assets", "products"
   add_foreign_key "blocks", "districts"
   add_foreign_key "districts", "states"
+  add_foreign_key "document_masters", "firms"
   add_foreign_key "document_masters", "stakeholder_categories"
   add_foreign_key "employee_masters", "blocks"
   add_foreign_key "employee_masters", "districts"
@@ -491,6 +508,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_26_093000) do
   add_foreign_key "units", "stakeholder_categories"
   add_foreign_key "vendor_bank_masters", "stakeholder_categories"
   add_foreign_key "vendor_bank_masters", "vendor_registrations"
+  add_foreign_key "vendor_registration_documents", "document_masters"
+  add_foreign_key "vendor_registration_documents", "vendor_registrations"
   add_foreign_key "vendor_registration_product_varieties", "product_varieties"
   add_foreign_key "vendor_registration_product_varieties", "vendor_registrations"
   add_foreign_key "vendor_registration_products", "products"

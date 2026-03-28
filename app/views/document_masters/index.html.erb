@@ -8,6 +8,9 @@
     <thead>
       <tr>
         <th>Document Name</th>
+        <th>Firm Type</th>
+        <th>Mandatory</th>
+        <th>MSME Only</th>
         <th>Action</th>
       </tr>
     </thead>
@@ -15,9 +18,12 @@
       <% @document_masters.each do |document_master| %>
         <tr>
           <td><%= document_master.name %></td>
+          <td><%= document_master.firm&.name || "All" %></td>
+          <td><%= document_master.mandatory? ? "Yes" : "No" %></td>
+          <td><%= document_master.msme_only? ? "Yes" : "No" %></td>
           <td class="app-row-actions">
             <%= link_to "Edit", edit_document_master_path(document_master) %> |
-            <%= link_to "Delete", document_master, method: :delete, data: { turbo_confirm: "Delete this document?" } %>
+            <%= button_to "Delete", document_master_path(document_master), method: :delete, data: { turbo_confirm: "Delete this document?" }, class: "app-action-button app-delete-button" %>
           </td>
         </tr>
       <% end %>

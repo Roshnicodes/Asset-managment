@@ -17,7 +17,7 @@
           <td><%= unit.name %></td>
           <td class="app-row-actions">
             <%= link_to "Edit", edit_unit_path(unit) %> |
-            <%= link_to "Delete", unit, method: :delete, data: { turbo_confirm: "Delete this unit?" } %>
+            <%= button_to "Delete", unit_path(unit), method: :delete, data: { turbo_confirm: "Delete this unit?" }, class: "app-action-button app-delete-button" %>
           </td>
         </tr>
       <% end %>

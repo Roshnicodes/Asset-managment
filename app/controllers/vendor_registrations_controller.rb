@@ -95,7 +95,9 @@ class VendorRegistrationsController < ApplicationController
 
   # POST /vendor_registrations or /vendor_registrations.json
   def create
-    @vendor_registration = VendorRegistration.new(vendor_registration_params)
+    permitted_params = vendor_registration_params
+    @vendor_registration = VendorRegistration.new(permitted_params.except(:document_uploads))
+    @vendor_registration.incoming_document_files = permitted_params[:document_uploads]
     @vendor_registration.user = current_user
     @vendor_registration.submitted_at ||= Time.current
     @vendor_registration.submitted_ip ||= request.remote_ip
@@ -115,8 +117,11 @@ class VendorRegistrationsController < ApplicationController
 
   # PATCH/PUT /vendor_registrations/1 or /vendor_registrations/1.json
   def update
+    permitted_params = vendor_registration_params
+    @vendor_registration.incoming_document_files = permitted_params[:document_uploads]
+
     respond_to do |format|
-      if @vendor_registration.update(vendor_registration_params)
+      if @vendor_registration.update(permitted_params.except(:document_uploads))
         format.html { redirect_to vendor_registrations_path, notice: "Vendor registration was successfully updated.", status: :see_other }
         format.json { render :show, status: :ok, location: @vendor_registration }
       else
@@ -149,12 +154,16 @@ class VendorRegistrationsController < ApplicationController
         :stakeholder_category_id, :registration_type_id, :company_name, :firm_id, :vendor_name, :firm_type, :gst_no, :pan_no,
         :email, :mobile_no, :state_id, :district_id, :block_id, :pin_no, :contact_person_name,
         :contact_person_designation, :msme, :msme_number, :company_status, :business_description,
+        :msme_certificate, :pan_document, :aadhar_document, :establishment_certificate,
+        document_uploads: {},
         theme_ids: [], product_ids: [], product_variety_ids: []
       )
 
       %i[theme_ids product_ids product_variety_ids].each do |association_key|
         permitted_params[association_key] = Array(permitted_params[association_key]).reject(&:blank?)
       end
+
+      permitted_params[:document_uploads] = permitted_params[:document_uploads].to_h if permitted_params[:document_uploads].present?
 
       permitted_params
     end
@@ -163,6 +172,7 @@ class VendorRegistrationsController < ApplicationController
       @stakeholder_categories = StakeholderCategory.order(:name)
       @registration_types = RegistrationType.order(:name)
       @firms = Firm.order(:name)
+      @document_masters = DocumentMaster.includes(:firm).order(:name)
       @states = State.order(:name)
       @districts = District.includes(:state).order(:name)
       @blocks = Block.includes(district: :state).order(:name)

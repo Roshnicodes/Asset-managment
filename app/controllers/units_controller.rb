@@ -45,11 +45,15 @@ class UnitsController < ApplicationController
 
   # DELETE /units/1 or /units/1.json
   def destroy
-    @unit.destroy!
-
     respond_to do |format|
-      format.html { redirect_to units_path, notice: "Unit was successfully destroyed.", status: :see_other }
-      format.json { head :no_content }
+      if @unit.destroy
+        format.html { redirect_to units_path, notice: "Unit was successfully destroyed.", status: :see_other }
+        format.json { head :no_content }
+      else
+        error_message = @unit.errors.full_messages.to_sentence.presence || "Unit could not be deleted."
+        format.html { redirect_to units_path, alert: error_message, status: :see_other }
+        format.json { render json: { error: error_message }, status: :unprocessable_entity }
+      end
     end
   end
 

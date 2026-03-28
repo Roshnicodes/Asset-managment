@@ -13,6 +13,7 @@
         <th>Stakeholder Name</th>
         <th>Contact No</th>
         <th>Email ID</th>
+        <th>Firm Type</th>
         <th>Logo</th>
         <th>Address</th>
         <th>Action</th>
@@ -24,6 +25,7 @@
           <td><%= stakeholder_category.name %></td>
           <td><%= stakeholder_category.contact_no %></td>
           <td><%= stakeholder_category.email_id %></td>
+          <td><%= stakeholder_category.firm_type.presence || "-" %></td>
           <td>
             <% if stakeholder_category.logo_file.attached? %>
               <%= image_tag stakeholder_category.logo_file, class: "app-stakeholder-logo-thumb", alt: "Stakeholder logo" %>

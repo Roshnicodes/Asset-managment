@@ -70,7 +70,7 @@ class StakeholderCategoriesController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def stakeholder_category_params
-      params.expect(stakeholder_category: [ :name, :office_category_id, :address, :logo_url, :logo_file, :contact_no, :email_id ])
+      params.expect(stakeholder_category: [ :name, :office_category_id, :address, :logo_url, :logo_file, :contact_no, :email_id, :firm_type ])
     end
 
     def load_office_categories

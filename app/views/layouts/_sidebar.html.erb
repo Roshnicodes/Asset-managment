@@ -50,9 +50,7 @@
       </li>
     <% end %>
 
-    <li><%= app_nav_link("Registration Types", registration_types_path, icon: :registration, identifier: "registration_types") %></li>
-    <li><%= app_nav_link("Service Types", service_types_path, icon: :service, identifier: "service_types") %></li>
-    <li><%= app_nav_link("Vendor Thematic Types", themes_path, icon: :theme, identifier: "vendor_themes") %></li>
+    <li><%= app_nav_link("Thematic Type", themes_path, icon: :theme, identifier: "vendor_themes") %></li>
     <li><%= app_nav_link("Product Entry", products_path, icon: :product, identifier: "products") %></li>
     <li><%= app_nav_link("Product Variety Entry", product_varieties_path, icon: :layers, identifier: "product_varieties") %></li>
     <li><%= app_nav_link("Units", units_path, icon: :unit, identifier: "units") %></li>
@@ -73,7 +71,7 @@
         </div>
       </li>
     <% end %>
-    <li><%= app_nav_link("Firms", firms_path, icon: :firm, identifier: "firms") %></li>
+    <li><%= app_nav_link("Firm Types", firms_path, icon: :firm, identifier: "firms") %></li>
     <li><%= app_nav_link("Employee Master", employee_masters_path, icon: :people, identifier: "employee_master") %></li>
     <li><%= app_nav_link("Banks", vendor_bank_masters_path, icon: :bank, identifier: "banks") %></li>
     <% if can_view_menu?("vendor_registration_main") || can_view_menu?("vendor_registration") || can_view_menu?("vendor_registration_list") %>

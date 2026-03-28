@@ -19,9 +19,8 @@
       <tr>
         <th>View</th>
         <th>Stakeholder</th>
-        <th>Registration Type</th>
         <th>Vendor Name</th>
-        <th>Company / Firm</th>
+        <th>Company / Firm Type</th>
         <th>State</th>
         <th>Status</th>
         <th>Approval Status</th>
@@ -39,9 +38,8 @@
             <% end %>
           </td>
           <td><%= vendor_registration.stakeholder_category&.name || "-" %></td>
-          <td><%= vendor_registration.registration_type.name %></td>
           <td><%= vendor_registration.vendor_name %></td>
-          <td><%= vendor_registration.company_name.presence || vendor_registration.firm&.name || "-" %></td>
+          <td><%= vendor_registration.firm_name.presence || vendor_registration.firm_type.presence || vendor_registration.firm&.name || "-" %></td>
           <td><%= vendor_registration.state.name %></td>
           <td><%= vendor_registration.company_status %></td>
           <td>

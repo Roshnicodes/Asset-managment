@@ -1,13 +1,13 @@
 <div class="app-toolbar">
-  <h1>Firms</h1>
-  <%= link_to "Add Firm", new_firm_path, class: "app-primary-btn" %>
+  <h1>Firm Types</h1>
+  <%= link_to "Add Firm Type", new_firm_path, class: "app-primary-btn" %>
 </div>
 
 <div class="app-table-wrap">
   <table class="table app-table">
     <thead>
       <tr>
-        <th>Firm Name</th>
+        <th>Firm Type</th>
         <th>Action</th>
       </tr>
     </thead>
@@ -17,7 +17,7 @@
           <td><%= firm.name %></td>
           <td class="app-row-actions">
             <%= link_to "Edit", edit_firm_path(firm) %> |
-            <%= link_to "Delete", firm, method: :delete, data: { turbo_confirm: "Delete this firm?" } %>
+            <%= button_to "Delete", firm_path(firm), method: :delete, data: { turbo_confirm: "Delete this firm type?" }, class: "app-action-button app-delete-button" %>
           </td>
         </tr>
       <% end %>

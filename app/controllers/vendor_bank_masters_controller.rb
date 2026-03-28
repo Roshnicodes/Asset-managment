@@ -3,7 +3,7 @@ class VendorBankMastersController < ApplicationController
 
   # GET /vendor_bank_masters or /vendor_bank_masters.json
   def index
-    @vendor_bank_masters = VendorBankMaster.includes(:vendor_registration).order(created_at: :desc)
+    @vendor_bank_masters = VendorBankMaster.masters
   end
 
   # GET /vendor_bank_masters/1 or /vendor_bank_masters/1.json
@@ -13,12 +13,10 @@ class VendorBankMastersController < ApplicationController
   # GET /vendor_bank_masters/new
   def new
     @vendor_bank_master = VendorBankMaster.new
-    load_vendor_registrations
   end
 
   # GET /vendor_bank_masters/1/edit
   def edit
-    load_vendor_registrations
   end
 
   # POST /vendor_bank_masters or /vendor_bank_masters.json
@@ -30,7 +28,6 @@ class VendorBankMastersController < ApplicationController
         format.html { redirect_to vendor_bank_masters_path, notice: "Vendor bank master was successfully created." }
         format.json { render :show, status: :created, location: @vendor_bank_master }
       else
-        load_vendor_registrations
         format.html { render :new, status: :unprocessable_entity }
         format.json { render json: @vendor_bank_master.errors, status: :unprocessable_entity }
       end
@@ -44,7 +41,6 @@ class VendorBankMastersController < ApplicationController
         format.html { redirect_to vendor_bank_masters_path, notice: "Vendor bank master was successfully updated.", status: :see_other }
         format.json { render :show, status: :ok, location: @vendor_bank_master }
       else
-        load_vendor_registrations
         format.html { render :edit, status: :unprocessable_entity }
         format.json { render json: @vendor_bank_master.errors, status: :unprocessable_entity }
       end
@@ -69,10 +65,6 @@ class VendorBankMastersController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def vendor_bank_master_params
-      params.expect(vendor_bank_master: [ :vendor_registration_id, :bank_name, :bank_address, :ifsc_code, :account_number, :account_type, :stakeholder_category_id ])
-    end
-
-    def load_vendor_registrations
-      @vendor_registrations = VendorRegistration.order(:vendor_name)
+      params.expect(vendor_bank_master: [ :bank_name ])
     end
 end

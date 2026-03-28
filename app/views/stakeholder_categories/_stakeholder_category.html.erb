@@ -9,5 +9,10 @@
       <div class="app-detail-label">Office Category</div>
       <div class="app-detail-value"><%= stakeholder_category.office_category&.name || "Not linked" %></div>
     </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">Firm Type</div>
+      <div class="app-detail-value"><%= stakeholder_category.firm_type.presence || "-" %></div>
+    </div>
   </div>
 </div>
