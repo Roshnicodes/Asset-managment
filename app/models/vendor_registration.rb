@@ -21,6 +21,7 @@ class VendorRegistration < ApplicationRecord
   has_one_attached :establishment_certificate
 
   attr_accessor :incoming_document_files
+  accepts_nested_attributes_for :vendor_bank_masters, allow_destroy: true, reject_if: :all_blank
 
   validates :vendor_name, :email, :mobile_no, :company_status, presence: true
   validate :msme_details_required_if_applicable

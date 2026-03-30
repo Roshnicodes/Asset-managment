@@ -182,10 +182,24 @@
       </div>
 
       <div class="app-form-field">
+        <%= form.label :firm_profile, "Brief Description of Firm Profile" %>
+        <%= form.text_area :firm_profile, rows: 4 %>
+      </div>
+
+      <div class="app-form-field">
         <%= form.label :business_description, "Brief Description of Business" %>
         <%= form.text_area :business_description, rows: 4 %>
       </div>
     </div>
+
+    <div class="app-form-section">
+      <div class="app-form-section-title">Bank Details</div>
+      <p class="app-form-section-note">Bank details aur check book / cancelled cheque yahan upload karein.</p>
+    </div>
+
+    <%= form.fields_for :vendor_bank_masters do |bank_form| %>
+      <%= render "vendor_bank_master_fields", form: bank_form %>
+    <% end %>
 
     <div class="app-form-section">
       <div class="app-form-section-title">Document Uploads</div>

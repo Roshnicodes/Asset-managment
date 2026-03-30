@@ -23,4 +23,15 @@
     <%= form.label :bank_address, "Bank Address" %>
     <%= form.text_area :bank_address, rows: 3 %>
   </div>
+
+  <div class="app-form-field">
+    <%= form.label :cancelled_cheque, "Check Book / Cancelled Cheque" %>
+    <%= form.file_field :cancelled_cheque, accept: ".pdf,image/*" %>
+    <% if form.object.cancelled_cheque.attached? %>
+      <p class="app-section-note" style="margin-top: 0.5rem;">
+        Current file:
+        <%= link_to form.object.cancelled_cheque.filename.to_s, rails_blob_path(form.object.cancelled_cheque, disposition: "attachment"), target: "_blank", rel: "noopener" %>
+      </p>
+    <% end %>
+  </div>
 </div>

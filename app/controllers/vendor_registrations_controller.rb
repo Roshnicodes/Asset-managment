@@ -86,11 +86,13 @@ class VendorRegistrationsController < ApplicationController
   def new
     @vendor_registration = VendorRegistration.new
     load_form_collections
+    @vendor_registration.vendor_bank_masters.build if @vendor_registration.vendor_bank_masters.empty?
   end
 
   # GET /vendor_registrations/1/edit
   def edit
     load_form_collections
+    @vendor_registration.vendor_bank_masters.build if @vendor_registration.vendor_bank_masters.empty?
   end
 
   # POST /vendor_registrations or /vendor_registrations.json
@@ -153,9 +155,10 @@ class VendorRegistrationsController < ApplicationController
       permitted_params = params.require(:vendor_registration).permit(
         :stakeholder_category_id, :registration_type_id, :company_name, :firm_id, :vendor_name, :firm_type, :gst_no, :pan_no,
         :email, :mobile_no, :state_id, :district_id, :block_id, :pin_no, :contact_person_name,
-        :contact_person_designation, :msme, :msme_number, :company_status, :business_description,
+        :contact_person_designation, :msme, :msme_number, :company_status, :firm_profile, :business_description,
         :msme_certificate, :pan_document, :aadhar_document, :establishment_certificate,
         document_uploads: {},
+        vendor_bank_masters_attributes: [:id, :bank_name, :bank_address, :ifsc_code, :account_number, :account_type, :cancelled_cheque, :_destroy],
         theme_ids: [], product_ids: [], product_variety_ids: []
       )
 
