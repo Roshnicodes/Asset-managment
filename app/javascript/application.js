@@ -412,6 +412,82 @@ const setupQuotationProposalForm = () => {
   })
 }
 
+const setupVendorQuotationCalculations = () => {
+  const forms = document.querySelectorAll("[data-vendor-quote-calc]")
+  if (forms.length === 0) return
+
+  const numberToWords = (value) => {
+    const ones = ["zero","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen"]
+    const tens = ["zero","ten","twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"]
+
+    const toWords = (num) => {
+      num = Math.floor(num)
+      if (num < 20) return ones[num]
+      if (num < 100) return `${tens[Math.floor(num / 10)]} ${ones[num % 10]}`.trim()
+      if (num < 1000) return `${ones[Math.floor(num / 100)]} hundred ${num % 100 ? toWords(num % 100) : ""}`.trim()
+      if (num < 100000) return `${toWords(Math.floor(num / 1000))} thousand ${num % 1000 ? toWords(num % 1000) : ""}`.trim()
+      if (num < 10000000) return `${toWords(Math.floor(num / 100000))} lakh ${num % 100000 ? toWords(num % 100000) : ""}`.trim()
+      return `${toWords(Math.floor(num / 10000000))} crore ${num % 10000000 ? toWords(num % 10000000) : ""}`.trim()
+    }
+
+    const amount = Number(value || 0)
+    const rupees = Math.floor(amount)
+    const paise = Math.round((amount - rupees) * 100)
+    const paiseWords = paise > 0 ? ` and ${toWords(paise)} paise` : ""
+    return `${toWords(rupees)} rupees${paiseWords} only`
+  }
+
+  forms.forEach((form) => {
+    const rows = Array.from(form.querySelectorAll("[data-vendor-quote-row]"))
+    const subtotalNode = form.querySelector("[data-summary-subtotal]")
+    const gstNode = form.querySelector("[data-summary-gst]")
+    const grandNode = form.querySelector("[data-summary-grand-total]")
+    const wordsNode = form.querySelector("[data-summary-grand-words]")
+
+    const recalc = () => {
+      let subtotal = 0
+      let totalGst = 0
+      let grandTotal = 0
+
+      rows.forEach((row) => {
+        const quantity = Number(row.querySelector("[data-quote-quantity]")?.textContent || 0)
+        const rate = Number(row.querySelector("[data-quote-rate]")?.value || 0)
+        const gst = Number(row.querySelector("[data-quote-gst]")?.value || 0)
+        const taxable = quantity * rate
+        const gstAmount = taxable * gst / 100
+        const cgst = gstAmount / 2
+        const sgst = gstAmount / 2
+        const total = taxable + gstAmount
+
+        const setText = (selector, value) => {
+          const node = row.querySelector(selector)
+          if (node) node.textContent = value.toFixed(2)
+        }
+
+        setText("[data-taxable-amount]", taxable)
+        setText("[data-cgst-amount]", cgst)
+        setText("[data-sgst-amount]", sgst)
+        setText("[data-grand-total]", total)
+
+        subtotal += taxable
+        totalGst += gstAmount
+        grandTotal += total
+      })
+
+      if (subtotalNode) subtotalNode.textContent = subtotal.toFixed(2)
+      if (gstNode) gstNode.textContent = totalGst.toFixed(2)
+      if (grandNode) grandNode.textContent = grandTotal.toFixed(2)
+      if (wordsNode) wordsNode.textContent = numberToWords(grandTotal)
+    }
+
+    form.addEventListener("input", (event) => {
+      if (event.target.matches("[data-quote-rate], [data-quote-gst]")) recalc()
+    })
+
+    recalc()
+  })
+}
+
 document.addEventListener("turbo:load", setupVendorRegistrationSelections)
 document.addEventListener("turbo:load", setupVendorDocumentToggle)
 document.addEventListener("turbo:load", setupMsmeToggle)
@@ -420,3 +496,4 @@ document.addEventListener("turbo:load", setupApprovalChannelSteps)
 document.addEventListener("turbo:load", setupQuotationProposalForm)
 document.addEventListener("turbo:load", setupVendorApprovalSelections)
 document.addEventListener("turbo:load", setupQuotationApprovalSelections)
+document.addEventListener("turbo:load", setupVendorQuotationCalculations)

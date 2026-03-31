@@ -91,6 +91,26 @@
       </div>
     </div>
 
+    <div class="app-page-header" style="margin-top: 1.5rem; margin-bottom: 0.5rem;">
+      <div>
+        <h3 style="margin-bottom: 0.25rem;">Approval Committee</h3>
+        <p class="app-section-note mb-0">
+          Isi quotation ke andar L1 se L4 tak committee set karo. Yehi members apna-apna approval denge, aur sab approvals isi quotation detail me visible rahenge.
+        </p>
+      </div>
+    </div>
+
+    <div class="app-form-grid two-col">
+      <%= form.fields_for :committee_steps, quotation_proposal.committee_steps.sort_by(&:level) do |committee_form| %>
+        <%= committee_form.hidden_field :id if committee_form.object.persisted? %>
+        <%= committee_form.hidden_field :level %>
+        <div class="app-form-field">
+          <%= committee_form.label :employee_master_id, "L#{committee_form.object.level} Committee Member" %>
+          <%= committee_form.collection_select :employee_master_id, @committee_members, :id, :name, { prompt: "Select committee member" } %>
+        </div>
+      <% end %>
+    </div>
+
     <div class="app-form-actions">
       <%= form.submit "Save Quotation Proposal", class: "app-form-submit" %>
     </div>

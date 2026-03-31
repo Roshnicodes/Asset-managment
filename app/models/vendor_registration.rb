@@ -30,7 +30,7 @@ class VendorRegistration < ApplicationRecord
   after_commit :persist_incoming_document_files, on: %i[create update]
 
   def display_name
-    vendor_name.presence || company_name.presence || "Vendor Registration ##{id}"
+    vendor_name.presence || firm_name.presence || "Vendor Registration ##{id}"
   end
 
   def attachment_for(document_key)

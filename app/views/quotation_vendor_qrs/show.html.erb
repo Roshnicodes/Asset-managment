@@ -1,105 +1,203 @@
-<div class="app-detail-card" style="margin-bottom: 1.5rem; padding: 1.25rem 1.5rem;">
-  <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
-    <div class="d-flex align-items-center gap-3">
-      <div style="width: 84px; height: 84px; border-radius: 18px; background: #fff; border: 1px solid #d4e8df; display: flex; align-items: center; justify-content: center; padding: 0.75rem; box-shadow: 0 8px 20px rgba(26, 58, 42, 0.08);">
-        <% if @stakeholder_category&.logo_file&.attached? %>
-          <%= image_tag @stakeholder_category.logo_file, alt: "#{@stakeholder_category.name} Logo", style: "max-width: 100%; max-height: 100%; object-fit: contain;" %>
-        <% elsif @stakeholder_category&.logo_url.present? %>
-          <%= image_tag @stakeholder_category.logo_url, alt: "#{@stakeholder_category.name} Logo", style: "max-width: 100%; max-height: 100%; object-fit: contain;" %>
-        <% else %>
-          <%= image_tag "asset-logo.png", alt: "ASA Logo", style: "max-width: 100%; max-height: 100%; object-fit: contain;" %>
+<% otp_verified = (@otp_verified_for_render || false) && @quotation_vendor_dispatch.access_open? %>
+
+<% if otp_verified %>
+  <script>
+    window.history.pushState(null, "", window.location.href);
+    window.addEventListener("popstate", function () {
+      window.history.pushState(null, "", window.location.href);
+    });
+  </script>
+
+  <div class="app-detail-card" style="margin-bottom: 1.5rem; padding: 1.25rem 1.5rem;">
+    <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+      <div class="d-flex align-items-center gap-3">
+        <div style="width: 84px; height: 84px; border-radius: 18px; background: #fff; border: 1px solid #d4e8df; display: flex; align-items: center; justify-content: center; padding: 0.75rem; box-shadow: 0 8px 20px rgba(26, 58, 42, 0.08);">
+          <% if @stakeholder_category&.logo_file&.attached? %>
+            <%= image_tag @stakeholder_category.logo_file, alt: "#{@stakeholder_category.name} Logo", style: "max-width: 100%; max-height: 100%; object-fit: contain;" %>
+          <% elsif @stakeholder_category&.logo_url.present? %>
+            <%= image_tag @stakeholder_category.logo_url, alt: "#{@stakeholder_category.name} Logo", style: "max-width: 100%; max-height: 100%; object-fit: contain;" %>
+          <% else %>
+            <%= image_tag "asset-logo.png", alt: "ASA Logo", style: "max-width: 100%; max-height: 100%; object-fit: contain;" %>
+          <% end %>
+        </div>
+
+        <div>
+          <div class="app-detail-label" style="margin-bottom: 0.2rem;">Stakeholder Branding</div>
+          <div class="fw-semibold" style="font-size: 1.1rem; color: #1a3a2a;">
+            <%= @stakeholder_category&.name || "ASA" %>
+          </div>
+          <div class="text-muted small">Vendor quotation response</div>
+        </div>
+      </div>
+
+      <span class="badge border bg-success bg-opacity-10 text-success px-3 py-2" style="font-size: 0.9rem;">
+        OTP Verified
+      </span>
+    </div>
+  </div>
+
+  <div class="app-page-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem;">
+    <div>
+      <h2 style="margin: 0; font-size: 1.8rem; color: #1a3a2a;">Vendor Quotation Form</h2>
+      <p style="margin: 0.5rem 0 0 0; color: #6b8e7f; font-size: 0.95rem;">
+        <%= @vendor_registration.display_name %> for <%= @quotation_proposal.subject %>
+      </p>
+    </div>
+  </div>
+
+  <div class="app-detail-card">
+    <div class="app-detail-grid">
+      <div class="app-detail-item">
+        <div class="app-detail-label">Quotation ID</div>
+        <div class="app-detail-value"><%= @quotation_proposal.id %></div>
+      </div>
+
+      <div class="app-detail-item">
+        <div class="app-detail-label">Vendor</div>
+        <div class="app-detail-value"><%= @vendor_registration.display_name %></div>
+      </div>
+
+      <div class="app-detail-item">
+        <div class="app-detail-label">Theme</div>
+        <div class="app-detail-value"><%= @quotation_proposal.theme.name %></div>
+      </div>
+
+      <div class="app-detail-item">
+        <div class="app-detail-label">Proposal End Date</div>
+        <div class="app-detail-value"><%= @quotation_proposal.proposal_end_date.strftime("%d-%m-%Y") %></div>
+      </div>
+
+      <div class="app-detail-item" style="grid-column: 1 / -1;">
+        <div class="app-detail-label">Remark</div>
+        <div class="app-detail-value"><%= @quotation_proposal.remark.presence || "-" %></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-page-header" style="margin-top: 1.5rem;">
+    <div>
+      <h3 style="margin-bottom: 0.25rem;">Quoted Items</h3>
+      <p class="app-section-note mb-0">Fill your quotation item-wise and submit the response.</p>
+    </div>
+  </div>
+
+  <%= form_with model: @quotation_proposal_vendor, url: quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token), method: :patch, local: true, data: { vendor_quote_calc: true } do |form| %>
+    <div class="app-table-wrap" style="overflow-x: auto; overflow-y: visible;">
+      <table class="table app-table" style="min-width: 1400px;">
+        <thead>
+          <tr>
+            <th>Item Name</th>
+            <th>Unit</th>
+            <th>Quantity</th>
+            <th>Proposal Remark</th>
+            <th>Your Rate</th>
+            <th>Taxable Amount</th>
+            <th>GST %</th>
+            <th>CGST</th>
+            <th>SGST</th>
+            <th>Grand Total</th>
+            <th>Your Remark</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @quotation_proposal_vendor.vendor_items.includes(quotation_proposal_item: :unit).each do |vendor_item| %>
+            <%= form.fields_for :vendor_items, vendor_item do |item_form| %>
+              <tr data-vendor-quote-row>
+                <td>
+                  <%= vendor_item.quotation_proposal_item.item_name %>
+                  <%= item_form.hidden_field :id %>
+                </td>
+                <td><%= vendor_item.quotation_proposal_item.unit.name %></td>
+                <td data-quote-quantity><%= vendor_item.quotation_proposal_item.quantity %></td>
+                <td><%= vendor_item.quotation_proposal_item.remark.presence || "-" %></td>
+                <td><%= item_form.number_field :quoted_rate, step: :any, min: 0, required: true, data: { quote_rate: true } %></td>
+                <td data-taxable-amount><%= number_with_precision(vendor_item.line_total || 0, precision: 2) %></td>
+                <td><%= item_form.number_field :gst_percentage, step: :any, min: 0, placeholder: "GST %", data: { quote_gst: true } %></td>
+                <td data-cgst-amount><%= number_with_precision(vendor_item.cgst_amount, precision: 2) %></td>
+                <td data-sgst-amount><%= number_with_precision(vendor_item.sgst_amount, precision: 2) %></td>
+                <td data-grand-total><%= number_with_precision(vendor_item.grand_total, precision: 2) %></td>
+                <td><%= item_form.text_field :remark %></td>
+              </tr>
+            <% end %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="app-detail-card" style="margin-top: 1rem;">
+      <div class="app-detail-grid">
+        <div class="app-detail-item">
+          <div class="app-detail-label">Sub Total</div>
+          <div class="app-detail-value" data-summary-subtotal><%= number_with_precision(@quotation_proposal_vendor.total_quoted_amount, precision: 2) %></div>
+        </div>
+
+        <div class="app-detail-item">
+          <div class="app-detail-label">Total GST</div>
+          <div class="app-detail-value" data-summary-gst><%= number_with_precision(@quotation_proposal_vendor.total_gst_amount, precision: 2) %></div>
+        </div>
+
+        <div class="app-detail-item">
+          <div class="app-detail-label">Grand Total</div>
+          <div class="app-detail-value" data-summary-grand-total><%= number_with_precision(@quotation_proposal_vendor.grand_total_amount, precision: 2) %></div>
+        </div>
+
+        <div class="app-detail-item" style="grid-column: 1 / -1;">
+          <div class="app-detail-label">Amount in Words</div>
+          <div class="app-detail-value" data-summary-grand-words><%= amount_in_words(@quotation_proposal_vendor.grand_total_amount) %></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-form-field" style="margin-top: 1rem;">
+      <%= form.label :vendor_remark, "Overall Vendor Remark" %>
+      <%= form.text_area :vendor_remark, rows: 4 %>
+    </div>
+
+    <div class="app-form-actions">
+      <%= form.submit(@quotation_proposal_vendor.response_submitted? ? "Update Response" : "Submit Response", class: "app-form-submit") %>
+    </div>
+  <% end %>
+<% else %>
+  <div class="app-form-card" style="max-width: 720px; margin: 3rem auto;">
+    <div class="app-page-header" style="margin-bottom: 1rem;">
+      <div>
+        <h2 style="margin-bottom: 0.25rem;">Vendor OTP Verification</h2>
+        <p class="app-section-note mb-0">Enter the OTP sent to your registered mobile number to open the quotation form.</p>
+      </div>
+    </div>
+
+    <div class="app-detail-grid">
+      <div class="app-detail-item">
+        <div class="app-detail-label">Mobile Number</div>
+        <div class="app-detail-value"><%= @quotation_vendor_dispatch.mobile_no.presence || "-" %></div>
+      </div>
+
+      <div class="app-detail-item">
+        <div class="app-detail-label">Last OTP Sent At</div>
+        <div class="app-detail-value"><%= @quotation_vendor_dispatch.latest_active_otp&.sent_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+      </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+      <div class="col-lg-7">
+        <%= form_with url: verify_quotation_vendor_qr_otp_path(@quotation_proposal_vendor.qr_token), method: :post, local: true do |form| %>
+          <div class="app-form-field">
+            <%= form.label :otp_code, "Enter OTP" %>
+            <%= form.text_field :otp_code, maxlength: 6, required: true %>
+          </div>
+          <div class="app-form-actions" style="justify-content: flex-start;">
+            <%= form.submit "Verify OTP", class: "app-form-submit" %>
+          </div>
         <% end %>
       </div>
 
-      <div>
-        <div class="app-detail-label" style="margin-bottom: 0.2rem;">Stakeholder Branding</div>
-        <div class="fw-semibold" style="font-size: 1.1rem; color: #1a3a2a;">
-          <%= @stakeholder_category&.name || "ASA" %>
+      <div class="col-lg-5">
+        <div class="app-detail-item h-100">
+          <div class="app-detail-label">Need a New OTP?</div>
+          <p class="app-section-note" style="margin-bottom: 1rem;">If the OTP has expired, send a fresh OTP again.</p>
+          <%= button_to "Send New OTP", send_quotation_vendor_qr_otp_path(@quotation_proposal_vendor.qr_token), method: :post, class: "app-secondary-btn" %>
         </div>
-        <div class="text-muted small">Vendor-specific approved quotation view</div>
       </div>
     </div>
-
-    <span class="badge border bg-success bg-opacity-10 text-success px-3 py-2" style="font-size: 0.9rem;">
-      Approved Quotation
-    </span>
   </div>
-</div>
-
-<div class="app-page-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem;">
-  <div>
-    <h2 style="margin: 0; font-size: 1.8rem; color: #1a3a2a;">Vendor Quotation Details</h2>
-    <p style="margin: 0.5rem 0 0 0; color: #6b8e7f; font-size: 0.95rem;">
-      <%= @vendor_registration.display_name %> for <%= @quotation_proposal.subject %>
-    </p>
-  </div>
-</div>
-
-<div class="app-detail-card">
-  <div class="app-detail-grid">
-    <div class="app-detail-item">
-      <div class="app-detail-label">Vendor</div>
-      <div class="app-detail-value"><%= @vendor_registration.display_name %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Subject</div>
-      <div class="app-detail-value"><%= @quotation_proposal.subject %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Theme</div>
-      <div class="app-detail-value"><%= @quotation_proposal.theme.name %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Proposal End Date</div>
-      <div class="app-detail-value"><%= @quotation_proposal.proposal_end_date.strftime("%d-%m-%Y") %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Vendor Email</div>
-      <div class="app-detail-value"><%= @vendor_registration.email.presence || "-" %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Vendor Mobile</div>
-      <div class="app-detail-value"><%= @vendor_registration.mobile_no.presence || "-" %></div>
-    </div>
-
-    <div class="app-detail-item" style="grid-column: 1 / -1;">
-      <div class="app-detail-label">Remark</div>
-      <div class="app-detail-value"><%= @quotation_proposal.remark.presence || "-" %></div>
-    </div>
-  </div>
-</div>
-
-<div class="app-page-header" style="margin-top: 1.5rem;">
-  <div>
-    <h3 style="margin-bottom: 0.25rem;">Quoted Items</h3>
-    <p class="app-section-note mb-0">Vendor-specific QR scan se yahi approved quotation details visible hongi.</p>
-  </div>
-</div>
-
-<div class="app-table-wrap">
-  <table class="table app-table">
-    <thead>
-      <tr>
-        <th>Item Name</th>
-        <th>Unit</th>
-        <th>Quantity</th>
-        <th>Remark</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @quotation_proposal.quotation_proposal_items.each do |item| %>
-        <tr>
-          <td><%= item.item_name %></td>
-          <td><%= item.unit.name %></td>
-          <td><%= item.quantity %></td>
-          <td><%= item.remark.presence || "-" %></td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
-</div>
+<% end %>

@@ -1,5 +1,7 @@
 Rails.application.routes.draw do
   get "quotation-vendor-qr/:token", to: "quotation_vendor_qrs#show", as: :quotation_vendor_qr
+  post "quotation-vendor-qr/:token/send-otp", to: "quotation_vendor_qrs#send_otp", as: :send_quotation_vendor_qr_otp
+  post "quotation-vendor-qr/:token/verify-otp", to: "quotation_vendor_qrs#verify_otp", as: :verify_quotation_vendor_qr_otp
   resources :notifications, only: [:index]
   resources :menu_permissions, only: [:index, :create]
   resources :quotation_proposals do
@@ -9,8 +11,14 @@ Rails.application.routes.draw do
     end
     member do
       post :send_for_approval
+      patch :approve_committee
+      patch :return_committee
+      post :send_to_vendors
+      patch "vendors/:proposal_vendor_id/score", action: :score_vendor, as: :score_vendor
+      patch "vendors/:proposal_vendor_id/select", action: :select_vendor, as: :select_vendor
     end
   end
+  patch "quotation-vendor-qr/:token", to: "quotation_vendor_qrs#update"
   resources :approval_requests, only: [:index] do
     member do
       patch :approve

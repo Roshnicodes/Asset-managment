@@ -93,6 +93,8 @@ module ApplicationHelper
   end
 
   def notification_target_path(notification)
+    return quotation_proposal_path(notification.notifiable) if notification.notifiable.is_a?(QuotationProposal)
+
     approval_request = notification.notifiable if notification.notifiable.is_a?(ApprovalRequest)
     approvable = approval_request&.approvable
 

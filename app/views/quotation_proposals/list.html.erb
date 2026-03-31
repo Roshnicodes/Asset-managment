@@ -111,9 +111,6 @@
           <% if can_view_menu?("quotation_proposal_form") %>
             <td class="app-row-actions">
               <div class="d-flex align-items-center gap-2">
-                <% if quotation_proposal.approval_request.blank? %>
-                  <%= button_to "Send", send_for_approval_quotation_proposal_path(quotation_proposal), method: :post, class: "app-secondary-btn", title: "Send for Approval", form: { class: "d-inline-block" } %>
-                <% end %>
                 <%= link_to edit_quotation_proposal_path(quotation_proposal), class: "app-action-icon text-warning", title: "Edit" do %>
                   <%= app_icon(:pencil, size: 18) %>
                 <% end %>

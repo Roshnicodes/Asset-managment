@@ -1,45 +1,49 @@
-<% approval_request = @quotation_proposal.approval_request %>
-<% current_step = approval_request&.current_step %>
-<% approver_view = approval_request.present? && current_step&.employee_master_id == current_employee_master&.id && approval_request.status == "pending" %>
-<% status_class = case approval_request&.status
-   when "approved" then "bg-success bg-opacity-10 text-success border-success"
-   when "rejected" then "bg-danger bg-opacity-10 text-danger border-danger"
-   when "pending" then "bg-info bg-opacity-10 text-info border-info"
-   else "bg-secondary bg-opacity-10 text-secondary border-secondary"
-   end %>
+<%
+  current_committee_step = @quotation_proposal.current_committee_step
+  my_pending_committee_step = @quotation_proposal.committee_steps.find_by(employee_master_id: current_employee_master&.id, status: "pending")
+  committee_action_allowed = my_pending_committee_step.present?
+  workflow_class = case @quotation_proposal.workflow_status
+                   when "vendor_selected" then "bg-success bg-opacity-10 text-success border-success"
+                   when "responses_received" then "bg-primary bg-opacity-10 text-primary border-primary"
+                   when "sent_to_vendors" then "bg-info bg-opacity-10 text-info border-info"
+                   when "committee_approved" then "bg-success bg-opacity-10 text-success border-success"
+                   when "returned" then "bg-danger bg-opacity-10 text-danger border-danger"
+                   else "bg-warning bg-opacity-10 text-warning border-warning"
+                   end
+%>
 
 <div class="app-page-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem;">
   <div>
     <h2 style="margin: 0; font-size: 1.8rem; color: #1a3a2a;">Quotation Proposal Details</h2>
     <p style="margin: 0.5rem 0 0 0; color: #6b8e7f; font-size: 0.95rem;"><%= @quotation_proposal.subject %></p>
   </div>
-  <%= link_to "Back", (can_view_menu?("quotation_proposal_form") ? quotation_proposals_path : list_quotation_proposals_path), class: "app-back-link" %>
+  <%= link_to "Back", quotation_proposals_path, class: "app-back-link" %>
 </div>
 
 <div class="app-detail-actions" style="justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 1.25rem;">
   <div class="d-flex align-items-center gap-2 flex-wrap">
-    <span class="badge border <%= status_class %> fw-semibold px-3 py-2" style="font-size: 0.9rem;">
-      <%= approval_request&.status_label || "Draft" %>
+    <span class="badge border <%= workflow_class %> fw-semibold px-3 py-2" style="font-size: 0.9rem;">
+      <%= @quotation_proposal.workflow_status.humanize %>
     </span>
 
-    <% if current_step.present? %>
-      <span class="badge border bg-info bg-opacity-10 text-info px-3 py-2" style="font-size: 0.9rem;">
-        Current Approver: <%= current_step.employee_master.name %>
-        <small>(<%= current_step.current_action_label %>)</small>
+    <% if current_committee_step.present? %>
+      <span class="badge border bg-light text-dark px-3 py-2" style="font-size: 0.9rem;">
+        Pending Approvals: <%= @quotation_proposal.committee_steps.where(status: "pending").count %>
       </span>
     <% end %>
 
     <span class="badge border bg-light text-dark px-3 py-2" style="font-size: 0.9rem;">
-      Items: <%= @quotation_proposal.quotation_proposal_items.size %>
+      Vendors: <%= @quotation_proposal.vendor_registrations.size %>
     </span>
   </div>
 
   <div class="d-flex align-items-center gap-2 flex-wrap">
-    <% if can_view_menu?("quotation_proposal_form") %>
-      <%= link_to "Edit", edit_quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn" %>
+    <%= link_to "Edit", edit_quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn" %>
+    <% if @quotation_proposal.sent_to_vendors_at.blank? && !@quotation_proposal.committee_completed? %>
+      <%= button_to "Start Committee Approval", send_for_approval_quotation_proposal_path(@quotation_proposal), method: :post, class: "app-secondary-btn" %>
     <% end %>
-    <% if can_view_menu?("quotation_proposal_form") && approval_request.blank? %>
-      <%= button_to "Send for Approval", send_for_approval_quotation_proposal_path(@quotation_proposal), method: :post, class: "app-form-submit" %>
+    <% if @quotation_proposal.committee_completed? && @quotation_proposal.sent_to_vendors_at.blank? %>
+      <%= button_to "Send To Vendor", send_to_vendors_quotation_proposal_path(@quotation_proposal), method: :post, class: "app-form-submit" %>
     <% end %>
   </div>
 </div>
@@ -62,29 +66,18 @@
     </div>
 
     <div class="app-detail-item">
-      <div class="app-detail-label">Approval Status</div>
-      <div class="app-detail-value">
-        <span class="badge border <%= status_class %> fw-semibold px-3 py-2" style="font-size: 0.9rem;">
-          <%= approval_request&.status_label || "Draft" %>
-        </span>
-      </div>
+      <div class="app-detail-label">Workflow Status</div>
+      <div class="app-detail-value"><%= @quotation_proposal.workflow_status.humanize %></div>
     </div>
 
     <div class="app-detail-item">
-      <div class="app-detail-label">Latest Remark</div>
-      <div class="app-detail-value"><%= approval_request&.latest_remark.presence || "-" %></div>
+      <div class="app-detail-label">Sent To Vendor At</div>
+      <div class="app-detail-value"><%= @quotation_proposal.sent_to_vendors_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
     </div>
 
     <div class="app-detail-item">
-      <div class="app-detail-label">Current Stage</div>
-      <div class="app-detail-value">
-        <% if current_step.present? %>
-          <span class="fw-semibold"><%= current_step.current_action_label %></span>
-          <div class="text-muted small mt-1"><%= current_step.employee_master.name %></div>
-        <% else %>
-          Completed
-        <% end %>
-      </div>
+      <div class="app-detail-label">Selected Vendor</div>
+      <div class="app-detail-value"><%= @quotation_proposal.selected_vendor_registration&.display_name || "-" %></div>
     </div>
 
     <div class="app-detail-item" style="grid-column: 1 / -1;">
@@ -104,56 +97,53 @@
       <div class="app-detail-label">Remark</div>
       <div class="app-detail-value"><%= @quotation_proposal.remark.presence || "-" %></div>
     </div>
-
-    <div class="app-detail-item" style="grid-column: 1 / -1;">
-      <div class="app-detail-label">Approval Trail</div>
-      <div class="app-detail-value">
-        <% if approval_request.present? %>
-          <div class="d-flex flex-wrap gap-2 mt-2">
-            <% approval_request.approval_steps.each do |step| %>
-              <% step_class = case step.effective_status
-                 when "approved" then "border-success bg-success bg-opacity-10 text-success"
-                 when "rejected" then "border-danger bg-danger bg-opacity-10 text-danger"
-                 when "pending" then "border-info bg-info bg-opacity-10 text-info"
-                 else "border-secondary bg-light text-muted opacity-50"
-                 end %>
-              <div class="badge border <%= step_class %> px-3 py-2 text-start d-flex flex-column gap-1" style="font-style: normal; font-weight: normal; font-size: 0.85rem; line-height: 1.2;">
-                <span class="fw-bold border-bottom pb-1 mb-1">Step <%= step.level %>: <%= step.employee_master.name %></span>
-                <span>
-                  <%= step.current_action_label %>
-                  <% if step.show_status_in_trail? %>
-                    : <strong><%= step.effective_status_label %></strong>
-                  <% end %>
-                </span>
-                <% if step.actioned_at.present? %>
-                  <span class="small opacity-75"><%= step.actioned_at.strftime("%d-%m-%Y %H:%M") %></span>
-                <% end %>
-              </div>
-            <% end %>
-          </div>
-        <% else %>
-          -
-        <% end %>
-      </div>
-    </div>
   </div>
 </div>
 
-<% if approver_view %>
+<div class="app-detail-card" style="margin-top: 1.5rem;">
+  <div class="app-page-header" style="margin-bottom: 1rem;">
+    <div>
+      <h3 style="margin-bottom: 0.25rem;">Committee Approval Trail</h3>
+      <p class="app-section-note mb-0">L1 se L4 tak sab approvals yahin visible rahenge. Sab approve hone ke baad hi vendors ko quotation bheja jayega.</p>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <% @quotation_proposal.committee_steps.each do |step| %>
+      <% step_class = case step.status
+         when "approved" then "border-success bg-success bg-opacity-10 text-success"
+         when "returned" then "border-danger bg-danger bg-opacity-10 text-danger"
+         else "border-warning bg-warning bg-opacity-10 text-warning"
+         end %>
+      <div class="col-md-6 col-xl-3">
+        <div class="app-detail-item h-100 border <%= step_class %>">
+          <div class="app-detail-label">L<%= step.level %></div>
+          <div class="app-detail-value fw-semibold"><%= step.employee_master.name %></div>
+          <div class="small text-muted mt-1"><%= step.employee_master.designation.presence || "Committee Member" %></div>
+          <div class="mt-2"><strong>Status:</strong> <%= step.status_label %></div>
+          <div class="mt-1"><strong>Time:</strong> <%= step.actioned_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+          <div class="mt-1"><strong>Remark:</strong> <%= step.remark.presence || "-" %></div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<% if committee_action_allowed %>
   <div class="app-form-card" style="margin-top: 1.5rem;">
     <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
       <div>
-        <h3 style="margin-bottom: 0.35rem;">Pending Approval Action</h3>
-        <p class="app-section-note mb-0">Approve bina remark ke bhi ho sakta hai. Return ke liye remark required hai.</p>
+        <h3 style="margin-bottom: 0.35rem;">Committee Action</h3>
+        <p class="app-section-note mb-0">Aapka committee approval pending hai. Yahin se approve ya return kar sakte ho.</p>
       </div>
       <span class="badge border bg-warning bg-opacity-10 text-warning px-3 py-2" style="font-size: 0.9rem;">
-        <%= current_step.current_action_label %>
+        L<%= my_pending_committee_step.level %> Approval
       </span>
     </div>
 
     <div class="row g-3 mt-1">
       <div class="col-lg-6">
-        <%= form_with url: approve_approval_request_path(approval_request), method: :patch, local: true do |form| %>
+        <%= form_with url: approve_committee_quotation_proposal_path(@quotation_proposal), method: :patch, local: true do |form| %>
           <div class="app-detail-item h-100">
             <div class="app-detail-label">Approve Remark</div>
             <%= form.text_area :remark, placeholder: "Optional remark", class: "form-control", style: "min-height: 120px;" %>
@@ -165,7 +155,7 @@
       </div>
 
       <div class="col-lg-6">
-        <%= form_with url: reject_approval_request_path(approval_request), method: :patch, local: true do |form| %>
+        <%= form_with url: return_committee_quotation_proposal_path(@quotation_proposal), method: :patch, local: true do |form| %>
           <div class="app-detail-item h-100">
             <div class="app-detail-label">Return Remark</div>
             <%= form.text_area :remark, placeholder: "Return remark (required)", class: "form-control", style: "min-height: 120px;", required: true %>
@@ -175,92 +165,6 @@
           </div>
         <% end %>
       </div>
-    </div>
-  </div>
-<% end %>
-
-<% if approval_request.present? %>
-  <div class="app-detail-card app-approval-timeline-card">
-    <div class="app-page-header">
-      <h3>Approval Timeline</h3>
-    </div>
-
-    <div class="app-approval-timeline d-flex flex-column gap-3 mt-3">
-      <% approval_request.approval_steps.each do |step| %>
-        <% step_theme = case step.effective_status
-           when "approved" then { border: "#2d6a4f", bg: "#f0fff4", text: "#2d6a4f", icon: "✓" }
-           when "rejected" then { border: "#a52a2a", bg: "#fff5f5", text: "#a52a2a", icon: "✕" }
-           when "pending" then { border: "#1a75ff", bg: "#f0f7ff", text: "#1a75ff", icon: "●" }
-           else { border: "#6c757d", bg: "#f8f9fa", text: "#6c757d", icon: "○" }
-           end %>
-        <div class="p-3 border-start border-4 rounded shadow-sm" style="border-color: <%= step_theme[:border] %> !important; background-color: <%= step_theme[:bg] %>;">
-          <div class="d-flex justify-content-between align-items-start border-bottom pb-2 mb-2">
-            <div>
-              <span class="badge" style="background-color: <%= step_theme[:border] %>; color: white;">Level <%= step.level %></span>
-              <strong class="ms-2" style="color: #1a3a2a; font-size: 1.1rem;"><%= step.employee_master.name %></strong>
-              <span class="text-muted small ms-1">(<%= step.employee_master.designation.presence || "Employee" %>)</span>
-            </div>
-            <div class="fw-bold px-3 py-1 rounded-pill border" style="background: white; border-color: <%= step_theme[:border] %> !important; color: <%= step_theme[:text] %>; font-size: 0.85rem;">
-              <span class="me-1"><%= step_theme[:icon] %></span> <%= step.effective_status_label %>
-            </div>
-          </div>
-
-          <div class="row g-3 small">
-            <div class="col-md-4">
-              <div class="text-muted mb-1">From Action</div>
-              <div class="fw-semibold"><%= step.previous_action_label %></div>
-            </div>
-            <div class="col-md-4">
-              <div class="text-muted mb-1">To Action (Current)</div>
-              <div class="fw-semibold" style="color: #0d9488;"><%= step.current_action_label %></div>
-            </div>
-            <div class="col-md-4">
-              <div class="text-muted mb-1">Decision Time</div>
-              <div class="fw-semibold text-muted">
-                <%= step.actioned_at.present? ? step.actioned_at.strftime("%d-%m-%Y %H:%M") : "Pending..." %>
-              </div>
-            </div>
-          </div>
-
-          <% if step.remark.present? %>
-            <div class="mt-2 pt-2 border-top">
-              <div class="text-muted small mb-1">Remark</div>
-              <div class="p-2 rounded bg-white bg-opacity-50">
-                "<%= step.remark %>"
-              </div>
-            </div>
-          <% end %>
-        </div>
-      <% end %>
-    </div>
-  </div>
-<% end %>
-
-<% if approval_request&.status == "approved" %>
-  <% @quotation_proposal.generate_vendor_qr_tokens! %>
-  <div class="app-detail-card" style="margin-top: 1.5rem;">
-    <div class="app-page-header" style="margin-bottom: 1rem;">
-      <div>
-        <h3 style="margin-bottom: 0.25rem;">Vendor QR Codes</h3>
-        <p class="app-section-note mb-0">Har approved vendor ka QR alag hai. Scan karne par vendor-specific quotation details open hongi.</p>
-      </div>
-    </div>
-
-    <div class="row g-3">
-      <% @quotation_proposal.quotation_proposal_vendors.includes(:vendor_registration).each do |proposal_vendor| %>
-        <% qr_url = quotation_vendor_qr_url(proposal_vendor.qr_token, host: request.host, port: request.optional_port, protocol: request.protocol) %>
-        <div class="col-md-6 col-xl-4">
-          <div class="app-detail-item h-100 d-flex flex-column align-items-center text-center">
-            <div class="app-detail-label">Vendor QR</div>
-            <div class="fw-semibold mb-3"><%= proposal_vendor.vendor_registration.display_name %></div>
-            <div class="p-3 border rounded-4 bg-white shadow-sm mb-3">
-              <%= qr_code_svg(qr_url, module_size: 3) %>
-            </div>
-            <div class="small text-muted mb-2" style="word-break: break-all;"><%= qr_url %></div>
-            <%= link_to "Open Vendor Link", quotation_vendor_qr_path(proposal_vendor.qr_token), class: "app-secondary-btn" %>
-          </div>
-        </div>
-      <% end %>
     </div>
   </div>
 <% end %>
@@ -297,3 +201,84 @@
     </tbody>
   </table>
 </div>
+
+<% if @quotation_proposal.vendor_responses_received? %>
+  <% @quotation_proposal.recalculate_vendor_rankings! %>
+  <div class="app-detail-card" style="margin-top: 1.5rem;">
+    <div class="app-page-header" style="margin-bottom: 1rem;">
+      <div>
+        <h3 style="margin-bottom: 0.25rem;">Committee Comparison</h3>
+        <p class="app-section-note mb-0">Committee vendor responses compare karke score degi. Higher score aur better comparison ke basis par vendor select kiya ja sakta hai.</p>
+      </div>
+    </div>
+
+    <div class="app-table-wrap">
+      <table class="table app-table">
+        <thead>
+          <tr>
+            <th>Vendor</th>
+            <th>Status</th>
+            <th>Total Quote</th>
+            <th>Committee Score</th>
+            <th>Rank</th>
+            <th>Selected</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @quotation_proposal.quotation_proposal_vendors.includes(:vendor_registration, :vendor_items).each do |proposal_vendor| %>
+            <tr>
+              <td><%= proposal_vendor.vendor_registration.display_name %></td>
+              <td><%= proposal_vendor.response_status.humanize %></td>
+              <td><%= number_with_precision(proposal_vendor.total_quoted_amount, precision: 2) %></td>
+              <td>
+                <%= form_with url: score_vendor_quotation_proposal_path(@quotation_proposal, proposal_vendor_id: proposal_vendor.id), method: :patch, local: true, class: "d-flex gap-2 align-items-center" do |form| %>
+                  <%= form.number_field :committee_score, value: proposal_vendor.committee_score, min: 0, class: "form-control", style: "max-width: 110px;" %>
+                  <%= form.submit "Save", class: "app-secondary-btn" %>
+                <% end %>
+              </td>
+              <td><%= proposal_vendor.rank_position || "-" %></td>
+              <td><%= proposal_vendor.selected? ? "Yes" : "No" %></td>
+              <td>
+                <%= button_to "Select Vendor", select_vendor_quotation_proposal_path(@quotation_proposal, proposal_vendor_id: proposal_vendor.id), method: :patch, class: "app-form-submit" %>
+              </td>
+            </tr>
+            <% if proposal_vendor.vendor_items.any? %>
+              <tr>
+                <td colspan="7" style="background: #fbfdfb;">
+                  <strong>Item-wise Comparison</strong>
+                  <div class="app-table-wrap" style="margin-top: 0.75rem;">
+                    <table class="table app-table">
+                      <thead>
+                        <tr>
+                          <th>Item</th>
+                          <th>Qty</th>
+                          <th>Unit</th>
+                          <th>Rate</th>
+                          <th>Line Total</th>
+                          <th>Remark</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <% proposal_vendor.vendor_items.includes(quotation_proposal_item: :unit).each do |vendor_item| %>
+                          <tr>
+                            <td><%= vendor_item.quotation_proposal_item.item_name %></td>
+                            <td><%= vendor_item.quotation_proposal_item.quantity %></td>
+                            <td><%= vendor_item.quotation_proposal_item.unit.name %></td>
+                            <td><%= vendor_item.quoted_rate.present? ? number_with_precision(vendor_item.quoted_rate, precision: 2) : "-" %></td>
+                            <td><%= vendor_item.line_total.present? ? number_with_precision(vendor_item.line_total, precision: 2) : "-" %></td>
+                            <td><%= vendor_item.remark.presence || "-" %></td>
+                          </tr>
+                        <% end %>
+                      </tbody>
+                    </table>
+                  </div>
+                </td>
+              </tr>
+            <% end %>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% end %>

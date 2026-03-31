@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_28_162000) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_31_113000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -265,6 +265,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_28_162000) do
     t.index ["theme_id"], name: "index_products_on_theme_id"
   end
 
+  create_table "quotation_proposal_committee_steps", force: :cascade do |t|
+    t.datetime "actioned_at"
+    t.datetime "created_at", null: false
+    t.bigint "employee_master_id", null: false
+    t.integer "level", null: false
+    t.bigint "quotation_proposal_id", null: false
+    t.text "remark"
+    t.string "status", default: "pending", null: false
+    t.datetime "updated_at", null: false
+    t.index ["employee_master_id"], name: "index_quotation_proposal_committee_steps_on_employee_master_id"
+    t.index ["quotation_proposal_id", "level"], name: "idx_qp_committee_steps_on_proposal_and_level", unique: true
+    t.index ["quotation_proposal_id"], name: "idx_on_quotation_proposal_id_134499ac03"
+  end
+
   create_table "quotation_proposal_items", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "item_name", null: false
@@ -277,13 +291,34 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_28_162000) do
     t.index ["unit_id"], name: "index_quotation_proposal_items_on_unit_id"
   end
 
+  create_table "quotation_proposal_vendor_items", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.decimal "gst_percentage", precision: 5, scale: 2
+    t.bigint "quotation_proposal_item_id", null: false
+    t.bigint "quotation_proposal_vendor_id", null: false
+    t.decimal "quoted_rate", precision: 12, scale: 2
+    t.text "remark"
+    t.datetime "updated_at", null: false
+    t.index ["quotation_proposal_item_id"], name: "idx_on_quotation_proposal_item_id_b6e79a168e"
+    t.index ["quotation_proposal_vendor_id", "quotation_proposal_item_id"], name: "idx_qp_vendor_items_on_vendor_and_item", unique: true
+    t.index ["quotation_proposal_vendor_id", "quotation_proposal_item_id"], name: "idx_quote_vendor_items_unique", unique: true
+    t.index ["quotation_proposal_vendor_id"], name: "idx_on_quotation_proposal_vendor_id_51fa0ebc7e"
+  end
+
   create_table "quotation_proposal_vendors", force: :cascade do |t|
+    t.integer "committee_score"
     t.datetime "created_at", null: false
     t.datetime "qr_generated_at"
     t.string "qr_token"
     t.bigint "quotation_proposal_id", null: false
+    t.integer "rank_position"
+    t.datetime "responded_at"
+    t.string "response_status", default: "pending", null: false
+    t.datetime "response_submitted_at"
+    t.boolean "selected", default: false, null: false
     t.datetime "updated_at", null: false
     t.bigint "vendor_registration_id", null: false
+    t.text "vendor_remark"
     t.index ["qr_token"], name: "index_quotation_proposal_vendors_on_qr_token", unique: true
     t.index ["quotation_proposal_id", "vendor_registration_id"], name: "idx_quote_proposal_vendors_unique", unique: true
     t.index ["quotation_proposal_id"], name: "index_quotation_proposal_vendors_on_quotation_proposal_id"
@@ -294,12 +329,59 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_28_162000) do
     t.datetime "created_at", null: false
     t.date "proposal_end_date", null: false
     t.text "remark"
+    t.bigint "selected_vendor_registration_id"
+    t.datetime "sent_to_vendors_at"
     t.string "subject", null: false
     t.bigint "theme_id", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.string "workflow_status", default: "committee_pending", null: false
+    t.index ["selected_vendor_registration_id"], name: "index_quotation_proposals_on_selected_vendor_registration_id"
     t.index ["theme_id"], name: "index_quotation_proposals_on_theme_id"
     t.index ["user_id"], name: "index_quotation_proposals_on_user_id"
+  end
+
+  create_table "quotation_vendor_dispatches", force: :cascade do |t|
+    t.datetime "access_expires_at"
+    t.boolean "access_granted", default: false, null: false
+    t.datetime "created_at", null: false
+    t.datetime "last_opened_at"
+    t.string "mobile_no"
+    t.datetime "otp_verified_at"
+    t.bigint "quotation_proposal_id", null: false
+    t.bigint "quotation_proposal_vendor_id", null: false
+    t.datetime "sent_at"
+    t.bigint "stakeholder_category_id"
+    t.string "status", default: "sent", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.string "vendor_name"
+    t.bigint "vendor_registration_id", null: false
+    t.index ["quotation_proposal_id"], name: "index_quotation_vendor_dispatches_on_quotation_proposal_id"
+    t.index ["quotation_proposal_vendor_id"], name: "idx_on_quotation_proposal_vendor_id_049c570d40"
+    t.index ["quotation_proposal_vendor_id"], name: "idx_q_vendor_dispatch_on_proposal_vendor", unique: true
+    t.index ["stakeholder_category_id"], name: "index_quotation_vendor_dispatches_on_stakeholder_category_id"
+    t.index ["user_id"], name: "index_quotation_vendor_dispatches_on_user_id"
+    t.index ["vendor_registration_id"], name: "index_quotation_vendor_dispatches_on_vendor_registration_id"
+  end
+
+  create_table "quotation_vendor_otps", force: :cascade do |t|
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "expires_at"
+    t.string "mobile_no"
+    t.string "otp_code"
+    t.bigint "quotation_proposal_id", null: false
+    t.bigint "quotation_vendor_dispatch_id", null: false
+    t.datetime "sent_at"
+    t.datetime "updated_at", null: false
+    t.string "vendor_name"
+    t.bigint "vendor_registration_id", null: false
+    t.boolean "verified", default: false, null: false
+    t.datetime "verified_at"
+    t.index ["quotation_proposal_id"], name: "index_quotation_vendor_otps_on_quotation_proposal_id"
+    t.index ["quotation_vendor_dispatch_id"], name: "index_quotation_vendor_otps_on_quotation_vendor_dispatch_id"
+    t.index ["vendor_registration_id"], name: "index_quotation_vendor_otps_on_vendor_registration_id"
   end
 
   create_table "registration_types", force: :cascade do |t|
@@ -495,12 +577,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_28_162000) do
   add_foreign_key "product_varieties", "stakeholder_categories"
   add_foreign_key "products", "stakeholder_categories"
   add_foreign_key "products", "themes"
+  add_foreign_key "quotation_proposal_committee_steps", "employee_masters"
+  add_foreign_key "quotation_proposal_committee_steps", "quotation_proposals"
   add_foreign_key "quotation_proposal_items", "quotation_proposals"
   add_foreign_key "quotation_proposal_items", "units"
+  add_foreign_key "quotation_proposal_vendor_items", "quotation_proposal_items"
+  add_foreign_key "quotation_proposal_vendor_items", "quotation_proposal_vendors"
   add_foreign_key "quotation_proposal_vendors", "quotation_proposals"
   add_foreign_key "quotation_proposal_vendors", "vendor_registrations"
   add_foreign_key "quotation_proposals", "themes"
   add_foreign_key "quotation_proposals", "users"
+  add_foreign_key "quotation_proposals", "vendor_registrations", column: "selected_vendor_registration_id"
+  add_foreign_key "quotation_vendor_dispatches", "quotation_proposal_vendors"
+  add_foreign_key "quotation_vendor_dispatches", "quotation_proposals"
+  add_foreign_key "quotation_vendor_dispatches", "stakeholder_categories"
+  add_foreign_key "quotation_vendor_dispatches", "users"
+  add_foreign_key "quotation_vendor_dispatches", "vendor_registrations"
+  add_foreign_key "quotation_vendor_otps", "quotation_proposals"
+  add_foreign_key "quotation_vendor_otps", "quotation_vendor_dispatches"
+  add_foreign_key "quotation_vendor_otps", "vendor_registrations"
   add_foreign_key "registration_types", "stakeholder_categories"
   add_foreign_key "service_types", "stakeholder_categories"
   add_foreign_key "stakeholder_categories", "office_categories"
