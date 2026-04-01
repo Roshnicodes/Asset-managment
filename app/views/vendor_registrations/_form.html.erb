@@ -1,5 +1,29 @@
 <%= form_with(model: vendor_registration) do |form| %>
+  <% approval_request = vendor_registration.approval_request %>
   <div class="app-form-card app-form-card-wide">
+    <% if approval_request&.employee_return_pending? %>
+      <div class="app-detail-card" style="margin-bottom: 1.5rem; border: 1px solid #f3d9b1; background: linear-gradient(135deg, #fffaf0, #fffdf7);">
+        <div class="app-page-header" style="margin-bottom: 0.75rem;">
+          <div>
+            <h3 style="margin: 0; color: #8a5a10;">Returned For Correction</h3>
+            <p class="app-section-note mb-0">Please review the returned remark below, update the vendor registration form, and save to restart the same approval channel.</p>
+          </div>
+        </div>
+
+        <div class="app-detail-grid">
+          <div class="app-detail-item">
+            <div class="app-detail-label">Returned By</div>
+            <div class="app-detail-value"><%= approval_request.employee_return_actor_label %></div>
+          </div>
+
+          <div class="app-detail-item" style="grid-column: 1 / -1;">
+            <div class="app-detail-label">Remark / Fix Required</div>
+            <div class="app-detail-value" style="white-space: pre-wrap;"><%= approval_request.employee_return_remark.presence || "No remark was added." %></div>
+          </div>
+        </div>
+      </div>
+    <% end %>
+
     <% if vendor_registration.errors.any? %>
       <div class="app-form-errors">
         <h2>Please fix the following details:</h2>

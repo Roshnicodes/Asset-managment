@@ -40,7 +40,20 @@ module ApprovalRequestsHelper
       .count
   end
 
+  def returned_approvals_count
+    if current_user.email == "admin@example.com"
+      return ApprovalRequest.where(status: "returned").count
+    end
+    return 0 unless current_employee_master.present?
+
+    ApprovalRequest.joins(:approval_steps)
+      .where(approval_steps: { employee_master_id: current_employee_master.id, status: "returned" })
+      .where(status: "returned")
+      .distinct
+      .count
+  end
+
   def total_approvals_count
-    pending_approvals_count + approved_approvals_count + rejected_approvals_count
+    pending_approvals_count + approved_approvals_count + returned_approvals_count + rejected_approvals_count
   end
 end

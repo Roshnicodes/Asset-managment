@@ -1,0 +1,32 @@
+<% modal_id = local_assigns.fetch(:modal_id) %>
+<% trigger_label = local_assigns.fetch(:trigger_label, "Reject") %>
+<% trigger_class = local_assigns.fetch(:trigger_class, "app-danger-btn px-4") %>
+<% title = local_assigns.fetch(:title, "Reject Request") %>
+
+<button type="button" class="<%= trigger_class %>" data-approval-popup-open="<%= modal_id %>">
+  <%= trigger_label %>
+</button>
+
+<div id="<%= modal_id %>" class="approval-action-popup" hidden data-approval-popup-panel="true">
+  <div class="approval-action-popup__backdrop" data-approval-popup-close="true"></div>
+  <div class="approval-action-popup__dialog approval-action-popup__dialog--reject">
+    <div class="approval-action-popup__header" style="border-bottom-color: #f2dfdb;">
+      <h5 class="approval-action-popup__title" style="color: #7f1d1d;"><%= title %></h5>
+      <button type="button" class="approval-action-popup__icon" aria-label="Close" data-approval-popup-close="true">×</button>
+    </div>
+
+    <%= form_with url: reject_approval_request_path(approval_request), method: :patch, local: true do |form| %>
+      <div class="approval-action-popup__body">
+        <div class="app-form-field mb-0">
+          <%= form.label :remark, "Reject Remark", class: "form-label", style: "font-weight: 600;" %>
+          <%= form.text_area :remark, rows: 4, placeholder: "Reject remark (required)", class: "form-control", style: "min-height: 120px;", required: true %>
+        </div>
+      </div>
+
+      <div class="approval-action-popup__footer" style="border-top-color: #f2dfdb;">
+        <button type="button" class="btn btn-light" data-approval-popup-close="true">Close</button>
+        <%= form.submit "Submit Rejection", class: "app-danger-btn px-4" %>
+      </div>
+    <% end %>
+  </div>
+</div>

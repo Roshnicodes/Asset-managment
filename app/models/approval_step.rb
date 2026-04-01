@@ -3,7 +3,7 @@ class ApprovalStep < ApplicationRecord
   belongs_to :employee_master
   belongs_to :from_user, class_name: "EmployeeMaster", optional: true
 
-  STATUSES = %w[waiting pending approved rejected].freeze
+  STATUSES = %w[waiting pending approved returned rejected].freeze
 
   validates :status, inclusion: { in: STATUSES }
 
@@ -26,7 +26,10 @@ class ApprovalStep < ApplicationRecord
   end
 
   def effective_status_label
-    effective_status == "rejected" ? "Returned" : effective_status.capitalize
+    return "Returned" if effective_status == "returned"
+    return "Rejected" if effective_status == "rejected"
+
+    effective_status.capitalize
   end
 
   def proposal_create_step?

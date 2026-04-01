@@ -1,0 +1,97 @@
+<% return_options = approval_request.return_target_options_for(current_step) %>
+<% if return_options.any? %>
+  <% modal_id = local_assigns.fetch(:modal_id) %>
+  <% trigger_label = local_assigns.fetch(:trigger_label, "Return") %>
+  <% trigger_class = local_assigns.fetch(:trigger_class, "app-secondary-btn px-4") %>
+  <% title = local_assigns.fetch(:title, "Return Request") %>
+  <% first_option = return_options.first %>
+  <% return_select_options = return_options.map do |option| %>
+    <% [
+      option.label,
+      option.value,
+      {
+        data: {
+          submit_label: option.submit_label,
+          remark_label: option.remark_label,
+          remark_placeholder: option.remark_placeholder
+        }
+      }
+    ] %>
+  <% end %>
+
+  <button type="button" class="<%= trigger_class %>" data-approval-popup-open="<%= modal_id %>">
+    <%= trigger_label %>
+  </button>
+
+  <div id="<%= modal_id %>" class="approval-action-popup" hidden data-approval-popup-panel="true">
+    <div class="approval-action-popup__backdrop" data-approval-popup-close="true"></div>
+    <div class="approval-action-popup__dialog approval-action-popup__dialog--return">
+      <div class="approval-action-popup__header" style="border-bottom-color: #e5ebf6;">
+        <h5 class="approval-action-popup__title" style="color: #124e78;"><%= title %></h5>
+        <button type="button" class="approval-action-popup__icon" aria-label="Close" data-approval-popup-close="true">×</button>
+      </div>
+
+      <%= form_with url: return_request_approval_request_path(approval_request), method: :patch, local: true, data: { dynamic_return_form: true } do |form| %>
+        <div class="approval-action-popup__body">
+          <div class="app-form-field mb-3">
+            <label class="form-label" style="font-weight: 600;">Return Target</label>
+            <%= form.select :return_target, options_for_select(return_select_options, first_option.value), {}, class: "form-select", data: { return_target_select: true } %>
+          </div>
+
+          <div class="app-form-field mb-0">
+            <label class="form-label" style="font-weight: 600;" data-return-remark-label><%= first_option.remark_label %></label>
+            <%= form.text_area :remark,
+              rows: 4,
+              placeholder: first_option.remark_placeholder,
+              class: "form-control",
+              style: "min-height: 120px;",
+              required: true,
+              data: { return_remark_input: true } %>
+          </div>
+        </div>
+
+        <div class="approval-action-popup__footer" style="border-top-color: #e5ebf6;">
+          <button type="button" class="btn btn-light" data-approval-popup-close="true">Close</button>
+          <%= form.submit first_option.submit_label, class: "app-secondary-btn px-4", data: { return_submit: true } %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      if (window.approvalReturnPopupBound) return;
+      window.approvalReturnPopupBound = true;
+
+      function syncReturnForm(form) {
+        if (!form) return;
+
+        var select = form.querySelector("[data-return-target-select]");
+        var remarkLabel = form.querySelector("[data-return-remark-label]");
+        var remarkInput = form.querySelector("[data-return-remark-input]");
+        var submitButton = form.querySelector("[data-return-submit]");
+
+        if (!select || !remarkLabel || !remarkInput || !submitButton) return;
+
+        var selectedOption = select.options[select.selectedIndex];
+        remarkLabel.textContent = selectedOption.dataset.remarkLabel || "Return Remark";
+        remarkInput.placeholder = selectedOption.dataset.remarkPlaceholder || "Return remark";
+        submitButton.value = selectedOption.dataset.submitLabel || "Return";
+      }
+
+      function initReturnForms() {
+        document.querySelectorAll("[data-dynamic-return-form]").forEach(syncReturnForm);
+      }
+
+      document.addEventListener("change", function(event) {
+        if (event.target.matches("[data-return-target-select]")) {
+          syncReturnForm(event.target.closest("[data-dynamic-return-form]"));
+        }
+      });
+
+      document.addEventListener("DOMContentLoaded", initReturnForms);
+      document.addEventListener("turbo:load", initReturnForms);
+      initReturnForms();
+    })();
+  </script>
+<% end %>

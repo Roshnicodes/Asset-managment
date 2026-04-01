@@ -11,7 +11,13 @@ class ApplicationController < ActionController::Base
   helper_method :unread_notifications_count
 
   def current_employee_master
-    current_user&.employee_master
+    return @current_employee_master if defined?(@current_employee_master)
+
+    lookup_email = current_user&.email.to_s.strip.downcase
+    @current_employee_master =
+      if lookup_email.present?
+        current_user&.employee_master || EmployeeMaster.find_by("LOWER(TRIM(email_id)) = ?", lookup_email)
+      end
   end
 
   def unread_notifications_count

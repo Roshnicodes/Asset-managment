@@ -2,6 +2,7 @@
 <% current_step = approval_request&.current_step %>
 <% approver_view = approval_request.present? && current_step&.employee_master_id == current_employee_master&.id && approval_request.status == "pending" %>
 <% owner_or_admin = current_user == @vendor_registration.user || current_user.email == "admin@example.com" || current_user.employee_master&.user_type == "Admin" %>
+<% editable_by_owner = approval_request.blank? || approval_request.employee_return_pending? %>
 
 <div class="app-page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
   <div>
@@ -11,7 +12,9 @@
   <div style="display: flex; gap: 1rem; align-items: center;">
     <%= link_to "← Back", vendor_registrations_path, class: "app-back-link" %>
     <% if owner_or_admin %>
-      <%= link_to "Edit", edit_vendor_registration_path(@vendor_registration), class: "app-primary-btn", style: "padding: 0.75rem 1.5rem; font-weight: 600;" %>
+      <% if current_user == @vendor_registration.user ? editable_by_owner : true %>
+        <%= link_to "Edit", edit_vendor_registration_path(@vendor_registration), class: "app-primary-btn", style: "padding: 0.75rem 1.5rem; font-weight: 600;" %>
+      <% end %>
       <%= button_to "Delete", @vendor_registration, method: :delete, data: { turbo_confirm: "Are you sure you want to delete this vendor registration?" }, class: "app-danger-btn", style: "padding: 0.75rem 1.5rem; font-weight: 600;" %>
     <% end %>
   </div>
@@ -22,24 +25,27 @@
 <% if approver_view %>
   <div class="app-form-card" style="margin-top: 2rem;">
     <h3>Pending Approval Action (<%= current_step.current_action %>)</h3>
-    <p class="app-section-note">Only the current pending approver can take action here. Approve can be submitted with or without remark. Return requires a remark and stores it in the database.</p>
+    <p class="app-section-note">Only the current pending approver can take action here. Higher levels can return to the previous approver or to the employee. Employee return ke baad edit karke same approval channel me process phir se chalega.</p>
 
-    <div class="d-flex align-items-end gap-3 flex-wrap mt-3">
-      <%= form_with url: approve_approval_request_path(approval_request), method: :patch, local: true, class: "d-inline-flex gap-2 align-items-end flex-wrap" do |form| %>
-        <div>
-          <label class="form-label" style="display:block; font-weight: 600;">Approve Remark</label>
-          <%= form.text_area :remark, placeholder: "Optional remark", class: "form-control", style: "width: 280px; min-height: 90px;" %>
-        </div>
-        <%= form.submit "Approve", class: "app-primary-btn px-4" %>
-      <% end %>
+    <div class="d-flex align-items-center gap-3 flex-wrap mt-4">
+      <%= render "approval_requests/approve_modal",
+        approval_request: approval_request,
+        modal_id: "approve-approval-request-#{approval_request.id}",
+        trigger_label: "Approve",
+        trigger_class: "app-primary-btn px-4" %>
 
-      <%= form_with url: reject_approval_request_path(approval_request), method: :patch, local: true, class: "d-inline-flex gap-2 align-items-end flex-wrap" do |form| %>
-        <div>
-          <label class="form-label" style="display:block; font-weight: 600;">Return Remark</label>
-          <%= form.text_area :remark, placeholder: "Return remark (required)", class: "form-control", style: "width: 280px; min-height: 90px;", required: true %>
-        </div>
-        <%= form.submit "Return", class: "app-danger-btn px-4" %>
-      <% end %>
+      <%= render "approval_requests/return_modal",
+        approval_request: approval_request,
+        current_step: current_step,
+        modal_id: "return-approval-request-#{approval_request.id}",
+        trigger_label: "Return",
+        trigger_class: "app-secondary-btn px-4" %>
+
+      <%= render "approval_requests/reject_modal",
+        approval_request: approval_request,
+        modal_id: "reject-approval-request-#{approval_request.id}",
+        trigger_label: "Reject",
+        trigger_class: "app-danger-btn px-4" %>
     </div>
   </div>
 <% end %>

@@ -24,6 +24,7 @@ Rails.application.routes.draw do
   resources :approval_requests, only: [:index] do
     member do
       patch :approve
+      patch :return_request
       patch :reject
     end
   end
@@ -39,6 +40,7 @@ Rails.application.routes.draw do
   end
   resources :employee_masters do
     collection do
+      get :export
       post :import
       post :sync_logins
     end

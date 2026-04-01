@@ -52,10 +52,11 @@ module ApplicationHelper
   def navbar_logo_source
     stakeholder = current_user&.employee_master&.stakeholder_category
 
-    return stakeholder.logo_file if stakeholder&.logo_file&.attached?
-    return stakeholder.logo_url if stakeholder&.logo_url.present?
-
-    "asset-logo.png"
+    if stakeholder&.logo_file&.attached?
+      url_for(stakeholder.logo_file)
+    else
+      "asset-logoq.svg"
+    end
   end
 
   def navbar_logo_alt
@@ -93,8 +94,6 @@ module ApplicationHelper
   end
 
   def notification_target_path(notification)
-    return quotation_proposal_path(notification.notifiable) if notification.notifiable.is_a?(QuotationProposal)
-
     approval_request = notification.notifiable if notification.notifiable.is_a?(ApprovalRequest)
     approvable = approval_request&.approvable
 
@@ -102,5 +101,45 @@ module ApplicationHelper
     return quotation_proposal_path(approvable) if approvable.is_a?(QuotationProposal)
 
     approval_requests_path
+  end
+
+  def approval_status_badge_data(approval_request)
+    return { label: "Not Started", css_class: "bg-secondary bg-opacity-10 text-secondary border-secondary" } unless approval_request
+
+    if current_user.email != "admin@example.com" && current_employee_master.present?
+      viewer_step = approval_request.approval_steps.find { |step| step.employee_master_id == current_employee_master.id }
+      if viewer_step.present? && !viewer_step.proposal_create_step?
+        return {
+          label: viewer_step.effective_status_label,
+          css_class: approval_status_css_class_for(viewer_step.effective_status)
+        }
+      end
+    end
+
+    {
+      label: approval_request.status_label,
+      css_class: approval_request_overall_css_class(approval_request)
+    }
+  end
+
+  def approval_status_css_class_for(status)
+    case status.to_s
+    when "approved"
+      "bg-success bg-opacity-10 text-success border-success"
+    when "returned"
+      "bg-warning bg-opacity-10 text-warning border-warning"
+    when "rejected"
+      "bg-danger bg-opacity-10 text-danger border-danger"
+    when "pending"
+      "bg-info bg-opacity-10 text-info border-info"
+    else
+      "bg-secondary bg-opacity-10 text-secondary border-secondary"
+    end
+  end
+
+  def approval_request_overall_css_class(approval_request)
+    return "bg-warning bg-opacity-10 text-warning border-warning" if approval_request.employee_return_pending? || approval_request.level_return_pending?
+
+    approval_status_css_class_for(approval_request.status)
   end
 end

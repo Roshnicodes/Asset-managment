@@ -37,6 +37,7 @@ class ApprovalChannel < ApplicationRecord
   validate :at_least_one_approval_step_selected
   validate :approval_step_users_must_have_login_email
   validate :approval_steps_must_be_unique_and_ordered
+  validate :unique_channel_scope_for_form_theme_and_stakeholder
 
   after_commit :provision_approver_logins, on: %i[create update]
 
@@ -92,6 +93,18 @@ class ApprovalChannel < ApplicationRecord
     return if step_numbers.sort == expected
 
     errors.add(:base, "Approval steps must be in continuous order like 1, 2, 3...")
+  end
+
+  def unique_channel_scope_for_form_theme_and_stakeholder
+    duplicate_scope = self.class.where(
+      form_name: form_name,
+      theme_id: theme_id,
+      stakeholder_category_id: stakeholder_category_id
+    )
+    duplicate_scope = duplicate_scope.where.not(id: id) if persisted?
+    return unless duplicate_scope.exists?
+
+    errors.add(:base, "An approval channel already exists for this form, theme, and stakeholder combination.")
   end
 
   def provision_approver_logins

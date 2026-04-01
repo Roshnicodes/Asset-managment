@@ -1,0 +1,160 @@
+<% modal_id = local_assigns.fetch(:modal_id) %>
+<% trigger_label = local_assigns.fetch(:trigger_label, "Approve") %>
+<% trigger_class = local_assigns.fetch(:trigger_class, "app-primary-btn px-4") %>
+<% title = local_assigns.fetch(:title, "Approve Request") %>
+
+<button type="button" class="<%= trigger_class %>" data-approval-popup-open="<%= modal_id %>">
+  <%= trigger_label %>
+</button>
+
+<div id="<%= modal_id %>" class="approval-action-popup" hidden data-approval-popup-panel="true">
+  <div class="approval-action-popup__backdrop" data-approval-popup-close="true"></div>
+  <div class="approval-action-popup__dialog approval-action-popup__dialog--approve">
+    <div class="approval-action-popup__header">
+      <h5 class="approval-action-popup__title"><%= title %></h5>
+      <button type="button" class="approval-action-popup__icon" aria-label="Close" data-approval-popup-close="true">×</button>
+    </div>
+
+    <%= form_with url: approve_approval_request_path(approval_request), method: :patch, local: true do |form| %>
+      <div class="approval-action-popup__body">
+        <div class="app-form-field mb-0">
+          <%= form.label :remark, "Approve Remark", class: "form-label", style: "font-weight: 600;" %>
+          <%= form.text_area :remark, rows: 4, placeholder: "Optional remark", class: "form-control", style: "min-height: 120px;" %>
+        </div>
+      </div>
+
+      <div class="approval-action-popup__footer">
+        <button type="button" class="btn btn-light" data-approval-popup-close="true">Close</button>
+        <%= form.submit "Submit Approval", class: "app-primary-btn px-4" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+  (function() {
+    if (window.approvalPopupBound) return;
+    window.approvalPopupBound = true;
+
+    function closeApprovalPopup(panel) {
+      if (!panel) return;
+      panel.hidden = true;
+      document.body.classList.remove("approval-popup-open");
+    }
+
+    function openApprovalPopup(panel) {
+      if (!panel) return;
+
+      document.querySelectorAll("[data-approval-popup-panel='true']").forEach(function(item) {
+        item.hidden = true;
+      });
+
+      panel.hidden = false;
+      document.body.classList.add("approval-popup-open");
+    }
+
+    document.addEventListener("click", function(event) {
+      var openButton = event.target.closest("[data-approval-popup-open]");
+      if (openButton) {
+        var targetId = openButton.getAttribute("data-approval-popup-open");
+        openApprovalPopup(document.getElementById(targetId));
+        return;
+      }
+
+      var closeButton = event.target.closest("[data-approval-popup-close]");
+      if (closeButton) {
+        closeApprovalPopup(closeButton.closest("[data-approval-popup-panel='true']"));
+      }
+    });
+
+    document.addEventListener("keydown", function(event) {
+      if (event.key !== "Escape") return;
+      document.querySelectorAll("[data-approval-popup-panel='true']").forEach(closeApprovalPopup);
+    });
+  })();
+</script>
+
+<style>
+  body.approval-popup-open {
+    overflow: hidden;
+  }
+
+  .approval-action-popup[hidden] {
+    display: none !important;
+  }
+
+  .approval-action-popup {
+    position: fixed;
+    inset: 0;
+    z-index: 1080;
+  }
+
+  .approval-action-popup__backdrop {
+    position: absolute;
+    inset: 0;
+    background: transparent;
+  }
+
+  .approval-action-popup__dialog {
+    position: absolute;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    width: min(560px, calc(100vw - 2rem));
+    max-height: calc(100vh - 3rem);
+    overflow-y: auto;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 22px 60px rgba(15, 23, 42, 0.24);
+  }
+
+  .approval-action-popup__dialog--approve {
+    border: 1px solid #d8ebe2;
+  }
+
+  .approval-action-popup__header,
+  .approval-action-popup__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+  }
+
+  .approval-action-popup__header {
+    border-bottom: 1px solid #e6efe9;
+  }
+
+  .approval-action-popup__footer {
+    border-top: 1px solid #e6efe9;
+    justify-content: flex-end;
+  }
+
+  .approval-action-popup__body {
+    padding: 1rem 1.25rem;
+  }
+
+  .approval-action-popup__title {
+    margin: 0;
+    color: #1a3a2a;
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
+  .approval-action-popup__icon {
+    border: 0;
+    background: transparent;
+    font-size: 1.6rem;
+    line-height: 1;
+    color: #64748b;
+    cursor: pointer;
+  }
+
+  @media (max-width: 640px) {
+    .approval-action-popup__dialog {
+      bottom: 12px;
+      width: calc(100vw - 1rem);
+      max-height: calc(100vh - 1.5rem);
+    }
+  }
+</style>

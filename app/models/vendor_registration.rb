@@ -14,6 +14,8 @@ class VendorRegistration < ApplicationRecord
   has_many :product_varieties, through: :vendor_registration_product_varieties
   has_many :vendor_bank_masters, dependent: :destroy
   has_many :vendor_registration_documents, dependent: :destroy
+  has_many :quotation_proposal_vendors, dependent: :restrict_with_error
+  has_many :quotation_proposals, through: :quotation_proposal_vendors
   has_one :approval_request, as: :approvable, dependent: :destroy
   has_one_attached :msme_certificate
   has_one_attached :pan_document

@@ -8,6 +8,9 @@ class User < ApplicationRecord
   has_many :vendor_registrations, dependent: :destroy
 
   def employee_master
-    EmployeeMaster.where("LOWER(email_id) = ?", email.downcase).first
+    lookup_email = email.to_s.strip.downcase
+    return if lookup_email.blank?
+
+    EmployeeMaster.find_by("LOWER(TRIM(email_id)) = ?", lookup_email)
   end
 end

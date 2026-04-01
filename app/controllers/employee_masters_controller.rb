@@ -6,6 +6,16 @@ class EmployeeMastersController < ApplicationController
     @employee_masters = EmployeeMaster.includes(:stakeholder_category).order(:name)
   end
 
+  def export
+    employee_masters = EmployeeMaster.includes(:stakeholder_category, :state, :district, :block).order(:name)
+
+    send_data(
+      generate_csv(employee_masters),
+      filename: "employee_masters_#{Date.current.strftime('%Y%m%d')}.csv",
+      type: "text/csv; charset=utf-8"
+    )
+  end
+
   def new
     @employee_master = EmployeeMaster.new
     load_location_collections
@@ -121,6 +131,56 @@ class EmployeeMastersController < ApplicationController
     end
 
     imported_count
+  end
+
+  def generate_csv(employee_masters)
+    headers = [
+      "stakeholder",
+      "user_type",
+      "employee_id",
+      "user_name",
+      "designation",
+      "employee_email_id",
+      "mobile_no",
+      "state",
+      "district",
+      "block",
+      "gram_panchayat",
+      "village",
+      "parent_office",
+      "office",
+      "employee_location",
+      "full_address",
+      "pincode",
+      "login_status"
+    ]
+
+    CSV.generate(headers: true) do |csv|
+      csv << headers
+
+      employee_masters.each do |employee|
+        csv << [
+          employee.stakeholder_category&.name,
+          employee.user_type,
+          employee.employee_code,
+          employee.name,
+          employee.designation,
+          employee.email_id,
+          employee.mobile_no,
+          employee.state&.name,
+          employee.district&.name,
+          employee.block&.name,
+          employee.gram_panchayat,
+          employee.village,
+          employee.parent_office,
+          employee.office,
+          employee.location,
+          employee.full_address,
+          employee.pincode,
+          employee.login_ready? ? "Ready" : "Not Ready"
+        ]
+      end
+    end
   end
 
   def csv_rows(file)

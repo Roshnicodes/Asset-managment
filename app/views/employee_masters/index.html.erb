@@ -4,6 +4,7 @@
     <p class="app-section-note">Manual entry and Excel / CSV upload are both available. Employee email ID automatically becomes approval login ID.</p>
   </div>
   <div class="app-toolbar-actions">
+    <%= link_to "Export Excel", export_employee_masters_path, class: "app-secondary-btn" %>
     <%= button_to "Sync Approval Logins", sync_logins_employee_masters_path, method: :post, class: "app-secondary-btn" %>
     <%= link_to "Add Employee", new_employee_master_path, class: "app-primary-btn" %>
   </div>

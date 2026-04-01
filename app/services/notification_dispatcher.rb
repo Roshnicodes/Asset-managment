@@ -23,8 +23,9 @@ class NotificationDispatcher
     users = approval_request.approval_steps.includes(:employee_master).map do |step|
       User.find_by(email: step.employee_master.email_id)
     end.compact.uniq
+    users << approval_request.approvable.user if approval_request.approvable.respond_to?(:user)
 
-    users.each do |user|
+    users.compact.uniq.each do |user|
       Notification.create!(
         user: user,
         notifiable: approval_request,
@@ -32,6 +33,34 @@ class NotificationDispatcher
         message: "#{approval_request.reference_label} was #{status} by #{actor.name}.#{remark.present? ? " Remark: #{remark}" : ""}"
       )
     end
+  end
+
+  def self.notify_request_returned(approval_request, actor:, remark:)
+    users = [approval_request.approvable.user].compact
+    users += approval_request.approval_steps.includes(:employee_master).map do |step|
+      User.find_by(email: step.employee_master.email_id)
+    end.compact
+
+    users.uniq.each do |user|
+      Notification.create!(
+        user: user,
+        notifiable: approval_request,
+        title: "#{approval_request.form_name} returned",
+        message: "#{approval_request.reference_label} was returned by #{actor.name}. Remark: #{remark}"
+      )
+    end
+  end
+
+  def self.notify_request_returned_to_step(approval_request, actor:, remark:, target_step:)
+    user = User.find_by(email: target_step.employee_master.email_id)
+    return unless user
+
+    Notification.create!(
+      user: user,
+      notifiable: approval_request,
+      title: "#{approval_request.form_name} returned to your level",
+      message: "#{approval_request.reference_label} was returned by #{actor.name} to your level for re-approval. Remark: #{remark}"
+    )
   end
 
   def self.notify_quotation_committee_step(quotation_proposal, committee_step, previous_step: nil)

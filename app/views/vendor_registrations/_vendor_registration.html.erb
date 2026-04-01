@@ -135,14 +135,9 @@
     <div class="app-detail-item">
       <div class="app-detail-label">Approval Status</div>
       <div class="app-detail-value">
-        <% status_class = case vendor_registration.approval_request&.status
-           when 'approved' then 'bg-success bg-opacity-10 text-success border-success'
-           when 'rejected' then 'bg-danger bg-opacity-10 text-danger border-danger'
-           when 'pending' then 'bg-info bg-opacity-10 text-info border-info'
-           else 'bg-secondary bg-opacity-10 text-secondary border-secondary'
-           end %>
-        <span class="badge border <%= status_class %> fw-semibold px-3 py-2" style="font-size: 0.9rem;">
-          <%= vendor_registration.approval_request&.status_label || "Not Started" %>
+        <% badge_data = approval_status_badge_data(approval_request) %>
+        <span class="badge border <%= badge_data[:css_class] %> fw-semibold px-3 py-2" style="font-size: 0.9rem;">
+          <%= badge_data[:label] %>
         </span>
       </div>
     </div>
@@ -166,9 +161,10 @@
       <div class="app-detail-value">
         <% if approval_request %>
           <div class="d-flex flex-wrap gap-2 mt-2">
-            <% approval_request.approval_steps.each do |step| %>
+            <% approval_request.trail_steps.each do |step| %>
               <% step_class = case step.effective_status
                  when 'approved' then 'border-success bg-success bg-opacity-10 text-success'
+                 when 'returned' then 'border-warning bg-warning bg-opacity-10 text-warning'
                  when 'rejected' then 'border-danger bg-danger bg-opacity-10 text-danger'
                  when 'pending' then 'border-info bg-info bg-opacity-10 text-info'
                  else 'border-secondary bg-light text-muted opacity-50'
@@ -194,62 +190,3 @@
     </div>
   </div>
 </div>
-
-<% if approval_request.present? %>
-  <div class="app-detail-card app-approval-timeline-card">
-    <div class="app-page-header">
-      <h3>Approval Timeline</h3>
-    </div>
-
-    <div class="app-approval-timeline d-flex flex-column gap-3 mt-3">
-      <% approval_request.approval_steps.each do |step| %>
-        <% 
-          step_theme = case step.effective_status
-             when 'approved' then { border: '#2d6a4f', bg: '#f0fff4', text: '#2d6a4f', icon: '✓' }
-             when 'rejected' then { border: '#a52a2a', bg: '#fff5f5', text: '#a52a2a', icon: '✕' }
-             when 'pending' then { border: '#1a75ff', bg: '#f0f7ff', text: '#1a75ff', icon: '●' }
-             else { border: '#6c757d', bg: '#f8f9fa', text: '#6c757d', icon: '○' }
-             end 
-        %>
-        <div class="p-3 border-start border-4 rounded shadow-sm" style="border-color: <%= step_theme[:border] %> !important; background-color: <%= step_theme[:bg] %>;">
-          <div class="d-flex justify-content-between align-items-start border-bottom pb-2 mb-2">
-            <div>
-              <span class="badge" style="background-color: <%= step_theme[:border] %>; color: white;">Level <%= step.level %></span>
-              <strong class="ms-2" style="color: #1a3a2a; font-size: 1.1rem;"><%= step.employee_master.name %></strong>
-              <span class="text-muted small ms-1">(<%= step.employee_master.designation.presence || "Employee" %>)</span>
-            </div>
-            <div class="fw-bold px-3 py-1 rounded-pill border" style="background: white; border-color: <%= step_theme[:border] %> !important; color: <%= step_theme[:text] %>; font-size: 0.85rem;">
-              <span class="me-1"><%= step_theme[:icon] %></span> <%= step.effective_status_label %>
-            </div>
-          </div>
-
-          <div class="row g-3 small">
-            <div class="col-md-4">
-              <div class="text-muted mb-1">From Action</div>
-              <div class="fw-semibold"><%= step.previous_action_label %></div>
-            </div>
-            <div class="col-md-4">
-              <div class="text-muted mb-1">To Action (Current)</div>
-              <div class="fw-semibold text-brand-mid" style="color: #0d9488;"><%= step.current_action_label %></div>
-            </div>
-            <div class="col-md-4">
-              <div class="text-muted mb-1">Decision Time</div>
-              <div class="fw-semibold text-muted">
-                <%= step.actioned_at.present? ? step.actioned_at.strftime("%d-%m-%Y %H:%M") : "Pending..." %>
-              </div>
-            </div>
-          </div>
-
-          <% if step.remark.present? %>
-            <div class="mt-2 pt-2 border-top">
-              <div class="text-muted small mb-1">Remark</div>
-              <div class="p-2 rounded bg-white bg-opacity-50 italic">
-                "<%= step.remark %>"
-              </div>
-            </div>
-          <% end %>
-        </div>
-      <% end %>
-    </div>
-  </div>
-<% end %>

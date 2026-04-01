@@ -1,12 +1,12 @@
 <div class="app-toolbar">
   <div>
     <h1><%= @form_name.presence || "My Approvals" %></h1>
-    <p class="app-section-note">Pending, approved, rejected, or all requests for your login.</p>
+    <p class="app-section-note">Pending, approved, returned, rejected, or all requests for your login.</p>
   </div>
 </div>
 
 <div class="mb-3">
-  <% %w[pending approved rejected all].each do |s| %>
+  <% %w[pending approved returned rejected all].each do |s| %>
     <%= link_to s.titleize, approval_requests_path(status: s, form_name: @form_name), class: "btn btn-sm me-2 #{'btn-primary' if @status == s} #{'btn-outline-primary' unless @status == s}" %>
   <% end %>
 </div>
@@ -33,13 +33,14 @@
       </thead>
       <tbody>
         <% @pending_approval_requests.each do |approval_request| %>
+          <% current_step = approval_request.current_step %>
           <tr>
             <td><%= approval_request.form_name %></td>
             <td><%= approval_request.reference_label %></td>
-            <td><%= approval_request.status.capitalize %></td>
+            <td><%= approval_request.status_label %></td>
             <td>L<%= approval_request.current_level %></td>
             <td><%= approval_request.current_approver_label %></td>
-            <td><%= approval_request.current_step&.current_action_label || "-" %></td>
+            <td><%= current_step&.current_action_label || "-" %></td>
             <td><%= approval_request.approval_history_label %></td>
             <td>
               <% if approval_request.approvable.is_a?(VendorRegistration) %>
@@ -51,15 +52,26 @@
               <% end %>
             </td>
             <td>
-              <%= form_with url: approve_approval_request_path(approval_request), method: :patch, local: true, class: "d-inline" do |form| %>
-                <%= form.text_field :remark, placeholder: "Optional remark" %>
-                <%= form.submit "Approve", class: "app-form-submit" %>
-              <% end %>
+              <div class="d-flex gap-2 flex-wrap">
+                <%= render "approval_requests/approve_modal",
+                  approval_request: approval_request,
+                  modal_id: "approve-approval-request-#{approval_request.id}",
+                  trigger_label: "Approve",
+                  trigger_class: "app-form-submit" %>
 
-              <%= form_with url: reject_approval_request_path(approval_request), method: :patch, local: true, class: "d-inline" do |form| %>
-                <%= form.text_field :remark, placeholder: "Return remark", required: true %>
-                <%= form.submit "Return", class: "app-action-button app-delete-button" %>
-              <% end %>
+                <%= render "approval_requests/return_modal",
+                  approval_request: approval_request,
+                  current_step: current_step,
+                  modal_id: "return-approval-request-#{approval_request.id}",
+                  trigger_label: "Return",
+                  trigger_class: "app-secondary-btn" %>
+
+                <%= render "approval_requests/reject_modal",
+                  approval_request: approval_request,
+                  modal_id: "reject-approval-request-#{approval_request.id}",
+                  trigger_label: "Reject",
+                  trigger_class: "app-danger-btn" %>
+              </div>
             </td>
           </tr>
         <% end %>
@@ -68,7 +80,7 @@
   </div>
 <% end %>
 
-<% if @status.in?(%w[approved rejected all]) %>
+<% if @status.in?(%w[approved returned rejected all]) %>
   <div class="app-page-header">
     <h2>Processed</h2>
   </div>
@@ -88,12 +100,17 @@
       </thead>
       <tbody>
         <% @processed_approval_requests.each do |approval_request| %>
-          <% step = approval_request.approval_steps.find { |item| item.employee_master_id == current_employee_master.id && item.status != "pending" } %>
+          <% processed_steps = approval_request.approval_steps.reject { |item| item.status.in?(%w[waiting pending]) } %>
+          <% step = if current_employee_master.present?
+               processed_steps.find { |item| item.employee_master_id == current_employee_master.id }
+             else
+               processed_steps.max_by { |item| [item.actioned_at || Time.at(0), item.updated_at || Time.at(0)] }
+             end %>
           <tr>
             <td><%= approval_request.form_name %></td>
             <td><%= approval_request.reference_label %></td>
-            <td><%= approval_request.status.capitalize %></td>
-            <td><%= step&.status&.capitalize %></td>
+            <td><%= approval_request.status_label %></td>
+            <td><%= step&.effective_status_label || "-" %></td>
             <td><%= step&.remark.presence || "-" %></td>
             <td><%= approval_request.approval_history_label %></td>
             <td>

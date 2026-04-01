@@ -1,8 +1,11 @@
 class VendorRegistrationsController < ApplicationController
   before_action :set_vendor_registration, only: %i[ show edit update destroy ]
+  before_action :ensure_vendor_registration_editable!, only: %i[edit update]
 
   # GET /vendor_registrations or /vendor_registrations.json
   def index
+    sync_vendor_approval_requests!
+
     base_scope = VendorRegistration.includes(
       :stakeholder_category,
       :registration_type,
@@ -18,9 +21,12 @@ class VendorRegistrationsController < ApplicationController
     else
       @vendor_registrations = base_scope.where(user_id: current_user.id).order(created_at: :desc)
     end
+
   end
 
   def list
+    sync_vendor_approval_requests!
+
     base_scope = VendorRegistration.includes(
       :stakeholder_category,
       :registration_type,
@@ -42,8 +48,19 @@ class VendorRegistrationsController < ApplicationController
       else
         VendorRegistration.none.select(:id)
       end
+      configured_ids = if current_employee_master.present?
+        VendorRegistration.joins(approval_request: { approval_channel: :approval_channel_steps })
+          .where(approval_channel_steps: { to_responsible_user_id: current_employee_master.id })
+          .select(:id)
+      else
+        VendorRegistration.none.select(:id)
+      end
 
-      @vendor_registrations = base_scope.where(id: own_ids).or(base_scope.where(id: involved_ids)).distinct.order(created_at: :desc)
+      @vendor_registrations = base_scope.where(id: own_ids)
+        .or(base_scope.where(id: involved_ids))
+        .or(base_scope.where(id: configured_ids))
+        .distinct
+        .order(created_at: :desc)
     end
   end
 
@@ -80,6 +97,7 @@ class VendorRegistrationsController < ApplicationController
 
   # GET /vendor_registrations/1 or /vendor_registrations/1.json
   def show
+    @vendor_registration.approval_request&.ensure_channel_steps_synced!
   end
 
   # GET /vendor_registrations/new
@@ -121,10 +139,19 @@ class VendorRegistrationsController < ApplicationController
   def update
     permitted_params = vendor_registration_params
     @vendor_registration.incoming_document_files = permitted_params[:document_uploads]
+    was_returned = @vendor_registration.approval_request&.employee_return_pending?
 
     respond_to do |format|
       if @vendor_registration.update(permitted_params.except(:document_uploads))
-        format.html { redirect_to vendor_registrations_path, notice: "Vendor registration was successfully updated.", status: :see_other }
+        @vendor_registration.approval_request&.resubmit_after_return! if was_returned
+
+        notice_message = if was_returned
+          "Vendor registration was updated and sent back for approval."
+        else
+          "Vendor registration was successfully updated."
+        end
+
+        format.html { redirect_to vendor_registrations_path, notice: notice_message, status: :see_other }
         format.json { render :show, status: :ok, location: @vendor_registration }
       else
         load_form_collections
@@ -136,11 +163,25 @@ class VendorRegistrationsController < ApplicationController
 
   # DELETE /vendor_registrations/1 or /vendor_registrations/1.json
   def destroy
-    @vendor_registration.destroy!
+    if @vendor_registration.destroy
+      respond_to do |format|
+        format.html { redirect_to vendor_registrations_path, notice: "Vendor registration was successfully destroyed.", status: :see_other }
+        format.json { head :no_content }
+      end
+    else
+      message = @vendor_registration.errors.full_messages.to_sentence.presence || "Vendor registration could not be deleted."
+
+      respond_to do |format|
+        format.html { redirect_to vendor_registrations_path, alert: message, status: :see_other }
+        format.json { render json: { error: message }, status: :unprocessable_entity }
+      end
+    end
+  rescue ActiveRecord::InvalidForeignKey
+    message = "Vendor registration cannot be deleted because it is already linked to quotation proposals."
 
     respond_to do |format|
-      format.html { redirect_to vendor_registrations_path, notice: "Vendor registration was successfully destroyed.", status: :see_other }
-      format.json { head :no_content }
+      format.html { redirect_to vendor_registrations_path, alert: message, status: :see_other }
+      format.json { render json: { error: message }, status: :unprocessable_entity }
     end
   end
 
@@ -182,5 +223,26 @@ class VendorRegistrationsController < ApplicationController
       @themes = Theme.includes(products: :product_varieties).order(:name)
       @products = Product.includes(:theme).order(:name)
       @product_varieties = ProductVariety.includes(product: :theme).order(:name)
+    end
+
+    def ensure_vendor_registration_editable!
+      return if current_user.email == "admin@example.com" || current_user.employee_master&.user_type == "Admin"
+      return unless @vendor_registration.approval_request.present?
+      return if @vendor_registration.approval_request.employee_return_pending?
+
+      redirect_to vendor_registration_path(@vendor_registration), alert: "You can edit this vendor registration only after it is returned to the employee."
+    end
+
+    def sync_vendor_approval_requests!
+      ApprovalRequest.sync_scope!(
+        ApprovalRequest.includes(:approval_channel, :approvable, :approval_steps)
+          .where(form_name: "Vendor Registration")
+      )
+    end
+
+    def sync_approval_request_steps(vendor_registrations)
+      vendor_registrations.each do |vendor_registration|
+        vendor_registration.approval_request&.ensure_channel_steps_synced!
+      end
     end
 end

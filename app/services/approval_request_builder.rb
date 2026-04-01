@@ -113,9 +113,9 @@ class ApprovalRequestBuilder
       first_step = channel.flow_steps.first
 
       [
-        creator_match_score(first_step, creator_employee),
-        exact_stakeholder_score(channel, stakeholder_category_id),
         exact_theme_score(channel, theme_ids),
+        exact_stakeholder_score(channel, stakeholder_category_id),
+        creator_match_score(first_step, creator_employee),
         channel.flow_steps.size,
         channel.id
       ]
