@@ -92,4 +92,20 @@ class NotificationDispatcher
       )
     end
   end
+
+  def self.notify_quotation_vendor_response_received(quotation_proposal, proposal_vendor)
+    users = quotation_proposal.committee_steps.includes(:employee_master).map do |step|
+      User.find_by(email: step.employee_master.email_id)
+    end.compact
+    users << quotation_proposal.user if quotation_proposal.user.present?
+
+    users.compact.uniq.each do |user|
+      Notification.create!(
+        user: user,
+        notifiable: quotation_proposal,
+        title: "Vendor Response Received",
+        message: "#{proposal_vendor.vendor_registration.display_name} has submitted the quotation response for #{quotation_proposal.subject}. You can now review and compare vendor quotations."
+      )
+    end
+  end
 end

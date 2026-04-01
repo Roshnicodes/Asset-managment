@@ -1,11 +1,12 @@
 class QuotationProposalsController < ApplicationController
   before_action :set_quotation_proposal, only: %i[
     show edit update destroy send_for_approval approve_committee return_committee
-    send_to_vendors score_vendor select_vendor
+    send_to_vendors score_vendor score_vendors select_vendor
   ]
-  before_action :authorize_quotation_form_access!, only: %i[index new create edit update destroy send_for_approval send_to_vendors score_vendor select_vendor]
+  before_action :authorize_quotation_form_access!, only: %i[index new create edit update destroy send_for_approval send_to_vendors score_vendor score_vendors select_vendor]
   before_action :authorize_quotation_list_access!, only: %i[list]
   before_action :authorize_quotation_view_access!, only: %i[show approve_committee return_committee]
+  before_action :authorize_committee_comparison_access!, only: %i[score_vendor select_vendor]
 
   def index
     @quotation_proposals = own_quotation_scope.order(created_at: :desc)
@@ -122,14 +123,49 @@ class QuotationProposalsController < ApplicationController
 
   def score_vendor
     proposal_vendor = @quotation_proposal.quotation_proposal_vendors.find(params[:proposal_vendor_id])
+    unless proposal_vendor.response_submitted?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Committee score can be added only after the vendor submits a response."
+      return
+    end
+
     proposal_vendor.update!(committee_score: params[:committee_score].to_i)
     @quotation_proposal.recalculate_vendor_rankings!
+    sync_rank_based_vendor_selection!
     @quotation_proposal.refresh_response_status!
     redirect_to quotation_proposal_path(@quotation_proposal), notice: "The vendor comparison score has been updated."
   end
 
+  def score_vendors
+    scores_param = params[:committee_scores]
+    scores = if scores_param.is_a?(ActionController::Parameters)
+      scores_param.permit!.to_h
+    else
+      scores_param.to_h
+    end
+    updated = 0
+
+    @quotation_proposal.quotation_proposal_vendors.find_each do |proposal_vendor|
+      next unless proposal_vendor.response_submitted?
+      next unless scores.key?(proposal_vendor.id.to_s)
+
+      raw_score = scores[proposal_vendor.id.to_s]
+      proposal_vendor.update!(committee_score: raw_score.present? ? raw_score.to_i : nil)
+      updated += 1
+    end
+
+    @quotation_proposal.recalculate_vendor_rankings!
+    sync_rank_based_vendor_selection!
+    @quotation_proposal.refresh_response_status!
+    redirect_to quotation_proposal_path(@quotation_proposal), notice: updated.positive? ? "Committee comparison scores have been updated." : "No committee score changes were submitted."
+  end
+
   def select_vendor
     proposal_vendor = @quotation_proposal.quotation_proposal_vendors.find(params[:proposal_vendor_id])
+    unless proposal_vendor.response_submitted?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Only responded vendors can be selected."
+      return
+    end
+
     @quotation_proposal.quotation_proposal_vendors.update_all(selected: false)
     proposal_vendor.update!(selected: true)
     @quotation_proposal.update!(selected_vendor_registration: proposal_vendor.vendor_registration)
@@ -235,6 +271,25 @@ class QuotationProposalsController < ApplicationController
       next if existing_levels.include?(level)
 
       quotation_proposal.committee_steps.build(level: level, status: "pending")
+    end
+  end
+
+  def authorize_committee_comparison_access!
+    return if @quotation_proposal.committee_member?(current_employee_master) || @quotation_proposal.committee_user?(current_user)
+
+    redirect_to quotation_proposal_path(@quotation_proposal), alert: "Only committee members can score vendors and select the final vendor."
+  end
+
+  def sync_rank_based_vendor_selection!
+    ranked_vendor = @quotation_proposal.quotation_proposal_vendors.find_by(rank_position: 1)
+
+    @quotation_proposal.quotation_proposal_vendors.update_all(selected: false)
+
+    if ranked_vendor.present?
+      ranked_vendor.update!(selected: true)
+      @quotation_proposal.update!(selected_vendor_registration: ranked_vendor.vendor_registration)
+    else
+      @quotation_proposal.update!(selected_vendor_registration: nil)
     end
   end
 end

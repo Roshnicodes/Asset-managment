@@ -1,0 +1,134 @@
+<div class="app-page-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem;">
+  <div>
+    <h2 style="margin: 0; font-size: 1.8rem; color: #1a3a2a;">Vendor Quotation Print</h2>
+    <p style="margin: 0.5rem 0 0 0; color: #6b8e7f; font-size: 0.95rem;">
+      <%= @vendor_registration.display_name %> for <%= @quotation_proposal.subject %>
+    </p>
+  </div>
+
+  <div class="d-flex gap-2 flex-wrap print-hide">
+    <button type="button" class="app-form-submit" onclick="window.print()">Print / Save PDF</button>
+    <%= link_to "Back to Form", quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token, verified: 1), class: "app-secondary-btn" %>
+  </div>
+</div>
+
+<style>
+  @media print {
+    .print-hide {
+      display: none !important;
+    }
+
+    body {
+      background: #fff !important;
+    }
+
+    .app-detail-card,
+    .app-form-card {
+      box-shadow: none !important;
+      border-color: #d7e5de !important;
+    }
+  }
+</style>
+
+<div class="app-detail-card">
+  <div class="app-detail-grid">
+    <div class="app-detail-item">
+      <div class="app-detail-label">Quotation ID</div>
+      <div class="app-detail-value"><%= @quotation_proposal.id %></div>
+    </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">Vendor</div>
+      <div class="app-detail-value"><%= @vendor_registration.display_name %></div>
+    </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">Theme</div>
+      <div class="app-detail-value"><%= @quotation_proposal.theme.name %></div>
+    </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">Proposal End Date</div>
+      <div class="app-detail-value"><%= @quotation_proposal.proposal_end_date.strftime("%d-%m-%Y") %></div>
+    </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">Submitted At</div>
+      <div class="app-detail-value"><%= @quotation_proposal_vendor.responded_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+    </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">Response Status</div>
+      <div class="app-detail-value"><%= @quotation_proposal_vendor.response_status.humanize %></div>
+    </div>
+
+    <div class="app-detail-item" style="grid-column: 1 / -1;">
+      <div class="app-detail-label">Proposal Remark</div>
+      <div class="app-detail-value"><%= @quotation_proposal.remark.presence || "-" %></div>
+    </div>
+  </div>
+</div>
+
+<div class="app-page-header" style="margin-top: 1.5rem;">
+  <div>
+    <h3 style="margin-bottom: 0.25rem;">Quoted Items Summary</h3>
+    <p class="app-section-note mb-0">Use the browser print dialog to print this page or save it as a PDF.</p>
+  </div>
+</div>
+
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>Item Name</th>
+        <th>Unit</th>
+        <th>Quantity</th>
+        <th>Proposal Remark</th>
+        <th>Your Rate</th>
+        <th>Amount</th>
+        <th>GST %</th>
+        <th>Grand Total</th>
+        <th>Your Remark</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @quotation_proposal_vendor.vendor_items.includes(quotation_proposal_item: :unit).each do |vendor_item| %>
+        <tr>
+          <td><%= vendor_item.quotation_proposal_item.item_name %></td>
+          <td><%= vendor_item.quotation_proposal_item.unit.name %></td>
+          <td><%= vendor_item.quotation_proposal_item.quantity %></td>
+          <td><%= vendor_item.quotation_proposal_item.remark.presence || "-" %></td>
+          <td><%= vendor_item.quoted_rate.present? ? number_with_precision(vendor_item.quoted_rate, precision: 2) : "-" %></td>
+          <td><%= vendor_item.line_total.present? ? number_with_precision(vendor_item.line_total, precision: 2) : "-" %></td>
+          <td><%= vendor_item.gst_percentage.present? ? number_with_precision(vendor_item.gst_percentage, precision: 2) : "-" %></td>
+          <td><%= vendor_item.grand_total.present? ? number_with_precision(vendor_item.grand_total, precision: 2) : "-" %></td>
+          <td><%= vendor_item.remark.presence || "-" %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<div class="app-detail-card" style="margin-top: 1rem;">
+  <div class="app-detail-grid">
+    <div class="app-detail-item">
+      <div class="app-detail-label">Amount Total</div>
+      <div class="app-detail-value"><%= number_with_precision(@quotation_proposal_vendor.total_quoted_amount, precision: 2) %></div>
+    </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">Grand Total</div>
+      <div class="app-detail-value"><%= number_with_precision(@quotation_proposal_vendor.grand_total_amount, precision: 2) %></div>
+    </div>
+
+    <div class="app-detail-item" style="grid-column: 1 / -1;">
+      <div class="app-detail-label">Amount in Words</div>
+      <div class="app-detail-value"><%= amount_in_words(@quotation_proposal_vendor.grand_total_amount) %></div>
+    </div>
+
+    <div class="app-detail-item" style="grid-column: 1 / -1;">
+      <div class="app-detail-label">Overall Vendor Remark</div>
+      <div class="app-detail-value"><%= @quotation_proposal_vendor.vendor_remark.presence || "-" %></div>
+    </div>
+  </div>
+</div>

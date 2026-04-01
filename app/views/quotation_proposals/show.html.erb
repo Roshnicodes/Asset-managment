@@ -2,6 +2,7 @@
   current_committee_step = @quotation_proposal.current_committee_step
   my_pending_committee_step = @quotation_proposal.committee_steps.find_by(employee_master_id: current_employee_master&.id, status: "pending")
   committee_action_allowed = my_pending_committee_step.present?
+  committee_scoring_allowed = @quotation_proposal.committee_member?(current_employee_master) || @quotation_proposal.committee_user?(current_user)
   workflow_class = case @quotation_proposal.workflow_status
                    when "vendor_selected" then "bg-success bg-opacity-10 text-success border-success"
                    when "responses_received" then "bg-primary bg-opacity-10 text-primary border-primary"
@@ -12,15 +13,15 @@
                    end
 %>
 
-<div class="app-page-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem;">
+<div class="app-page-header app-page-header-top">
   <div>
-    <h2 style="margin: 0; font-size: 1.8rem; color: #1a3a2a;">Quotation Proposal Details</h2>
-    <p style="margin: 0.5rem 0 0 0; color: #6b8e7f; font-size: 0.95rem;"><%= @quotation_proposal.subject %></p>
+    <h2 class="app-page-title">Quotation Proposal Details</h2>
+    <p class="app-page-subtitle"><%= @quotation_proposal.subject %></p>
   </div>
   <%= link_to "Back", quotation_proposals_path, class: "app-back-link" %>
 </div>
 
-<div class="app-detail-actions" style="justify-content: space-between; align-items: center; flex-wrap: wrap; margin-bottom: 1.25rem;">
+<div class="app-detail-actions app-detail-actions-spread">
   <div class="d-flex align-items-center gap-2 flex-wrap">
     <span class="badge border <%= workflow_class %> fw-semibold px-3 py-2" style="font-size: 0.9rem;">
       <%= @quotation_proposal.workflow_status.humanize %>
@@ -80,7 +81,7 @@
       <div class="app-detail-value"><%= @quotation_proposal.selected_vendor_registration&.display_name || "-" %></div>
     </div>
 
-    <div class="app-detail-item" style="grid-column: 1 / -1;">
+    <div class="app-detail-item app-detail-item-full">
       <div class="app-detail-label">Selected Vendors</div>
       <div class="app-detail-value">
         <div class="d-flex flex-wrap gap-2">
@@ -93,15 +94,15 @@
       </div>
     </div>
 
-    <div class="app-detail-item" style="grid-column: 1 / -1;">
+    <div class="app-detail-item app-detail-item-full">
       <div class="app-detail-label">Remark</div>
       <div class="app-detail-value"><%= @quotation_proposal.remark.presence || "-" %></div>
     </div>
   </div>
 </div>
 
-<div class="app-detail-card" style="margin-top: 1.5rem;">
-  <div class="app-page-header" style="margin-bottom: 1rem;">
+<div class="app-detail-card app-stack-gap-lg">
+  <div class="app-page-header app-subsection-header-tight">
     <div>
       <h3 style="margin-bottom: 0.25rem;">Committee Approval Trail</h3>
       <p class="app-section-note mb-0">L1 se L4 tak sab approvals yahin visible rahenge. Sab approve hone ke baad hi vendors ko quotation bheja jayega.</p>
@@ -130,7 +131,7 @@
 </div>
 
 <% if committee_action_allowed %>
-  <div class="app-form-card" style="margin-top: 1.5rem;">
+  <div class="app-form-card app-stack-gap-lg">
     <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
       <div>
         <h3 style="margin-bottom: 0.35rem;">Committee Action</h3>
@@ -169,7 +170,7 @@
   </div>
 <% end %>
 
-<div class="app-page-header" style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+<div class="app-page-header app-page-header-top app-page-header-center">
   <div>
     <h3 style="margin-bottom: 0.25rem;">Proposal Items</h3>
     <p class="app-section-note mb-0">Requested items and quantities for this quotation proposal.</p>
@@ -204,81 +205,158 @@
 
 <% if @quotation_proposal.vendor_responses_received? %>
   <% @quotation_proposal.recalculate_vendor_rankings! %>
-  <div class="app-detail-card" style="margin-top: 1.5rem;">
-    <div class="app-page-header" style="margin-bottom: 1rem;">
+  <div class="app-detail-card app-stack-gap-lg">
+    <div class="app-page-header app-subsection-header-tight">
       <div>
         <h3 style="margin-bottom: 0.25rem;">Committee Comparison</h3>
         <p class="app-section-note mb-0">Committee vendor responses compare karke score degi. Higher score aur better comparison ke basis par vendor select kiya ja sakta hai.</p>
       </div>
+      <span class="badge border bg-light text-dark px-3 py-2" style="font-size: 0.9rem;">
+        <%= committee_scoring_allowed ? "Committee scoring access" : "View only" %>
+      </span>
     </div>
 
-    <div class="app-table-wrap">
-      <table class="table app-table">
+    <% comparison_vendors = @quotation_proposal.quotation_proposal_vendors.includes(vendor_registration: [], vendor_items: { quotation_proposal_item: :unit }) %>
+    <% responded_vendors = comparison_vendors.select(&:response_submitted?) %>
+    <% lowest_amount_vendor_id = responded_vendors.min_by { |vendor| vendor.total_quoted_amount.to_d }&.id %>
+    <% lowest_grand_total_vendor_id = responded_vendors.min_by { |vendor| vendor.grand_total_amount.to_d }&.id %>
+    <% top_rank_vendor_id = responded_vendors.find { |vendor| vendor.rank_position == 1 }&.id %>
+    <%= form_with url: score_vendors_quotation_proposal_path(@quotation_proposal), method: :patch, local: true do %>
+      <div class="app-table-wrap" style="overflow-x: auto; overflow-y: visible;">
+        <table class="table app-table" style="min-width: <%= 320 + (comparison_vendors.size * 280) %>px;">
         <thead>
           <tr>
-            <th>Vendor</th>
-            <th>Status</th>
-            <th>Total Quote</th>
-            <th>Committee Score</th>
-            <th>Rank</th>
-            <th>Selected</th>
-            <th>Action</th>
+            <th style="min-width: 240px; position: sticky; left: 0; z-index: 3; background: #f7fbf8; box-shadow: 8px 0 18px rgba(26, 58, 42, 0.04);">Compare Field</th>
+            <% comparison_vendors.each do |proposal_vendor| %>
+              <% header_style = if proposal_vendor.selected?
+                "background: linear-gradient(180deg, #effaf3 0%, #ffffff 100%); border-bottom: 2px solid #198754;"
+              elsif proposal_vendor.id == top_rank_vendor_id
+                "background: linear-gradient(180deg, #fff8e8 0%, #ffffff 100%); border-bottom: 2px solid #f0ad00;"
+              else
+                "background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);"
+              end %>
+              <th style="min-width: 280px; vertical-align: top; <%= header_style %>">
+                <div style="display: flex; flex-direction: column; gap: 0.45rem;">
+                  <div class="fw-semibold" style="font-size: 1rem;"><%= proposal_vendor.vendor_registration.display_name %></div>
+                  <div class="small text-muted"><%= proposal_vendor.response_status.humanize %></div>
+                  <div class="d-flex gap-2 flex-wrap">
+                    <% if proposal_vendor.selected? %>
+                      <span class="badge border bg-success bg-opacity-10 text-success">Selected</span>
+                    <% end %>
+                    <% if proposal_vendor.id == top_rank_vendor_id %>
+                      <span class="badge border bg-warning bg-opacity-10 text-warning">Top Rank</span>
+                    <% end %>
+                    <% if proposal_vendor.id == lowest_grand_total_vendor_id %>
+                      <span class="badge border bg-primary bg-opacity-10 text-primary">Best Price</span>
+                    <% end %>
+                  </div>
+                </div>
+              </th>
+            <% end %>
           </tr>
         </thead>
         <tbody>
-          <% @quotation_proposal.quotation_proposal_vendors.includes(:vendor_registration, :vendor_items).each do |proposal_vendor| %>
-            <tr>
-              <td><%= proposal_vendor.vendor_registration.display_name %></td>
-              <td><%= proposal_vendor.response_status.humanize %></td>
-              <td><%= number_with_precision(proposal_vendor.total_quoted_amount, precision: 2) %></td>
+          <tr>
+            <td style="position: sticky; left: 0; z-index: 2; background: #fdfefe; box-shadow: 8px 0 18px rgba(26, 58, 42, 0.03);"><strong>Committee Score</strong></td>
+            <% comparison_vendors.each do |proposal_vendor| %>
               <td>
-                <%= form_with url: score_vendor_quotation_proposal_path(@quotation_proposal, proposal_vendor_id: proposal_vendor.id), method: :patch, local: true, class: "d-flex gap-2 align-items-center" do |form| %>
-                  <%= form.number_field :committee_score, value: proposal_vendor.committee_score, min: 0, class: "form-control", style: "max-width: 110px;" %>
-                  <%= form.submit "Save", class: "app-secondary-btn" %>
+                <% if proposal_vendor.response_submitted? %>
+                  <% if committee_scoring_allowed %>
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
+                      <%= number_field_tag "committee_scores[#{proposal_vendor.id}]", proposal_vendor.committee_score, min: 0, placeholder: "Enter score", class: "form-control", style: "max-width: 130px;" %>
+                    </div>
+                  <% else %>
+                    <span class="text-muted">Committee members can update score</span>
+                  <% end %>
+                  <div class="small text-muted mt-2">
+                    Saved score: <strong><%= proposal_vendor.committee_score.present? ? proposal_vendor.committee_score : "Not scored yet" %></strong>
+                  </div>
+                <% else %>
+                  <span class="text-muted">Awaiting vendor response</span>
                 <% end %>
               </td>
-              <td><%= proposal_vendor.rank_position || "-" %></td>
-              <td><%= proposal_vendor.selected? ? "Yes" : "No" %></td>
-              <td>
-                <%= button_to "Select Vendor", select_vendor_quotation_proposal_path(@quotation_proposal, proposal_vendor_id: proposal_vendor.id), method: :patch, class: "app-form-submit" %>
+            <% end %>
+          </tr>
+          <% if committee_scoring_allowed %>
+            <tr>
+              <td style="position: sticky; left: 0; z-index: 2; background: #fdfefe; box-shadow: 8px 0 18px rgba(26, 58, 42, 0.03);"><strong>Save Scores</strong></td>
+              <td colspan="<%= comparison_vendors.size %>">
+                <div class="d-flex justify-content-end">
+                  <%= submit_tag "Save All Committee Scores", class: "app-form-submit" %>
+                </div>
               </td>
             </tr>
-            <% if proposal_vendor.vendor_items.any? %>
-              <tr>
-                <td colspan="7" style="background: #fbfdfb;">
-                  <strong>Item-wise Comparison</strong>
-                  <div class="app-table-wrap" style="margin-top: 0.75rem;">
-                    <table class="table app-table">
-                      <thead>
-                        <tr>
-                          <th>Item</th>
-                          <th>Qty</th>
-                          <th>Unit</th>
-                          <th>Rate</th>
-                          <th>Line Total</th>
-                          <th>Remark</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <% proposal_vendor.vendor_items.includes(quotation_proposal_item: :unit).each do |vendor_item| %>
-                          <tr>
-                            <td><%= vendor_item.quotation_proposal_item.item_name %></td>
-                            <td><%= vendor_item.quotation_proposal_item.quantity %></td>
-                            <td><%= vendor_item.quotation_proposal_item.unit.name %></td>
-                            <td><%= vendor_item.quoted_rate.present? ? number_with_precision(vendor_item.quoted_rate, precision: 2) : "-" %></td>
-                            <td><%= vendor_item.line_total.present? ? number_with_precision(vendor_item.line_total, precision: 2) : "-" %></td>
-                            <td><%= vendor_item.remark.presence || "-" %></td>
-                          </tr>
-                        <% end %>
-                      </tbody>
-                    </table>
-                  </div>
-                </td>
-              </tr>
-            <% end %>
           <% end %>
-        </tbody>
-      </table>
-    </div>
+          <tr>
+            <td style="position: sticky; left: 0; z-index: 2; background: #fdfefe; box-shadow: 8px 0 18px rgba(26, 58, 42, 0.03);"><strong>Rank</strong></td>
+            <% comparison_vendors.each do |proposal_vendor| %>
+              <td style="<%= 'background: #fff8e8;' if proposal_vendor.id == top_rank_vendor_id %>">
+                <%= proposal_vendor.rank_position || "-" %>
+              </td>
+            <% end %>
+          </tr>
+          <tr>
+            <td style="position: sticky; left: 0; z-index: 2; background: #fdfefe; box-shadow: 8px 0 18px rgba(26, 58, 42, 0.03);"><strong>Selected</strong></td>
+            <% comparison_vendors.each do |proposal_vendor| %>
+              <td style="<%= 'background: #effaf3;' if proposal_vendor.selected? %>"><%= proposal_vendor.selected? ? "Yes" : "No" %></td>
+            <% end %>
+          </tr>
+          <tr>
+            <td style="position: sticky; left: 0; z-index: 2; background: #fdfefe; box-shadow: 8px 0 18px rgba(26, 58, 42, 0.03);"><strong>Amount Total</strong></td>
+            <% comparison_vendors.each do |proposal_vendor| %>
+              <td style="<%= 'background: #f5fbf7;' if proposal_vendor.id == lowest_amount_vendor_id %>">
+                <%= number_with_precision(proposal_vendor.total_quoted_amount, precision: 2) %>
+              </td>
+            <% end %>
+          </tr>
+          <tr>
+            <td style="position: sticky; left: 0; z-index: 2; background: #fdfefe; box-shadow: 8px 0 18px rgba(26, 58, 42, 0.03);"><strong>Grand Total</strong></td>
+            <% comparison_vendors.each do |proposal_vendor| %>
+              <td style="<%= 'background: #eef8ff;' if proposal_vendor.id == lowest_grand_total_vendor_id %>">
+                <%= number_with_precision(proposal_vendor.grand_total_amount, precision: 2) %>
+              </td>
+            <% end %>
+          </tr>
+          <tr>
+            <td style="position: sticky; left: 0; z-index: 2; background: #fdfefe; box-shadow: 8px 0 18px rgba(26, 58, 42, 0.03);"><strong>Selection Status</strong></td>
+            <% comparison_vendors.each do |proposal_vendor| %>
+              <td>
+                <% if proposal_vendor.rank_position == 1 && proposal_vendor.committee_score.present? %>
+                  <span class="badge border bg-success bg-opacity-10 text-success">Auto selected by top rank</span>
+                <% elsif proposal_vendor.response_submitted? && proposal_vendor.committee_score.present? %>
+                  <span class="text-muted">Selection follows rank order</span>
+                <% else %>
+                  <span class="text-muted">Selection pending score</span>
+                <% end %>
+              </td>
+            <% end %>
+          </tr>
+          <% @quotation_proposal.quotation_proposal_items.includes(:unit).each do |proposal_item| %>
+            <tr>
+              <td style="position: sticky; left: 0; z-index: 2; background: #fdfefe; box-shadow: 8px 0 18px rgba(26, 58, 42, 0.03);">
+                <strong><%= proposal_item.item_name %></strong>
+                <div class="small text-muted mt-1">
+                  Qty: <%= proposal_item.quantity %> <%= proposal_item.unit.name %>
+                </div>
+                <div class="small text-muted">
+                  Proposal Remark: <%= proposal_item.remark.presence || "-" %>
+                </div>
+              </td>
+              <% comparison_vendors.each do |proposal_vendor| %>
+                <% vendor_item = proposal_vendor.vendor_items.find { |item| item.quotation_proposal_item_id == proposal_item.id } %>
+                <td style="<%= 'background: #fbfff7;' if proposal_vendor.selected? %>">
+                  <div><strong>Rate:</strong> <%= vendor_item&.quoted_rate.present? ? number_with_precision(vendor_item.quoted_rate, precision: 2) : "-" %></div>
+                  <div class="mt-1"><strong>Amount:</strong> <%= vendor_item&.line_total.present? ? number_with_precision(vendor_item.line_total, precision: 2) : "-" %></div>
+                  <div class="mt-1"><strong>GST %:</strong> <%= vendor_item&.gst_percentage.present? ? number_with_precision(vendor_item.gst_percentage, precision: 2) : "-" %></div>
+                  <div class="mt-1"><strong>Grand Total:</strong> <%= vendor_item&.grand_total.present? ? number_with_precision(vendor_item.grand_total, precision: 2) : "-" %></div>
+                  <div class="mt-1"><strong>Remark:</strong> <%= vendor_item&.remark.presence || "-" %></div>
+                </td>
+              <% end %>
+            </tr>
+          <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% end %>
   </div>
 <% end %>

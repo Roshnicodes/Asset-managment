@@ -33,9 +33,10 @@
       </div>
     </div>
 
-    <div class="app-page-header" style="margin-top: 1.25rem; margin-bottom: 0.5rem;">
+    <div class="app-page-header app-subsection-header">
       <div>
-        <h3 style="margin-bottom: 0.25rem;">Select Vendors</h3>
+        <h3>Select Vendors</h3>
+        <p class="app-section-note mb-0">Theme select karne ke baad sirf matching vendors yahan show honge.</p>
       </div>
     </div>
 
@@ -44,7 +45,7 @@
       <div class="app-multiselect-dropdown" data-quotation-vendor-dropdown>
         <div class="app-selected-vendors" data-quotation-vendor-selected></div>
 
-        <button type="button" class="app-multiselect-trigger" data-quotation-vendor-trigger>
+        <button type="button" class="app-multiselect-trigger" data-quotation-vendor-trigger aria-expanded="false">
           <span data-quotation-vendor-label>Select vendors</span>
         </button>
 
@@ -63,13 +64,16 @@
               </label>
             <% end %>
           </div>
+
+          <p class="app-multiselect-empty is-hidden" data-quotation-vendor-empty>No vendor matches the selected theme or search.</p>
         </div>
       </div>
     </div>
 
-    <div class="app-page-header" style="margin-top: 1.25rem; margin-bottom: 0.5rem;">
+    <div class="app-page-header app-subsection-header">
       <div>
-        <h3 style="margin-bottom: 0.25rem;">Proposal Items</h3>
+        <h3>Proposal Items</h3>
+        <p class="app-section-note mb-0">Har required item, quantity aur unit add karo.</p>
       </div>
     </div>
 
@@ -91,9 +95,9 @@
       </div>
     </div>
 
-    <div class="app-page-header" style="margin-top: 1.5rem; margin-bottom: 0.5rem;">
+    <div class="app-page-header app-subsection-header app-subsection-header-spacious">
       <div>
-        <h3 style="margin-bottom: 0.25rem;">Approval Committee</h3>
+        <h3>Approval Committee</h3>
         <p class="app-section-note mb-0">
           Isi quotation ke andar L1 se L4 tak committee set karo. Yehi members apna-apna approval denge, aur sab approvals isi quotation detail me visible rahenge.
         </p>

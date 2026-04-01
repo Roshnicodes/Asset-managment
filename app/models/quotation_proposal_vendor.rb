@@ -36,6 +36,10 @@ class QuotationProposalVendor < ApplicationRecord
     response_status == "responded"
   end
 
+  def comparable?
+    response_submitted?
+  end
+
   def dispatch_record!
     vendor_dispatch || create_vendor_dispatch!(
       quotation_proposal: quotation_proposal,

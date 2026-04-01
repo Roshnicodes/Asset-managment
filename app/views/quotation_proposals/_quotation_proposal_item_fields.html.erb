@@ -1,6 +1,10 @@
 <div class="app-quotation-item-row" data-quotation-item-row>
   <%= form.hidden_field :_destroy, value: "false", data: { quotation_item_destroy: true } %>
 
+  <div class="app-quotation-item-row-head">
+    <h4 class="app-quotation-item-row-title">Proposal Item</h4>
+  </div>
+
   <div class="app-form-grid four-col">
     <div class="app-form-field">
       <%= form.label :item_name, "Item Name" %>

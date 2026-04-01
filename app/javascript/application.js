@@ -308,7 +308,12 @@ const setupQuotationProposalForm = () => {
     const label = vendorDropdown.querySelector("[data-quotation-vendor-label]")
     const search = vendorDropdown.querySelector("[data-quotation-vendor-search]")
     const selectedWrap = vendorDropdown.querySelector("[data-quotation-vendor-selected]")
+    const emptyState = vendorDropdown.querySelector("[data-quotation-vendor-empty]")
     const vendorOptions = Array.from(vendorDropdown.querySelectorAll("[data-vendor-option]"))
+    const setDropdownOpen = (isOpen) => {
+      vendorDropdown.classList.toggle("is-open", isOpen)
+      trigger?.setAttribute("aria-expanded", isOpen ? "true" : "false")
+    }
 
     const updateLabel = () => {
       const selected = vendorOptions.filter((option) => option.querySelector(".quotation-vendor-checkbox")?.checked)
@@ -351,11 +356,13 @@ const setupQuotationProposalForm = () => {
         if (!matchesTheme && checkbox) checkbox.checked = false
       })
 
+      const visibleOptions = vendorOptions.filter((option) => !option.classList.contains("is-hidden"))
+      emptyState?.classList.toggle("is-hidden", visibleOptions.length > 0)
       updateLabel()
     }
 
     trigger?.addEventListener("click", () => {
-      vendorDropdown.classList.toggle("is-open")
+      setDropdownOpen(!vendorDropdown.classList.contains("is-open"))
     })
 
     vendorOptions.forEach((option) => {
@@ -371,7 +378,7 @@ const setupQuotationProposalForm = () => {
 
     document.addEventListener("click", (event) => {
       if (!vendorDropdown.contains(event.target)) {
-        vendorDropdown.classList.remove("is-open")
+        setDropdownOpen(false)
       }
     })
 
@@ -439,43 +446,35 @@ const setupVendorQuotationCalculations = () => {
 
   forms.forEach((form) => {
     const rows = Array.from(form.querySelectorAll("[data-vendor-quote-row]"))
-    const subtotalNode = form.querySelector("[data-summary-subtotal]")
-    const gstNode = form.querySelector("[data-summary-gst]")
+    const amountTotalNode = form.querySelector("[data-summary-amount-total]")
     const grandNode = form.querySelector("[data-summary-grand-total]")
     const wordsNode = form.querySelector("[data-summary-grand-words]")
 
     const recalc = () => {
-      let subtotal = 0
-      let totalGst = 0
+      let amountTotal = 0
       let grandTotal = 0
 
       rows.forEach((row) => {
         const quantity = Number(row.querySelector("[data-quote-quantity]")?.textContent || 0)
         const rate = Number(row.querySelector("[data-quote-rate]")?.value || 0)
         const gst = Number(row.querySelector("[data-quote-gst]")?.value || 0)
-        const taxable = quantity * rate
-        const gstAmount = taxable * gst / 100
-        const cgst = gstAmount / 2
-        const sgst = gstAmount / 2
-        const total = taxable + gstAmount
+        const amount = quantity * rate
+        const gstAmount = amount * gst / 100
+        const total = amount + gstAmount
 
         const setText = (selector, value) => {
           const node = row.querySelector(selector)
           if (node) node.textContent = value.toFixed(2)
         }
 
-        setText("[data-taxable-amount]", taxable)
-        setText("[data-cgst-amount]", cgst)
-        setText("[data-sgst-amount]", sgst)
+        setText("[data-amount-total]", amount)
         setText("[data-grand-total]", total)
 
-        subtotal += taxable
-        totalGst += gstAmount
+        amountTotal += amount
         grandTotal += total
       })
 
-      if (subtotalNode) subtotalNode.textContent = subtotal.toFixed(2)
-      if (gstNode) gstNode.textContent = totalGst.toFixed(2)
+      if (amountTotalNode) amountTotalNode.textContent = amountTotal.toFixed(2)
       if (grandNode) grandNode.textContent = grandTotal.toFixed(2)
       if (wordsNode) wordsNode.textContent = numberToWords(grandTotal)
     }

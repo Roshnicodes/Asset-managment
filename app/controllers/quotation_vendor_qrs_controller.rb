@@ -34,6 +34,15 @@ class QuotationVendorQrsController < ApplicationController
     end
   end
 
+  def print
+    return unless ensure_vendor_response_open!
+
+    unless @quotation_proposal_vendor.response_submitted?
+      redirect_to quotation_vendor_qr_path(params[:token]), alert: "Please submit your quotation response before printing."
+      return
+    end
+  end
+
   def update
     return unless ensure_vendor_response_open!
 
@@ -44,11 +53,17 @@ class QuotationVendorQrsController < ApplicationController
 
     if @quotation_proposal_vendor.update(vendor_response_params)
       @quotation_proposal_vendor.update!(response_status: "responded", responded_at: Time.current)
-      @quotation_vendor_dispatch.update!(status: "responded", access_granted: false)
-      clear_vendor_access_session!
+      @quotation_vendor_dispatch.update!(
+        status: "responded",
+        access_granted: true,
+        access_expires_at: 5.minutes.from_now,
+        otp_verified_at: Time.current
+      )
       @quotation_proposal.refresh_response_status!
-      redirect_to quotation_vendor_qr_path(params[:token]), notice: "Your quotation response has been submitted successfully."
+      NotificationDispatcher.notify_quotation_vendor_response_received(@quotation_proposal, @quotation_proposal_vendor)
+      redirect_to print_quotation_vendor_qr_path(params[:token]), notice: "Your quotation response has been submitted successfully. You can now print or save it as a PDF."
     else
+      @otp_verified_for_render = true
       render :show, status: :unprocessable_entity
     end
   end

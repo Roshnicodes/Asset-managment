@@ -48,6 +48,15 @@ class QuotationProposal < ApplicationRecord
     committee_steps.any? { |step| step.employee_master_id == employee.id }
   end
 
+  def committee_user?(user)
+    return false unless user&.email.present?
+
+    lookup_email = user.email.to_s.strip.downcase
+    committee_steps.includes(:employee_master).any? do |step|
+      step.employee_master&.email_id.to_s.strip.downcase == lookup_email
+    end
+  end
+
   def vendor_responses_received?
     quotation_proposal_vendors.responded.exists?
   end
@@ -104,9 +113,13 @@ class QuotationProposal < ApplicationRecord
   end
 
   def recalculate_vendor_rankings!
-    ranked_vendors = quotation_proposal_vendors.includes(:vendor_items).sort_by do |proposal_vendor|
+    comparable_vendors, pending_vendors = quotation_proposal_vendors.includes(:vendor_items).partition(&:comparable?)
+    scored_vendors, unscored_vendors = comparable_vendors.partition { |proposal_vendor| proposal_vendor.committee_score.present? }
+
+    ranked_vendors = scored_vendors.sort_by do |proposal_vendor|
       [
         -proposal_vendor.committee_score.to_i,
+        proposal_vendor.grand_total_amount.to_d,
         proposal_vendor.total_quoted_amount.to_d,
         proposal_vendor.id
       ]
@@ -114,6 +127,10 @@ class QuotationProposal < ApplicationRecord
 
     ranked_vendors.each_with_index do |proposal_vendor, index|
       proposal_vendor.update_column(:rank_position, index + 1)
+    end
+
+    (pending_vendors + unscored_vendors).each do |proposal_vendor|
+      proposal_vendor.update_column(:rank_position, nil)
     end
   end
 

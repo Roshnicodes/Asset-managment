@@ -43,6 +43,11 @@
         <%= @vendor_registration.display_name %> for <%= @quotation_proposal.subject %>
       </p>
     </div>
+    <% if @quotation_proposal_vendor.response_submitted? %>
+      <div class="d-flex gap-2 flex-wrap">
+        <%= link_to "Print", print_quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token), class: "app-secondary-btn", target: "_blank", rel: "noopener" %>
+      </div>
+    <% end %>
   </div>
 
   <div class="app-detail-card">
@@ -91,10 +96,8 @@
             <th>Quantity</th>
             <th>Proposal Remark</th>
             <th>Your Rate</th>
-            <th>Taxable Amount</th>
+            <th>Amount</th>
             <th>GST %</th>
-            <th>CGST</th>
-            <th>SGST</th>
             <th>Grand Total</th>
             <th>Your Remark</th>
           </tr>
@@ -111,10 +114,8 @@
                 <td data-quote-quantity><%= vendor_item.quotation_proposal_item.quantity %></td>
                 <td><%= vendor_item.quotation_proposal_item.remark.presence || "-" %></td>
                 <td><%= item_form.number_field :quoted_rate, step: :any, min: 0, required: true, data: { quote_rate: true } %></td>
-                <td data-taxable-amount><%= number_with_precision(vendor_item.line_total || 0, precision: 2) %></td>
+                <td data-amount-total><%= number_with_precision(vendor_item.line_total || 0, precision: 2) %></td>
                 <td><%= item_form.number_field :gst_percentage, step: :any, min: 0, placeholder: "GST %", data: { quote_gst: true } %></td>
-                <td data-cgst-amount><%= number_with_precision(vendor_item.cgst_amount, precision: 2) %></td>
-                <td data-sgst-amount><%= number_with_precision(vendor_item.sgst_amount, precision: 2) %></td>
                 <td data-grand-total><%= number_with_precision(vendor_item.grand_total, precision: 2) %></td>
                 <td><%= item_form.text_field :remark %></td>
               </tr>
@@ -127,13 +128,8 @@
     <div class="app-detail-card" style="margin-top: 1rem;">
       <div class="app-detail-grid">
         <div class="app-detail-item">
-          <div class="app-detail-label">Sub Total</div>
-          <div class="app-detail-value" data-summary-subtotal><%= number_with_precision(@quotation_proposal_vendor.total_quoted_amount, precision: 2) %></div>
-        </div>
-
-        <div class="app-detail-item">
-          <div class="app-detail-label">Total GST</div>
-          <div class="app-detail-value" data-summary-gst><%= number_with_precision(@quotation_proposal_vendor.total_gst_amount, precision: 2) %></div>
+          <div class="app-detail-label">Amount Total</div>
+          <div class="app-detail-value" data-summary-amount-total><%= number_with_precision(@quotation_proposal_vendor.total_quoted_amount, precision: 2) %></div>
         </div>
 
         <div class="app-detail-item">
@@ -155,6 +151,9 @@
 
     <div class="app-form-actions">
       <%= form.submit(@quotation_proposal_vendor.response_submitted? ? "Update Response" : "Submit Response", class: "app-form-submit") %>
+      <% if @quotation_proposal_vendor.response_submitted? %>
+        <%= link_to "Print", print_quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token), class: "app-secondary-btn", target: "_blank", rel: "noopener" %>
+      <% end %>
     </div>
   <% end %>
 <% else %>
