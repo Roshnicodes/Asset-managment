@@ -56,6 +56,19 @@
     <li><%= app_nav_link("Units", units_path, icon: :unit, identifier: "units") %></li>
     <li><%= app_nav_link("Documents", document_masters_path, icon: :document, identifier: "documents") %></li>
     <li><%= app_nav_link("Approval Channels", approval_channels_path, icon: :approval, identifier: "approval_channels") %></li>
+    <% if admin_user? || current_approval_employee_ids.any? %>
+      <li>
+        <%= link_to approval_requests_path(status: "pending"), class: "nav-link" do %>
+          <span class="app-link-wrap">
+            <%= app_icon(:approval) %>
+            <span class="app-link-label">My Approvals</span>
+            <% if pending_approvals_count.positive? %>
+              <span class="badge rounded-pill text-bg-danger"><%= pending_approvals_count %></span>
+            <% end %>
+          </span>
+        <% end %>
+      </li>
+    <% end %>
     <% if can_view_menu?("quotation_proposal_main") || can_view_menu?("quotation_proposal_form") || can_view_menu?("quotation_proposal_list") %>
       <li>
         <%= app_dropdown_toggle("Quotation Proposal", "quotationProposalMenu", icon: :document, identifier: "quotation_proposal_main") %>

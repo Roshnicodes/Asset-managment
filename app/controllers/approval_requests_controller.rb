@@ -5,15 +5,16 @@ class ApprovalRequestsController < ApplicationController
   def index
     @status = params[:status].presence || default_status
     @form_name = params[:form_name].presence
-    is_admin = current_user.email == "admin@example.com"
+    is_admin = admin_user?
+    actor_ids = current_approval_employee_ids
 
     sync_visible_approval_requests!
 
-    base_requests = ApprovalRequest.preload(:approvable, :approval_steps).order(created_at: :desc)
+    base_requests = ApprovalRequest.preload(:approvable, approval_steps: :employee_master).order(created_at: :desc)
     base_requests = base_requests.where(form_name: @form_name) if @form_name.present?
     
     unless is_admin
-      base_requests = base_requests.joins(:approval_steps).where(approval_steps: { employee_master_id: current_employee_master.id })
+      base_requests = actor_ids.any? ? base_requests.joins(:approval_steps).where(approval_steps: { employee_master_id: actor_ids }) : ApprovalRequest.none
     end
 
     @pending_approval_requests = ApprovalRequest.none
@@ -37,8 +38,13 @@ class ApprovalRequestsController < ApplicationController
 
   def approve
     @approval_request.ensure_channel_steps_synced!
-    @approval_request.approve!(employee: current_employee_master, remark: params[:remark].presence)
-    redirect_to approval_requests_path(status: "all", form_name: @approval_request.form_name), notice: "Approval moved to next level successfully."
+    @approval_request.approve!(employee: approval_actor_for(@approval_request), remark: params[:remark].presence)
+    notice_message = if @approval_request.committee_parallel_flow?
+      "Committee approval saved successfully."
+    else
+      "Approval moved to next level successfully."
+    end
+    redirect_to approval_requests_path(status: "all", form_name: @approval_request.form_name), notice: notice_message
   rescue ActiveRecord::RecordNotFound
     redirect_to approval_requests_path(status: "pending", form_name: @approval_request.form_name), alert: "No pending approval found for your login."
   end
@@ -54,14 +60,14 @@ class ApprovalRequestsController < ApplicationController
     end
 
     if return_target == "employee"
-      @approval_request.return_to_employee!(employee: current_employee_master, remark: remark)
+      @approval_request.return_to_employee!(employee: approval_actor_for(@approval_request), remark: remark)
       redirect_to approval_requests_path(status: "all", form_name: @approval_request.form_name), notice: "Request returned to employee successfully."
     elsif return_target.start_with?("level:")
       target_level = return_target.delete_prefix("level:").to_i
-      @approval_request.return_to_level!(employee: current_employee_master, target_level: target_level, remark: remark)
+      @approval_request.return_to_level!(employee: approval_actor_for(@approval_request), target_level: target_level, remark: remark)
       redirect_to approval_requests_path(status: "all", form_name: @approval_request.form_name), notice: "Request returned to L#{target_level} successfully."
     elsif return_target == "previous_level"
-      @approval_request.return_to_previous_level!(employee: current_employee_master, remark: remark)
+      @approval_request.return_to_previous_level!(employee: approval_actor_for(@approval_request), remark: remark)
       previous_level = @approval_request.returned_to_level || @approval_request.current_level
       redirect_to approval_requests_path(status: "all", form_name: @approval_request.form_name), notice: "Request returned to L#{previous_level} successfully."
     else
@@ -78,7 +84,7 @@ class ApprovalRequestsController < ApplicationController
       return
     end
 
-    @approval_request.reject!(employee: current_employee_master, remark: params[:remark])
+    @approval_request.reject!(employee: approval_actor_for(@approval_request), remark: params[:remark])
     redirect_to approval_requests_path(status: "all", form_name: @approval_request.form_name), notice: "Request rejected successfully."
   rescue ActiveRecord::RecordNotFound
     redirect_to approval_requests_path(status: "pending", form_name: @approval_request.form_name), alert: "No pending approval found for your login."
@@ -91,8 +97,8 @@ class ApprovalRequestsController < ApplicationController
   end
 
   def ensure_employee_user!
-    return if current_user.email == "admin@example.com"
-    return if current_employee_master.present?
+    return if admin_user?
+    return if current_approval_employee_ids.any?
 
     redirect_to root_path, alert: "Your login is not mapped to any employee master email."
   end

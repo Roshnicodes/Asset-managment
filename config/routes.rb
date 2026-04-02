@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
+  get "q/:token", to: "quotation_vendor_qrs#show", as: :short_quotation_vendor_qr
   get "quotation-vendor-qr/:token", to: "quotation_vendor_qrs#show", as: :quotation_vendor_qr
   get "quotation-vendor-qr/:token/print", to: "quotation_vendor_qrs#print", as: :print_quotation_vendor_qr
   post "quotation-vendor-qr/:token/send-otp", to: "quotation_vendor_qrs#send_otp", as: :send_quotation_vendor_qr_otp

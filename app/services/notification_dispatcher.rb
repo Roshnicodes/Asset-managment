@@ -19,6 +19,12 @@ class NotificationDispatcher
     )
   end
 
+  def self.notify_pending_approval_steps(approval_request, previous_step: nil)
+    approval_request.approval_steps.where(status: "pending").order(:level).each do |approval_step|
+      notify_approval_step(approval_request, approval_step, previous_step: previous_step)
+    end
+  end
+
   def self.notify_request_completed(approval_request, status:, actor:, remark: nil)
     users = approval_request.approval_steps.includes(:employee_master).map do |step|
       User.find_by(email: step.employee_master.email_id)

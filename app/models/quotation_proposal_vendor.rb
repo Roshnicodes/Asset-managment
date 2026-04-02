@@ -1,4 +1,6 @@
 class QuotationProposalVendor < ApplicationRecord
+  SMS_TOKEN_LENGTH = 12
+
   belongs_to :quotation_proposal
   belongs_to :vendor_registration
   has_many :vendor_items, class_name: "QuotationProposalVendorItem", dependent: :destroy
@@ -14,7 +16,7 @@ class QuotationProposalVendor < ApplicationRecord
   scope :responded, -> { where(response_status: "responded") }
 
   def ensure_qr_token!
-    return qr_token if qr_token.present?
+    return qr_token if sms_friendly_qr_token?
 
     update!(qr_token: generate_unique_qr_token, qr_generated_at: Time.current)
     qr_token
@@ -41,23 +43,29 @@ class QuotationProposalVendor < ApplicationRecord
   end
 
   def dispatch_record!
-    vendor_dispatch || create_vendor_dispatch!(
+    dispatch = vendor_dispatch || build_vendor_dispatch
+    dispatch.assign_attributes(
       quotation_proposal: quotation_proposal,
       vendor_registration: vendor_registration,
       user: quotation_proposal.user,
       stakeholder_category: quotation_proposal.theme&.stakeholder_category,
       vendor_name: vendor_registration.display_name,
-      mobile_no: vendor_registration.mobile_no,
-      sent_at: Time.current,
-      status: "sent"
+      mobile_no: vendor_registration.mobile_no
     )
+    dispatch.status = "pending" if dispatch.new_record?
+    dispatch.save! if dispatch.new_record? || dispatch.changed?
+    dispatch
   end
 
   private
 
+  def sms_friendly_qr_token?
+    qr_token.present? && qr_token.match?(/\A[a-zA-Z0-9]{1,#{SMS_TOKEN_LENGTH}}\z/)
+  end
+
   def generate_unique_qr_token
     loop do
-      token = SecureRandom.urlsafe_base64(24)
+      token = SecureRandom.alphanumeric(SMS_TOKEN_LENGTH)
       break token unless self.class.exists?(qr_token: token)
     end
   end

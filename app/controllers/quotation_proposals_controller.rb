@@ -1,6 +1,6 @@
 class QuotationProposalsController < ApplicationController
   before_action :set_quotation_proposal, only: %i[
-    show edit update destroy send_for_approval approve_committee return_committee
+    show edit update destroy approve_committee return_committee
     send_to_vendors score_vendor score_vendors select_vendor
   ]
   before_action :authorize_quotation_form_access!, only: %i[index new create edit update destroy send_for_approval send_to_vendors score_vendor score_vendors select_vendor]
@@ -13,13 +13,23 @@ class QuotationProposalsController < ApplicationController
   end
 
   def list
+    sync_quotation_approval_requests!
+    actor_ids = current_approval_employee_ids
+
     if admin_user?
-      @quotation_proposals = quotation_scope.joins(:approval_request).distinct.order(created_at: :desc)
+      @quotation_proposals = quotation_scope.distinct.order(created_at: :desc)
     else
-      own_ids = own_quotation_scope.joins(:approval_request).select(:id)
-      involved_ids = if current_employee_master.present?
+      own_ids = own_quotation_scope.select(:id)
+      involved_ids = if actor_ids.any?
         QuotationProposal.joins(approval_request: :approval_steps)
-          .where(approval_steps: { employee_master_id: current_employee_master.id })
+          .where(approval_steps: { employee_master_id: actor_ids })
+          .select(:id)
+      else
+        QuotationProposal.none.select(:id)
+      end
+      committee_ids = if actor_ids.any?
+        QuotationProposal.joins(:committee_steps)
+          .where(quotation_proposal_committee_steps: { employee_master_id: actor_ids })
           .select(:id)
       else
         QuotationProposal.none.select(:id)
@@ -27,12 +37,16 @@ class QuotationProposalsController < ApplicationController
 
       @quotation_proposals = quotation_scope.where(id: own_ids)
         .or(quotation_scope.where(id: involved_ids))
+        .or(quotation_scope.where(id: committee_ids))
         .distinct
         .order(created_at: :desc)
     end
+
   end
 
   def show
+    bootstrap_quotation_approval_request_if_needed!(@quotation_proposal)
+    @quotation_proposal.approval_request&.ensure_channel_steps_synced!
   end
 
   def new
@@ -56,9 +70,8 @@ class QuotationProposalsController < ApplicationController
     @quotation_proposal.user = current_user
 
     if @quotation_proposal.save
-      @quotation_proposal.normalize_committee_steps!
-      NotificationDispatcher.notify_all_quotation_committee_steps(@quotation_proposal)
-      redirect_to quotation_proposal_path(@quotation_proposal), notice: "Quotation proposal and approval committee saved successfully."
+      @quotation_proposal.refresh_response_status!
+      redirect_to quotation_proposal_path(@quotation_proposal), notice: "Quotation proposal saved successfully."
     else
       build_committee_steps(@quotation_proposal)
       load_form_collections
@@ -67,8 +80,21 @@ class QuotationProposalsController < ApplicationController
   end
 
   def update
+    was_returned = @quotation_proposal.approval_request&.employee_return_pending?
+
     if @quotation_proposal.update(quotation_proposal_params)
-      redirect_to quotation_proposal_path(@quotation_proposal), notice: "Quotation proposal updated successfully.", status: :see_other
+      if was_returned
+        @quotation_proposal.rebuild_approval_request_steps!
+        NotificationDispatcher.notify_pending_approval_steps(@quotation_proposal.approval_request)
+      end
+
+      notice_message = if was_returned
+        "Quotation proposal updated and sent back for approval."
+      else
+        "Quotation proposal updated successfully."
+      end
+
+      redirect_to quotation_proposal_path(@quotation_proposal), notice: notice_message, status: :see_other
     else
       build_committee_steps(@quotation_proposal)
       load_form_collections
@@ -82,15 +108,44 @@ class QuotationProposalsController < ApplicationController
   end
 
   def send_for_approval
-    @quotation_proposal.normalize_committee_steps!
-    NotificationDispatcher.notify_all_quotation_committee_steps(@quotation_proposal)
-    redirect_to quotation_proposal_path(@quotation_proposal), notice: "Committee approval has been activated and notifications have been sent to all committee members."
+    proposal_ids = if params[:id].present?
+      [params[:id]]
+    else
+      Array(params[:quotation_proposal_ids]).reject(&:blank?)
+    end
+
+    if proposal_ids.blank?
+      redirect_to list_quotation_proposals_path, alert: "No quotation proposals were selected."
+      return
+    end
+
+    sent_count = 0
+    failed_count = 0
+
+    QuotationProposal.where(id: proposal_ids).find_each do |quotation_proposal|
+      if start_quotation_approval_request!(quotation_proposal)
+        sent_count += 1
+      else
+        failed_count += 1
+      end
+    end
+
+    redirect_target = params[:id].present? ? quotation_proposal_path(params[:id]) : list_quotation_proposals_path
+
+    if sent_count.positive? && failed_count.zero?
+      redirect_to redirect_target, notice: "Quotation proposal approval started successfully."
+    elsif sent_count.positive?
+      redirect_to redirect_target, alert: "#{sent_count} quotation proposal(s) sent for approval, but #{failed_count} could not be mapped to a valid approval channel."
+    else
+      redirect_to redirect_target, alert: "No approval request was created. Please check the quotation approval channel mapping."
+    end
   end
 
   def approve_committee
-    approved_step, _next_step = @quotation_proposal.approve_committee_step!(employee: current_employee_master, remark: params[:remark].presence)
+    actor_employee = approval_actor_for(@quotation_proposal)
+    approved_step, _next_step = @quotation_proposal.approve_committee_step!(employee: actor_employee, remark: params[:remark].presence)
     if @quotation_proposal.committee_completed?
-      NotificationDispatcher.notify_quotation_committee_completed(@quotation_proposal, actor: current_employee_master, remark: params[:remark].presence)
+      NotificationDispatcher.notify_quotation_committee_completed(@quotation_proposal, actor: actor_employee, remark: params[:remark].presence)
     end
     redirect_to quotation_proposal_path(@quotation_proposal), notice: "Committee approval has been saved."
   rescue ActiveRecord::RecordNotFound
@@ -104,8 +159,9 @@ class QuotationProposalsController < ApplicationController
       return
     end
 
-    @quotation_proposal.return_committee_step!(employee: current_employee_master, remark: remark)
-    NotificationDispatcher.notify_quotation_committee_returned(@quotation_proposal, actor: current_employee_master, remark: remark)
+    actor_employee = approval_actor_for(@quotation_proposal)
+    @quotation_proposal.return_committee_step!(employee: actor_employee, remark: remark)
+    NotificationDispatcher.notify_quotation_committee_returned(@quotation_proposal, actor: actor_employee, remark: remark)
     redirect_to quotation_proposal_path(@quotation_proposal), notice: "The quotation has been returned by the committee."
   rescue ActiveRecord::RecordNotFound
     redirect_to quotation_proposal_path(@quotation_proposal), alert: "No pending committee approval was found for your login."
@@ -119,6 +175,8 @@ class QuotationProposalsController < ApplicationController
 
     @quotation_proposal.send_to_vendors!
     redirect_to quotation_proposal_path(@quotation_proposal), notice: "The quotation request has been sent to the selected vendors."
+  rescue QuotationProposal::VendorDispatchError => error
+    redirect_to quotation_proposal_path(@quotation_proposal), alert: error.message
   end
 
   def score_vendor
@@ -200,7 +258,7 @@ class QuotationProposalsController < ApplicationController
       :vendor_registrations,
       { committee_steps: :employee_master },
       { quotation_proposal_vendors: [:vendor_registration, { vendor_items: { quotation_proposal_item: :unit } }] },
-      approval_request: :approval_steps
+      approval_request: { approval_steps: :employee_master }
     )
   end
 
@@ -208,10 +266,6 @@ class QuotationProposalsController < ApplicationController
     return quotation_scope if admin_user?
 
     quotation_scope.where(user_id: current_user.id)
-  end
-
-  def admin_user?
-    current_user.email == "admin@example.com" || current_user.employee_master&.user_type == "Admin"
   end
 
   def can_access_menu?(identifier)
@@ -247,14 +301,11 @@ class QuotationProposalsController < ApplicationController
   end
 
   def authorize_quotation_view_access!
+    return if @quotation_proposal.committee_user?(current_user)
+    return if @quotation_proposal.approval_request&.approval_steps&.any? { |step| employee_matches_current_login?(step.employee_master) }
     return if can_access_menu?("quotation_proposal_form") || can_access_menu?("quotation_proposal_list")
 
     redirect_to root_path, alert: "You are not authorized to view this Quotation Proposal."
-  end
-
-  def create_quotation_approval_request(quotation_proposal)
-    ApprovalRequestBuilder.create_for!(quotation_proposal, form_name: "Quotation Proposal") ||
-      ApprovalRequestBuilder.create_for!(quotation_proposal, form_name: "Quotation Request")
   end
 
   def load_form_collections
@@ -270,8 +321,34 @@ class QuotationProposalsController < ApplicationController
     (1..4).each do |level|
       next if existing_levels.include?(level)
 
-      quotation_proposal.committee_steps.build(level: level, status: "pending")
+      quotation_proposal.committee_steps.build(level: level, status: "waiting")
     end
+  end
+
+  def sync_quotation_approval_requests!
+    ApprovalRequest.sync_scope!(
+      ApprovalRequest.includes(:approval_channel, :approvable, :approval_steps)
+        .where(form_name: ["Quotation Proposal", "Quotation Request"])
+    )
+  end
+
+  def bootstrap_quotation_approval_request_if_needed!(quotation_proposal)
+    return if quotation_proposal.approval_request.present?
+    return unless quotation_proposal.committee_steps.where(status: %w[pending approved returned rejected]).exists?
+
+    quotation_proposal.bootstrap_approval_request_from_committee!
+  end
+
+  def start_quotation_approval_request!(quotation_proposal)
+    return false if quotation_proposal.approval_request.present?
+
+    approval_request = quotation_proposal.bootstrap_approval_request_from_committee!
+    return false unless approval_request
+
+    NotificationDispatcher.notify_pending_approval_steps(approval_request)
+    true
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound
+    false
   end
 
   def authorize_committee_comparison_access!

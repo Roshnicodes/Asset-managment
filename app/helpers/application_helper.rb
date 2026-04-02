@@ -67,13 +67,10 @@ module ApplicationHelper
   def can_view_menu?(identifier)
     return true if identifier.nil?
     return true if identifier == "dashboard"
-    return true if current_user.email == "admin@example.com"
+    return true if admin_user?
     
-    employee = current_user.employee_master
+    employee = current_employee_master
     return false unless employee
-
-    # If User Type is Admin, show all menus
-    return true if employee.user_type == "Admin"
     
     # If User Type is User, check permissions
     role_perms = MenuPermission.where(stakeholder_category_id: employee.stakeholder_category_id, designation: employee.designation)
@@ -106,20 +103,49 @@ module ApplicationHelper
   def approval_status_badge_data(approval_request)
     return { label: "Not Started", css_class: "bg-secondary bg-opacity-10 text-secondary border-secondary" } unless approval_request
 
-    if current_user.email != "admin@example.com" && current_employee_master.present?
-      viewer_step = approval_request.approval_steps.find { |step| step.employee_master_id == current_employee_master.id }
-      if viewer_step.present? && !viewer_step.proposal_create_step?
-        return {
-          label: viewer_step.effective_status_label,
-          css_class: approval_status_css_class_for(viewer_step.effective_status)
-        }
-      end
+    viewer_steps = viewer_approval_steps_for(approval_request)
+    if !admin_user? && viewer_steps.any?
+      return {
+        label: viewer_approval_status_summary(approval_request),
+        css_class: viewer_approval_status_css_class(approval_request)
+      }
     end
 
     {
       label: approval_request.status_label,
       css_class: approval_request_overall_css_class(approval_request)
     }
+  end
+
+  def viewer_approval_steps_for(approval_request)
+    return [] unless approval_request
+    return [] unless current_approval_employee_ids.any?
+
+    approval_request.approval_steps.select do |step|
+      employee_matches_current_login?(step.employee_master) && !step.proposal_create_step?
+    end.sort_by(&:level)
+  end
+
+  def viewer_approval_status_summary(approval_request)
+    viewer_approval_steps_for(approval_request).map do |step|
+      "L#{step.level} #{step.effective_status_label}"
+    end.join(", ")
+  end
+
+  def viewer_approval_status_css_class(approval_request)
+    statuses = viewer_approval_steps_for(approval_request).map(&:effective_status)
+
+    if statuses.include?("rejected")
+      approval_status_css_class_for("rejected")
+    elsif statuses.include?("returned")
+      approval_status_css_class_for("returned")
+    elsif statuses.include?("pending")
+      approval_status_css_class_for("pending")
+    elsif statuses.present? && statuses.all? { |status| status == "approved" }
+      approval_status_css_class_for("approved")
+    else
+      approval_status_css_class_for(nil)
+    end
   end
 
   def approval_status_css_class_for(status)

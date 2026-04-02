@@ -71,6 +71,7 @@ class QuotationVendorQrsController < ApplicationController
   private
 
   def load_vendor_access
+    token = params[:token].to_s.strip
     @quotation_proposal_vendor = QuotationProposalVendor
       .includes(
         quotation_proposal: [:theme, { quotation_proposal_items: :unit }],
@@ -78,7 +79,13 @@ class QuotationVendorQrsController < ApplicationController
         vendor_items: { quotation_proposal_item: :unit },
         vendor_dispatch: :quotation_vendor_otps
       )
-      .find_by!(qr_token: params[:token])
+      .find_by(qr_token: token)
+
+    unless @quotation_proposal_vendor
+      flash.now[:alert] = "This vendor quotation link is invalid or no longer available."
+      render :invalid_link, status: :not_found
+      return
+    end
 
     @quotation_proposal = @quotation_proposal_vendor.quotation_proposal
     @vendor_registration = @quotation_proposal_vendor.vendor_registration

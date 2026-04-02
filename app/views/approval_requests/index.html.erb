@@ -33,14 +33,20 @@
       </thead>
       <tbody>
         <% @pending_approval_requests.each do |approval_request| %>
-          <% current_step = approval_request.current_step %>
+          <% viewer_steps = viewer_approval_steps_for(approval_request) %>
+          <% current_step = viewer_steps.find { |step| step.status == "pending" } || approval_request.current_step %>
+          <% badge_data = approval_status_badge_data(approval_request) %>
           <tr>
             <td><%= approval_request.form_name %></td>
             <td><%= approval_request.reference_label %></td>
-            <td><%= approval_request.status_label %></td>
-            <td>L<%= approval_request.current_level %></td>
+            <td>
+              <span class="badge border <%= badge_data[:css_class] %> fw-semibold px-2 py-1">
+                <%= badge_data[:label] %>
+              </span>
+            </td>
+            <td><%= approval_request.current_level_label %></td>
             <td><%= approval_request.current_approver_label %></td>
-            <td><%= current_step&.current_action_label || "-" %></td>
+            <td><%= approval_request.current_action_summary %></td>
             <td><%= approval_request.approval_history_label %></td>
             <td>
               <% if approval_request.approvable.is_a?(VendorRegistration) %>
@@ -52,26 +58,33 @@
               <% end %>
             </td>
             <td>
-              <div class="d-flex gap-2 flex-wrap">
-                <%= render "approval_requests/approve_modal",
-                  approval_request: approval_request,
-                  modal_id: "approve-approval-request-#{approval_request.id}",
-                  trigger_label: "Approve",
-                  trigger_class: "app-form-submit" %>
+              <% if current_step.present? && employee_matches_current_login?(current_step.employee_master) %>
+                <div class="d-flex gap-2 flex-wrap">
+                  <span class="badge border bg-info bg-opacity-10 text-info px-2 py-1" style="font-size: 0.8rem;">
+                    Pending For You: L<%= current_step.level %>
+                  </span>
+                  <%= render "approval_requests/approve_modal",
+                    approval_request: approval_request,
+                    modal_id: "approve-approval-request-#{approval_request.id}",
+                    trigger_label: "Approve",
+                    trigger_class: "app-form-submit" %>
 
-                <%= render "approval_requests/return_modal",
-                  approval_request: approval_request,
-                  current_step: current_step,
-                  modal_id: "return-approval-request-#{approval_request.id}",
-                  trigger_label: "Return",
-                  trigger_class: "app-secondary-btn" %>
+                  <%= render "approval_requests/return_modal",
+                    approval_request: approval_request,
+                    current_step: current_step,
+                    modal_id: "return-approval-request-#{approval_request.id}",
+                    trigger_label: "Return",
+                    trigger_class: "app-secondary-btn" %>
 
-                <%= render "approval_requests/reject_modal",
-                  approval_request: approval_request,
-                  modal_id: "reject-approval-request-#{approval_request.id}",
-                  trigger_label: "Reject",
-                  trigger_class: "app-danger-btn" %>
-              </div>
+                  <%= render "approval_requests/reject_modal",
+                    approval_request: approval_request,
+                    modal_id: "reject-approval-request-#{approval_request.id}",
+                    trigger_label: "Reject",
+                    trigger_class: "app-danger-btn" %>
+                </div>
+              <% else %>
+                <span class="text-muted">View only</span>
+              <% end %>
             </td>
           </tr>
         <% end %>
@@ -101,8 +114,8 @@
       <tbody>
         <% @processed_approval_requests.each do |approval_request| %>
           <% processed_steps = approval_request.approval_steps.reject { |item| item.status.in?(%w[waiting pending]) } %>
-          <% step = if current_employee_master.present?
-               processed_steps.find { |item| item.employee_master_id == current_employee_master.id }
+          <% step = if current_approval_employee_ids.any?
+               processed_steps.find { |item| employee_matches_current_login?(item.employee_master) }
              else
                processed_steps.max_by { |item| [item.actioned_at || Time.at(0), item.updated_at || Time.at(0)] }
              end %>

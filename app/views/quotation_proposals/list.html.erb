@@ -10,7 +10,7 @@
   <div class="d-flex align-items-center gap-3" style="width:100%">
     <div>
       <h1 class="mb-0" style="white-space: nowrap;">Quotation Proposal List</h1>
-      <p class="app-section-note mb-0">Sent for approval records with current workflow status and reviewer trail.</p>
+      <p class="app-section-note mb-0">Draft and approval-started quotation proposals with current status and reviewer trail.</p>
     </div>
     <div style="margin-left:auto; display:flex; gap:.5rem; align-items:center;">
       <% if can_view_menu?("quotation_proposal_form") %>
@@ -70,24 +70,32 @@
           <td><%= quotation_proposal.proposal_end_date.strftime("%d-%m-%Y") %></td>
           <td><%= quotation_proposal.quotation_proposal_items.size %></td>
           <td>
-            <% status_class = case quotation_proposal.approval_request&.status
-               when "approved" then "bg-success bg-opacity-10 text-success border-success"
-               when "rejected" then "bg-danger bg-opacity-10 text-danger border-danger"
-               when "pending" then "bg-info bg-opacity-10 text-info border-info"
-               else "bg-secondary bg-opacity-10 text-secondary border-secondary"
-               end %>
-            <span class="badge border <%= status_class %> fw-semibold px-2 py-1">
-              <%= quotation_proposal.approval_request&.status_label || "Draft" %>
+            <% badge_data = approval_status_badge_data(quotation_proposal.approval_request) %>
+            <span class="badge border <%= badge_data[:css_class] %> fw-semibold px-2 py-1">
+              <%= badge_data[:label] %>
             </span>
           </td>
           <td><%= quotation_proposal.approval_request&.latest_remark.presence || "-" %></td>
           <td>
             <div class="d-flex flex-column gap-1" style="min-width: 250px;">
-              <% if quotation_proposal.approval_request %>
-                <% quotation_proposal.approval_request.approval_steps.each do |step| %>
+              <% approval_started = quotation_proposal.approval_request.present? %>
+              <% trail_steps = quotation_proposal.approval_request&.trail_steps || quotation_proposal.committee_steps %>
+              <% if trail_steps.any? %>
+                <% trail_steps.each do |step| %>
+                  <% step_status = if approval_started
+                       step.respond_to?(:effective_status) ? step.effective_status : step.status
+                     else
+                       "waiting"
+                     end %>
+                  <% step_label = if approval_started
+                       step.respond_to?(:effective_status_label) ? step.effective_status_label : step.status_label
+                     else
+                       "Not Started"
+                     end %>
                   <div class="d-flex align-items-center gap-2 small lh-sm">
-                    <% dot_class = case step.effective_status
+                    <% dot_class = case step_status
                        when "approved" then "text-success"
+                       when "returned" then "text-warning"
                        when "rejected" then "text-danger"
                        when "pending" then "text-info"
                        else "text-muted opacity-50"
@@ -95,9 +103,10 @@
                     <span class="<%= dot_class %>" style="font-size: 1.2rem;">●</span>
                     <div class="text-truncate" style="max-width: 240px;">
                       <span class="fw-bold"><%= step.employee_master.name %></span>
-                      <span class="text-muted opacity-75">(<%= step.current_action_label %>)</span>
-                      <% if step.show_status_in_trail? %>
-                        <span class="<%= dot_class %> fw-semibold">: <%= step.effective_status_label %></span>
+                      <span class="text-muted opacity-75">(<%= step.respond_to?(:current_action_label) ? step.current_action_label : "L#{step.level} Approval" %>)</span>
+                      <% show_status = approval_started ? (step.respond_to?(:show_status_in_trail?) ? step.show_status_in_trail? : true) : true %>
+                      <% if show_status %>
+                        <span class="<%= dot_class %> fw-semibold">: <%= step_label %></span>
                       <% end %>
                     </div>
                   </div>

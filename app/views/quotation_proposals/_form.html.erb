@@ -1,4 +1,29 @@
 <%= form_with(model: quotation_proposal) do |form| %>
+  <% approval_request = quotation_proposal.approval_request %>
+
+  <% if approval_request&.employee_return_pending? %>
+    <div class="app-form-card" style="margin-bottom: 1.5rem;">
+      <div class="app-page-header app-subsection-header-tight">
+        <div>
+          <h3 style="margin-bottom: 0.35rem;">Returned To Employee</h3>
+          <p class="app-section-note mb-0">Remark dekhkar quotation update karo. Save karte hi same approval chain phir se start ho jayegi.</p>
+        </div>
+      </div>
+
+      <div class="app-detail-grid">
+        <div class="app-detail-item">
+          <div class="app-detail-label">Returned By</div>
+          <div class="app-detail-value"><%= approval_request.employee_return_actor_label %></div>
+        </div>
+
+        <div class="app-detail-item app-detail-item-full">
+          <div class="app-detail-label">Return Remark</div>
+          <div class="app-detail-value" style="white-space: pre-wrap;"><%= approval_request.employee_return_remark.presence || "No remark was added." %></div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
   <div class="app-form-card app-form-card-wide">
     <% if quotation_proposal.errors.any? %>
       <div class="app-form-errors">

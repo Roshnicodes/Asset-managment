@@ -71,10 +71,23 @@ class ApprovalRequest < ApplicationRecord
   end
 
   def current_step
-    approval_steps.find_by(status: "pending")
+    current_steps.first
+  end
+
+  def current_steps
+    approval_steps.where(status: "pending").order(:level)
+  end
+
+  def committee_parallel_flow?
+    approvable.is_a?(QuotationProposal)
   end
 
   def ensure_channel_steps_synced!
+    if approvable.is_a?(QuotationProposal)
+      approvable.sync_committee_steps_from_approval_request!
+      return
+    end
+
     return unless approval_channel.present?
 
     creator_email = approvable.try(:user).try(:email).to_s.strip.downcase
@@ -131,6 +144,8 @@ class ApprovalRequest < ApplicationRecord
   end
 
   def trail_steps
+    return approval_steps if approvable.is_a?(QuotationProposal)
+
     synced_steps = approval_steps.index_by(&:level)
     channel_steps = approval_channel&.flow_steps.to_a
     return approval_steps if channel_steps.empty?
@@ -186,9 +201,37 @@ class ApprovalRequest < ApplicationRecord
   end
 
   def current_approver_label
-    return "-" unless current_step
+    pending_steps = current_steps.to_a
+    return "-" if pending_steps.empty?
 
-    "#{current_step.action_label} - #{current_step.current_action_label}"
+    if committee_parallel_flow?
+      pending_steps.map { |step| "L#{step.level} - #{step.action_label}" }.join(", ")
+    else
+      step = pending_steps.first
+      "#{step.action_label} - #{step.current_action_label}"
+    end
+  end
+
+  def current_level_label
+    pending_steps = current_steps.to_a
+    return "-" if pending_steps.empty?
+
+    if committee_parallel_flow?
+      pending_steps.map { |step| "L#{step.level}" }.join(", ")
+    else
+      "L#{pending_steps.first.level}"
+    end
+  end
+
+  def current_action_summary
+    pending_steps = current_steps.to_a
+    return "-" if pending_steps.empty?
+
+    if committee_parallel_flow?
+      pending_steps.map(&:current_action_label).join(", ")
+    else
+      pending_steps.first.current_action_label
+    end
   end
 
   def status_label
@@ -241,6 +284,31 @@ class ApprovalRequest < ApplicationRecord
 
   def approve!(employee:, remark: nil)
     step = pending_step_for(employee)
+
+    if committee_parallel_flow?
+      transaction do
+        step.update!(status: "approved", remark: remark, actioned_at: Time.current)
+
+        remaining_pending_steps = current_steps.to_a
+        if remaining_pending_steps.any?
+          update!(
+            current_level: remaining_pending_steps.min_by(&:level).level,
+            status: "pending",
+            return_mode: nil,
+            returned_by_level: nil,
+            returned_to_level: nil
+          )
+        else
+          update!(current_level: nil, status: "approved", return_mode: nil, returned_by_level: nil, returned_to_level: nil)
+          approvable.generate_vendor_qr_tokens! if approvable.is_a?(QuotationProposal)
+          NotificationDispatcher.notify_request_completed(self, status: "approved", actor: employee, remark: remark)
+        end
+      end
+
+      sync_quotation_proposal!
+      return
+    end
+
     step.update!(status: "approved", remark: remark, actioned_at: Time.current)
 
     next_step = next_sequential_step_after(step)
@@ -253,20 +321,50 @@ class ApprovalRequest < ApplicationRecord
       approvable.generate_vendor_qr_tokens! if approvable.is_a?(QuotationProposal)
       NotificationDispatcher.notify_request_completed(self, status: "approved", actor: employee, remark: remark)
     end
+
+    sync_quotation_proposal!
   end
 
   def reject!(employee:, remark:)
     step = pending_step_for(employee)
+
+    if committee_parallel_flow?
+      transaction do
+        step.update!(status: "rejected", remark: remark, actioned_at: Time.current)
+        approval_steps.where.not(id: step.id).where(status: %w[pending waiting]).update_all(status: "waiting", remark: nil, actioned_at: nil)
+        update!(current_level: nil, status: "rejected", return_mode: nil, returned_by_level: nil, returned_to_level: nil)
+      end
+
+      NotificationDispatcher.notify_request_completed(self, status: "rejected", actor: employee, remark: remark)
+      sync_quotation_proposal!
+      return
+    end
+
     step.update!(status: "rejected", remark: remark, actioned_at: Time.current)
     update!(current_level: nil, status: "rejected", return_mode: nil, returned_by_level: nil, returned_to_level: nil)
     NotificationDispatcher.notify_request_completed(self, status: "rejected", actor: employee, remark: remark)
+    sync_quotation_proposal!
   end
 
   def return_to_employee!(employee:, remark:)
     step = pending_step_for(employee)
+
+    if committee_parallel_flow?
+      transaction do
+        step.update!(status: "returned", remark: remark, actioned_at: Time.current)
+        approval_steps.where.not(id: step.id).where(status: %w[pending waiting]).update_all(status: "waiting", remark: nil, actioned_at: nil)
+        update!(current_level: nil, status: "returned", return_mode: "employee", returned_by_level: step.level, returned_to_level: nil)
+      end
+
+      NotificationDispatcher.notify_request_returned(self, actor: employee, remark: remark)
+      sync_quotation_proposal!
+      return
+    end
+
     step.update!(status: "returned", remark: remark, actioned_at: Time.current)
     update!(current_level: nil, status: "returned", return_mode: "employee", returned_by_level: step.level, returned_to_level: nil)
     NotificationDispatcher.notify_request_returned(self, actor: employee, remark: remark)
+    sync_quotation_proposal!
   end
 
   def return_to_previous_level!(employee:, remark:)
@@ -300,10 +398,32 @@ class ApprovalRequest < ApplicationRecord
       )
       NotificationDispatcher.notify_request_returned_to_step(self, actor: employee, remark: remark, target_step: target_step)
     end
+
+    sync_quotation_proposal!
   end
 
   def resubmit_after_return!
     return unless employee_return_pending?
+
+    if committee_parallel_flow?
+      transaction do
+        approval_steps.order(:level).each do |step|
+          step.update!(status: "pending", remark: nil, actioned_at: nil)
+        end
+
+        next_pending_step = current_steps.first
+
+        if next_pending_step.present?
+          update!(current_level: next_pending_step.level, status: "pending", return_mode: nil, returned_by_level: nil, returned_to_level: nil)
+          NotificationDispatcher.notify_pending_approval_steps(self)
+        else
+          update!(current_level: nil, status: "approved", return_mode: nil, returned_by_level: nil, returned_to_level: nil)
+        end
+      end
+
+      sync_quotation_proposal!
+      return
+    end
 
     transaction do
       approval_steps.order(:level).each do |step|
@@ -327,10 +447,24 @@ class ApprovalRequest < ApplicationRecord
         update!(current_level: nil, status: "approved", return_mode: nil, returned_by_level: nil, returned_to_level: nil)
       end
     end
+
+    sync_quotation_proposal!
   end
 
   def return_target_options_for(step = current_step)
     return [] unless step
+
+    if committee_parallel_flow?
+      return [
+        ReturnTargetOption.new(
+          value: "employee",
+          label: "Employee",
+          submit_label: "Return To Employee",
+          remark_label: "Return To Employee Remark",
+          remark_placeholder: "Return to employee remark"
+        )
+      ]
+    end
 
     return_level_targets_for(step).map do |candidate|
       ReturnTargetOption.new(
@@ -409,5 +543,12 @@ class ApprovalRequest < ApplicationRecord
 
     ((prev_act == "NA" || prev_act.blank?) && curr_act == "Proposal Create") ||
       (creator_email.present? && approver_email == creator_email)
+  end
+
+  def sync_quotation_proposal!
+    return unless approvable.is_a?(QuotationProposal)
+
+    approvable.sync_committee_steps_from_approval_request!
+    approvable.refresh_response_status!
   end
 end

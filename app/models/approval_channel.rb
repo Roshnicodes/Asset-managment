@@ -16,6 +16,7 @@ class ApprovalChannel < ApplicationRecord
     "Product Entry",
     "Product Variety Entry",
     "Vendor Bank Master",
+    "Quotation Proposal",
     "Quotation Request",
     "Vendor Quotation Response"
   ].freeze

@@ -1,34 +1,6 @@
 class ApprovalRequestBuilder
   def self.create_for!(record, form_name:)
-    stakeholder_category_id = record.try(:stakeholder_category_id)
-    theme_ids = record.try(:theme_ids).presence || []
-
-    candidate_scope = ApprovalChannel
-      .includes(:approval_channel_steps)
-      .where(form_name: form_name)
-
-    if stakeholder_category_id.present?
-      candidate_scope = candidate_scope.where(stakeholder_category_id: [stakeholder_category_id, nil])
-    end
-
-    if theme_ids.any?
-      candidate_scope = candidate_scope.where(theme_id: theme_ids + [nil])
-    else
-      theme_scoped_channels = candidate_scope.where(theme_id: nil)
-      candidate_scope = theme_scoped_channels.exists? ? theme_scoped_channels : candidate_scope
-    end
-
-    candidate_channels = candidate_scope.to_a
-    return nil if candidate_channels.empty?
-
-    creator_employee = creator_employee_for(record)
-    approval_channel = select_approval_channel(
-      candidate_channels: candidate_channels,
-      creator_employee: creator_employee,
-      stakeholder_category_id: stakeholder_category_id,
-      theme_ids: theme_ids
-    )
-
+    approval_channel = approval_channel_for(record, form_name: form_name)
     return nil unless approval_channel
 
     channel_steps = approval_channel.flow_steps
@@ -55,16 +27,11 @@ class ApprovalRequestBuilder
         (approver_email == creator_email && !creator_email.blank?)
       )
       
-      # Determine if second step should be pending
-      first_step_will_be_approved = (channel_steps.first.previous_action.to_s.strip.blank? || channel_steps.first.previous_action.to_s.strip == "NA") && 
-                                     channel_steps.first.current_action.to_s.strip == "Proposal Create"
-
       status = if is_initial_step
                  "approved"
                elsif index.zero?
                  "pending"
                elsif index == 1
-                 # Step 2 becomes pending if Step 1 was auto-approved
                  first_step = channel_steps.first
                  fs_prev = first_step.previous_action.to_s.strip
                  fs_curr = first_step.current_action.to_s.strip
@@ -96,6 +63,38 @@ class ApprovalRequestBuilder
     end
 
     approval_request
+  end
+
+  def self.approval_channel_for(record, form_name:)
+    stakeholder_category_id = record.try(:stakeholder_category_id)
+    theme_ids = Array(record.try(:theme_ids).presence || record.try(:theme_id).presence).compact
+
+    candidate_scope = ApprovalChannel
+      .includes(:approval_channel_steps)
+      .where(form_name: form_name)
+
+    if stakeholder_category_id.present?
+      candidate_scope = candidate_scope.where(stakeholder_category_id: [stakeholder_category_id, nil])
+    end
+
+    if theme_ids.any?
+      candidate_scope = candidate_scope.where(theme_id: theme_ids + [nil])
+    else
+      theme_scoped_channels = candidate_scope.where(theme_id: nil)
+      candidate_scope = theme_scoped_channels.exists? ? theme_scoped_channels : candidate_scope
+    end
+
+    candidate_channels = candidate_scope.to_a
+    return nil if candidate_channels.empty?
+
+    creator_employee = creator_employee_for(record)
+    approval_channel = select_approval_channel(
+      candidate_channels: candidate_channels,
+      creator_employee: creator_employee,
+      stakeholder_category_id: stakeholder_category_id,
+      theme_ids: theme_ids
+    )
+    approval_channel
   end
 
   def self.creator_employee_for(record)

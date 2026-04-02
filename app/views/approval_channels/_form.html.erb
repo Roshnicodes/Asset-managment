@@ -24,7 +24,7 @@
       <div class="app-form-field">
         <%= form.label :theme_id, "Thematic Type" %>
         <%= form.collection_select :theme_id, @themes, :id, :name, { prompt: "Select thematic type" }, class: "form-control", id: "approval_channel_theme_id" %>
-        <p class="form-text text-muted" style="font-size: 0.9rem;">Applicable mainly for Vendor Registration preferences.</p>
+        <p class="form-text text-muted" style="font-size: 0.9rem;">Use theme-based mapping for Vendor Registration and Quotation Proposal flows when needed.</p>
       </div>
 
       <div class="app-form-field">
@@ -40,7 +40,7 @@
         var themeContainer = themeEl.closest('.app-form-field');
 
         function toggleThemeField() {
-          if (formNameEl.value === "Vendor Registration") {
+          if (["Vendor Registration", "Quotation Proposal", "Quotation Request"].includes(formNameEl.value)) {
             themeContainer.style.display = "block";
           } else {
             themeContainer.style.display = "none";
