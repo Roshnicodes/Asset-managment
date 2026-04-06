@@ -49,12 +49,11 @@
             <td><%= approval_request.current_action_summary %></td>
             <td><%= approval_request.approval_history_label %></td>
             <td>
-              <% if approval_request.approvable.is_a?(VendorRegistration) %>
-                <%= link_to "View", vendor_registration_path(approval_request.approvable), class: "app-action-button" %>
-              <% elsif approval_request.approvable.is_a?(QuotationProposal) %>
-                <%= link_to "View", quotation_proposal_path(approval_request.approvable), class: "app-action-button" %>
-              <% else %>
+              <% target_path = approval_record_target_path(approval_request.approvable) %>
+              <% if target_path == approval_requests_path %>
                 -
+              <% else %>
+                <%= link_to "View", target_path, class: "app-action-button" %>
               <% end %>
             </td>
             <td>
@@ -127,12 +126,11 @@
             <td><%= step&.remark.presence || "-" %></td>
             <td><%= approval_request.approval_history_label %></td>
             <td>
-              <% if approval_request.approvable.is_a?(VendorRegistration) %>
-                <%= link_to "View", vendor_registration_path(approval_request.approvable), class: "app-action-button" %>
-              <% elsif approval_request.approvable.is_a?(QuotationProposal) %>
-                <%= link_to "View", quotation_proposal_path(approval_request.approvable), class: "app-action-button" %>
-              <% else %>
+              <% target_path = approval_record_target_path(approval_request.approvable) %>
+              <% if target_path == approval_requests_path %>
                 -
+              <% else %>
+                <%= link_to "View", target_path, class: "app-action-button" %>
               <% end %>
             </td>
           </tr>

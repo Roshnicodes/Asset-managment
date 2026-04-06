@@ -98,7 +98,7 @@
     <div class="app-page-header app-subsection-header">
       <div>
         <h3>Proposal Items</h3>
-        <p class="app-section-note mb-0">Har required item, quantity aur unit add karo.</p>
+        <p class="app-section-note mb-0">Har required item add karo. Clear item-wise details bharne ke baad neeche se aur rows add kar sakti ho.</p>
       </div>
     </div>
 
@@ -115,8 +115,8 @@
         <% end %>
       </template>
 
-      <div class="app-form-actions" style="justify-content: flex-start;">
-        <button type="button" class="app-secondary-btn" data-add-quotation-item>Add Item</button>
+      <div class="app-quotation-toolbar">
+        <button type="button" class="app-secondary-btn app-secondary-btn-soft" data-add-quotation-item>Add Item</button>
       </div>
     </div>
 
@@ -124,20 +124,27 @@
       <div>
         <h3>Approval Committee</h3>
         <p class="app-section-note mb-0">
-          Isi quotation ke andar L1 se L4 tak committee set karo. Yehi members apna-apna approval denge, aur sab approvals isi quotation detail me visible rahenge.
+          Default me 4 committee members dikhenge. Minimum 2 members required hain, aur zarurat ho to `Add Committee Member` se aur bhi members add kar sakti ho.
         </p>
       </div>
     </div>
 
-    <div class="app-form-grid two-col">
-      <%= form.fields_for :committee_steps, quotation_proposal.committee_steps.sort_by(&:level) do |committee_form| %>
-        <%= committee_form.hidden_field :id if committee_form.object.persisted? %>
-        <%= committee_form.hidden_field :level %>
-        <div class="app-form-field">
-          <%= committee_form.label :employee_master_id, "L#{committee_form.object.level} Committee Member" %>
-          <%= committee_form.collection_select :employee_master_id, @committee_members, :id, :name, { prompt: "Select committee member" } %>
-        </div>
-      <% end %>
+    <div class="app-quotation-committee" data-quotation-committee data-min-committee-members="<%= QuotationProposal::MIN_COMMITTEE_MEMBERS %>">
+      <div class="app-form-grid two-col" data-quotation-committee-list>
+        <%= form.fields_for :committee_steps, quotation_proposal.committee_steps.sort_by(&:level) do |committee_form| %>
+          <%= render "committee_step_fields", form: committee_form %>
+        <% end %>
+      </div>
+
+      <template data-quotation-committee-template>
+        <%= form.fields_for :committee_steps, QuotationProposalCommitteeStep.new(status: "waiting"), child_index: "NEW_COMMITTEE_STEP" do |committee_form| %>
+          <%= render "committee_step_fields", form: committee_form %>
+        <% end %>
+      </template>
+
+      <div class="app-quotation-toolbar">
+        <button type="button" class="app-secondary-btn app-secondary-btn-soft" data-add-committee-step>Add Committee Member</button>
+      </div>
     </div>
 
     <div class="app-form-actions">

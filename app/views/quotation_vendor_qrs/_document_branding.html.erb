@@ -1,0 +1,75 @@
+<style>
+  .doc-branding-shell {
+    background: #fff;
+    border: 1px solid #cfd9d2;
+    margin-bottom: 1rem;
+  }
+
+  .doc-branding-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid #2f2f2f;
+  }
+
+  .doc-branding-left,
+  .doc-branding-right {
+    display: flex;
+    align-items: center;
+  }
+
+  .doc-branding-left {
+    justify-content: flex-start;
+    flex: 1;
+  }
+
+  .doc-branding-right {
+    justify-content: flex-end;
+    flex: 1;
+  }
+
+  .doc-branding-left img {
+    max-height: 92px;
+    width: auto;
+    object-fit: contain;
+  }
+
+  .doc-branding-right img {
+    max-height: 82px;
+    width: auto;
+    object-fit: contain;
+  }
+
+  @media (max-width: 768px) {
+    .doc-branding-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .doc-branding-left,
+    .doc-branding-right {
+      width: 100%;
+      justify-content: flex-start;
+    }
+  }
+
+  @media print {
+    .doc-branding-shell {
+      box-shadow: none !important;
+      page-break-inside: avoid;
+    }
+  }
+</style>
+
+<div class="doc-branding-shell">
+  <div class="doc-branding-header">
+    <div class="doc-branding-left">
+      <%= image_tag "rci-logo.png", alt: "RCI Logo" %>
+    </div>
+    <div class="doc-branding-right">
+      <%= image_tag "asset-logo.png", alt: "ASA Logo" %>
+    </div>
+  </div>
+</div>

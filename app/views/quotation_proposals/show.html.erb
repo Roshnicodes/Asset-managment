@@ -59,7 +59,7 @@
     <% if owner_or_admin && @quotation_proposal.approval_request.blank? && @quotation_proposal.sent_to_vendors_at.blank? && !@quotation_proposal.committee_completed? %>
       <%= button_to "Start Committee Approval", send_for_approval_quotation_proposal_path(@quotation_proposal), method: :post, class: "app-secondary-btn" %>
     <% end %>
-    <% if @quotation_proposal.committee_completed? && !@quotation_proposal.vendor_responses_received? %>
+    <% if owner_or_admin && @quotation_proposal.committee_completed? && !@quotation_proposal.vendor_responses_received? %>
       <% send_button_label = @quotation_proposal.sent_to_vendors_at.present? ? "Resend To Vendor" : "Send To Vendor" %>
       <%= button_to send_button_label, send_to_vendors_quotation_proposal_path(@quotation_proposal), method: :post, class: "app-form-submit" %>
     <% end %>
@@ -145,7 +145,7 @@
   <div class="app-page-header app-subsection-header-tight">
     <div>
       <h3 style="margin-bottom: 0.25rem;">Committee Approval Trail</h3>
-      <p class="app-section-note mb-0">Start Committee Approval ke baad L1 se L4 sab members ko request ek saath milegi. Uske pehle ye sirf committee setup ke roop me rahega.</p>
+      <p class="app-section-note mb-0">Start Committee Approval ke baad configured committee members ko request milegi. Uske pehle ye sirf committee setup ke roop me rahega.</p>
     </div>
   </div>
 

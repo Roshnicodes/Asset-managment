@@ -1,0 +1,12 @@
+<div class="app-form-field" data-quotation-committee-row style="<%= "display: none;" if form.object.marked_for_destruction? %>">
+  <%= form.hidden_field :id if form.object.persisted? %>
+  <%= form.hidden_field :_destroy, value: (form.object.marked_for_destruction? ? "1" : "false"), data: { committee_destroy: true } %>
+  <%= form.hidden_field :level, value: form.object.level, data: { committee_level: true } %>
+
+  <label data-committee-label>L<%= form.object.level || "1" %> Committee Member</label>
+  <%= form.collection_select :employee_master_id, @committee_members, :id, :name, { prompt: "Select committee member" } %>
+
+  <div class="app-approval-step-row-actions">
+    <button type="button" class="app-action-button app-delete-button" data-remove-committee-step>Remove Member</button>
+  </div>
+</div>

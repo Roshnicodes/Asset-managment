@@ -1,4 +1,6 @@
 class QuotationVendorDispatch < ApplicationRecord
+  class SmsDeliveryError < StandardError; end
+
   SESSION_WINDOW = 15.minutes
   OTP_WINDOW = 10.minutes
 
@@ -34,7 +36,12 @@ class QuotationVendorDispatch < ApplicationRecord
       expires_at: Time.current + OTP_WINDOW,
       active: true
     )
-    QuotationVendorSmsGateway.send_vendor_otp(self, otp_record)
+    delivered = QuotationVendorSmsGateway.send_vendor_otp(self, otp_record)
+    unless delivered
+      otp_record.update!(active: false)
+      raise SmsDeliveryError, "OTP SMS could not be delivered. Please verify the SMS sender/header and template configuration."
+    end
+
     otp_record
   end
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_31_113000) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_01_103000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -94,6 +94,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_31_113000) do
     t.datetime "created_at", null: false
     t.integer "current_level"
     t.string "form_name", null: false
+    t.string "return_mode"
+    t.integer "returned_by_level"
+    t.integer "returned_to_level"
     t.string "status", default: "pending", null: false
     t.datetime "updated_at", null: false
     t.index ["approvable_type", "approvable_id"], name: "index_approval_requests_on_approvable"
@@ -475,6 +478,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_31_113000) do
     t.datetime "updated_at", null: false
     t.bigint "vendor_registration_id", null: false
     t.index ["document_master_id"], name: "index_vendor_registration_documents_on_document_master_id"
+    t.index ["vendor_registration_id", "document_master_id"], name: "idx_vendor_registration_documents_unique", unique: true
     t.index ["vendor_registration_id"], name: "index_vendor_registration_documents_on_vendor_registration_id"
   end
 

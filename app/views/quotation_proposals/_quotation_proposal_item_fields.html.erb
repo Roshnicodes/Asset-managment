@@ -2,13 +2,16 @@
   <%= form.hidden_field :_destroy, value: "false", data: { quotation_item_destroy: true } %>
 
   <div class="app-quotation-item-row-head">
-    <h4 class="app-quotation-item-row-title">Proposal Item</h4>
+    <div>
+      <h4 class="app-quotation-item-row-title">Proposal Item</h4>
+      <p class="app-quotation-item-row-note">Item details yahan fill karo.</p>
+    </div>
   </div>
 
-  <div class="app-form-grid four-col">
+  <div class="app-form-grid three-col app-quotation-item-grid">
     <div class="app-form-field">
       <%= form.label :item_name, "Item Name" %>
-      <%= form.text_field :item_name %>
+      <%= form.text_field :item_name, placeholder: "Enter item name" %>
     </div>
 
     <div class="app-form-field">
@@ -20,14 +23,16 @@
       <%= form.label :quantity, "Quantity" %>
       <%= form.number_field :quantity, step: :any, min: 0.01 %>
     </div>
+  </div>
 
+  <div class="app-form-grid three-col app-quotation-item-grid">
     <div class="app-form-field">
       <%= form.label :remark, "Item Remark" %>
-      <%= form.text_field :remark %>
+      <%= form.text_field :remark, placeholder: "Any special note for this item" %>
     </div>
   </div>
 
   <div class="app-approval-step-row-actions">
-    <button type="button" class="app-action-button app-delete-button" data-remove-quotation-item>Remove Item</button>
+    <button type="button" class="app-action-button app-delete-button app-delete-button-soft" data-remove-quotation-item>Remove Item</button>
   </div>
 </div>

@@ -417,6 +417,65 @@ const setupQuotationProposalForm = () => {
 
     container.dataset.ready = "true"
   })
+
+  document.querySelectorAll("[data-quotation-committee]").forEach((container) => {
+    if (container.dataset.ready === "true") return
+
+    const list = container.querySelector("[data-quotation-committee-list]")
+    const template = container.querySelector("[data-quotation-committee-template]")
+    const addButton = container.querySelector("[data-add-committee-step]")
+    const minimumMembers = Number(container.dataset.minCommitteeMembers || "2")
+    if (!list || !template || !addButton) return
+
+    const activeRows = () =>
+      Array.from(list.querySelectorAll("[data-quotation-committee-row]")).filter((row) => {
+        const destroyField = row.querySelector("[data-committee-destroy]")
+        return !destroyField || destroyField.value !== "1"
+      })
+
+    const syncCommitteeRows = () => {
+      activeRows().forEach((row, index) => {
+        const level = index + 1
+        const label = row.querySelector("[data-committee-label]")
+        const levelField = row.querySelector("[data-committee-level]")
+        const removeButton = row.querySelector("[data-remove-committee-step]")
+
+        if (label) label.textContent = `L${level} Committee Member`
+        if (levelField) levelField.value = level
+        if (removeButton) removeButton.disabled = activeRows().length <= minimumMembers
+      })
+    }
+
+    addButton.addEventListener("click", () => {
+      const uniqueKey = `${Date.now()}-${Math.floor(Math.random() * 1000)}`
+      const html = template.innerHTML.replace(/NEW_COMMITTEE_STEP/g, uniqueKey)
+      list.insertAdjacentHTML("beforeend", html)
+      syncCommitteeRows()
+    })
+
+    container.addEventListener("click", (event) => {
+      const removeButton = event.target.closest("[data-remove-committee-step]")
+      if (!removeButton) return
+
+      if (activeRows().length <= minimumMembers) return
+
+      const row = removeButton.closest("[data-quotation-committee-row]")
+      if (!row) return
+
+      const destroyField = row.querySelector("[data-committee-destroy]")
+      if (destroyField) {
+        destroyField.value = "1"
+        row.style.display = "none"
+      } else {
+        row.remove()
+      }
+
+      syncCommitteeRows()
+    })
+
+    syncCommitteeRows()
+    container.dataset.ready = "true"
+  })
 }
 
 const setupVendorQuotationCalculations = () => {

@@ -3,6 +3,7 @@ class QuotationProposalsController < ApplicationController
     show edit update destroy approve_committee return_committee
     send_to_vendors score_vendor score_vendors select_vendor
   ]
+  before_action :ensure_quotation_owner_access!, only: %i[edit update destroy send_to_vendors]
   before_action :authorize_quotation_form_access!, only: %i[index new create edit update destroy send_for_approval send_to_vendors score_vendor score_vendors select_vendor]
   before_action :authorize_quotation_list_access!, only: %i[list]
   before_action :authorize_quotation_view_access!, only: %i[show approve_committee return_committee]
@@ -45,7 +46,6 @@ class QuotationProposalsController < ApplicationController
   end
 
   def show
-    bootstrap_quotation_approval_request_if_needed!(@quotation_proposal)
     @quotation_proposal.approval_request&.ensure_channel_steps_synced!
   end
 
@@ -123,6 +123,8 @@ class QuotationProposalsController < ApplicationController
     failed_count = 0
 
     QuotationProposal.where(id: proposal_ids).find_each do |quotation_proposal|
+      next unless quotation_proposal.user_id == current_user.id
+
       if start_quotation_approval_request!(quotation_proposal)
         sent_count += 1
       else
@@ -301,11 +303,18 @@ class QuotationProposalsController < ApplicationController
   end
 
   def authorize_quotation_view_access!
+    return if admin_user?
+    return if @quotation_proposal.user_id == current_user.id
     return if @quotation_proposal.committee_user?(current_user)
     return if @quotation_proposal.approval_request&.approval_steps&.any? { |step| employee_matches_current_login?(step.employee_master) }
-    return if can_access_menu?("quotation_proposal_form") || can_access_menu?("quotation_proposal_list")
 
     redirect_to root_path, alert: "You are not authorized to view this Quotation Proposal."
+  end
+
+  def ensure_quotation_owner_access!
+    return if admin_user? || @quotation_proposal.user_id == current_user.id
+
+    redirect_to list_quotation_proposals_path, alert: "Only the creator can perform this action on the quotation proposal."
   end
 
   def load_form_collections
@@ -316,9 +325,9 @@ class QuotationProposalsController < ApplicationController
   end
 
   def build_committee_steps(quotation_proposal)
-    existing_levels = quotation_proposal.committee_steps.map(&:level)
+    existing_levels = quotation_proposal.committee_steps.reject(&:marked_for_destruction?).map(&:level)
 
-    (1..4).each do |level|
+    (1..QuotationProposal::DEFAULT_COMMITTEE_MEMBERS).each do |level|
       next if existing_levels.include?(level)
 
       quotation_proposal.committee_steps.build(level: level, status: "waiting")
@@ -330,13 +339,6 @@ class QuotationProposalsController < ApplicationController
       ApprovalRequest.includes(:approval_channel, :approvable, :approval_steps)
         .where(form_name: ["Quotation Proposal", "Quotation Request"])
     )
-  end
-
-  def bootstrap_quotation_approval_request_if_needed!(quotation_proposal)
-    return if quotation_proposal.approval_request.present?
-    return unless quotation_proposal.committee_steps.where(status: %w[pending approved returned rejected]).exists?
-
-    quotation_proposal.bootstrap_approval_request_from_committee!
   end
 
   def start_quotation_approval_request!(quotation_proposal)

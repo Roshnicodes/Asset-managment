@@ -1,5 +1,7 @@
 class QuotationProposal < ApplicationRecord
   class VendorDispatchError < StandardError; end
+  MIN_COMMITTEE_MEMBERS = 2
+  DEFAULT_COMMITTEE_MEMBERS = 4
 
   WORKFLOW_STATUSES = %w[
     committee_pending
@@ -455,7 +457,14 @@ class QuotationProposal < ApplicationRecord
   def must_have_all_committee_levels
     kept_steps = committee_steps.reject(&:marked_for_destruction?)
     levels = kept_steps.map(&:level).compact.sort
-    errors.add(:base, "Committee me L1 se L4 tak sab levels required hain.") if levels != [1, 2, 3, 4]
+
+    if kept_steps.size < MIN_COMMITTEE_MEMBERS
+      errors.add(:base, "Committee me kam se kam #{MIN_COMMITTEE_MEMBERS} members required hain.")
+      return
+    end
+
+    expected_levels = (1..kept_steps.size).to_a
+    errors.add(:base, "Committee levels L1 se bina gap ke continue hone chahiye.") if levels != expected_levels
   end
 
   def sync_vendor_item_rows

@@ -4,7 +4,7 @@ class QuotationProposalCommitteeStep < ApplicationRecord
 
   STATUSES = %w[waiting pending approved returned rejected].freeze
 
-  validates :level, presence: true, inclusion: { in: 1..4 }, uniqueness: { scope: :quotation_proposal_id }
+  validates :level, presence: true, numericality: { only_integer: true, greater_than: 0 }, uniqueness: { scope: :quotation_proposal_id }
   validates :status, inclusion: { in: STATUSES }
 
   scope :ordered, -> { order(:level) }

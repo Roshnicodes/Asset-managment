@@ -14,7 +14,6 @@
     </div>
     <div style="margin-left:auto; display:flex; gap:.5rem; align-items:center;">
       <% if can_view_menu?("quotation_proposal_form") %>
-        <%= link_to "Create Quotation Proposal", new_quotation_proposal_path, class: "app-primary-btn" %>
         <%= form_tag send_for_approval_quotation_proposals_path, method: :post, id: "send-quotation-approval-form", style: "display: inline;" do %>
           <button type="submit" class="app-secondary-btn d-none" id="send_quotation_for_approval_button">Send for Approval</button>
         <% end %>

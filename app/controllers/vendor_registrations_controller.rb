@@ -1,5 +1,7 @@
 class VendorRegistrationsController < ApplicationController
   before_action :set_vendor_registration, only: %i[ show edit update destroy ]
+  before_action :ensure_vendor_owner_or_admin_view_access!, only: %i[show]
+  before_action :ensure_vendor_owner_access!, only: %i[edit update destroy]
   before_action :ensure_vendor_registration_editable!, only: %i[edit update]
 
   # GET /vendor_registrations or /vendor_registrations.json
@@ -77,6 +79,7 @@ class VendorRegistrationsController < ApplicationController
       failed_count = 0
 
       VendorRegistration.where(id: vendor_ids).each do |vendor|
+        next unless vendor.user_id == current_user.id
         next if vendor.approval_request.present?
 
         approval_request = ApprovalRequestBuilder.create_for!(vendor, form_name: "Vendor Registration")
@@ -226,11 +229,24 @@ class VendorRegistrationsController < ApplicationController
     end
 
     def ensure_vendor_registration_editable!
-      return if current_user.email == "admin@example.com" || current_user.employee_master&.user_type == "Admin"
       return unless @vendor_registration.approval_request.present?
       return if @vendor_registration.approval_request.employee_return_pending?
 
       redirect_to vendor_registration_path(@vendor_registration), alert: "You can edit this vendor registration only after it is returned to the employee."
+    end
+
+    def ensure_vendor_owner_or_admin_view_access!
+      return if admin_user?
+      return if @vendor_registration.user_id == current_user.id
+      return if @vendor_registration.approval_request&.approval_steps&.any? { |step| employee_matches_current_login?(step.employee_master) }
+
+      redirect_to list_vendor_registrations_path, alert: "You are not authorized to view this vendor registration."
+    end
+
+    def ensure_vendor_owner_access!
+      return if admin_user? || @vendor_registration.user_id == current_user.id
+
+      redirect_to list_vendor_registrations_path, alert: "Only the creator can perform this action on the vendor registration."
     end
 
     def sync_vendor_approval_requests!

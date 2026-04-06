@@ -18,7 +18,9 @@ class QuotationVendorQrsController < ApplicationController
 
     @quotation_vendor_dispatch.update!(last_opened_at: Time.current, access_granted: false, access_expires_at: nil)
     @quotation_vendor_dispatch.send_new_otp!
-    redirect_to quotation_vendor_qr_path(params[:token]), notice: "A new OTP has been sent to the vendor mobile number."
+    redirect_to quotation_vendor_qr_path(params[:token], skip_auto_otp: 1), notice: "A new OTP has been sent to the vendor mobile number."
+  rescue QuotationVendorDispatch::SmsDeliveryError => error
+    redirect_to quotation_vendor_qr_path(params[:token], skip_auto_otp: 1), alert: error.message
   end
 
   def verify_otp
@@ -101,6 +103,7 @@ class QuotationVendorQrsController < ApplicationController
   end
 
   def auto_send_otp_if_needed!
+    return if params[:skip_auto_otp] == "1"
     return if vendor_access_allowed?
 
     latest_otp = @quotation_vendor_dispatch.latest_active_otp
@@ -108,6 +111,8 @@ class QuotationVendorQrsController < ApplicationController
 
     @quotation_vendor_dispatch.send_new_otp!
     flash.now[:notice] = "An OTP has been sent to the vendor mobile number."
+  rescue QuotationVendorDispatch::SmsDeliveryError => error
+    flash.now[:alert] = error.message
   end
 
   def vendor_response_params

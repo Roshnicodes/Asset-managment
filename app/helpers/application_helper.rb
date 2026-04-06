@@ -94,10 +94,28 @@ module ApplicationHelper
     approval_request = notification.notifiable if notification.notifiable.is_a?(ApprovalRequest)
     approvable = approval_request&.approvable
 
-    return vendor_registration_path(approvable) if approvable.is_a?(VendorRegistration)
-    return quotation_proposal_path(approvable) if approvable.is_a?(QuotationProposal)
+    return approval_record_target_path(approvable) if approvable.present?
 
     approval_requests_path
+  end
+
+  def approval_record_target_path(approvable)
+    return approval_requests_path unless approvable.respond_to?(:user_id)
+    return vendor_registration_path(approvable) if approvable.is_a?(VendorRegistration) && can_view_approvable_record?(approvable)
+    return quotation_proposal_path(approvable) if approvable.is_a?(QuotationProposal) && can_view_approvable_record?(approvable)
+
+    approval_requests_path
+  end
+
+  def can_view_approvable_record?(approvable)
+    return false unless approvable
+    return true if admin_user?
+    return true if approvable.user_id == current_user.id
+    return false unless approvable.respond_to?(:approval_request)
+
+    approvable.approval_request&.approval_steps&.any? do |step|
+      employee_matches_current_login?(step.employee_master)
+    end || false
   end
 
   def approval_status_badge_data(approval_request)
