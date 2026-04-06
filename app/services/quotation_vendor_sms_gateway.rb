@@ -5,6 +5,7 @@ require "uri"
 class QuotationVendorSmsGateway
   API_ENDPOINT = "https://sms.yoursmsbox.com/api/sendhttp.php".freeze
   DEFAULT_AUTHKEY = "37317061706c39353312".freeze
+  ASA_DEFAULT_AUTHKEY = "3230666f72736131353261".freeze
   DEFAULT_SENDER = "PLOAPL".freeze
   DEFAULT_ROUTE = "2".freeze
   DEFAULT_COUNTRY = "0".freeze
@@ -80,6 +81,13 @@ class QuotationVendorSmsGateway
           error_message: error.message.to_s
         }
       end
+
+    if asa_sender_id_error?(delivery_result, config)
+      Rails.logger.error(
+        "QuotationVendorSmsGateway ASA sender rejected for sender=#{config[:sender]} template_id=#{template_id}. " \
+        "Configure ASA_SMS_AUTHKEY and ASA_SMS_DLT_PE_ID for the ASA account."
+      )
+    end
 
     if retry_with_legacy_sender?(delivery_result, config)
       fallback_config = default_sms_config.merge(profile: :asa_legacy_fallback)
@@ -175,9 +183,16 @@ class QuotationVendorSmsGateway
 
     error_message = delivery_result[:error_message].to_s.downcase
 
-    (delivery_result[:error_code] == "004" && error_message.include?("sender-id")) ||
-      error_message.include?("connection reset by peer") ||
+    error_message.include?("connection reset by peer") ||
       error_message.include?("ssl_connect")
+  end
+
+  def self.asa_sender_id_error?(delivery_result, config)
+    return false unless config[:profile] == :asa
+
+    error_message = delivery_result[:error_message].to_s.downcase
+    delivery_result[:error_code] == "004" &&
+      (error_message.include?("sender-id") || error_message.include?("sender id"))
   end
 
   def self.base_url
@@ -234,21 +249,25 @@ class QuotationVendorSmsGateway
     stakeholder_name = stakeholder_name_for(dispatch)
 
     if asa_stakeholder?(stakeholder_name)
-      {
-        profile: :asa,
-        api_endpoint: API_ENDPOINT,
-        authkey: DEFAULT_AUTHKEY,
-        sender: ASA_SENDER,
-        route: DEFAULT_ROUTE,
-        country: DEFAULT_COUNTRY,
-        unicode: DEFAULT_UNICODE,
-        pe_id: ENV.fetch("SMS_DLT_PE_ID", ""),
-        link_template_id: ASA_LINK_TEMPLATE_ID,
-        otp_template_id: ASA_OTP_TEMPLATE_ID
-      }
+      asa_sms_config
     else
       default_sms_config
     end
+  end
+
+  def self.asa_sms_config
+    {
+      profile: :asa,
+      api_endpoint: ENV.fetch("ASA_SMS_API_ENDPOINT", ENV.fetch("SMS_API_ENDPOINT", API_ENDPOINT)),
+      authkey: ENV.fetch("ASA_SMS_AUTHKEY", ASA_DEFAULT_AUTHKEY),
+      sender: ENV.fetch("ASA_SMS_SENDER", ASA_SENDER),
+      route: ENV.fetch("ASA_SMS_ROUTE", ENV.fetch("SMS_ROUTE", DEFAULT_ROUTE)),
+      country: ENV.fetch("ASA_SMS_COUNTRY", ENV.fetch("SMS_COUNTRY", DEFAULT_COUNTRY)),
+      unicode: ENV.fetch("ASA_SMS_UNICODE", ENV.fetch("SMS_UNICODE", DEFAULT_UNICODE)),
+      pe_id: ENV.fetch("ASA_SMS_DLT_PE_ID", ENV.fetch("SMS_DLT_PE_ID", "")),
+      link_template_id: ENV.fetch("ASA_SMS_LINK_DLT_TEMPLATE_ID", ASA_LINK_TEMPLATE_ID),
+      otp_template_id: ENV.fetch("ASA_SMS_OTP_DLT_TEMPLATE_ID", ASA_OTP_TEMPLATE_ID)
+    }
   end
 
   def self.default_sms_config
