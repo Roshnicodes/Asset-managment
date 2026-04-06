@@ -31,6 +31,7 @@ class QuotationProposal < ApplicationRecord
   validate :must_have_at_least_one_vendor
   validate :must_have_at_least_one_item
   validate :must_have_all_committee_levels
+  validate :selected_vendors_must_match_stakeholder
 
   after_commit :sync_vendor_item_rows, on: %i[create update]
 
@@ -465,6 +466,20 @@ class QuotationProposal < ApplicationRecord
 
     expected_levels = (1..kept_steps.size).to_a
     errors.add(:base, "Committee levels L1 se bina gap ke continue hone chahiye.") if levels != expected_levels
+  end
+
+  def selected_vendors_must_match_stakeholder
+    proposal_stakeholder_id = stakeholder_category_id
+    return if proposal_stakeholder_id.blank?
+    return if vendor_registrations.blank?
+
+    mismatched_vendors = vendor_registrations.select do |vendor|
+      vendor.stakeholder_category_id.present? && vendor.stakeholder_category_id != proposal_stakeholder_id
+    end
+    return if mismatched_vendors.empty?
+
+    vendor_names = mismatched_vendors.map(&:display_name).join(", ")
+    errors.add(:base, "Selected vendors must belong to the same stakeholder as the quotation theme. Mismatch: #{vendor_names}")
   end
 
   def sync_vendor_item_rows

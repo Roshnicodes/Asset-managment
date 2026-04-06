@@ -9,7 +9,8 @@ class QuotationVendorSmsGateway
   DEFAULT_SENDER = "PLOAPL".freeze
   DEFAULT_ROUTE = "2".freeze
   DEFAULT_COUNTRY = "0".freeze
-  DEFAULT_UNICODE = "1".freeze
+  DEFAULT_UNICODE = "".freeze
+  DEFAULT_RESPONSE_FORMAT = "json".freeze
   DEFAULT_LINK_TEMPLATE_ID = "1707177502703834106".freeze
   DEFAULT_OTP_TEMPLATE_ID = "1707177503375571501".freeze
   DEFAULT_BASE_URL = "http://127.0.0.1:3000".freeze
@@ -57,7 +58,7 @@ class QuotationVendorSmsGateway
     if config[:profile] == :asa
       "Dear #{vendor_name}, We kindly request you to accept the Quotation Proposal: #{quotation_reference}. Please submit the quotation through link: #{link}. - ACTION FOR SOCIAL ADVANCEMENT"
     else
-      "Dear #{vendor_name}, PLOUGHMAN AGRO PRIVATE LIMITED requests you to review and accept the quotation proposal #{quotation_reference}. Please submit the quotation using this link #{link}"
+      "Dear #{vendor_name}, PLOUGHMAN AGRO PRIVATE LIMITED requests you to review and accept the quotation proposal #{quotation_reference}. Please submit the quotation using the following link: #{link}."
     end
   end
 
@@ -120,26 +121,19 @@ class QuotationVendorSmsGateway
 
   def self.perform_sms_request(mobile_no:, message:, template_id:, config:)
     sender = config[:sender]
-    unicode = unicode_flag_for(message)
+    unicode = config[:unicode].to_s.strip == "1" ? "1" : unicode_flag_for(message).presence
     uri = URI(config[:api_endpoint])
     query_params = {
       authkey: config[:authkey],
       mobiles: normalize_mobile_no(mobile_no),
       message: message,
       sender: sender,
-      senderid: sender,
-      sender_id: sender,
-      SenderId: sender,
-      SenderID: sender,
-      Sender: sender,
-      header: sender,
-      from: sender,
-      source: sender,
       route: config[:route],
       country: config[:country],
       DLT_TE_ID: template_id,
-      unicode: config[:unicode].presence || unicode
+      response: DEFAULT_RESPONSE_FORMAT
     }
+    query_params[:unicode] = unicode if unicode.present?
     query_params.merge!(pe_id_params(config))
     uri.query = URI.encode_www_form(query_params)
 
@@ -311,8 +305,8 @@ class QuotationVendorSmsGateway
   def self.stakeholder_name_for(dispatch)
     [
       dispatch.stakeholder_category&.name,
-      dispatch.quotation_proposal&.theme&.stakeholder_category&.name,
-      dispatch.vendor_registration&.stakeholder_category&.name
+      dispatch.vendor_registration&.stakeholder_category&.name,
+      dispatch.quotation_proposal&.theme&.stakeholder_category&.name
     ].compact.map { |value| value.to_s.strip }.find(&:present?).to_s.upcase
   end
 
