@@ -43,6 +43,8 @@ class QuotationProposalVendor < ApplicationRecord
   end
 
   def dispatch_record!
+    ensure_vendor_item_rows!
+
     dispatch = vendor_dispatch || build_vendor_dispatch
     dispatch.assign_attributes(
       quotation_proposal: quotation_proposal,
@@ -55,6 +57,17 @@ class QuotationProposalVendor < ApplicationRecord
     dispatch.status = "pending" if dispatch.new_record?
     dispatch.save! if dispatch.new_record? || dispatch.changed?
     dispatch
+  end
+
+  def ensure_vendor_item_rows!
+    proposal_item_ids = quotation_proposal.quotation_proposal_items.pluck(:id)
+    existing_item_ids = vendor_items.pluck(:quotation_proposal_item_id)
+
+    (proposal_item_ids - existing_item_ids).each do |item_id|
+      vendor_items.create!(quotation_proposal_item_id: item_id)
+    end
+
+    vendor_items.where.not(quotation_proposal_item_id: proposal_item_ids).destroy_all
   end
 
   private

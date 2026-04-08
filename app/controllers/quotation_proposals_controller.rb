@@ -66,8 +66,14 @@ class QuotationProposalsController < ApplicationController
   end
 
   def create
-    @quotation_proposal = QuotationProposal.new(quotation_proposal_params)
+    attrs = quotation_proposal_params.to_h.deep_dup
+    item_attributes = raw_quotation_item_attributes
+    attrs.delete("quotation_proposal_items_attributes")
+    attrs.delete(:quotation_proposal_items_attributes)
+
+    @quotation_proposal = QuotationProposal.new(attrs)
     @quotation_proposal.user = current_user
+    build_quotation_items(@quotation_proposal, item_attributes)
 
     if @quotation_proposal.save
       @quotation_proposal.refresh_response_status!
@@ -80,9 +86,20 @@ class QuotationProposalsController < ApplicationController
   end
 
   def update
+    attrs = quotation_proposal_params.to_h.deep_dup
+    item_attributes = raw_quotation_item_attributes
+    attrs.delete("quotation_proposal_items_attributes")
+    attrs.delete(:quotation_proposal_items_attributes)
     was_returned = @quotation_proposal.approval_request&.employee_return_pending?
 
-    if @quotation_proposal.update(quotation_proposal_params)
+    updated = QuotationProposal.transaction do
+      next false unless @quotation_proposal.update(attrs)
+
+      sync_quotation_items(@quotation_proposal, item_attributes)
+      true
+    end
+
+    if updated
       if was_returned
         @quotation_proposal.rebuild_approval_request_steps!
         NotificationDispatcher.notify_pending_approval_steps(@quotation_proposal.approval_request)
@@ -251,7 +268,91 @@ class QuotationProposalsController < ApplicationController
     )
 
     permitted[:vendor_registration_ids] = Array(permitted[:vendor_registration_ids]).reject(&:blank?)
+    permitted[:committee_steps_attributes] = normalize_nested_collection(permitted[:committee_steps_attributes])
     permitted
+  end
+
+  def normalize_nested_collection(attributes)
+    case attributes
+    when ActionController::Parameters
+      attributes.to_h.values.map { |value| value.respond_to?(:to_h) ? value.to_h : value }
+    when Hash
+      attributes.values.map { |value| value.respond_to?(:to_h) ? value.to_h : value }
+    else
+      attributes
+    end
+  end
+
+  def extract_nested_collection!(attributes, key)
+    value = attributes.delete(key) || attributes.delete(key.to_sym)
+    Array(value)
+  end
+
+  def raw_quotation_item_attributes
+    raw_attributes = params.require(:quotation_proposal)[:quotation_proposal_items_attributes]
+    return [] if raw_attributes.blank?
+
+    case raw_attributes
+    when ActionController::Parameters
+      raw_attributes.to_unsafe_h.values
+    when Hash
+      raw_attributes.values
+    else
+      Array(raw_attributes)
+    end
+  end
+
+  def build_quotation_items(quotation_proposal, item_attributes)
+    Array(item_attributes).each do |attributes|
+      item_params = normalize_item_attributes(attributes)
+      next if skip_item_attributes?(item_params)
+
+      quotation_proposal.quotation_proposal_items.build(item_params.except("id", "_destroy"))
+    end
+  end
+
+  def sync_quotation_items(quotation_proposal, item_attributes)
+    existing_items = quotation_proposal.quotation_proposal_items.index_by { |item| item.id.to_s }
+
+    Array(item_attributes).each do |attributes|
+      item_params = normalize_item_attributes(attributes)
+      item_id = item_params["id"].to_s
+
+      if ActiveModel::Type::Boolean.new.cast(item_params["_destroy"])
+        existing_items[item_id]&.destroy! if item_id.present?
+        next
+      end
+
+      next if skip_item_attributes?(item_params)
+
+      payload = item_params.slice("item_name", "unit_id", "quantity", "remark")
+
+      if item_id.present? && existing_items[item_id]
+        existing_items[item_id].update!(payload)
+      else
+        quotation_proposal.quotation_proposal_items.create!(payload)
+      end
+    end
+  end
+
+  def normalize_item_attributes(attributes)
+    case attributes
+    when ActionController::Parameters
+      attributes.to_h.stringify_keys
+    when Hash
+      attributes.stringify_keys
+    else
+      {}
+    end
+  end
+
+  def skip_item_attributes?(item_params)
+    return true if item_params.blank?
+
+    item_params["item_name"].blank? &&
+      item_params["unit_id"].blank? &&
+      item_params["quantity"].blank? &&
+      item_params["remark"].blank?
   end
 
   def quotation_scope
@@ -320,7 +421,12 @@ class QuotationProposalsController < ApplicationController
   def load_form_collections
     @themes = Theme.order(:name)
     @units = Unit.order(:name)
-    @vendors = VendorRegistration.includes(:themes).order(:vendor_name)
+    @vendors = VendorRegistration
+      .includes(:themes, :approval_request)
+      .joins(:approval_request)
+      .where(approval_requests: { status: "approved" })
+      .distinct
+      .order(:vendor_name)
     @committee_members = EmployeeMaster.order(:name)
   end
 

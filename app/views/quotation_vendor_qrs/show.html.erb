@@ -1,4 +1,11 @@
-<% otp_verified = (@otp_verified_for_render || false) && @quotation_vendor_dispatch.access_open? %>
+<%
+  otp_verified = (@otp_verified_for_render || false) && @quotation_vendor_dispatch.access_open?
+  vendor_remark_lines = @quotation_proposal_vendor.vendor_remark.to_s.lines.map(&:strip).reject(&:blank?)
+  payment_terms_value = vendor_remark_lines.find { |line| line.downcase.start_with?("payment terms and condition:") }&.split(":", 2)&.last.to_s.strip
+  completion_value = vendor_remark_lines.find { |line| line.downcase.start_with?("date of completion:") }&.split(":", 2)&.last.to_s.strip
+  warranty_value = vendor_remark_lines.find { |line| line.downcase.start_with?("warranty period:") }&.split(":", 2)&.last.to_s.strip
+  earnest_money_value = vendor_remark_lines.find { |line| line.downcase.start_with?("earnest money deposit:") }&.split(":", 2)&.last.to_s.strip
+%>
 
 <% if otp_verified %>
   <script>
@@ -146,9 +153,37 @@
       </div>
     </div>
 
-    <div class="app-form-field" style="margin-top: 1rem;">
-      <%= form.label :vendor_remark, "Overall Vendor Remark" %>
-      <%= form.text_area :vendor_remark, rows: 4 %>
+    <div class="app-detail-card" style="margin-top: 1rem;">
+      <div class="app-detail-label" style="margin-bottom: 0.75rem;">Terms & Conditions</div>
+      <table class="table app-table" style="margin-bottom: 0;">
+        <tbody>
+          <tr>
+            <th style="width: 34%; white-space: nowrap;">Payment Terms and condition</th>
+            <td>
+              <input type="text" class="app-form-control" value="<%= payment_terms_value %>" data-vendor-remark-part="payment_terms" />
+            </td>
+          </tr>
+          <tr>
+            <th style="white-space: nowrap;">Date of completion</th>
+            <td>
+              <input type="text" class="app-form-control" value="<%= completion_value %>" data-vendor-remark-part="completion" />
+            </td>
+          </tr>
+          <tr>
+            <th style="white-space: nowrap;">Warranty period</th>
+            <td>
+              <input type="text" class="app-form-control" value="<%= warranty_value %>" data-vendor-remark-part="warranty" />
+            </td>
+          </tr>
+          <tr>
+            <th style="white-space: nowrap;">Earnest Money deposit</th>
+            <td>
+              <input type="text" class="app-form-control" value="<%= earnest_money_value %>" data-vendor-remark-part="earnest_money" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <%= form.hidden_field :vendor_remark, data: { vendor_remark_target: true } %>
     </div>
 
     <div class="app-form-actions">
@@ -204,3 +239,33 @@
     </div>
   </div>
 <% end %>
+
+<script>
+  (function() {
+    var hiddenField = document.querySelector('[data-vendor-remark-target]');
+    if (!hiddenField) return;
+
+    var inputs = {
+      paymentTerms: document.querySelector('[data-vendor-remark-part="payment_terms"]'),
+      completion: document.querySelector('[data-vendor-remark-part="completion"]'),
+      warranty: document.querySelector('[data-vendor-remark-part="warranty"]'),
+      earnestMoney: document.querySelector('[data-vendor-remark-part="earnest_money"]')
+    };
+
+    function syncVendorRemark() {
+      hiddenField.value = [
+        "Payment Terms and condition: " + (inputs.paymentTerms && inputs.paymentTerms.value || ""),
+        "Date of completion: " + (inputs.completion && inputs.completion.value || ""),
+        "Warranty period: " + (inputs.warranty && inputs.warranty.value || ""),
+        "Earnest Money deposit: " + (inputs.earnestMoney && inputs.earnestMoney.value || "")
+      ].join("\n");
+    }
+
+    Object.values(inputs).forEach(function(input) {
+      if (!input) return;
+      input.addEventListener("input", syncVendorRemark);
+    });
+
+    syncVendorRemark();
+  })();
+</script>

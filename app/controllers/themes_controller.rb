@@ -4,6 +4,11 @@ class ThemesController < ApplicationController
     @themes = Theme.order(:name)
   end
 
+  def show
+    @theme = Theme.find(params[:id])
+    redirect_to edit_theme_path(@theme)
+  end
+
   def new
     @theme = Theme.new
   end
@@ -34,8 +39,13 @@ class ThemesController < ApplicationController
 
   def destroy
     @theme = Theme.find(params[:id])
-    @theme.destroy
-    redirect_to themes_path, notice: "Vendor thematic type deleted successfully."
+
+    if @theme.destroy
+      redirect_to themes_path, notice: "Vendor thematic type deleted successfully."
+    else
+      message = @theme.errors.full_messages.to_sentence.presence || "This thematic type could not be deleted."
+      redirect_to themes_path, alert: message
+    end
   end
 
   private

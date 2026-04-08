@@ -92,6 +92,8 @@ class QuotationVendorQrsController < ApplicationController
     @quotation_proposal = @quotation_proposal_vendor.quotation_proposal
     @vendor_registration = @quotation_proposal_vendor.vendor_registration
     @stakeholder_category = @quotation_proposal.theme&.stakeholder_category
+    @quotation_proposal_vendor.ensure_vendor_item_rows!
+    @quotation_proposal_vendor.reload
     @quotation_vendor_dispatch = @quotation_proposal_vendor.dispatch_record!
   end
 

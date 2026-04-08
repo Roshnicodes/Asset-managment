@@ -4,6 +4,11 @@ class ProductsController < ApplicationController
     @products = Product.includes(:theme).order(:name)
   end
 
+  def show
+    @product = Product.find(params[:id])
+    redirect_to edit_product_path(@product)
+  end
+
   def new
     @product = Product.new
     @themes = Theme.order(:name)
@@ -35,8 +40,14 @@ class ProductsController < ApplicationController
   end
 
   def destroy
-    Product.find(params[:id]).destroy
-    redirect_to products_path, notice: "Product deleted successfully."
+    @product = Product.find(params[:id])
+
+    if @product.destroy
+      redirect_to products_path, notice: "Product deleted successfully."
+    else
+      message = @product.errors.full_messages.to_sentence.presence || "This product could not be deleted."
+      redirect_to products_path, alert: message
+    end
   end
 
   private

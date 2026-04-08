@@ -313,5 +313,5 @@ class QuotationVendorSmsGateway
   def self.asa_stakeholder?(stakeholder_name)
     normalized_name = stakeholder_name.to_s.upcase
     normalized_name == "ASA" || normalized_name.include?("ACTION FOR SOCIAL ADVANCEMENT")
-  end
+    end
 end

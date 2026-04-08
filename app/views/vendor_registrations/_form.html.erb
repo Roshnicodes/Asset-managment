@@ -52,17 +52,12 @@
       </div>
 
       <div class="app-form-field">
-        <%= form.label :firm_id, "Firm Name" %>
-        <%= form.collection_select :firm_id, @firms, :id, :name, { prompt: "Select firm" } %>
+        <%= form.label :firm_name, "Firm Name" %>
+        <%= form.text_field :firm_name %>
       </div>
     </div>
 
     <div class="app-form-grid three-col">
-      <div class="app-form-field">
-        <%= form.label :firm_name, "Firm Name" %>
-        <%= form.text_field :firm_name %>
-      </div>
-
       <div class="app-form-field">
         <%= form.label :vendor_name, "Vendor Name" %>
         <%= form.text_field :vendor_name %>
