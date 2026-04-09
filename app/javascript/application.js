@@ -301,6 +301,7 @@ const setupQuotationApprovalSelections = () => {
 
 const setupQuotationProposalForm = () => {
   const themeSelect = document.getElementById("quotation_proposal_theme_id")
+  const amountBucketSelect = document.getElementById("quotation_proposal_procurement_amount_bucket")
   const vendorDropdown = document.querySelector("[data-quotation-vendor-dropdown]")
 
   if (themeSelect && vendorDropdown) {
@@ -309,7 +310,9 @@ const setupQuotationProposalForm = () => {
     const search = vendorDropdown.querySelector("[data-quotation-vendor-search]")
     const selectedWrap = vendorDropdown.querySelector("[data-quotation-vendor-selected]")
     const emptyState = vendorDropdown.querySelector("[data-quotation-vendor-empty]")
+    const selectionNote = document.querySelector("[data-vendor-selection-note]")
     const vendorOptions = Array.from(vendorDropdown.querySelectorAll("[data-vendor-option]"))
+    const singleVendorMode = () => amountBucketSelect?.value === "below_10k"
     const setDropdownOpen = (isOpen) => {
       vendorDropdown.classList.toggle("is-open", isOpen)
       trigger?.setAttribute("aria-expanded", isOpen ? "true" : "false")
@@ -318,6 +321,11 @@ const setupQuotationProposalForm = () => {
     const updateLabel = () => {
       const selected = vendorOptions.filter((option) => option.querySelector(".quotation-vendor-checkbox")?.checked)
       label.textContent = selected.length > 0 ? `${selected.length} vendor(s) selected` : "Select vendors"
+      if (selectionNote) {
+        selectionNote.textContent = singleVendorMode()
+          ? "Below 10K me sirf ek vendor select kiya ja sakta hai."
+          : "Theme select karne ke baad sirf matching vendors yahan show honge."
+      }
 
       if (selectedWrap) {
         selectedWrap.innerHTML = ""
@@ -343,6 +351,10 @@ const setupQuotationProposalForm = () => {
     const syncVendors = () => {
       const selectedThemeId = themeSelect.value
       const query = (search?.value || "").trim().toLowerCase()
+      const selectedCheckboxes = vendorOptions
+        .map((option) => option.querySelector(".quotation-vendor-checkbox"))
+        .filter((checkbox) => checkbox?.checked)
+      const lockedSelection = singleVendorMode() && selectedCheckboxes.length > 0 ? selectedCheckboxes[0].value : null
 
       vendorOptions.forEach((option) => {
         const themeIds = (option.dataset.themeIds || "").split(",").filter(Boolean)
@@ -354,6 +366,9 @@ const setupQuotationProposalForm = () => {
 
         option.classList.toggle("is-hidden", !shouldShow)
         if (!matchesTheme && checkbox) checkbox.checked = false
+        if (checkbox) {
+          checkbox.disabled = !!(singleVendorMode() && lockedSelection && checkbox.value !== lockedSelection)
+        }
       })
 
       const visibleOptions = vendorOptions.filter((option) => !option.classList.contains("is-hidden"))
@@ -368,6 +383,12 @@ const setupQuotationProposalForm = () => {
     vendorOptions.forEach((option) => {
       const checkbox = option.querySelector(".quotation-vendor-checkbox")
       checkbox?.addEventListener("change", () => {
+        if (singleVendorMode() && checkbox.checked) {
+          vendorOptions.forEach((otherOption) => {
+            const otherCheckbox = otherOption.querySelector(".quotation-vendor-checkbox")
+            if (otherCheckbox && otherCheckbox !== checkbox) otherCheckbox.checked = false
+          })
+        }
         updateLabel()
         syncVendors()
       })
@@ -375,6 +396,21 @@ const setupQuotationProposalForm = () => {
 
     search?.addEventListener("input", syncVendors)
     themeSelect.addEventListener("change", syncVendors)
+    amountBucketSelect?.addEventListener("change", () => {
+      if (singleVendorMode()) {
+        let foundChecked = false
+        vendorOptions.forEach((option) => {
+          const checkbox = option.querySelector(".quotation-vendor-checkbox")
+          if (!checkbox?.checked) return
+          if (foundChecked) {
+            checkbox.checked = false
+          } else {
+            foundChecked = true
+          }
+        })
+      }
+      syncVendors()
+    })
 
     document.addEventListener("click", (event) => {
       if (!vendorDropdown.contains(event.target)) {

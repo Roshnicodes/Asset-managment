@@ -38,6 +38,11 @@
 
     <div class="app-form-grid two-col">
       <div class="app-form-field">
+        <%= form.label :procurement_amount_bucket, "Quotation Value" %>
+        <%= form.select :procurement_amount_bucket, [["Above 10K", "above_10k"], ["Below 10K", "below_10k"]], {}, class: "form-control", id: "quotation_proposal_procurement_amount_bucket" %>
+      </div>
+
+      <div class="app-form-field">
         <%= form.label :theme_id, "Select Theme" %>
         <%= form.collection_select :theme_id, @themes, :id, :name, { prompt: "Select theme" }, id: "quotation_proposal_theme_id" %>
       </div>
@@ -61,7 +66,7 @@
     <div class="app-page-header app-subsection-header">
       <div>
         <h3>Select Vendors</h3>
-        <p class="app-section-note mb-0">Theme select karne ke baad sirf matching vendors yahan show honge.</p>
+        <p class="app-section-note mb-0" data-vendor-selection-note>Theme select karne ke baad sirf matching vendors yahan show honge.</p>
       </div>
     </div>
 
@@ -148,7 +153,7 @@
     </div>
 
     <div class="app-form-actions">
-      <%= form.submit "Save Quotation Proposal", class: "app-form-submit" %>
+      <%= form.submit "Save Request for Proposal", class: "app-form-submit" %>
     </div>
   </div>
 <% end %>

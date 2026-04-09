@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_01_103000) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_09_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -285,6 +285,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_01_103000) do
   create_table "quotation_proposal_items", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "item_name", null: false
+    t.decimal "max_rate", precision: 12, scale: 2
     t.decimal "quantity", precision: 12, scale: 2, default: "0.0", null: false
     t.bigint "quotation_proposal_id", null: false
     t.text "remark"
@@ -330,6 +331,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_01_103000) do
 
   create_table "quotation_proposals", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.string "procurement_amount_bucket", default: "above_10k", null: false
     t.date "proposal_end_date", null: false
     t.text "remark"
     t.bigint "selected_vendor_registration_id"

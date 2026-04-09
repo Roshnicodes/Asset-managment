@@ -1,5 +1,6 @@
 <%
-  otp_verified = (@otp_verified_for_render || false) && @quotation_vendor_dispatch.access_open?
+  direct_access_mode = params[:direct_access] == "1" && @quotation_proposal.below_10k?
+  otp_verified = direct_access_mode ? (@otp_verified_for_render || false) : ((@otp_verified_for_render || false) && @quotation_vendor_dispatch.access_open?)
   vendor_remark_lines = @quotation_proposal_vendor.vendor_remark.to_s.lines.map(&:strip).reject(&:blank?)
   payment_terms_value = vendor_remark_lines.find { |line| line.downcase.start_with?("payment terms and condition:") }&.split(":", 2)&.last.to_s.strip
   completion_value = vendor_remark_lines.find { |line| line.downcase.start_with?("date of completion:") }&.split(":", 2)&.last.to_s.strip
@@ -54,7 +55,7 @@
     </div>
     <% if @quotation_proposal_vendor.response_submitted? %>
       <div class="d-flex gap-2 flex-wrap">
-        <%= link_to "Print", print_quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token), class: "app-secondary-btn", target: "_blank", rel: "noopener" %>
+        <%= link_to "Print", print_quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token, direct_access: ("1" if direct_access_mode)), class: "app-secondary-btn", target: "_blank", rel: "noopener" %>
       </div>
     <% end %>
   </div>
@@ -95,7 +96,7 @@
     </div>
   </div>
 
-  <%= form_with model: @quotation_proposal_vendor, url: quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token), method: :patch, local: true, data: { vendor_quote_calc: true } do |form| %>
+  <%= form_with model: @quotation_proposal_vendor, url: quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token, direct_access: ("1" if direct_access_mode), verified: ("1" if direct_access_mode)), method: :patch, local: true, data: { vendor_quote_calc: true } do |form| %>
     <div class="app-table-wrap" style="overflow-x: auto; overflow-y: visible;">
       <table class="table app-table" style="min-width: 1400px;">
         <thead>
@@ -189,7 +190,7 @@
     <div class="app-form-actions">
       <%= form.submit(@quotation_proposal_vendor.response_submitted? ? "Update Response" : "Submit Response", class: "app-form-submit") %>
       <% if @quotation_proposal_vendor.response_submitted? %>
-        <%= link_to "Print", print_quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token), class: "app-secondary-btn", target: "_blank", rel: "noopener" %>
+        <%= link_to "Print", print_quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token, direct_access: ("1" if direct_access_mode)), class: "app-secondary-btn", target: "_blank", rel: "noopener" %>
       <% end %>
     </div>
   <% end %>

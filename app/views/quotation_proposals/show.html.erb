@@ -6,10 +6,12 @@
   approver_view = approval_request.present? && user_pending_step.present? && approval_request.status == "pending"
   committee_approval_started = approval_request.present?
   owner_or_admin = current_user == @quotation_proposal.user || admin_user?
-  editable_by_owner = approval_request.blank? || approval_request.employee_return_pending?
+  creator_can_dispatch = current_user == @quotation_proposal.user
+  editable_by_owner = approval_request.blank? || approval_request.employee_return_pending? || @quotation_proposal.missing_max_rates?
   committee_trail_steps = approval_request.present? ? approval_request.trail_steps : @quotation_proposal.committee_steps
   pending_approval_count = approval_request.present? ? approval_request.approval_steps.where(status: "pending").count : 0
   committee_scoring_allowed = @quotation_proposal.committee_member?(current_employee_master) || @quotation_proposal.committee_user?(current_user)
+  direct_response_mode = @quotation_proposal.below_10k?
   workflow_class = case @quotation_proposal.workflow_status
                    when "vendor_selected" then "bg-success bg-opacity-10 text-success border-success"
                    when "responses_received" then "bg-primary bg-opacity-10 text-primary border-primary"
@@ -59,8 +61,12 @@
     <% if owner_or_admin && @quotation_proposal.approval_request.blank? && @quotation_proposal.sent_to_vendors_at.blank? && !@quotation_proposal.committee_completed? %>
       <%= button_to "Start Committee Approval", send_for_approval_quotation_proposal_path(@quotation_proposal), method: :post, class: "app-secondary-btn" %>
     <% end %>
-    <% if owner_or_admin && @quotation_proposal.committee_completed? && !@quotation_proposal.vendor_responses_received? %>
-      <% send_button_label = @quotation_proposal.sent_to_vendors_at.present? ? "Resend To Vendor" : "Send To Vendor" %>
+    <% if creator_can_dispatch && @quotation_proposal.committee_completed? && !@quotation_proposal.vendor_responses_received? %>
+      <% send_button_label = if direct_response_mode
+           @quotation_proposal.sent_to_vendors_at.present? ? "Reopen Direct Form" : "Open Direct Form"
+         else
+           @quotation_proposal.sent_to_vendors_at.present? ? "Resend To Vendor" : "Send To Vendor"
+         end %>
       <%= button_to send_button_label, send_to_vendors_quotation_proposal_path(@quotation_proposal), method: :post, class: "app-form-submit" %>
     <% end %>
   </div>
@@ -107,6 +113,11 @@
     </div>
 
     <div class="app-detail-item">
+      <div class="app-detail-label">Quotation Value</div>
+      <div class="app-detail-value"><%= @quotation_proposal.procurement_amount_bucket_label %></div>
+    </div>
+
+    <div class="app-detail-item">
       <div class="app-detail-label">Workflow Status</div>
       <div class="app-detail-value"><%= @quotation_proposal.workflow_status.humanize %></div>
     </div>
@@ -140,6 +151,33 @@
     </div>
   </div>
 </div>
+
+<% if creator_can_dispatch && direct_response_mode && @quotation_proposal.committee_completed? %>
+  <div class="app-detail-card app-stack-gap-lg">
+    <div class="app-page-header app-subsection-header-tight">
+      <div>
+        <h3 style="margin-bottom: 0.25rem;">Direct Response Forms</h3>
+        <p class="app-section-note mb-0">
+          Below 10K case me vendor ko mobile par link nahi bheja jayega.
+          Approval ke baad maker yahin se direct vendor form open karke details fill karega.
+        </p>
+      </div>
+    </div>
+
+    <% if @quotation_proposal.sent_to_vendors_at.present? %>
+      <div class="d-flex flex-wrap gap-2">
+        <% @quotation_proposal.quotation_proposal_vendors.includes(:vendor_registration).each do |proposal_vendor| %>
+          <%= link_to "Open #{proposal_vendor.vendor_registration.display_name} Form", quotation_vendor_qr_path(proposal_vendor.qr_token, verified: 1, direct_access: 1), class: "app-secondary-btn" %>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+        <p class="app-section-note mb-0">Committee approval complete ho chuki hai. Ab direct vendor form open karne ke liye niche button use karo.</p>
+        <%= button_to "Open Vendor Form", send_to_vendors_quotation_proposal_path(@quotation_proposal), method: :post, class: "app-form-submit" %>
+      </div>
+    <% end %>
+  </div>
+<% end %>
 
 <div class="app-detail-card app-stack-gap-lg">
   <div class="app-page-header app-subsection-header-tight">
@@ -234,6 +272,7 @@
         <th>Item Name</th>
         <th>Unit</th>
         <th>Quantity</th>
+        <th>Max Rate</th>
         <th>Remark</th>
       </tr>
     </thead>
@@ -243,6 +282,7 @@
           <td><%= item.item_name %></td>
           <td><%= item.unit.name %></td>
           <td><%= item.quantity %></td>
+          <td><%= item.max_rate.present? ? number_with_precision(item.max_rate, precision: 2) : "-" %></td>
           <td><%= item.remark.presence || "-" %></td>
         </tr>
       <% end %>
@@ -250,7 +290,27 @@
   </table>
 </div>
 
-<% if @quotation_proposal.vendor_responses_received? %>
+<% if @quotation_proposal.vendor_responses_received? && @quotation_proposal.missing_max_rates? %>
+  <div class="app-detail-card app-stack-gap-lg">
+    <div class="app-page-header app-subsection-header-tight">
+      <div>
+        <h3 style="margin-bottom: 0.25rem;">Max Rate Pending</h3>
+        <p class="app-section-note mb-0">
+          Vendor response aa chuka hai, lekin committee comparison se pehle max rate fill karna zaroori hai.
+          Missing items: <%= @quotation_proposal.missing_max_rate_items.map(&:item_name).join(", ") %>
+        </p>
+      </div>
+    </div>
+
+    <% if current_user == @quotation_proposal.user %>
+      <div>
+        <%= link_to "Fill Max Rate", edit_quotation_proposal_path(@quotation_proposal), class: "app-form-submit" %>
+      </div>
+    <% end %>
+  </div>
+<% end %>
+
+<% if @quotation_proposal.vendor_responses_received? && !direct_response_mode && @quotation_proposal.all_max_rates_present? %>
   <% @quotation_proposal.recalculate_vendor_rankings! %>
   <div class="app-detail-card app-stack-gap-lg">
     <div class="app-page-header app-subsection-header-tight">

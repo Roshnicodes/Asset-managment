@@ -1,4 +1,6 @@
 class QuotationProposalsController < ApplicationController
+  rescue_from ActiveRecord::RecordNotFound, with: :handle_quotation_not_found
+
   before_action :set_quotation_proposal, only: %i[
     show edit update destroy approve_committee return_committee
     send_to_vendors score_vendor score_vendors select_vendor
@@ -52,7 +54,8 @@ class QuotationProposalsController < ApplicationController
   def new
     @quotation_proposal = QuotationProposal.new(
       proposal_end_date: Date.current + 7.days,
-      workflow_status: "committee_pending"
+      workflow_status: "committee_pending",
+      procurement_amount_bucket: "above_10k"
     )
     @quotation_proposal.quotation_proposal_items.build
     build_committee_steps(@quotation_proposal)
@@ -193,7 +196,17 @@ class QuotationProposalsController < ApplicationController
     end
 
     @quotation_proposal.send_to_vendors!
-    redirect_to quotation_proposal_path(@quotation_proposal), notice: "The quotation request has been sent to the selected vendors."
+
+    if @quotation_proposal.below_10k?
+      proposal_vendor = @quotation_proposal.quotation_proposal_vendors.order(:id).first
+      if proposal_vendor.present?
+        redirect_to quotation_vendor_qr_path(proposal_vendor.qr_token, verified: 1, direct_access: 1), notice: "Direct quotation form is ready. Please fill the response details."
+      else
+        redirect_to quotation_proposal_path(@quotation_proposal), alert: "No vendor is available for direct response."
+      end
+    else
+      redirect_to quotation_proposal_path(@quotation_proposal), notice: "The quotation request has been sent to the selected vendors."
+    end
   rescue QuotationProposal::VendorDispatchError => error
     redirect_to quotation_proposal_path(@quotation_proposal), alert: error.message
   end
@@ -256,14 +269,19 @@ class QuotationProposalsController < ApplicationController
     @quotation_proposal = QuotationProposal.find(params[:id])
   end
 
+  def handle_quotation_not_found
+    redirect_to quotation_proposals_path, alert: "The requested quotation proposal could not be found."
+  end
+
   def quotation_proposal_params
     permitted = params.require(:quotation_proposal).permit(
       :theme_id,
       :subject,
       :proposal_end_date,
       :remark,
+      :procurement_amount_bucket,
       vendor_registration_ids: [],
-      quotation_proposal_items_attributes: [:id, :item_name, :unit_id, :quantity, :remark, :_destroy],
+      quotation_proposal_items_attributes: [:id, :item_name, :unit_id, :quantity, :max_rate, :remark, :_destroy],
       committee_steps_attributes: [:id, :level, :employee_master_id, :remark, :status, :_destroy]
     )
 
@@ -325,7 +343,7 @@ class QuotationProposalsController < ApplicationController
 
       next if skip_item_attributes?(item_params)
 
-      payload = item_params.slice("item_name", "unit_id", "quantity", "remark")
+      payload = item_params.slice("item_name", "unit_id", "quantity", "max_rate", "remark")
 
       if item_id.present? && existing_items[item_id]
         existing_items[item_id].update!(payload)
@@ -392,7 +410,7 @@ class QuotationProposalsController < ApplicationController
   end
 
   def authorize_quotation_form_access!
-    return if can_access_menu?("quotation_proposal_form")
+    return if can_access_menu?("quotation_proposal_form") && quotation_maker_eligible?
 
     redirect_to root_path, alert: "You are not authorized to access Quotation Proposal form."
   end
@@ -401,6 +419,12 @@ class QuotationProposalsController < ApplicationController
     return if can_access_menu?("quotation_proposal_list") || can_access_menu?("quotation_proposal_form")
 
     redirect_to root_path, alert: "You are not authorized to view Quotation Proposal list."
+  end
+
+  def quotation_maker_eligible?
+    return true if admin_user?
+
+    current_user.vendor_registrations.exists?
   end
 
   def authorize_quotation_view_access!

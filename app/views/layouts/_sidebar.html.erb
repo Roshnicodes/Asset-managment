@@ -75,7 +75,7 @@
         <div class="collapse submenu h-auto" id="quotationProposalMenu">
           <ul class="nav flex-column">
             <% if can_view_menu?("quotation_proposal_form") %>
-              <li><%= link_to "Create Quotation Proposal", quotation_proposals_path, class: "nav-link" %></li>
+              <li><%= link_to "Request for Proposal", quotation_proposals_path, class: "nav-link" %></li>
             <% end %>
             <% if can_view_menu?("quotation_proposal_list") || can_view_menu?("quotation_proposal_form") %>
               <li><%= link_to "Quotation Proposal List", list_quotation_proposals_path, class: "nav-link" %></li>

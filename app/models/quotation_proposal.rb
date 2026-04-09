@@ -2,6 +2,7 @@ class QuotationProposal < ApplicationRecord
   class VendorDispatchError < StandardError; end
   MIN_COMMITTEE_MEMBERS = 2
   DEFAULT_COMMITTEE_MEMBERS = 4
+  PROCUREMENT_AMOUNT_BUCKETS = %w[above_10k below_10k].freeze
 
   WORKFLOW_STATUSES = %w[
     committee_pending
@@ -28,6 +29,7 @@ class QuotationProposal < ApplicationRecord
 
   validates :subject, :proposal_end_date, :theme, presence: true
   validates :workflow_status, inclusion: { in: WORKFLOW_STATUSES }
+  validates :procurement_amount_bucket, inclusion: { in: PROCUREMENT_AMOUNT_BUCKETS }
   validate :must_have_at_least_one_vendor
   validate :must_have_at_least_one_item
   validate :must_have_all_committee_levels
@@ -41,6 +43,18 @@ class QuotationProposal < ApplicationRecord
 
   def stakeholder_category_id
     theme&.stakeholder_category_id
+  end
+
+  def above_10k?
+    procurement_amount_bucket == "above_10k"
+  end
+
+  def below_10k?
+    procurement_amount_bucket == "below_10k"
+  end
+
+  def procurement_amount_bucket_label
+    below_10k? ? "Below 10K" : "Above 10K"
   end
 
   def generate_vendor_qr_tokens!
@@ -78,6 +92,18 @@ class QuotationProposal < ApplicationRecord
     quotation_proposal_vendors.responded.exists?
   end
 
+  def missing_max_rate_items
+    quotation_proposal_items.select { |item| item.max_rate.blank? }
+  end
+
+  def missing_max_rates?
+    missing_max_rate_items.any?
+  end
+
+  def all_max_rates_present?
+    !missing_max_rates?
+  end
+
   def normalize_committee_steps!
     committee_steps.ordered.each do |step|
       next if %w[approved returned].include?(step.status)
@@ -113,6 +139,22 @@ class QuotationProposal < ApplicationRecord
 
   def send_to_vendors!
     generate_vendor_qr_tokens!
+
+    if below_10k?
+      quotation_proposal_vendors.includes(:vendor_registration).find_each do |proposal_vendor|
+        dispatch = proposal_vendor.dispatch_record!
+        dispatch.update!(
+          sent_at: Time.current,
+          status: "sent",
+          access_granted: true,
+          access_expires_at: 12.hours.from_now,
+          otp_verified_at: Time.current
+        )
+      end
+      update!(sent_to_vendors_at: Time.current)
+      refresh_response_status!
+      return
+    end
 
     quotation_proposal_vendors.includes(:vendor_registration).find_each do |proposal_vendor|
       dispatch = proposal_vendor.dispatch_record!
@@ -448,6 +490,10 @@ class QuotationProposal < ApplicationRecord
 
   def must_have_at_least_one_vendor
     errors.add(:base, "Select at least one vendor.") if vendor_registrations.blank?
+    return unless below_10k?
+    return unless vendor_registrations.size > 1
+
+    errors.add(:base, "Below 10K me sirf ek vendor select kiya ja sakta hai.")
   end
 
   def must_have_at_least_one_item

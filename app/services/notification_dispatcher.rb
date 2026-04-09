@@ -143,4 +143,16 @@ class NotificationDispatcher
       )
     end
   end
+
+  def self.notify_quotation_max_rate_required(quotation_proposal, proposal_vendor)
+    return unless quotation_proposal.user.present?
+
+    item_names = quotation_proposal.missing_max_rate_items.map(&:item_name).join(", ")
+    Notification.create!(
+      user: quotation_proposal.user,
+      notifiable: quotation_proposal,
+      title: "Max Rate Required",
+      message: "#{proposal_vendor.vendor_registration.display_name} filled quotation details for #{quotation_proposal.subject}, but final submit is pending. Please fill max rate for: #{item_names}."
+    )
+  end
 end
