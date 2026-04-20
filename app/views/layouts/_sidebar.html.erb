@@ -79,6 +79,7 @@
             <% end %>
             <% if can_view_menu?("quotation_proposal_list") || can_view_menu?("quotation_proposal_form") %>
               <li><%= link_to "Quotation Proposal List", list_quotation_proposals_path, class: "nav-link" %></li>
+              <li><%= link_to "Payment Advice Queue", payment_advice_quotation_proposals_path, class: "nav-link" %></li>
             <% end %>
           </ul>
         </div>

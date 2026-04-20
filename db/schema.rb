@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_09_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_20_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -305,6 +305,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_09_090000) do
 
   create_table "quotation_proposal_vendor_invoice_requests", force: :cascade do |t|
     t.datetime "accepted_at"
+    t.string "asa_account_no"
+    t.string "asa_bank_name"
     t.datetime "assets_created_at"
     t.datetime "created_at", null: false
     t.datetime "invoice_uploaded_at"
@@ -312,14 +314,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_09_090000) do
     t.text "maker_review_remark"
     t.datetime "maker_reviewed_at"
     t.bigint "maker_reviewed_by_id"
+    t.datetime "payment_advice_sent_at"
+    t.bigint "payment_advice_updated_by_id"
+    t.datetime "payment_reference_marked_at"
+    t.bigint "payment_reference_marked_by_id"
+    t.string "pdo_no"
     t.bigint "quotation_proposal_vendor_id", null: false
     t.string "request_token", null: false
     t.datetime "requested_at"
     t.datetime "returned_at"
+    t.date "rfp_created_on"
+    t.string "rfp_no"
     t.string "status", default: "pending_invoice", null: false
     t.datetime "updated_at", null: false
+    t.date "utr_date"
+    t.string "utr_no"
     t.text "vendor_remark"
     t.index ["maker_reviewed_by_id"], name: "idx_invoice_requests_on_maker_reviewed_by"
+    t.index ["payment_advice_updated_by_id"], name: "idx_invoice_requests_on_payment_advice_by"
+    t.index ["payment_reference_marked_by_id"], name: "idx_invoice_requests_on_payment_ref_by"
     t.index ["quotation_proposal_vendor_id"], name: "idx_qp_vendor_invoice_requests_on_proposal_vendor"
     t.index ["request_token"], name: "idx_qp_vendor_invoice_requests_on_token", unique: true
   end
@@ -666,6 +679,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_09_090000) do
   add_foreign_key "quotation_proposal_items", "quotation_proposals"
   add_foreign_key "quotation_proposal_items", "units"
   add_foreign_key "quotation_proposal_vendor_invoice_requests", "employee_masters", column: "maker_reviewed_by_id"
+  add_foreign_key "quotation_proposal_vendor_invoice_requests", "employee_masters", column: "payment_advice_updated_by_id"
+  add_foreign_key "quotation_proposal_vendor_invoice_requests", "employee_masters", column: "payment_reference_marked_by_id"
   add_foreign_key "quotation_proposal_vendor_invoice_requests", "quotation_proposal_vendors"
   add_foreign_key "quotation_proposal_vendor_items", "quotation_proposal_items"
   add_foreign_key "quotation_proposal_vendor_items", "quotation_proposal_vendors"

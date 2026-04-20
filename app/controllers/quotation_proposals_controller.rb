@@ -4,11 +4,12 @@ class QuotationProposalsController < ApplicationController
   before_action :set_quotation_proposal, only: %i[
     show edit update destroy approve_committee return_committee
     send_to_vendors score_vendor score_vendors select_vendor purchase_order send_purchase_order update_purchase_order_reply goods_receive update_goods_receive
-    new_invoice_request_assets create_invoice_request_assets review_invoice_request
+    new_invoice_request_assets create_invoice_request_assets review_invoice_request assign_payment_references
   ]
   before_action :ensure_quotation_owner_access!, only: %i[edit update destroy send_to_vendors purchase_order send_purchase_order goods_receive update_goods_receive new_invoice_request_assets create_invoice_request_assets review_invoice_request]
+  before_action :ensure_quotation_owner_access!, only: %i[assign_payment_references]
   before_action :authorize_quotation_form_access!, only: %i[index new create edit update destroy send_for_approval send_to_vendors]
-  before_action :authorize_quotation_list_access!, only: %i[list]
+  before_action :authorize_quotation_list_access!, only: %i[list payment_advice update_payment_advice]
   before_action :authorize_quotation_view_access!, only: %i[show approve_committee return_committee]
   before_action :authorize_committee_comparison_access!, only: %i[score_vendor score_vendors select_vendor]
 
@@ -48,8 +49,25 @@ class QuotationProposalsController < ApplicationController
 
   end
 
+  def payment_advice
+    @payment_advice_requests = QuotationProposalVendorInvoiceRequest
+      .includes(
+        :payment_reference_marked_by,
+        :payment_advice_updated_by,
+        { vendor_invoices_attachments: :blob },
+        quotation_proposal_vendor: [:vendor_registration, :quotation_proposal]
+      )
+      .where.not(pdo_no: [nil, ""])
+      .where.not(rfp_no: [nil, ""])
+      .where.not(rfp_created_on: nil)
+      .where(payment_advice_sent_at: nil)
+      .order(payment_reference_marked_at: :desc, updated_at: :desc)
+  end
+
   def show
     @quotation_proposal.approval_request&.ensure_channel_steps_synced!
+    @current_scoring_employee = current_employee_master
+    @committee_member_count = @quotation_proposal.committee_steps.size
     @authorized_by_options = EmployeeMaster.order(:name)
     @selected_authorized_by_id = params[:authorized_by_id].presence
     @selected_vendor_response = @quotation_proposal.quotation_proposal_vendors
@@ -58,7 +76,7 @@ class QuotationProposalsController < ApplicationController
         :purchase_order_authorized_by,
         :purchase_order_reply_updated_by,
         purchase_order_activities: :employee_master,
-        invoice_requests: [:maker_reviewed_by, { assets: :product }, { vendor_invoices_attachments: :blob }]
+        invoice_requests: [:maker_reviewed_by, :payment_reference_marked_by, :payment_advice_updated_by, { assets: :product }, { vendor_invoices_attachments: :blob }]
       )
       .find_by(selected: true)
   end
@@ -508,6 +526,118 @@ class QuotationProposalsController < ApplicationController
     end
   end
 
+  def assign_payment_references
+    invoice_request_ids = Array(params[:invoice_request_ids]).reject(&:blank?).map(&:to_i)
+    pdo_no = params[:pdo_no].to_s.strip
+    rfp_no = params[:rfp_no].to_s.strip
+    rfp_created_on = parse_finance_date(params[:rfp_created_on])
+
+    if invoice_request_ids.blank?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Please select at least one accepted invoice request."
+      return
+    end
+
+    if pdo_no.blank? || rfp_no.blank? || rfp_created_on.blank?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "PDO No, RFP No, and RFP Create Date are required."
+      return
+    end
+
+    selected_requests = QuotationProposalVendorInvoiceRequest
+      .includes(quotation_proposal_vendor: :vendor_registration)
+      .where(id: invoice_request_ids, quotation_proposal_vendor_id: @quotation_proposal.quotation_proposal_vendors.select(:id))
+
+    eligible_requests = selected_requests.select { |request| request.accepted? && !request.payment_reference_assigned? }
+
+    if eligible_requests.blank?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "No eligible accepted invoice request was selected for finance processing."
+      return
+    end
+
+    marked_at = Time.current
+    actor_employee = approval_actor_for(@quotation_proposal)
+
+    QuotationProposalVendorInvoiceRequest.transaction do
+      eligible_requests.each do |request|
+        request.update!(
+          pdo_no: pdo_no,
+          rfp_no: rfp_no,
+          rfp_created_on: rfp_created_on,
+          payment_reference_marked_at: marked_at,
+          payment_reference_marked_by: actor_employee
+        )
+
+        request.quotation_proposal_vendor.add_purchase_order_activity!(
+          action_type: "invoice_sent_to_finance",
+          actor_name: actor_display_name,
+          actor_role: actor_role_label,
+          note: "Invoice request #{request.id} marked for finance processing. PDO No: #{pdo_no}, RFP No: #{rfp_no}, RFP Create Date: #{rfp_created_on.strftime("%d-%m-%Y")}.",
+          employee_master: actor_employee,
+          user: current_user,
+          occurred_at: marked_at
+        )
+      end
+    end
+
+    redirect_to quotation_proposal_path(@quotation_proposal), notice: "#{eligible_requests.size} invoice request(s) moved to finance queue successfully."
+  end
+
+  def update_payment_advice
+    @invoice_request = QuotationProposalVendorInvoiceRequest
+      .includes(quotation_proposal_vendor: [:vendor_registration, :quotation_proposal])
+      .find_by(id: params[:invoice_request_id])
+
+    if @invoice_request.blank?
+      redirect_to payment_advice_quotation_proposals_path, alert: "Invoice request was not found."
+      return
+    end
+
+    unless @invoice_request.payment_advice_pending?
+      redirect_to payment_advice_quotation_proposals_path, alert: "Only finance-queued invoices can receive payment advice."
+      return
+    end
+
+    utr_no = params[:utr_no].to_s.strip
+    utr_date = parse_finance_date(params[:utr_date])
+    asa_bank_name = params[:asa_bank_name].to_s.strip
+    asa_account_no = params[:asa_account_no].to_s.strip
+
+    if utr_no.blank? || utr_date.blank? || asa_bank_name.blank? || asa_account_no.blank?
+      redirect_to payment_advice_quotation_proposals_path, alert: "UTR No, UTR Date, Bank, and ASA Account No are required."
+      return
+    end
+
+    advice_time = Time.current
+    actor_employee = current_employee_master
+
+    @invoice_request.update!(
+      utr_no: utr_no,
+      utr_date: utr_date,
+      asa_bank_name: asa_bank_name,
+      asa_account_no: asa_account_no,
+      payment_advice_sent_at: advice_time,
+      payment_advice_updated_by: actor_employee
+    )
+
+    proposal_vendor = @invoice_request.quotation_proposal_vendor
+    quotation_proposal = proposal_vendor.quotation_proposal
+
+    proposal_vendor.add_purchase_order_activity!(
+      action_type: "payment_advice_sent",
+      actor_name: actor_display_name,
+      actor_role: "Finance",
+      note: "Payment advice recorded for invoice request #{@invoice_request.id}. UTR No: #{utr_no}, UTR Date: #{utr_date.strftime("%d-%m-%Y")}, Bank: #{asa_bank_name}, ASA Account No: #{asa_account_no}.",
+      employee_master: actor_employee,
+      user: current_user,
+      occurred_at: advice_time
+    )
+
+    dispatch = proposal_vendor.dispatch_record!
+    sms_sent = QuotationVendorSmsGateway.send_payment_advice(dispatch, @invoice_request)
+    NotificationDispatcher.notify_invoice_payment_advice_sent(quotation_proposal, proposal_vendor, @invoice_request, actor_name: actor_display_name)
+
+    redirect_to payment_advice_quotation_proposals_path, notice: "Payment advice submitted successfully.#{sms_sent ? " Vendor SMS sent." : " Vendor SMS could not be delivered."}"
+  end
+
   def create_invoice_request_assets
     load_invoice_request_asset_context!
     return if performed?
@@ -950,6 +1080,14 @@ class QuotationProposalsController < ApplicationController
       "#{item[:item_name]} #{item[:received_quantity]} #{item[:unit_name]}".strip
     end.join(", ")
     "Goods received and invoice requested for: #{summary}"
+  end
+
+  def parse_finance_date(raw_value)
+    return if raw_value.blank?
+
+    Date.parse(raw_value.to_s)
+  rescue ArgumentError
+    nil
   end
 
   def build_invoice_request_asset_rows(invoice_request)

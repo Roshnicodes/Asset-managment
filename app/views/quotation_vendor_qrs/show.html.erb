@@ -8,198 +8,112 @@
   completion_value = vendor_remark_lines.find { |line| line.downcase.start_with?("date of completion:") }&.split(":", 2)&.last.to_s.strip
   warranty_value = vendor_remark_lines.find { |line| line.downcase.start_with?("warranty period:") }&.split(":", 2)&.last.to_s.strip
   earnest_money_value = vendor_remark_lines.find { |line| line.downcase.start_with?("earnest money deposit:") }&.split(":", 2)&.last.to_s.strip
-  asa_reference_no = "ASA/#{@quotation_proposal.id}/#{(@quotation_proposal.sent_to_vendors_at&.year || Time.current.year)}"
 %>
 
-<% if otp_verified %>
-  <style>
-    .vendor-quote-shell {
-      display: grid;
-      gap: 1.4rem;
-    }
+<style>
+  .vendor-quote-shell {
+    display: grid;
+    gap: 1.25rem;
+  }
 
-    .vendor-quote-card {
-      padding: 1.4rem;
-    }
+  .vendor-quote-card {
+    padding: 1.35rem;
+  }
 
-    .vendor-quote-card-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: end;
-      gap: 1rem;
-      margin-bottom: 1rem;
-      padding-bottom: 0.85rem;
-      border-bottom: 1px solid #d9e6de;
-      flex-wrap: wrap;
-    }
+  .vendor-quote-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
 
-    .vendor-quote-card-head h3 {
-      margin: 0;
-      color: #163526;
-      font-size: 1.15rem;
-    }
+  .vendor-quote-hero-title {
+    margin: 0;
+    font-size: 1.9rem;
+    color: #18382a;
+  }
 
-    .vendor-quote-card-note {
-      margin: 0.2rem 0 0;
-      color: #6b8e7f;
-      font-size: 0.92rem;
-    }
+  .vendor-quote-hero-subtitle {
+    margin: 0.45rem 0 0;
+    color: #6b8e7f;
+    font-size: 1rem;
+  }
 
-    .vendor-quote-ref-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 1rem;
-      align-items: end;
-    }
+  .vendor-quote-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+  }
 
-    .vendor-quote-ref-value {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #1a3a2a;
-      letter-spacing: 0.01em;
-    }
+  .vendor-quote-summary .is-wide {
+    grid-column: span 2;
+  }
 
-    .vendor-quote-ref-input label {
-      margin-bottom: 0.45rem;
-    }
+  .vendor-quote-table td,
+  .vendor-quote-table th {
+    vertical-align: middle;
+  }
 
-    .vendor-quote-hero {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 1rem;
-      flex-wrap: wrap;
-    }
+  .vendor-quote-table input,
+  .vendor-quote-table textarea {
+    min-width: 120px;
+  }
 
-    .vendor-quote-hero-title {
-      margin: 0;
-      font-size: 2rem;
-      color: #18382a;
-    }
+  .vendor-quote-actionbar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.8rem;
+    padding: 1rem 1.2rem;
+    border: 1px solid #d4e8df;
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 250, 246, 0.98));
+    box-shadow: 0 10px 24px rgba(26, 58, 42, 0.06);
+    position: sticky;
+    bottom: 1rem;
+    z-index: 2;
+  }
 
-    .vendor-quote-hero-subtitle {
-      margin: 0.45rem 0 0;
-      color: #6b8e7f;
-      font-size: 1rem;
-    }
+  .vendor-quote-actionbar .app-form-submit,
+  .vendor-quote-actionbar .app-secondary-btn {
+    min-width: 168px;
+    min-height: 52px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.85rem 1.5rem;
+    box-sizing: border-box;
+    text-align: center;
+  }
 
-    .vendor-quote-badge-row {
-      display: flex;
-      align-items: center;
-      gap: 0.7rem;
-      flex-wrap: wrap;
-    }
-
+  @media (max-width: 900px) {
     .vendor-quote-summary {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 1rem;
-    }
-
-    .vendor-quote-summary .app-detail-item {
-      min-height: 100%;
+      grid-template-columns: 1fr !important;
     }
 
     .vendor-quote-summary .is-wide {
-      grid-column: span 2;
-    }
-
-    .vendor-quote-section-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: end;
-      gap: 1rem;
-      margin-bottom: 0.9rem;
-      flex-wrap: wrap;
-    }
-
-    .vendor-quote-section-head h3 {
-      margin: 0;
-    }
-
-    .vendor-quote-table th {
-      white-space: nowrap;
-    }
-
-    .vendor-quote-table td {
-      vertical-align: middle;
-    }
-
-    .vendor-quote-table input,
-    .vendor-quote-table textarea,
-    .vendor-quote-table select {
-      min-width: 120px;
-    }
-
-    .vendor-quote-terms th {
-      width: 22%;
-      min-width: 220px;
-      white-space: nowrap;
+      grid-column: span 1;
     }
 
     .vendor-quote-actionbar {
-      display: flex;
-      justify-content: flex-end;
-      gap: 0.8rem;
-      padding: 1rem 1.2rem;
-      border: 1px solid #d4e8df;
-      border-radius: 16px;
-      background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 250, 246, 0.98));
-      box-shadow: 0 10px 24px rgba(26, 58, 42, 0.06);
-      position: sticky;
-      bottom: 1rem;
-      z-index: 2;
+      position: static;
+      padding: 0;
+      border: 0;
+      box-shadow: none;
+      background: transparent;
+      justify-content: flex-start;
+      flex-direction: column;
     }
 
     .vendor-quote-actionbar .app-form-submit,
     .vendor-quote-actionbar .app-secondary-btn {
-      min-width: 168px;
-      min-height: 52px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0.85rem 1.5rem;
-      box-sizing: border-box;
-      text-align: center;
+      width: 100%;
+      min-width: 0;
     }
+  }
+</style>
 
-    @media (max-width: 900px) {
-      .vendor-quote-ref-grid,
-      .vendor-quote-summary,
-      .vendor-quote-summary-compact {
-        grid-template-columns: 1fr !important;
-      }
-
-      .vendor-quote-card {
-        padding: 1rem;
-      }
-
-      .vendor-quote-summary .is-wide {
-        grid-column: span 1;
-      }
-
-      .vendor-quote-terms th {
-        width: auto;
-        min-width: 0;
-      }
-
-      .vendor-quote-actionbar {
-        position: static;
-        padding: 0;
-        border: 0;
-        box-shadow: none;
-        background: transparent;
-        justify-content: flex-start;
-      }
-
-      .vendor-quote-actionbar .app-form-submit,
-      .vendor-quote-actionbar .app-secondary-btn {
-        min-width: 0;
-        width: 100%;
-      }
-    }
-  </style>
-
+<% if otp_verified %>
   <script>
     window.history.pushState(null, "", window.location.href);
     window.addEventListener("popstate", function () {
@@ -209,7 +123,7 @@
 
   <%= form_with model: @quotation_proposal_vendor, url: quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token, direct_access: ("1" if direct_access_mode), verified: ("1" if direct_access_mode)), method: :patch, local: true, data: { vendor_quote_calc: true } do |form| %>
     <div class="vendor-quote-shell">
-      <%= render "document_branding", firm_name: (@vendor_registration.firm_name.presence || @vendor_registration.display_name) %>
+      <%= render "document_branding", vendor_name: (@vendor_registration.firm_name.presence || @vendor_registration.display_name) %>
 
       <div class="app-detail-card vendor-quote-card">
         <div class="vendor-quote-hero">
@@ -218,114 +132,173 @@
             <h1 class="vendor-quote-hero-title">Vendor Quotation Form</h1>
             <p class="vendor-quote-hero-subtitle"><%= @vendor_registration.display_name %> for <%= @quotation_proposal.subject %></p>
           </div>
-
-      <span class="badge border bg-success bg-opacity-10 text-success px-3 py-2" style="font-size: 0.9rem;">
-        OTP Verified
-      </span>
-    </div>
-  </div>
-
-  <div class="app-page-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 1.5rem;">
-    <div>
-      <h2 style="margin: 0; font-size: 1.8rem; color: #1a3a2a;">Vendor Quotation Form</h2>
-      <p style="margin: 0.5rem 0 0 0; color: #6b8e7f; font-size: 0.95rem;">
-        <%= @vendor_registration.display_name %> for <%= @quotation_proposal.subject %>
-      </p>
-    </div>
-    <% if @quotation_proposal_vendor.response_submitted? %>
-      <div class="d-flex gap-2 flex-wrap">
-        <%= link_to "Print", print_quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token, direct_access: ("1" if direct_access_mode)), class: "app-secondary-btn", target: "_blank", rel: "noopener" %>
-      </div>
-    <% end %>
-  </div>
-
-  <div class="app-detail-card">
-    <div class="app-detail-grid">
-      <div class="app-detail-item">
-        <div class="app-detail-label">Quotation ID</div>
-        <div class="app-detail-value"><%= @quotation_proposal.id %></div>
-      </div>
-
-      <div class="app-detail-item">
-        <div class="app-detail-label">Vendor</div>
-        <div class="app-detail-value"><%= @vendor_registration.display_name %></div>
-      </div>
-
-      <div class="app-detail-item">
-        <div class="app-detail-label">Theme</div>
-        <div class="app-detail-value"><%= @quotation_proposal.theme.name %></div>
-      </div>
-
-      <div class="app-detail-item">
-        <div class="app-detail-label">Proposal End Date</div>
-        <div class="app-detail-value"><%= @quotation_proposal.proposal_end_date.strftime("%d-%m-%Y") %></div>
-      </div>
-
-      <div class="app-detail-item" style="grid-column: 1 / -1;">
-        <div class="app-detail-label">Remark</div>
-        <div class="app-detail-value"><%= @quotation_proposal.remark.presence || "-" %></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="app-page-header" style="margin-top: 1.5rem;">
-    <div>
-      <h3 style="margin-bottom: 0.25rem;">Quoted Items</h3>
-      <p class="app-section-note mb-0">Fill your quotation item-wise and submit the response.</p>
-    </div>
-  </div>
-
-  <%= form_with model: @quotation_proposal_vendor, url: quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token, direct_access: ("1" if direct_access_mode), verified: ("1" if direct_access_mode)), method: :patch, local: true, data: { vendor_quote_calc: true } do |form| %>
-    <div class="app-table-wrap" style="overflow-x: auto; overflow-y: visible;">
-      <table class="table app-table" style="min-width: 1400px;">
-        <thead>
-          <tr>
-            <th>Item Name</th>
-            <th>Unit</th>
-            <th>Quantity</th>
-            <th>Proposal Remark</th>
-            <th>Your Rate</th>
-            <th>Amount</th>
-            <th>GST %</th>
-            <th>Grand Total</th>
-            <th>Your Remark</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @quotation_proposal_vendor.vendor_items.includes(quotation_proposal_item: :unit).each do |vendor_item| %>
-            <%= form.fields_for :vendor_items, vendor_item do |item_form| %>
-              <tr data-vendor-quote-row>
-                <td>
-                  <%= vendor_item.quotation_proposal_item.item_name %>
-                  <%= item_form.hidden_field :id %>
-                </td>
-                <td><%= vendor_item.quotation_proposal_item.unit.name %></td>
-                <td data-quote-quantity><%= vendor_item.quotation_proposal_item.quantity %></td>
-                <td><%= vendor_item.quotation_proposal_item.remark.presence || "-" %></td>
-                <td><%= item_form.number_field :quoted_rate, step: :any, min: 0, required: true, data: { quote_rate: true } %></td>
-                <td data-amount-total><%= number_with_precision(vendor_item.line_total || 0, precision: 2) %></td>
-                <td><%= item_form.number_field :gst_percentage, step: :any, min: 0, placeholder: "GST %", data: { quote_gst: true } %></td>
-                <td data-grand-total><%= number_with_precision(vendor_item.grand_total, precision: 2) %></td>
-                <td><%= item_form.text_field :remark %></td>
-              </tr>
+          <div class="d-flex gap-2 flex-wrap">
+            <span class="badge border bg-success bg-opacity-10 text-success px-3 py-2">OTP Verified</span>
+            <% if @quotation_proposal_vendor.response_submitted? %>
+              <%= link_to "Print", print_quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token, direct_access: ("1" if direct_access_mode)), class: "app-secondary-btn", target: "_blank", rel: "noopener" %>
             <% end %>
           </div>
         </div>
       </div>
 
       <div class="app-detail-card vendor-quote-card">
-        <div class="vendor-quote-card-head">
+        <div class="vendor-quote-summary">
+          <div class="app-detail-item">
+            <div class="app-detail-label">Quotation ID</div>
+            <div class="app-detail-value"><%= @quotation_proposal.id %></div>
+          </div>
+          <div class="app-detail-item">
+            <div class="app-detail-label">Theme</div>
+            <div class="app-detail-value"><%= @quotation_proposal.theme.name %></div>
+          </div>
+          <div class="app-detail-item">
+            <div class="app-detail-label">Proposal End Date</div>
+            <div class="app-detail-value"><%= @quotation_proposal.proposal_end_date.strftime("%d-%m-%Y") %></div>
+          </div>
+          <div class="app-detail-item">
+            <div class="app-detail-label">Vendor</div>
+            <div class="app-detail-value"><%= @vendor_registration.display_name %></div>
+          </div>
+          <div class="app-detail-item is-wide">
+            <div class="app-detail-label">Proposal Remark</div>
+            <div class="app-detail-value"><%= @quotation_proposal.remark.presence || "-" %></div>
+          </div>
+          <div class="app-form-field">
+            <%= form.label :vendor_reference_no, "Vendor Reference No." %>
+            <%= form.text_field :vendor_reference_no, placeholder: "Enter vendor reference" %>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-detail-card vendor-quote-card">
+        <div class="app-page-header app-subsection-header-tight">
+          <div>
+            <h3 style="margin-bottom: 0.25rem;">Opening Message</h3>
+            <p class="app-section-note mb-0">Subject ke baad aur quoted items ke upar ye content print view me dikhai dega.</p>
+          </div>
+        </div>
+        <%= form.text_area :vendor_cover_note, rows: 6, class: "form-control", value: vendor_cover_note_value %>
+      </div>
+
+      <div class="app-detail-card vendor-quote-card">
+        <div class="app-page-header app-subsection-header-tight">
+          <div>
+            <h3 style="margin-bottom: 0.25rem;">Quoted Items</h3>
+            <p class="app-section-note mb-0">Har item ka rate, GST aur remark fill karke response submit karein.</p>
+          </div>
         </div>
 
-    <div class="app-form-actions">
-      <%= form.submit(@quotation_proposal_vendor.response_submitted? ? "Update Response" : "Submit Response", class: "app-form-submit") %>
-      <% if @quotation_proposal_vendor.response_submitted? %>
-        <%= link_to "Print", print_quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token, direct_access: ("1" if direct_access_mode)), class: "app-secondary-btn", target: "_blank", rel: "noopener" %>
-      <% end %>
+        <div class="app-table-wrap" style="overflow-x: auto; overflow-y: visible;">
+          <table class="table app-table vendor-quote-table" style="min-width: 1320px;">
+            <thead>
+              <tr>
+                <th>S.No.</th>
+                <th>Item Name</th>
+                <th>Unit</th>
+                <th>Quantity</th>
+                <th>Proposal Remark</th>
+                <th>Your Rate</th>
+                <th>Amount</th>
+                <th>GST %</th>
+                <th>Grand Total</th>
+                <th>Your Remark</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @quotation_proposal_vendor.vendor_items.includes(quotation_proposal_item: :unit).each_with_index do |vendor_item, index| %>
+                <%= form.fields_for :vendor_items, vendor_item do |item_form| %>
+                  <tr data-vendor-quote-row>
+                    <td><%= index + 1 %><%= item_form.hidden_field :id %></td>
+                    <td><%= vendor_item.quotation_proposal_item.item_name %></td>
+                    <td><%= vendor_item.quotation_proposal_item.unit.name %></td>
+                    <td data-quote-quantity><%= number_with_precision(vendor_item.quotation_proposal_item.quantity, precision: 2, strip_insignificant_zeros: true) %></td>
+                    <td><%= vendor_item.quotation_proposal_item.remark.presence || "-" %></td>
+                    <td><%= item_form.number_field :quoted_rate, step: :any, min: 0, required: true, data: { quote_rate: true } %></td>
+                    <td data-amount-total><%= number_with_precision(vendor_item.line_total || 0, precision: 2) %></td>
+                    <td><%= item_form.number_field :gst_percentage, step: :any, min: 0, placeholder: "GST %", data: { quote_gst: true } %></td>
+                    <td data-grand-total><%= number_with_precision(vendor_item.grand_total || 0, precision: 2) %></td>
+                    <td><%= item_form.text_field :remark %></td>
+                  </tr>
+                <% end %>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="app-detail-card vendor-quote-card">
+        <div class="vendor-quote-summary">
+          <div class="app-detail-item">
+            <div class="app-detail-label">Amount Total</div>
+            <div class="app-detail-value" data-summary-amount-total><%= number_with_precision(@quotation_proposal_vendor.total_quoted_amount, precision: 2) %></div>
+          </div>
+          <div class="app-detail-item">
+            <div class="app-detail-label">Grand Total</div>
+            <div class="app-detail-value" data-summary-grand-total><%= number_with_precision(@quotation_proposal_vendor.grand_total_amount, precision: 2) %></div>
+          </div>
+          <div class="app-detail-item is-wide">
+            <div class="app-detail-label">Amount in Words</div>
+            <div class="app-detail-value" data-summary-grand-words><%= amount_in_words(@quotation_proposal_vendor.grand_total_amount) %></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-detail-card vendor-quote-card">
+        <div class="app-page-header app-subsection-header-tight">
+          <div>
+            <h3 style="margin-bottom: 0.25rem;">Terms & Conditions</h3>
+            <p class="app-section-note mb-0">Ye internal vendor terms print form me bhi dikhengi.</p>
+          </div>
+        </div>
+        <input type="hidden" name="quotation_proposal_vendor[vendor_remark]" value="<%= @quotation_proposal_vendor.vendor_remark %>" data-vendor-remark-target>
+        <div class="app-form-grid two-col">
+          <div class="app-form-field">
+            <label>Payment Terms and condition</label>
+            <input type="text" value="<%= payment_terms_value %>" data-vendor-remark-part="payment_terms">
+          </div>
+          <div class="app-form-field">
+            <label>Date of completion</label>
+            <input type="text" value="<%= completion_value %>" data-vendor-remark-part="completion">
+          </div>
+          <div class="app-form-field">
+            <label>Warranty period</label>
+            <input type="text" value="<%= warranty_value %>" data-vendor-remark-part="warranty">
+          </div>
+          <div class="app-form-field">
+            <label>Earnest Money deposit</label>
+            <input type="text" value="<%= earnest_money_value %>" data-vendor-remark-part="earnest_money">
+          </div>
+        </div>
+      </div>
+
+      <div class="app-detail-card vendor-quote-card">
+        <div class="app-page-header app-subsection-header-tight">
+          <div>
+            <h3 style="margin-bottom: 0.25rem;">Upload Any Documents (Optional)</h3>
+            <p class="app-section-note mb-0">Supporting PDF ya image files yahan attach kar sakte hain.</p>
+          </div>
+        </div>
+        <%= form.file_field :vendor_documents, multiple: true, accept: ".pdf,image/*", class: "form-control" %>
+
+        <% if @quotation_proposal_vendor.vendor_documents.attached? %>
+          <div class="mt-3 d-flex flex-wrap gap-2">
+            <% @quotation_proposal_vendor.vendor_documents.each do |document| %>
+              <%= link_to document.filename.to_s, rails_blob_path(document, disposition: "attachment"), class: "app-secondary-btn" %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="vendor-quote-actionbar">
+        <%= form.submit(@quotation_proposal_vendor.response_submitted? ? "Update Response" : "Submit Response", class: "app-form-submit") %>
+        <% if @quotation_proposal_vendor.response_submitted? %>
+          <%= link_to "Print", print_quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token, direct_access: ("1" if direct_access_mode)), class: "app-secondary-btn", target: "_blank", rel: "noopener" %>
+        <% end %>
+      </div>
+
+      <%= render "document_footer" %>
     </div>
   <% end %>
-
-  <%= render "document_footer" %>
 <% else %>
   <div class="app-form-card" style="max-width: 720px; margin: 3rem auto;">
     <div class="app-page-header" style="margin-bottom: 1rem;">
@@ -340,7 +313,6 @@
         <div class="app-detail-label">Mobile Number</div>
         <div class="app-detail-value"><%= @quotation_vendor_dispatch.mobile_no.presence || "-" %></div>
       </div>
-
       <div class="app-detail-item">
         <div class="app-detail-label">Last OTP Sent At</div>
         <div class="app-detail-value"><%= @quotation_vendor_dispatch.latest_active_otp&.sent_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
@@ -373,22 +345,22 @@
 
 <script>
   (function() {
-    var hiddenField = document.querySelector('[data-vendor-remark-target]');
+    var hiddenField = document.querySelector("[data-vendor-remark-target]");
     if (!hiddenField) return;
 
     var inputs = {
-      paymentTerms: document.querySelector('[data-vendor-remark-part="payment_terms"]'),
-      completion: document.querySelector('[data-vendor-remark-part="completion"]'),
-      warranty: document.querySelector('[data-vendor-remark-part="warranty"]'),
-      earnestMoney: document.querySelector('[data-vendor-remark-part="earnest_money"]')
+      paymentTerms: document.querySelector("[data-vendor-remark-part='payment_terms']"),
+      completion: document.querySelector("[data-vendor-remark-part='completion']"),
+      warranty: document.querySelector("[data-vendor-remark-part='warranty']"),
+      earnestMoney: document.querySelector("[data-vendor-remark-part='earnest_money']")
     };
 
     function syncVendorRemark() {
       hiddenField.value = [
-        "Payment Terms and condition: " + (inputs.paymentTerms && inputs.paymentTerms.value || ""),
-        "Date of completion: " + (inputs.completion && inputs.completion.value || ""),
-        "Warranty period: " + (inputs.warranty && inputs.warranty.value || ""),
-        "Earnest Money deposit: " + (inputs.earnestMoney && inputs.earnestMoney.value || "")
+        "Payment Terms and condition: " + ((inputs.paymentTerms && inputs.paymentTerms.value) || ""),
+        "Date of completion: " + ((inputs.completion && inputs.completion.value) || ""),
+        "Warranty period: " + ((inputs.warranty && inputs.warranty.value) || ""),
+        "Earnest Money deposit: " + ((inputs.earnestMoney && inputs.earnestMoney.value) || "")
       ].join("\n");
     }
 
@@ -398,5 +370,58 @@
     });
 
     syncVendorRemark();
+  })();
+
+  (function() {
+    var form = document.querySelector("[data-vendor-quote-calc='true']");
+    if (!form) return;
+
+    function formatNumber(value) {
+      var number = Number(value || 0);
+      if (Number.isNaN(number)) number = 0;
+      return number.toFixed(2);
+    }
+
+    function recalcRow(row) {
+      var qtyCell = row.querySelector("[data-quote-quantity]");
+      var rateInput = row.querySelector("[data-quote-rate], input[data-quote-rate='true'], input[name*='[quoted_rate]']");
+      var gstInput = row.querySelector("[data-quote-gst], input[data-quote-gst='true'], input[name*='[gst_percentage]']");
+      var amountCell = row.querySelector("[data-amount-total]");
+      var grandCell = row.querySelector("[data-grand-total]");
+
+      var quantity = parseFloat(qtyCell && qtyCell.textContent) || 0;
+      var rate = parseFloat(rateInput && rateInput.value) || 0;
+      var gst = parseFloat(gstInput && gstInput.value) || 0;
+      var amount = quantity * rate;
+      var grand = amount + (amount * gst / 100.0);
+
+      if (amountCell) amountCell.textContent = formatNumber(amount);
+      if (grandCell) grandCell.textContent = formatNumber(grand);
+
+      return { amount: amount, grand: grand };
+    }
+
+    function recalcAll() {
+      var totals = { amount: 0, grand: 0 };
+
+      form.querySelectorAll("[data-vendor-quote-row]").forEach(function(row) {
+        var rowTotals = recalcRow(row);
+        totals.amount += rowTotals.amount;
+        totals.grand += rowTotals.grand;
+      });
+
+      var amountTotal = form.querySelector("[data-summary-amount-total]");
+      var grandTotal = form.querySelector("[data-summary-grand-total]");
+      if (amountTotal) amountTotal.textContent = formatNumber(totals.amount);
+      if (grandTotal) grandTotal.textContent = formatNumber(totals.grand);
+    }
+
+    form.addEventListener("input", function(event) {
+      if (event.target.matches("input[data-quote-rate='true'], input[data-quote-gst='true']")) {
+        recalcAll();
+      }
+    });
+
+    recalcAll();
   })();
 </script>

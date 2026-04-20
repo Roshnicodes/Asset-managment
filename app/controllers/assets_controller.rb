@@ -49,7 +49,12 @@ class AssetsController < ApplicationController
   end
 
   def remove
-    asset = Asset.find(params[:id])
+    asset = Asset.find_by(id: params[:id])
+
+    unless asset
+      redirect_to assets_path, alert: "Asset was already deleted or could not be found."
+      return
+    end
 
     if asset.destroy
       redirect_to assets_path, notice: "Asset deleted successfully."

@@ -388,17 +388,17 @@
                 <% if proposal_vendor.response_submitted? %>
                   <% if committee_scoring_allowed %>
                     <div class="d-flex gap-2 align-items-center flex-wrap">
-                      <%= number_field_tag "committee_scores[#{proposal_vendor.id}]", proposal_vendor.score_for(current_scoring_employee), min: 0, placeholder: "Enter score", class: "form-control", style: "max-width: 130px;" %>
+                      <%= number_field_tag "committee_scores[#{proposal_vendor.id}]", proposal_vendor.score_for(@current_scoring_employee), min: 0, placeholder: "Enter score", class: "form-control", style: "max-width: 130px;" %>
                     </div>
                   <% else %>
                     <span class="text-muted">Committee members can update score</span>
                   <% end %>
                   <div class="small text-muted mt-2">
-                    Your saved score: <strong><%= proposal_vendor.score_for(current_scoring_employee).presence || "Not scored yet" %></strong>
+                    Your saved score: <strong><%= proposal_vendor.score_for(@current_scoring_employee).presence || "Not scored yet" %></strong>
                   </div>
                   <div class="small text-muted mt-1">
                     Total score: <strong><%= proposal_vendor.committee_score_value.presence || "Not scored yet" %></strong>
-                    | Scored by: <strong><%= proposal_vendor.committee_score_count %>/<%= committee_member_count %></strong>
+                    | Scored by: <strong><%= proposal_vendor.committee_score_count %>/<%= @committee_member_count %></strong>
                   </div>
                 <% else %>
                   <span class="text-muted">Awaiting vendor response</span>
@@ -562,6 +562,55 @@
 
         <div class="mt-4">
           <h4 style="margin-bottom: 0.85rem;">Goods Receive Invoice Requests</h4>
+          <% finance_ready_requests = @selected_vendor_response.invoice_requests.recent_first.select { |request| request.accepted? && !request.payment_reference_assigned? } %>
+          <% if current_user == @quotation_proposal.user %>
+            <div style="border: 1px solid #d8e6de; border-radius: 16px; padding: 1rem 1.05rem; background: #fcfefd; margin-bottom: 1rem;">
+              <div class="d-flex justify-content-between gap-3 flex-wrap align-items-start">
+                <div>
+                  <div style="font-weight: 700;">Send Accepted Invoices To Finance</div>
+                  <div class="small text-muted mt-1">Jin accepted invoices ki payment process karni hai unhe tick karke same PDO/RFP/date ke saath finance queue me bhej sakte hain.</div>
+                </div>
+                <% if @selected_vendor_response.invoice_requests.any?(&:payment_advice_pending?) %>
+                  <%= link_to "Open Finance Queue", payment_advice_quotation_proposals_path, class: "app-secondary-btn" %>
+                <% end %>
+              </div>
+
+              <% if finance_ready_requests.any? %>
+                <%= form_with url: assign_payment_references_quotation_proposal_path(@quotation_proposal), method: :patch, local: true do %>
+                  <div class="mt-3 d-flex gap-2 flex-wrap">
+                    <% finance_ready_requests.each do |invoice_request| %>
+                      <label style="border: 1px solid #d9e5df; border-radius: 999px; padding: 0.4rem 0.8rem; background: #fff; display: inline-flex; align-items: center; gap: 0.45rem; cursor: pointer;">
+                        <%= check_box_tag "invoice_request_ids[]", invoice_request.id, false %>
+                        <span>Invoice Request <%= invoice_request.id %></span>
+                      </label>
+                    <% end %>
+                  </div>
+
+                  <div class="row g-3 mt-2">
+                    <div class="col-md-4">
+                      <label class="form-label" style="font-weight: 700;">PDO No</label>
+                      <%= text_field_tag :pdo_no, nil, class: "form-control", required: true %>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label" style="font-weight: 700;">RFP No</label>
+                      <%= text_field_tag :rfp_no, nil, class: "form-control", required: true %>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label" style="font-weight: 700;">RFP Create Date</label>
+                      <%= date_field_tag :rfp_created_on, nil, class: "form-control", required: true %>
+                    </div>
+                  </div>
+
+                  <div class="d-flex justify-content-end mt-3">
+                    <%= submit_tag "Move Selected Invoices To Finance", class: "app-form-submit" %>
+                  </div>
+                <% end %>
+              <% else %>
+                <div class="small text-muted mt-3">Abhi koi accepted invoice request finance reference entry ke liye pending nahi hai.</div>
+              <% end %>
+            </div>
+          <% end %>
+
           <div class="d-grid gap-3">
             <% if @selected_vendor_response.invoice_requests.recent_first.any? %>
               <% @selected_vendor_response.invoice_requests.recent_first.each do |invoice_request| %>

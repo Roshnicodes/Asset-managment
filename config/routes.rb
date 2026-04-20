@@ -19,12 +19,15 @@ Rails.application.routes.draw do
   resources :quotation_proposals do
     collection do
       get :list
+      get :payment_advice
+      patch "payment_advice/:invoice_request_id", action: :update_payment_advice, as: :update_payment_advice
       post :send_for_approval
     end
     member do
       post :send_for_approval
       patch :approve_committee
       patch :return_committee
+      patch :assign_payment_references
       post :send_to_vendors
       get :purchase_order
       post :send_purchase_order

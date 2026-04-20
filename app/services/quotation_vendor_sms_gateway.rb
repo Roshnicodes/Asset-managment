@@ -76,6 +76,16 @@ class QuotationVendorSmsGateway
     )
   end
 
+  def self.send_payment_advice(dispatch, invoice_request)
+    config = sms_config_for(dispatch)
+    send_sms(
+      mobile_no: dispatch.mobile_no,
+      message: payment_advice_message(dispatch, invoice_request, config: config),
+      template_id: config[:link_template_id],
+      config: config
+    )
+  end
+
   def self.vendor_link_for(token)
     "#{base_url}/q/#{token}"
   end
@@ -133,6 +143,20 @@ class QuotationVendorSmsGateway
       "Dear #{vendor_name}, Invoice for quotation #{quotation_reference} has been returned. Please re-upload the corrected invoice through link: #{link}. - ACTION FOR SOCIAL ADVANCEMENT"
     else
       "Dear #{vendor_name}, invoice for quotation #{quotation_reference} has been returned. Please re-upload the corrected invoice using this link: #{link}."
+    end
+  end
+
+  def self.payment_advice_message(dispatch, invoice_request, config:)
+    vendor_name = sms_vendor_name(dispatch, config: config)
+    quotation_reference = quotation_reference_for(dispatch)
+    utr_date = invoice_request.utr_date&.strftime("%d-%m-%Y")
+    bank_name = invoice_request.asa_bank_name.to_s.strip
+    account_no = invoice_request.asa_account_no.to_s.strip
+
+    if config[:profile] == :asa
+      "Dear #{vendor_name}, payment advice for quotation #{quotation_reference} is ready. PDO No: #{invoice_request.pdo_no}, RFP No: #{invoice_request.rfp_no}, UTR No: #{invoice_request.utr_no}, UTR Date: #{utr_date}, Bank: #{bank_name}, A/C: #{account_no}. - ACTION FOR SOCIAL ADVANCEMENT"
+    else
+      "Dear #{vendor_name}, payment advice for quotation #{quotation_reference} is ready. PDO No: #{invoice_request.pdo_no}, RFP No: #{invoice_request.rfp_no}, UTR No: #{invoice_request.utr_no}, UTR Date: #{utr_date}, Bank: #{bank_name}, A/C: #{account_no}."
     end
   end
 

@@ -143,4 +143,135 @@ class NotificationDispatcher
       )
     end
   end
+
+  def self.notify_purchase_order_sent(quotation_proposal, proposal_vendor)
+    users = quotation_proposal.committee_steps.includes(:employee_master).map do |step|
+      User.find_by(email: step.employee_master.email_id)
+    end.compact
+    users << quotation_proposal.user if quotation_proposal.user.present?
+
+    users.compact.uniq.each do |user|
+      Notification.create!(
+        user: user,
+        notifiable: quotation_proposal,
+        title: "Purchase Order Sent",
+        message: "Purchase order has been sent to #{proposal_vendor.vendor_registration.display_name} for #{quotation_proposal.subject}."
+      )
+    end
+  end
+
+  def self.notify_purchase_order_reply_updated(quotation_proposal, proposal_vendor, actor_name:)
+    users = quotation_proposal.committee_steps.includes(:employee_master).map do |step|
+      User.find_by(email: step.employee_master.email_id)
+    end.compact
+    users << quotation_proposal.user if quotation_proposal.user.present?
+
+    users.compact.uniq.each do |user|
+      Notification.create!(
+        user: user,
+        notifiable: quotation_proposal,
+        title: "Purchase Order Reply Updated",
+        message: "Purchase order reply for vendor #{proposal_vendor.vendor_registration.display_name} was updated by #{actor_name}."
+      )
+    end
+  end
+
+  def self.notify_purchase_order_vendor_action(quotation_proposal, proposal_vendor)
+    users = quotation_proposal.committee_steps.includes(:employee_master).map do |step|
+      User.find_by(email: step.employee_master.email_id)
+    end.compact
+    users << quotation_proposal.user if quotation_proposal.user.present?
+
+    decision = proposal_vendor.purchase_order_status.to_s.humanize
+    remark = proposal_vendor.purchase_order_remark.to_s.strip
+
+    users.compact.uniq.each do |user|
+      Notification.create!(
+        user: user,
+        notifiable: quotation_proposal,
+        title: "Vendor Purchase Order Response",
+        message: "#{proposal_vendor.vendor_registration.display_name} marked the purchase order as #{decision}.#{remark.present? ? " Remark: #{remark}" : ""}"
+      )
+    end
+  end
+
+  def self.notify_goods_receive_invoice_requested(quotation_proposal, proposal_vendor, invoice_request)
+    users = quotation_proposal.committee_steps.includes(:employee_master).map do |step|
+      User.find_by(email: step.employee_master.email_id)
+    end.compact
+    users << quotation_proposal.user if quotation_proposal.user.present?
+
+    users.compact.uniq.each do |user|
+      Notification.create!(
+        user: user,
+        notifiable: quotation_proposal,
+        title: "Invoice Requested From Vendor",
+        message: "Invoice request #{invoice_request.id} has been sent to #{proposal_vendor.vendor_registration.display_name} after goods receive."
+      )
+    end
+  end
+
+  def self.notify_goods_receive_invoice_uploaded(quotation_proposal, proposal_vendor, invoice_request)
+    users = quotation_proposal.committee_steps.includes(:employee_master).map do |step|
+      User.find_by(email: step.employee_master.email_id)
+    end.compact
+    users << quotation_proposal.user if quotation_proposal.user.present?
+
+    users.compact.uniq.each do |user|
+      Notification.create!(
+        user: user,
+        notifiable: quotation_proposal,
+        title: "Vendor Invoice Uploaded",
+        message: "#{proposal_vendor.vendor_registration.display_name} uploaded invoice for request #{invoice_request.id}."
+      )
+    end
+  end
+
+  def self.notify_goods_receive_invoice_returned(quotation_proposal, proposal_vendor, invoice_request)
+    users = quotation_proposal.committee_steps.includes(:employee_master).map do |step|
+      User.find_by(email: step.employee_master.email_id)
+    end.compact
+    users << quotation_proposal.user if quotation_proposal.user.present?
+
+    users.compact.uniq.each do |user|
+      Notification.create!(
+        user: user,
+        notifiable: quotation_proposal,
+        title: "Vendor Invoice Returned",
+        message: "Invoice request #{invoice_request.id} for vendor #{proposal_vendor.vendor_registration.display_name} was returned for correction."
+      )
+    end
+  end
+
+  def self.notify_goods_receive_invoice_accepted(quotation_proposal, proposal_vendor, invoice_request)
+    users = quotation_proposal.committee_steps.includes(:employee_master).map do |step|
+      User.find_by(email: step.employee_master.email_id)
+    end.compact
+    users << quotation_proposal.user if quotation_proposal.user.present?
+
+    users.compact.uniq.each do |user|
+      Notification.create!(
+        user: user,
+        notifiable: quotation_proposal,
+        title: "Vendor Invoice Accepted",
+        message: "Invoice request #{invoice_request.id} for vendor #{proposal_vendor.vendor_registration.display_name} has been accepted."
+      )
+    end
+  end
+
+  def self.notify_invoice_payment_advice_sent(quotation_proposal, proposal_vendor, invoice_request, actor_name:)
+    users = quotation_proposal.committee_steps.includes(:employee_master).map do |step|
+      User.find_by(email: step.employee_master.email_id)
+    end.compact
+    users << quotation_proposal.user if quotation_proposal.user.present?
+
+    users.compact.uniq.each do |user|
+      Notification.create!(
+        user: user,
+        notifiable: quotation_proposal,
+        title: "Invoice Payment Advice Sent",
+        message: "Payment advice has been recorded for invoice request #{invoice_request.id} of vendor #{proposal_vendor.vendor_registration.display_name} by #{actor_name}. UTR No: #{invoice_request.utr_no}."
+      )
+    end
+  end
 end

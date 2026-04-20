@@ -86,6 +86,14 @@ class QuotationProposalVendor < ApplicationRecord
     end
   end
 
+  def payment_advice_pending_requests?
+    if invoice_requests.loaded?
+      invoice_requests.any?(&:payment_advice_pending?)
+    else
+      invoice_requests.any? { |request| request.payment_advice_pending? }
+    end
+  end
+
   def add_purchase_order_activity!(action_type:, actor_name:, actor_role:, note: nil, employee_master: nil, user: nil, occurred_at: Time.current)
     purchase_order_activities.create!(
       action_type: action_type,

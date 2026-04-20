@@ -4,6 +4,8 @@ class QuotationProposalVendorInvoiceRequest < ApplicationRecord
 
   belongs_to :quotation_proposal_vendor
   belongs_to :maker_reviewed_by, class_name: "EmployeeMaster", optional: true
+  belongs_to :payment_reference_marked_by, class_name: "EmployeeMaster", optional: true
+  belongs_to :payment_advice_updated_by, class_name: "EmployeeMaster", optional: true
 
   has_many_attached :vendor_invoices
   has_many :assets, dependent: :nullify
@@ -50,6 +52,18 @@ class QuotationProposalVendorInvoiceRequest < ApplicationRecord
 
   def assets_created?
     assets_created_at.present? || assets.exists?
+  end
+
+  def payment_reference_assigned?
+    pdo_no.present? && rfp_no.present? && rfp_created_on.present?
+  end
+
+  def payment_advice_pending?
+    payment_reference_assigned? && payment_advice_sent_at.blank?
+  end
+
+  def payment_advised?
+    payment_advice_sent_at.present?
   end
 
   def snapshot_items
