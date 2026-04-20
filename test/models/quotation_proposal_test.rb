@@ -123,6 +123,69 @@ class QuotationProposalTest < ActiveSupport::TestCase
     )
   end
 
+  test "committee requires l1 l2 and l3 members" do
+    proposal = QuotationProposal.new
+    proposal.define_singleton_method(:committee_steps) do
+      [
+        OpenStruct.new(level: 1, employee_master_id: 11, marked_for_destruction?: false),
+        OpenStruct.new(level: 2, employee_master_id: nil, marked_for_destruction?: false),
+        OpenStruct.new(level: 3, employee_master_id: 13, marked_for_destruction?: false)
+      ]
+    end
+
+    proposal.send(:must_have_all_committee_levels)
+
+    assert_includes proposal.errors[:base], "L2 committee member mandatory hai."
+  end
+
+  test "committee allows sequential l1 l2 and l3 members" do
+    proposal = QuotationProposal.new
+    proposal.define_singleton_method(:committee_steps) do
+      [
+        OpenStruct.new(level: 1, employee_master_id: 11, marked_for_destruction?: false),
+        OpenStruct.new(level: 2, employee_master_id: 12, marked_for_destruction?: false),
+        OpenStruct.new(level: 3, employee_master_id: 13, marked_for_destruction?: false)
+      ]
+    end
+
+    proposal.send(:must_have_all_committee_levels)
+
+    assert_empty proposal.errors[:base]
+  end
+
+  test "maker cannot be included in committee members" do
+    maker_employee = OpenStruct.new(id: 11)
+    maker_user = OpenStruct.new(employee_master: maker_employee)
+    proposal = QuotationProposal.new
+    proposal.user = maker_user
+    proposal.define_singleton_method(:committee_steps) do
+      [
+        OpenStruct.new(level: 1, employee_master_id: 11, marked_for_destruction?: false),
+        OpenStruct.new(level: 2, employee_master_id: 12, marked_for_destruction?: false),
+        OpenStruct.new(level: 3, employee_master_id: 13, marked_for_destruction?: false)
+      ]
+    end
+
+    proposal.send(:maker_cannot_be_committee_member)
+
+    assert_includes proposal.errors[:base], "Maker cannot be part of the approval committee."
+  end
+
+  test "committee members must be unique" do
+    proposal = QuotationProposal.new
+    proposal.define_singleton_method(:committee_steps) do
+      [
+        OpenStruct.new(level: 1, employee_master_id: 21, marked_for_destruction?: false),
+        OpenStruct.new(level: 2, employee_master_id: 21, marked_for_destruction?: false),
+        OpenStruct.new(level: 3, employee_master_id: 23, marked_for_destruction?: false)
+      ]
+    end
+
+    proposal.send(:committee_members_must_be_unique)
+
+    assert_includes proposal.errors[:base], "Committee members must be unique."
+  end
+
   private
 
   def build_stubbed_proposal(dispatches:)

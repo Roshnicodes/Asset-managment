@@ -1,6 +1,7 @@
 class ApplicationController < ActionController::Base
   include ApprovalRequestsHelper
   helper QrCodesHelper
+  helper QuotationVendorQrsHelper
   before_action :authenticate_user!, unless: :devise_controller?
   allow_browser versions: :modern
 

@@ -1,13 +1,22 @@
+<%
+  vendor_registration = local_assigns[:vendor_registration]
+  vendor_address_line = vendor_registration&.address.to_s.strip.presence || "-"
+%>
+
 <style>
   .doc-fixed-footer {
     margin-top: 1rem;
+    width: 100%;
+    box-sizing: border-box;
     padding: 0.55rem 1.25rem;
     text-align: center;
     font-size: 12px;
     line-height: 1.45;
     color: #222;
     border: 1px solid #cfd9d2;
-    background: #fff;
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 251, 247, 0.98));
+    box-shadow: 0 10px 24px rgba(26, 58, 42, 0.06);
   }
 
   .doc-fixed-footer strong {
@@ -23,13 +32,25 @@
 </style>
 
 <div class="doc-fixed-footer">
-  <div>
-    <strong>"The Farmers House"</strong> Plan-C, Tulip Greens, Vill. Mahabadia, Kolar Road. Bhopal-462 042, Madhya Pradesh.
-  </div>
-  <div>
-    Phone No.: 9109988781, 9109988784, 9109988785, Email -
-    <a href="mailto:asa@asabhopal.org">asa@asabhopal.org</a>
-    Url:
-    <a href="https://www.asaindia.org" target="_blank" rel="noopener">www.asaindia.org</a>
-  </div>
+  <% if vendor_registration.present? %>
+    <div><%= vendor_address_line %></div>
+    <div>
+      Phone No.: <%= vendor_registration.mobile_no.presence || "-" %>, Email -
+      <% if vendor_registration.email.present? %>
+        <a href="mailto:<%= vendor_registration.email %>"><%= vendor_registration.email %></a>
+      <% else %>
+        -
+      <% end %>
+    </div>
+  <% else %>
+    <div>
+      <strong>"The Farmers House"</strong> Plan-C, Tulip Greens, Vill. Mahabadia, Kolar Road. Bhopal-462 042, Madhya Pradesh.
+    </div>
+    <div>
+      Phone No.: 9109988781, 9109988784, 9109988785, Email -
+      <a href="mailto:asa@asabhopal.org">asa@asabhopal.org</a>
+      Url:
+      <a href="https://www.asaindia.org" target="_blank" rel="noopener">www.asaindia.org</a>
+    </div>
+  <% end %>
 </div>

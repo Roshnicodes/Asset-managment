@@ -12,11 +12,11 @@ class ApprovalStep < ApplicationRecord
   end
 
   def current_action_label
-    current_action.presence || "Approval"
+    WorkflowLevelNaming.humanize_action_label(current_action.presence || "Approval")
   end
 
   def previous_action_label
-    previous_action.presence || "-"
+    WorkflowLevelNaming.humanize_action_label(previous_action.presence || "-")
   end
 
   def effective_status

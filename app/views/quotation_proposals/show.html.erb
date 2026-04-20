@@ -77,7 +77,7 @@
     <div class="app-page-header app-subsection-header-tight">
       <div>
         <h3 style="margin-bottom: 0.35rem;">Returned To Employee</h3>
-        <p class="app-section-note mb-0">Returned remark dekhkar quotation update karo. Save karte hi same approval chain phir se L1 se restart ho jayegi.</p>
+        <p class="app-section-note mb-0">Returned remark dekhkar quotation update karo. Save karte hi same approval chain phir se Committee Member 1 se restart ho jayegi.</p>
       </div>
     </div>
 
@@ -210,7 +210,7 @@
         <div class="app-detail-item h-100 border <%= step_class %>">
           <div class="app-detail-label">L<%= step.level %></div>
           <div class="app-detail-value fw-semibold"><%= step.employee_master.name %></div>
-          <div class="small text-muted mt-1"><%= step.employee_master.designation.presence || "Committee Member" %></div>
+          <div class="small text-muted mt-1"><%= step.employee_master.designation.presence || WorkflowLevelNaming.humanize_level_label(step.level) %></div>
           <div class="mt-2"><strong>Status:</strong> <%= step_label %></div>
           <div class="mt-1"><strong>Time:</strong> <%= committee_approval_started ? (step.actioned_at&.strftime("%d-%m-%Y %H:%M") || "-") : "-" %></div>
           <div class="mt-1"><strong>Remark:</strong> <%= committee_approval_started ? (step.remark.presence || "-") : "-" %></div>
@@ -316,14 +316,13 @@
     <div class="app-page-header app-subsection-header-tight">
       <div>
         <h3 style="margin-bottom: 0.25rem;">Committee Comparison</h3>
-        <p class="app-section-note mb-0">Committee vendor responses compare karke score degi. Higher score aur better comparison ke basis par vendor select kiya ja sakta hai.</p>
       </div>
       <span class="badge border bg-light text-dark px-3 py-2" style="font-size: 0.9rem;">
         <%= committee_scoring_allowed ? "Committee scoring access" : "View only" %>
       </span>
     </div>
 
-    <% comparison_vendors = @quotation_proposal.quotation_proposal_vendors.includes(vendor_registration: [], vendor_items: { quotation_proposal_item: :unit }) %>
+    <% comparison_vendors = @quotation_proposal.quotation_proposal_vendors.includes(vendor_registration: [], committee_member_scores: :employee_master, vendor_items: { quotation_proposal_item: :unit }) %>
     <% responded_vendors = comparison_vendors.select(&:response_submitted?) %>
     <% lowest_amount_vendor_id = responded_vendors.min_by { |vendor| vendor.total_quoted_amount.to_d }&.id %>
     <% lowest_grand_total_vendor_id = responded_vendors.min_by { |vendor| vendor.grand_total_amount.to_d }&.id %>
@@ -349,6 +348,25 @@
                   <div class="d-flex gap-2 flex-wrap">
                     <% if proposal_vendor.selected? %>
                       <span class="badge border bg-success bg-opacity-10 text-success">Selected</span>
+                      <% if creator_can_dispatch %>
+                        <div style="display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; margin: 0;">
+                          <%= select_tag :authorized_by_id,
+                                options_from_collection_for_select(@authorized_by_options, :id, :name, @selected_authorized_by_id),
+                                include_blank: "Authorized by",
+                                style: "min-width: 170px; padding: 0.35rem 0.65rem; border-radius: 10px; border: 1px solid #cfe1d8; background: #fff; font-size: 0.82rem;",
+                                data: { purchase_order_authorized_by: true } %>
+                          <%= link_to "Create Purchase Order",
+                                purchase_order_quotation_proposal_path(@quotation_proposal),
+                                class: "app-secondary-btn",
+                                style: "padding: 0.35rem 0.8rem; font-size: 0.82rem;",
+                                data: { purchase_order_link: true, purchase_order_base_url: purchase_order_quotation_proposal_path(@quotation_proposal) } %>
+                        </div>
+                      <% end %>
+                      <% if proposal_vendor.purchase_order_status.present? && proposal_vendor.purchase_order_status != "draft" %>
+                        <span class="badge border <%= proposal_vendor.purchase_order_status == "accepted" ? "bg-success bg-opacity-10 text-success" : proposal_vendor.purchase_order_status == "returned" ? "bg-warning bg-opacity-10 text-warning" : proposal_vendor.purchase_order_status == "rejected" ? "bg-danger bg-opacity-10 text-danger" : "bg-primary bg-opacity-10 text-primary" %>">
+                          PO <%= proposal_vendor.purchase_order_status.humanize %>
+                        </span>
+                      <% end %>
                     <% end %>
                     <% if proposal_vendor.id == top_rank_vendor_id %>
                       <span class="badge border bg-warning bg-opacity-10 text-warning">Top Rank</span>
@@ -364,19 +382,23 @@
         </thead>
         <tbody>
           <tr>
-            <td style="position: sticky; left: 0; z-index: 2; background: #fdfefe; box-shadow: 8px 0 18px rgba(26, 58, 42, 0.03);"><strong>Committee Score</strong></td>
+            <td style="position: sticky; left: 0; z-index: 2; background: #fdfefe; box-shadow: 8px 0 18px rgba(26, 58, 42, 0.03);"><strong>Your Committee Score</strong></td>
             <% comparison_vendors.each do |proposal_vendor| %>
               <td>
                 <% if proposal_vendor.response_submitted? %>
                   <% if committee_scoring_allowed %>
                     <div class="d-flex gap-2 align-items-center flex-wrap">
-                      <%= number_field_tag "committee_scores[#{proposal_vendor.id}]", proposal_vendor.committee_score, min: 0, placeholder: "Enter score", class: "form-control", style: "max-width: 130px;" %>
+                      <%= number_field_tag "committee_scores[#{proposal_vendor.id}]", proposal_vendor.score_for(current_scoring_employee), min: 0, placeholder: "Enter score", class: "form-control", style: "max-width: 130px;" %>
                     </div>
                   <% else %>
                     <span class="text-muted">Committee members can update score</span>
                   <% end %>
                   <div class="small text-muted mt-2">
-                    Saved score: <strong><%= proposal_vendor.committee_score.present? ? proposal_vendor.committee_score : "Not scored yet" %></strong>
+                    Your saved score: <strong><%= proposal_vendor.score_for(current_scoring_employee).presence || "Not scored yet" %></strong>
+                  </div>
+                  <div class="small text-muted mt-1">
+                    Total score: <strong><%= proposal_vendor.committee_score_value.presence || "Not scored yet" %></strong>
+                    | Scored by: <strong><%= proposal_vendor.committee_score_count %>/<%= committee_member_count %></strong>
                   </div>
                 <% else %>
                   <span class="text-muted">Awaiting vendor response</span>
@@ -409,6 +431,19 @@
             <% end %>
           </tr>
           <tr>
+            <td style="position: sticky; left: 0; z-index: 2; background: #fdfefe; box-shadow: 8px 0 18px rgba(26, 58, 42, 0.03);"><strong>Purchase Order</strong></td>
+            <% comparison_vendors.each do |proposal_vendor| %>
+              <td>
+                <%= proposal_vendor.purchase_order_status.to_s.humanize.presence || "Draft" %>
+                <div class="small text-muted mt-1">Sent: <%= proposal_vendor.purchase_order_sent_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+                <div class="small text-muted mt-1">Response: <%= proposal_vendor.purchase_order_actioned_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+                <% if proposal_vendor.purchase_order_remark.present? %>
+                  <div class="small text-muted mt-1"><strong>Remark:</strong> <%= proposal_vendor.purchase_order_remark %></div>
+                <% end %>
+              </td>
+            <% end %>
+          </tr>
+          <tr>
             <td style="position: sticky; left: 0; z-index: 2; background: #fdfefe; box-shadow: 8px 0 18px rgba(26, 58, 42, 0.03);"><strong>Amount Total</strong></td>
             <% comparison_vendors.each do |proposal_vendor| %>
               <td style="<%= 'background: #f5fbf7;' if proposal_vendor.id == lowest_amount_vendor_id %>">
@@ -428,9 +463,9 @@
             <td style="position: sticky; left: 0; z-index: 2; background: #fdfefe; box-shadow: 8px 0 18px rgba(26, 58, 42, 0.03);"><strong>Selection Status</strong></td>
             <% comparison_vendors.each do |proposal_vendor| %>
               <td>
-                <% if proposal_vendor.rank_position == 1 && proposal_vendor.committee_score.present? %>
+                <% if proposal_vendor.rank_position == 1 && proposal_vendor.committee_score_value.present? %>
                   <span class="badge border bg-success bg-opacity-10 text-success">Auto selected by top rank</span>
-                <% elsif proposal_vendor.response_submitted? && proposal_vendor.committee_score.present? %>
+                <% elsif proposal_vendor.response_submitted? && proposal_vendor.committee_score_value.present? %>
                   <span class="text-muted">Selection follows rank order</span>
                 <% else %>
                   <span class="text-muted">Selection pending score</span>
@@ -465,5 +500,125 @@
         </table>
       </div>
     <% end %>
+
+    <% if @selected_vendor_response.present? %>
+      <div class="app-card mt-4" style="padding: 1.3rem 1.45rem;">
+        <div class="d-flex justify-content-between gap-3 flex-wrap align-items-start">
+          <div>
+            <h3 style="margin-bottom: 0.35rem;">Selected Vendor PO Workflow</h3>
+            <p class="app-section-note mb-0">Maker aur committee yahan vendor response, reply updates, aur full dated timeline dekh sakte hain.</p>
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            <% if current_user == @quotation_proposal.user && @selected_vendor_response.purchase_order_status == "accepted" %>
+              <%= link_to "Goods Receive", goods_receive_quotation_proposal_path(@quotation_proposal), class: "app-form-submit" %>
+            <% end %>
+            <% if @selected_vendor_response.pending_invoice_requests? %>
+              <span class="badge border bg-warning bg-opacity-10 text-warning">Invoice Pending</span>
+            <% end %>
+            <span class="badge border <%= @selected_vendor_response.purchase_order_status == "accepted" ? "bg-success bg-opacity-10 text-success" : @selected_vendor_response.purchase_order_status == "returned" ? "bg-warning bg-opacity-10 text-warning" : @selected_vendor_response.purchase_order_status == "rejected" ? "bg-danger bg-opacity-10 text-danger" : "bg-primary bg-opacity-10 text-primary" %>">
+              <%= @selected_vendor_response.purchase_order_status.to_s.humanize %>
+            </span>
+            <span class="badge border bg-light text-dark">Sent: <%= @selected_vendor_response.purchase_order_sent_at&.strftime("%d-%m-%Y %H:%M") || "-" %></span>
+            <span class="badge border bg-light text-dark">Response: <%= @selected_vendor_response.purchase_order_actioned_at&.strftime("%d-%m-%Y %H:%M") || "-" %></span>
+          </div>
+        </div>
+
+        <div class="row g-3 mt-1">
+          <div class="col-lg-6">
+            <div class="app-detail-item h-100">
+              <div class="app-detail-label">Vendor Response</div>
+              <div class="app-detail-value"><%= @selected_vendor_response.purchase_order_status.to_s.humanize %></div>
+              <div class="small text-muted mt-1">Action time: <%= @selected_vendor_response.purchase_order_actioned_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+              <div class="mt-2" style="white-space: pre-wrap;"><%= @selected_vendor_response.purchase_order_remark.presence || "No vendor remark added." %></div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="app-detail-item h-100">
+              <div class="app-detail-label">ASA Reply</div>
+              <div class="app-detail-value" style="white-space: pre-wrap;"><%= @selected_vendor_response.purchase_order_reply.presence || "No reply added yet." %></div>
+              <div class="small text-muted mt-2">
+                Updated by: <strong><%= @selected_vendor_response.purchase_order_reply_updated_by&.name.presence || "-" %></strong>
+              </div>
+              <div class="small text-muted mt-1">
+                Updated at: <strong><%= @selected_vendor_response.purchase_order_reply_updated_at&.strftime("%d-%m-%Y %H:%M") || "-" %></strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <% if current_user == @quotation_proposal.user || @quotation_proposal.committee_user?(current_user) %>
+          <div class="mt-4">
+            <%= form_with url: update_purchase_order_reply_quotation_proposal_path(@quotation_proposal, proposal_vendor_id: @selected_vendor_response.id), method: :patch, local: true do %>
+              <div class="mb-2">
+                <label class="form-label" style="font-weight: 700;">Reply / Update For Vendor</label>
+                <%= text_area_tag :purchase_order_reply, @selected_vendor_response.purchase_order_reply, rows: 4, class: "form-control", placeholder: "Write the official reply here. Maker aur committee members dono update kar sakte hain." %>
+              </div>
+              <div class="d-flex justify-content-end">
+                <%= submit_tag "Save Reply Update", class: "app-form-submit" %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+
+        <div class="mt-4">
+          <h4 style="margin-bottom: 0.85rem;">Goods Receive Invoice Requests</h4>
+          <div class="d-grid gap-3">
+            <% if @selected_vendor_response.invoice_requests.recent_first.any? %>
+              <% @selected_vendor_response.invoice_requests.recent_first.each do |invoice_request| %>
+                <%= render "invoice_request_card", invoice_request: invoice_request %>
+              <% end %>
+            <% else %>
+              <div class="text-muted">Goods receive ke baad vendor invoice upload requests yahan dikhengi.</div>
+            <% end %>
+          </div>
+        </div>
+
+        <% if @selected_vendor_response.purchase_order_activities.any? %>
+          <div class="mt-4">
+            <h4 style="margin-bottom: 0.85rem;">Response Timeline</h4>
+            <div class="d-grid gap-2">
+              <% @selected_vendor_response.purchase_order_activities.recent_first.each do |activity| %>
+                <div style="border: 1px solid #d8e6de; border-radius: 14px; padding: 0.85rem 1rem; background: #fcfefd;">
+                  <div class="d-flex justify-content-between gap-3 flex-wrap">
+                    <div>
+                      <strong><%= activity.actor_name %></strong>
+                      <span class="text-muted">(<%= activity.actor_role.presence || "Update" %>)</span>
+                    </div>
+                    <div class="small text-muted"><%= activity.occurred_at.strftime("%d-%m-%Y %H:%M") %></div>
+                  </div>
+                  <div class="mt-1"><%= activity.action_type.to_s.humanize %></div>
+                  <% if activity.note.present? %>
+                    <div class="mt-1 text-muted" style="white-space: pre-wrap;"><%= activity.note %></div>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
   </div>
 <% end %>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll("[data-purchase-order-link]").forEach(function (link) {
+      link.addEventListener("click", function (event) {
+        var wrapper = link.parentElement;
+        var select = wrapper && wrapper.querySelector("[data-purchase-order-authorized-by]");
+        var baseUrl = link.dataset.purchaseOrderBaseUrl;
+
+        if (!baseUrl) return;
+
+        event.preventDefault();
+
+        var url = new URL(baseUrl, window.location.origin);
+        if (select && select.value) {
+          url.searchParams.set("authorized_by_id", select.value);
+        }
+
+        window.location.href = url.toString();
+      });
+    });
+  });
+</script>

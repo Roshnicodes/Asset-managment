@@ -11,17 +11,117 @@
       <p class="app-section-note mb-0">Maintain asset master records with linked products and unique identification details.</p>
     </div>
     <div style="margin-left:auto; display:flex; gap:.5rem; align-items:center;">
+      <%= form_with url: assets_path, method: :get, local: true, html: { style: "display:flex; gap:.6rem; align-items:center; margin:0;" } do %>
+        <%= hidden_field_tag :invoice_request_id, params[:invoice_request_id] if params[:invoice_request_id].present? %>
+        <%= select_tag :rate_filter,
+              options_for_select([
+                ["All Rates", ""],
+                ["Above 5000", "above_5000"],
+                ["5000 or Below", "upto_5000"]
+              ], @rate_filter),
+              class: "form-control",
+              style: "min-width: 180px; border-radius: 14px;" %>
+        <%= submit_tag "Apply", class: "app-secondary-btn", style: "padding: .7rem 1rem;" %>
+      <% end %>
       <%= link_to "Add Asset", new_asset_path, class: "app-primary-btn" %>
     </div>
   </div>
 </div>
 
+<% if @asset_invoice_request.present? %>
+  <div class="app-detail-card" id="asset-workspace" style="margin-bottom: 1.5rem;">
+    <div class="app-page-header app-subsection-header-tight">
+      <div>
+        <h3 style="margin-bottom: 0.25rem;">Asset Creation Workspace</h3>
+        <p class="app-section-note mb-0">`Create Assets` par click karne ke baad invoice-request yahin open hoti hai. Maker unique product code dalega aur save par asset code auto-generate ho jayega.</p>
+      </div>
+      <span class="badge border bg-light text-dark">Invoice Request #<%= @asset_invoice_request.id %></span>
+    </div>
+
+    <div class="app-detail-grid" style="margin-bottom: 1rem;">
+      <div class="app-detail-item">
+        <div class="app-detail-label">Quotation</div>
+        <div class="app-detail-value"><%= @asset_invoice_request.quotation_proposal_vendor.quotation_proposal.subject %></div>
+      </div>
+      <div class="app-detail-item">
+        <div class="app-detail-label">Vendor</div>
+        <div class="app-detail-value"><%= @asset_invoice_request.quotation_proposal_vendor.vendor_registration.display_name %></div>
+      </div>
+      <div class="app-detail-item">
+        <div class="app-detail-label">Invoice Uploaded At</div>
+        <div class="app-detail-value"><%= @asset_invoice_request.invoice_uploaded_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+      </div>
+    </div>
+
+    <% if @asset_invoice_request.assets_created? %>
+      <div class="small text-muted">Assets already created for this request. Neeche asset list me records visible hain.</div>
+    <% elsif @asset_rows.blank? %>
+      <div class="small text-muted">Is invoice request me koi eligible asset row available nahi hai.</div>
+    <% else %>
+      <%= form_with url: create_invoice_request_assets_quotation_proposal_path(@asset_invoice_request.quotation_proposal_vendor.quotation_proposal, invoice_request_id: @asset_invoice_request.id), method: :post, local: true do %>
+        <div class="app-table-wrap" style="margin-top: 1rem;">
+          <table class="table app-table">
+            <thead class="sticky-top">
+              <tr>
+                <th>S.No.</th>
+                <th>Asset Row</th>
+                <th>Item Name</th>
+                <th>Unit</th>
+                <th>Product</th>
+                <th>Unique Product Code</th>
+                <th>Asset Code</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @asset_rows.each_with_index do |row, index| %>
+                <tr>
+                  <td><%= index + 1 %></td>
+                  <td>
+                    <strong><%= row[:row_label] %></strong>
+                    <%= hidden_field_tag "asset_rows[#{index}][vendor_item_id]", row[:vendor_item_id] %>
+                    <%= hidden_field_tag "asset_rows[#{index}][asset_name]", row[:asset_name] %>
+                  </td>
+                  <td><%= row[:asset_name] %></td>
+                  <td><%= row[:unit_name].presence || "-" %></td>
+                  <td>
+                    <%= select_tag "asset_rows[#{index}][product_id]",
+                          options_from_collection_for_select(@asset_products, :id, :name, row[:suggested_product_id]),
+                          prompt: "Select product",
+                          class: "form-control",
+                          style: "min-width: 200px;" %>
+                  </td>
+                  <td>
+                    <%= text_field_tag "asset_rows[#{index}][unique_product_code]",
+                          row[:unique_product_code],
+                          class: "form-control",
+                          placeholder: "Enter unique product code",
+                          required: true,
+                          style: "min-width: 220px;" %>
+                  </td>
+                  <td><span class="badge border bg-light text-dark">Auto on create</span></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="d-flex justify-content-end mt-3">
+          <%= submit_tag "Create Assets", class: "app-form-submit" %>
+        </div>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>
+
 <div class="app-table-wrap">
   <table class="table app-table">
     <thead class="sticky-top">
       <tr>
+        <th>Asset Code</th>
         <th>Asset Name</th>
         <th>Product</th>
+        <th>Rate</th>
+        <th>Unique Product Code</th>
         <th>Serial Number</th>
         <th>Action</th>
       </tr>
@@ -29,15 +129,24 @@
     <tbody>
       <% @assets.each do |asset| %>
         <tr>
+          <td><%= asset.asset_code.presence || "-" %></td>
           <td><%= asset.name %></td>
           <td><%= asset.product.name %></td>
+          <td>
+            <% if asset.quotation_proposal_vendor_item&.quoted_rate.present? %>
+              <span style="font-weight: 600;"><%= number_with_precision(asset.quotation_proposal_vendor_item.quoted_rate, precision: 2) %></span>
+            <% else %>
+              <span class="text-muted">-</span>
+            <% end %>
+          </td>
+          <td><%= asset.unique_product_code.presence || "-" %></td>
           <td><%= asset.serial_number.presence || "-" %></td>
           <td class="app-row-actions">
             <div class="d-flex align-items-center gap-2">
               <%= link_to edit_asset_path(asset), class: "app-action-icon text-warning", title: "Edit" do %>
                 <%= app_icon(:pencil, size: 18) %>
               <% end %>
-              <%= button_to asset_path(asset), method: :delete, data: { turbo_confirm: "Delete this asset?" }, class: "app-action-icon text-danger", title: "Delete" do %>
+              <%= link_to remove_asset_path(asset), class: "app-action-icon text-danger", title: "Delete", onclick: "return confirm('Delete this asset?');" do %>
                 <%= app_icon(:trash, size: 18) %>
               <% end %>
             </div>

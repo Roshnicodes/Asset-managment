@@ -101,7 +101,7 @@
             <% if vendor_registration.approval_request.blank? %>
               <%= button_to "Send", send_for_approval_vendor_registration_path(vendor_registration), method: :post, class: "app-secondary-btn", title: "Send for Approval", form: { class: "d-inline-block" } %>
             <% end %>
-            <% if current_user.email == "admin@example.com" || current_user.employee_master&.user_type == "Admin" || vendor_registration.approval_request.blank? || vendor_registration.approval_request.employee_return_pending? %>
+            <% if current_user.email == "admin@example.com" || current_user.employee_master&.user_type == "Admin" || vendor_registration.user_id == current_user.id %>
               <%= link_to edit_vendor_registration_path(vendor_registration), class: "app-action-icon text-warning", title: "Edit" do %>
                 <%= app_icon(:pencil, size: 18) %>
               <% end %>

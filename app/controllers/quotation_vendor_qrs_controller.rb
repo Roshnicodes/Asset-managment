@@ -158,7 +158,10 @@ class QuotationVendorQrsController < ApplicationController
 
   def vendor_response_params
     params.require(:quotation_proposal_vendor).permit(
+      :vendor_reference_no,
+      :vendor_cover_note,
       :vendor_remark,
+      vendor_documents: [],
       vendor_items_attributes: [:id, :quoted_rate, :gst_percentage, :remark]
     )
   end

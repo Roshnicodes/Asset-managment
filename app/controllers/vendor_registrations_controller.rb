@@ -3,6 +3,7 @@ class VendorRegistrationsController < ApplicationController
   before_action :ensure_vendor_owner_or_admin_view_access!, only: %i[show]
   before_action :ensure_vendor_owner_access!, only: %i[edit update destroy]
   before_action :ensure_vendor_registration_editable!, only: %i[edit update]
+  before_action :set_current_stakeholder_category
 
   # GET /vendor_registrations or /vendor_registrations.json
   def index
@@ -106,6 +107,7 @@ class VendorRegistrationsController < ApplicationController
   # GET /vendor_registrations/new
   def new
     @vendor_registration = VendorRegistration.new
+    @vendor_registration.stakeholder_category ||= @current_stakeholder_category if @current_stakeholder_category.present?
     load_form_collections
     @vendor_registration.vendor_bank_masters.build if @vendor_registration.vendor_bank_masters.empty?
   end
@@ -119,6 +121,7 @@ class VendorRegistrationsController < ApplicationController
   # POST /vendor_registrations or /vendor_registrations.json
   def create
     permitted_params = vendor_registration_params
+    enforce_current_stakeholder_category!(permitted_params)
     @vendor_registration = VendorRegistration.new(permitted_params.except(:document_uploads))
     @vendor_registration.incoming_document_files = permitted_params[:document_uploads]
     @vendor_registration.user = current_user
@@ -141,6 +144,7 @@ class VendorRegistrationsController < ApplicationController
   # PATCH/PUT /vendor_registrations/1 or /vendor_registrations/1.json
   def update
     permitted_params = vendor_registration_params
+    enforce_current_stakeholder_category!(permitted_params)
     @vendor_registration.incoming_document_files = permitted_params[:document_uploads]
     was_returned = @vendor_registration.approval_request&.employee_return_pending?
 
@@ -198,7 +202,7 @@ class VendorRegistrationsController < ApplicationController
     def vendor_registration_params
       permitted_params = params.require(:vendor_registration).permit(
         :stakeholder_category_id, :registration_type_id, :firm_name, :firm_id, :vendor_name, :firm_type, :gst_no, :pan_no,
-        :email, :mobile_no, :state_id, :district_id, :block_id, :pin_no, :contact_person_name,
+        :email, :mobile_no, :address, :state_id, :district_id, :block_id, :pin_no, :contact_person_name,
         :contact_person_designation, :msme, :msme_number, :company_status, :firm_profile, :business_description,
         :msme_certificate, :pan_document, :aadhar_document, :establishment_certificate,
         document_uploads: {},
@@ -216,7 +220,12 @@ class VendorRegistrationsController < ApplicationController
     end
 
     def load_form_collections
-      @stakeholder_categories = StakeholderCategory.order(:name)
+      @stakeholder_categories =
+        if admin_user? || @current_stakeholder_category.blank?
+          StakeholderCategory.order(:name)
+        else
+          StakeholderCategory.where(id: @current_stakeholder_category.id)
+        end
       @registration_types = RegistrationType.order(:name)
       @firms = Firm.order(:name)
       @document_masters = DocumentMaster.includes(:firm).order(:name)
@@ -229,10 +238,9 @@ class VendorRegistrationsController < ApplicationController
     end
 
     def ensure_vendor_registration_editable!
-      return unless @vendor_registration.approval_request.present?
-      return if @vendor_registration.approval_request.employee_return_pending?
+      return if admin_user? || @vendor_registration.user_id == current_user.id
 
-      redirect_to vendor_registration_path(@vendor_registration), alert: "You can edit this vendor registration only after it is returned to the employee."
+      redirect_to vendor_registration_path(@vendor_registration), alert: "You are not authorized to edit this vendor registration."
     end
 
     def ensure_vendor_owner_or_admin_view_access!
@@ -260,5 +268,16 @@ class VendorRegistrationsController < ApplicationController
       vendor_registrations.each do |vendor_registration|
         vendor_registration.approval_request&.ensure_channel_steps_synced!
       end
+    end
+
+    def set_current_stakeholder_category
+      @current_stakeholder_category = current_employee_master&.stakeholder_category
+    end
+
+    def enforce_current_stakeholder_category!(permitted_params)
+      return if admin_user?
+      return if @current_stakeholder_category.blank?
+
+      permitted_params[:stakeholder_category_id] = @current_stakeholder_category.id
     end
 end

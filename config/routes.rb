@@ -1,9 +1,19 @@
 Rails.application.routes.draw do
   get "q/:token", to: "quotation_vendor_qrs#show", as: :short_quotation_vendor_qr
+  get "p/:token", to: "purchase_order_vendor_qrs#show", as: :short_purchase_order_vendor_qr
+  get "gr/:token", to: "goods_receive_vendor_qrs#show", as: :short_goods_receive_vendor_qr
   get "quotation-vendor-qr/:token", to: "quotation_vendor_qrs#show", as: :quotation_vendor_qr
   get "quotation-vendor-qr/:token/print", to: "quotation_vendor_qrs#print", as: :print_quotation_vendor_qr
   post "quotation-vendor-qr/:token/send-otp", to: "quotation_vendor_qrs#send_otp", as: :send_quotation_vendor_qr_otp
   post "quotation-vendor-qr/:token/verify-otp", to: "quotation_vendor_qrs#verify_otp", as: :verify_quotation_vendor_qr_otp
+  get "purchase-order-vendor/:token", to: "purchase_order_vendor_qrs#show", as: :purchase_order_vendor_qr
+  post "purchase-order-vendor/:token/send-otp", to: "purchase_order_vendor_qrs#send_otp", as: :send_purchase_order_vendor_qr_otp
+  post "purchase-order-vendor/:token/verify-otp", to: "purchase_order_vendor_qrs#verify_otp", as: :verify_purchase_order_vendor_qr_otp
+  patch "purchase-order-vendor/:token", to: "purchase_order_vendor_qrs#update"
+  get "goods-receive-vendor/:token", to: "goods_receive_vendor_qrs#show", as: :goods_receive_vendor_qr
+  post "goods-receive-vendor/:token/send-otp", to: "goods_receive_vendor_qrs#send_otp", as: :send_goods_receive_vendor_qr_otp
+  post "goods-receive-vendor/:token/verify-otp", to: "goods_receive_vendor_qrs#verify_otp", as: :verify_goods_receive_vendor_qr_otp
+  patch "goods-receive-vendor/:token", to: "goods_receive_vendor_qrs#update"
   resources :notifications, only: [:index]
   resources :menu_permissions, only: [:index, :create]
   resources :quotation_proposals do
@@ -16,6 +26,14 @@ Rails.application.routes.draw do
       patch :approve_committee
       patch :return_committee
       post :send_to_vendors
+      get :purchase_order
+      post :send_purchase_order
+      get :goods_receive
+      patch :update_goods_receive
+      patch "invoice_requests/:invoice_request_id/review", action: :review_invoice_request, as: :review_invoice_request
+      get "invoice_requests/:invoice_request_id/assets/new", action: :new_invoice_request_assets, as: :new_invoice_request_assets
+      post "invoice_requests/:invoice_request_id/assets", action: :create_invoice_request_assets, as: :create_invoice_request_assets
+      patch "vendors/:proposal_vendor_id/purchase_order_reply", action: :update_purchase_order_reply, as: :update_purchase_order_reply
       patch :score_vendors
       patch "vendors/:proposal_vendor_id/score", action: :score_vendor, as: :score_vendor
       patch "vendors/:proposal_vendor_id/select", action: :select_vendor, as: :select_vendor
@@ -66,7 +84,11 @@ Rails.application.routes.draw do
   resources :tos
   resources :themes
   resources :products
-  resources :assets        
+  resources :assets do
+    member do
+      get :remove
+    end
+  end
   resources :allocations
   resource :profile, only: [:show, :edit, :update]
 end

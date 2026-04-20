@@ -1,32 +1,69 @@
 <div class="app-form-grid two-col">
-  <div class="app-form-field">
+  <div class="app-form-field <%= "has-error" if form.object.errors[:bank_name].any? %>">
     <%= form.label :bank_name, "Bank Name" %>
-    <%= form.select :bank_name, VendorBankMaster.masters.pluck(:bank_name), { prompt: "Select bank name" } %>
+    <%= form.select :bank_name, VendorBankMaster.masters.pluck(:bank_name), { prompt: "Select bank name" }, { required: true, data: { validation_label: "Bank Name" } } %>
+    <% form.object.errors[:bank_name].each do |message| %>
+      <div class="app-form-error"><%= message %></div>
+    <% end %>
+    <div class="app-form-error app-form-error-client" data-field-error="true"></div>
   </div>
 
-  <div class="app-form-field">
+  <div class="app-form-field <%= "has-error" if form.object.errors[:account_type].any? %>">
     <%= form.label :account_type, "Bank Type Category" %>
-    <%= form.select :account_type, VendorBankMaster::ACCOUNT_TYPES, { prompt: "Select account type" } %>
+    <%= form.select :account_type, VendorBankMaster::ACCOUNT_TYPES, { prompt: "Select account type" }, { required: true, data: { validation_label: "Bank Type Category" } } %>
+    <% form.object.errors[:account_type].each do |message| %>
+      <div class="app-form-error"><%= message %></div>
+    <% end %>
+    <div class="app-form-error app-form-error-client" data-field-error="true"></div>
   </div>
 
-  <div class="app-form-field">
+  <div class="app-form-field <%= "has-error" if form.object.errors[:account_number].any? %>">
     <%= form.label :account_number, "Account No" %>
-    <%= form.text_field :account_number %>
+    <%= form.text_field :account_number,
+          required: true,
+          minlength: 9,
+          maxlength: 18,
+          pattern: "\\d{9,18}",
+          title: "Enter a valid account number with 9 to 18 digits.",
+          inputmode: "numeric",
+          data: { validation_label: "Account No", numeric_input: true, numeric_limit: 18 } %>
+    <% form.object.errors[:account_number].each do |message| %>
+      <div class="app-form-error"><%= message %></div>
+    <% end %>
+    <div class="app-form-error app-form-error-client" data-field-error="true"></div>
   </div>
 
-  <div class="app-form-field">
+  <div class="app-form-field <%= "has-error" if form.object.errors[:ifsc_code].any? %>">
     <%= form.label :ifsc_code, "Bank IFSC Code" %>
-    <%= form.text_field :ifsc_code %>
+    <%= form.text_field :ifsc_code,
+          required: true,
+          minlength: 11,
+          maxlength: 11,
+          pattern: "[A-Za-z]{4}0[A-Za-z0-9]{6}",
+          title: "Enter a valid 11-character IFSC code, for example SBIN0001234.",
+          data: { validation_label: "Bank IFSC Code", uppercase_input: true } %>
+    <% form.object.errors[:ifsc_code].each do |message| %>
+      <div class="app-form-error"><%= message %></div>
+    <% end %>
+    <div class="app-form-error app-form-error-client" data-field-error="true"></div>
   </div>
 
-  <div class="app-form-field">
+  <div class="app-form-field <%= "has-error" if form.object.errors[:bank_address].any? %>">
     <%= form.label :bank_address, "Bank Address" %>
-    <%= form.text_area :bank_address, rows: 3 %>
+    <%= form.text_area :bank_address, rows: 3, required: true, data: { validation_label: "Bank Address" } %>
+    <% form.object.errors[:bank_address].each do |message| %>
+      <div class="app-form-error"><%= message %></div>
+    <% end %>
+    <div class="app-form-error app-form-error-client" data-field-error="true"></div>
   </div>
 
-  <div class="app-form-field">
+  <div class="app-form-field <%= "has-error" if form.object.errors[:cancelled_cheque].any? %>">
     <%= form.label :cancelled_cheque, "Check Book / Cancelled Cheque" %>
-    <%= form.file_field :cancelled_cheque, accept: ".pdf,image/*" %>
+    <%= form.file_field :cancelled_cheque, accept: ".pdf,image/*", required: !form.object.cancelled_cheque.attached?, data: { validation_label: "Check Book / Cancelled Cheque" } %>
+    <% form.object.errors[:cancelled_cheque].each do |message| %>
+      <div class="app-form-error"><%= message %></div>
+    <% end %>
+    <div class="app-form-error app-form-error-client" data-field-error="true"></div>
     <% if form.object.cancelled_cheque.attached? %>
       <p class="app-section-note" style="margin-top: 0.5rem;">
         Current file:

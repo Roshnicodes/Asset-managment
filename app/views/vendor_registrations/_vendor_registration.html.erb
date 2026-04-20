@@ -1,4 +1,20 @@
 <% approval_request = vendor_registration.approval_request %>
+<% document_rows = [] %>
+<% seen_document_blob_ids = Set.new %>
+<% vendor_registration.applicable_document_masters.each do |document_master| %>
+  <% attachment = vendor_registration.document_attachment_for(document_master) %>
+  <% if attachment&.attached? && !seen_document_blob_ids.include?(attachment.blob_id) %>
+    <% document_rows << [document_master.name, attachment] %>
+    <% seen_document_blob_ids << attachment.blob_id %>
+  <% end %>
+<% end %>
+<% vendor_registration.vendor_registration_documents.includes(:document_master).each do |document| %>
+  <% next unless document.file.attached? %>
+  <% document_name = document.document_master&.name.presence || "Uploaded Document" %>
+  <% next if seen_document_blob_ids.include?(document.file.blob_id) %>
+  <% document_rows << [document_name, document.file] %>
+  <% seen_document_blob_ids << document.file.blob_id %>
+<% end %>
 
 <div id="<%= dom_id vendor_registration %>" class="app-detail-card">
   <div class="app-detail-grid">
@@ -50,6 +66,11 @@
     <div class="app-detail-item">
       <div class="app-detail-label">Mobile No</div>
       <div class="app-detail-value"><%= vendor_registration.mobile_no %></div>
+    </div>
+
+    <div class="app-detail-item" style="grid-column: 1 / -1;">
+      <div class="app-detail-label">Address</div>
+      <div class="app-detail-value"><%= vendor_registration.address.presence || "-" %></div>
     </div>
 
     <div class="app-detail-item">
@@ -180,6 +201,116 @@
                 <% if step.actioned_at.present? %>
                   <span class="small opacity-75"><%= step.actioned_at.strftime("%d-%m-%Y %H:%M") %></span>
                 <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          -
+        <% end %>
+      </div>
+    </div>
+
+    <div class="app-detail-item" style="grid-column: 1 / -1;">
+      <div class="app-detail-label">Bank Details</div>
+      <div class="app-detail-value">
+        <% if vendor_registration.vendor_bank_masters.any? %>
+          <div class="app-detail-grid" style="margin-top: 0.75rem;">
+            <% vendor_registration.vendor_bank_masters.each do |bank| %>
+              <div class="app-detail-card" style="margin: 0;">
+                <div class="app-detail-grid">
+                  <div class="app-detail-item">
+                    <div class="app-detail-label">Bank Name</div>
+                    <div class="app-detail-value"><%= bank.bank_name.presence || "-" %></div>
+                  </div>
+                  <div class="app-detail-item">
+                    <div class="app-detail-label">Account Type</div>
+                    <div class="app-detail-value"><%= bank.account_type.presence || "-" %></div>
+                  </div>
+                  <div class="app-detail-item">
+                    <div class="app-detail-label">Account No</div>
+                    <div class="app-detail-value"><%= bank.account_number.presence || "-" %></div>
+                  </div>
+                  <div class="app-detail-item">
+                    <div class="app-detail-label">IFSC Code</div>
+                    <div class="app-detail-value"><%= bank.ifsc_code.presence || "-" %></div>
+                  </div>
+                  <div class="app-detail-item">
+                    <div class="app-detail-label">Bank Address</div>
+                    <div class="app-detail-value"><%= bank.bank_address.presence || "-" %></div>
+                  </div>
+                  <div class="app-detail-item">
+                    <div class="app-detail-label">Cancelled Cheque</div>
+                    <div class="app-detail-value">
+                      <% if bank.cancelled_cheque.attached? %>
+                        <% cheque = bank.cancelled_cheque %>
+                        <% if cheque.blob.content_type.to_s.start_with?("image/") %>
+                          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <a href="<%= rails_blob_path(cheque, disposition: "inline") %>" target="_blank" rel="noopener">
+                              <%= image_tag cheque, alt: "Cancelled cheque", style: "max-width: 100%; width: 320px; border-radius: 12px; border: 1px solid #d8e8dc; cursor: pointer;" %>
+                            </a>
+                            <div>
+                              <%= link_to cheque.filename.to_s, rails_blob_path(cheque, disposition: "inline"), target: "_blank", rel: "noopener" %>
+                            </div>
+                          </div>
+                        <% elsif cheque.blob.content_type == "application/pdf" %>
+                          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <a href="<%= rails_blob_path(cheque, disposition: "inline") %>" target="_blank" rel="noopener">
+                              <iframe src="<%= rails_blob_path(cheque, disposition: "inline") %>" style="width: 100%; max-width: 420px; height: 320px; border: 1px solid #d8e8dc; border-radius: 12px; pointer-events: none;"></iframe>
+                            </a>
+                            <div>
+                              <%= link_to cheque.filename.to_s, rails_blob_path(cheque, disposition: "inline"), target: "_blank", rel: "noopener" %>
+                            </div>
+                          </div>
+                        <% else %>
+                          <%= link_to cheque.filename.to_s, rails_blob_path(cheque, disposition: "inline"), target: "_blank", rel: "noopener" %>
+                        <% end %>
+                      <% else %>
+                        -
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          -
+        <% end %>
+      </div>
+    </div>
+
+    <div class="app-detail-item" style="grid-column: 1 / -1;">
+      <div class="app-detail-label">Uploaded Documents</div>
+      <div class="app-detail-value">
+        <% if document_rows.any? %>
+          <div class="app-detail-grid" style="margin-top: 0.75rem;">
+            <% document_rows.each do |document_name, attachment| %>
+              <% next unless attachment.present? %>
+              <div class="app-detail-item">
+                <div class="app-detail-label"><%= document_name %></div>
+                <div class="app-detail-value">
+                  <% if attachment.blob.content_type.to_s.start_with?("image/") %>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                      <a href="<%= rails_blob_path(attachment, disposition: "inline") %>" target="_blank" rel="noopener">
+                        <%= image_tag attachment, alt: document_name, style: "max-width: 100%; width: 320px; border-radius: 12px; border: 1px solid #d8e8dc; cursor: pointer;" %>
+                      </a>
+                      <div>
+                        <%= link_to attachment.filename.to_s, rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener" %>
+                      </div>
+                    </div>
+                  <% elsif attachment.blob.content_type == "application/pdf" %>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                      <a href="<%= rails_blob_path(attachment, disposition: "inline") %>" target="_blank" rel="noopener">
+                        <iframe src="<%= rails_blob_path(attachment, disposition: "inline") %>" style="width: 100%; max-width: 420px; height: 320px; border: 1px solid #d8e8dc; border-radius: 12px; pointer-events: none;"></iframe>
+                      </a>
+                      <div>
+                        <%= link_to attachment.filename.to_s, rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener" %>
+                      </div>
+                    </div>
+                  <% else %>
+                    <%= link_to attachment.filename.to_s, rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener" %>
+                  <% end %>
+                </div>
               </div>
             <% end %>
           </div>

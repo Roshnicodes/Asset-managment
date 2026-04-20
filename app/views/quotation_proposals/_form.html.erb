@@ -1,5 +1,6 @@
-<%= form_with(model: quotation_proposal) do |form| %>
+<%= form_with(model: quotation_proposal, html: { data: { quotation_validation_form: true }, novalidate: true }) do |form| %>
   <% approval_request = quotation_proposal.approval_request %>
+  <% field_errors = ->(field_name) { quotation_proposal.errors.full_messages_for(field_name) } %>
 
   <% if approval_request&.employee_return_pending? %>
     <div class="app-form-card" style="margin-bottom: 1.5rem;">
@@ -44,22 +45,38 @@
 
       <div class="app-form-field">
         <%= form.label :theme_id, "Select Theme" %>
-        <%= form.collection_select :theme_id, @themes, :id, :name, { prompt: "Select theme" }, id: "quotation_proposal_theme_id" %>
+        <%= form.collection_select :theme_id, @themes, :id, :name, { prompt: "Select theme" }, { id: "quotation_proposal_theme_id", required: true, data: { validation_label: "Select Theme" } } %>
+        <% (field_errors.call(:theme) + field_errors.call(:theme_id)).uniq.each do |message| %>
+          <div class="app-form-error"><%= message %></div>
+        <% end %>
+        <div class="app-form-error app-form-error-client" data-field-error="true"></div>
       </div>
 
-      <div class="app-form-field">
+      <div class="app-form-field <%= "has-error" if field_errors.call(:subject).any? %>">
         <%= form.label :subject, "Quotation Subject" %>
-        <%= form.text_field :subject %>
+        <%= form.text_field :subject, required: true, data: { validation_label: "Quotation Subject" } %>
+        <% field_errors.call(:subject).each do |message| %>
+          <div class="app-form-error"><%= message %></div>
+        <% end %>
+        <div class="app-form-error app-form-error-client" data-field-error="true"></div>
       </div>
 
-      <div class="app-form-field">
+      <div class="app-form-field <%= "has-error" if field_errors.call(:proposal_end_date).any? %>">
         <%= form.label :proposal_end_date, "Proposal Ending Date" %>
-        <%= form.date_field :proposal_end_date %>
+        <%= form.date_field :proposal_end_date, required: true, data: { validation_label: "Proposal Ending Date" } %>
+        <% field_errors.call(:proposal_end_date).each do |message| %>
+          <div class="app-form-error"><%= message %></div>
+        <% end %>
+        <div class="app-form-error app-form-error-client" data-field-error="true"></div>
       </div>
 
-      <div class="app-form-field">
+      <div class="app-form-field <%= "has-error" if field_errors.call(:remark).any? %>">
         <%= form.label :remark, "Proposal Remark" %>
-        <%= form.text_area :remark, rows: 3 %>
+        <%= form.text_area :remark, rows: 3, required: true, data: { validation_label: "Proposal Remark" } %>
+        <% field_errors.call(:remark).each do |message| %>
+          <div class="app-form-error"><%= message %></div>
+        <% end %>
+        <div class="app-form-error app-form-error-client" data-field-error="true"></div>
       </div>
     </div>
 
@@ -70,7 +87,7 @@
       </div>
     </div>
 
-    <div class="app-form-field">
+    <div class="app-form-field" data-vendor-selection-field>
       <label>Vendor List</label>
       <div class="app-multiselect-dropdown" data-quotation-vendor-dropdown>
         <div class="app-selected-vendors" data-quotation-vendor-selected></div>
@@ -98,6 +115,7 @@
           <p class="app-multiselect-empty is-hidden" data-quotation-vendor-empty>No vendor matches the selected theme or search.</p>
         </div>
       </div>
+      <div class="app-form-error app-form-error-client" data-vendor-selection-error="true"></div>
     </div>
 
     <div class="app-page-header app-subsection-header">
@@ -123,13 +141,15 @@
       <div class="app-quotation-toolbar">
         <button type="button" class="app-secondary-btn app-secondary-btn-soft" data-add-quotation-item>Add Item</button>
       </div>
+
+      <div class="app-form-error app-form-error-client" data-quotation-items-error="true"></div>
     </div>
 
     <div class="app-page-header app-subsection-header app-subsection-header-spacious">
       <div>
         <h3>Approval Committee</h3>
         <p class="app-section-note mb-0">
-          Default me 4 committee members dikhenge. Minimum 2 members required hain, aur zarurat ho to `Add Committee Member` se aur bhi members add kar sakti ho.
+          Zarurat ho to `Add Committee Member` se aur bhi members add kar sakti ho.
         </p>
       </div>
     </div>

@@ -1,0 +1,105 @@
+<div style="border: 1px solid #d8e6de; border-radius: 16px; padding: 1rem 1.05rem; background: #fcfefd;">
+  <div class="d-flex justify-content-between gap-3 flex-wrap align-items-start">
+    <div>
+      <div style="font-weight: 700;">Invoice Request <%= invoice_request.id %></div>
+      <div class="small text-muted mt-1">Requested: <%= invoice_request.requested_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+      <div class="small text-muted mt-1">Uploaded: <%= invoice_request.invoice_uploaded_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+      <div class="small text-muted mt-1">Returned: <%= invoice_request.returned_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+      <div class="small text-muted mt-1">Accepted: <%= invoice_request.accepted_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+      <div class="small text-muted mt-1">Assets Created: <%= invoice_request.assets_created_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <span class="badge border <%= invoice_request.accepted? ? "bg-success bg-opacity-10 text-success" : invoice_request.returned? ? "bg-danger bg-opacity-10 text-danger" : invoice_request.uploaded? ? "bg-info bg-opacity-10 text-info" : "bg-warning bg-opacity-10 text-warning" %>">
+        <%= invoice_request.status.to_s.humanize %>
+      </span>
+      <% if invoice_request.assets_created? %>
+        <span class="badge border bg-info bg-opacity-10 text-info">Assets Created</span>
+      <% elsif invoice_request.accepted? && current_user == @quotation_proposal.user %>
+        <%= link_to "Create Assets",
+              assets_path(invoice_request_id: invoice_request.id, anchor: "asset-workspace"),
+              class: "app-form-submit",
+              style: "padding: 0.35rem 0.85rem; font-size: 0.82rem;" %>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="mt-3">
+    <div class="small text-muted" style="font-weight: 700;">Received Items</div>
+    <div class="mt-1">
+      <% invoice_request.snapshot_items.each do |item| %>
+        <span class="badge border bg-light text-dark me-1 mb-1">
+          <%= item[:item_name] %>: <%= number_with_precision(item[:received_quantity], precision: 2, strip_insignificant_zeros: true) %> <%= item[:unit_name].presence || "" %>
+        </span>
+      <% end %>
+    </div>
+  </div>
+
+  <% if invoice_request.vendor_remark.present? %>
+    <div class="mt-3">
+      <div class="small text-muted" style="font-weight: 700;">Vendor Remark</div>
+      <div class="mt-1" style="white-space: pre-wrap;"><%= invoice_request.vendor_remark %></div>
+    </div>
+  <% end %>
+
+  <% if invoice_request.maker_review_remark.present? %>
+    <div class="mt-3">
+      <div class="small text-muted" style="font-weight: 700;">Maker Review Remark</div>
+      <div class="mt-1" style="white-space: pre-wrap;"><%= invoice_request.maker_review_remark %></div>
+      <div class="small text-muted mt-1">
+        Reviewed by: <strong><%= invoice_request.maker_reviewed_by&.name.presence || "-" %></strong>
+        | Reviewed at: <strong><%= invoice_request.maker_reviewed_at&.strftime("%d-%m-%Y %H:%M") || "-" %></strong>
+      </div>
+    </div>
+  <% end %>
+
+  <div class="mt-3">
+    <div class="small text-muted" style="font-weight: 700;">Uploaded Invoice Files</div>
+    <div class="mt-2 d-flex gap-2 flex-wrap">
+    <% if invoice_request.vendor_invoices.attached? %>
+      <% invoice_request.vendor_invoices.each_with_index do |document, index| %>
+        <%= link_to rails_blob_path(document, disposition: "attachment"), class: "app-secondary-btn", style: "display: inline-flex; align-items: center; gap: .35rem;" do %>
+          <span><%= index.zero? ? "Invoice 1" : "Invoice #{index + 1}" %></span>
+          <span style="opacity: .75;"><%= document.filename.to_s %></span>
+        <% end %>
+      <% end %>
+    <% else %>
+      <span class="small text-muted">Invoice upload abhi pending hai.</span>
+    <% end %>
+    </div>
+  </div>
+
+  <% if current_user == @quotation_proposal.user && invoice_request.awaiting_maker_review? && !invoice_request.assets_created? %>
+    <div class="mt-3" style="border-top: 1px solid #e2ece6; padding-top: 1rem;">
+      <%= form_with url: review_invoice_request_quotation_proposal_path(@quotation_proposal, invoice_request_id: invoice_request.id), method: :patch, local: true do %>
+        <div class="mb-2">
+          <label class="form-label" style="font-weight: 700;">Maker Review Remark</label>
+          <%= text_area_tag :maker_review_remark, invoice_request.maker_review_remark, rows: 3, class: "form-control", placeholder: "Accept par optional remark, return par mandatory remark." %>
+        </div>
+        <div class="d-flex gap-2 flex-wrap justify-content-end">
+          <%= button_tag "Accept Invoice", type: "submit", name: "invoice_review_action", value: "accept", class: "app-form-submit", style: "padding: 0.45rem 0.95rem;" %>
+          <%= button_tag "Return Invoice", type: "submit", name: "invoice_review_action", value: "return", class: "app-secondary-btn", style: "padding: 0.45rem 0.95rem;" %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if invoice_request.assets.any? %>
+    <div class="mt-3">
+      <div class="small text-muted" style="font-weight: 700;">Created Assets</div>
+      <div class="d-grid gap-2 mt-2">
+        <% invoice_request.assets.each do |asset| %>
+          <div style="border: 1px solid #d9e5df; border-radius: 12px; padding: 0.75rem 0.9rem; background: #fff;">
+            <div class="d-flex justify-content-between gap-2 flex-wrap">
+              <div><strong><%= asset.name %></strong></div>
+              <div class="small text-muted"><%= asset.product&.name %></div>
+            </div>
+            <div class="small text-muted mt-1">
+              Asset Code: <strong><%= asset.asset_code.presence || "-" %></strong>
+              | Unique Product Code: <strong><%= asset.unique_product_code.presence || "-" %></strong>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>

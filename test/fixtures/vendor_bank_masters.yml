@@ -2,16 +2,16 @@
 
 one:
   vendor_registration: one
-  bank_name: MyString
-  bank_address: MyText
-  ifsc_code: MyString
-  account_number: MyString
-  account_type: MyString
+  bank_name: State Bank of India
+  bank_address: Varanasi Branch
+  ifsc_code: SBIN0001234
+  account_number: 123456789012
+  account_type: Saving
 
 two:
   vendor_registration: two
-  bank_name: MyString
-  bank_address: MyText
-  ifsc_code: MyString
-  account_number: MyString
-  account_type: MyString
+  bank_name: Punjab National Bank
+  bank_address: Lucknow Branch
+  ifsc_code: PUNB0123456
+  account_number: 987654321098
+  account_type: Current

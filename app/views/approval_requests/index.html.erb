@@ -1,22 +1,37 @@
-<div class="app-toolbar">
-  <div>
-    <h1><%= @form_name.presence || "My Approvals" %></h1>
-    <p class="app-section-note">Pending, approved, returned, rejected, or all requests for your login.</p>
+<div class="app-hero-card">
+  <div class="app-hero-copy">
+    <span class="app-hero-eyebrow">Workflow Desk</span>
+    <h1 class="app-hero-title"><%= @form_name.presence || "My Approvals" %></h1>
+    <p class="app-hero-text">Pending, approved, returned, rejected, aur all approval requests ko ek hi jagah se review aur action karein.</p>
+  </div>
+  <div class="app-hero-meta">
+    <div class="app-hero-stat">
+      <strong><%= @pending_approval_requests.size %></strong>
+      <span>Pending</span>
+    </div>
+    <div class="app-hero-stat">
+      <strong><%= @processed_approval_requests.size %></strong>
+      <span>Processed</span>
+    </div>
   </div>
 </div>
 
-<div class="mb-3">
+<div class="app-filter-pills">
   <% %w[pending approved returned rejected all].each do |s| %>
-    <%= link_to s.titleize, approval_requests_path(status: s, form_name: @form_name), class: "btn btn-sm me-2 #{'btn-primary' if @status == s} #{'btn-outline-primary' unless @status == s}" %>
+    <%= link_to s.titleize, approval_requests_path(status: s, form_name: @form_name), class: "app-filter-pill #{'is-active' if @status == s}" %>
   <% end %>
 </div>
 
 <% if @status == 'pending' || @status == 'all' %>
-  <div class="app-page-header">
-    <h2>Pending</h2>
-  </div>
+  <div class="app-admin-panel" style="margin-bottom: 1.5rem;">
+    <div class="app-admin-panel-header">
+      <div>
+        <h2 class="app-admin-panel-title">Pending Approvals</h2>
+        <p class="app-section-note mb-0">Yahan woh requests dikhengi jahan current workflow me aapka action expected hai.</p>
+      </div>
+    </div>
 
-  <div class="app-table-wrap" style="margin-bottom: 1.5rem;">
+    <div class="app-table-wrap">
     <table class="table app-table">
       <thead>
         <tr>
@@ -60,7 +75,7 @@
               <% if current_step.present? && employee_matches_current_login?(current_step.employee_master) %>
                 <div class="d-flex gap-2 flex-wrap">
                   <span class="badge border bg-info bg-opacity-10 text-info px-2 py-1" style="font-size: 0.8rem;">
-                    Pending For You: L<%= current_step.level %>
+                    Pending For You: <%= WorkflowLevelNaming.humanize_level_label(current_step.level) %>
                   </span>
                   <%= render "approval_requests/approve_modal",
                     approval_request: approval_request,
@@ -89,15 +104,20 @@
         <% end %>
       </tbody>
     </table>
+    </div>
   </div>
 <% end %>
 
 <% if @status.in?(%w[approved returned rejected all]) %>
-  <div class="app-page-header">
-    <h2>Processed</h2>
-  </div>
+  <div class="app-admin-panel">
+    <div class="app-admin-panel-header">
+      <div>
+        <h2 class="app-admin-panel-title">Processed Approvals</h2>
+        <p class="app-section-note mb-0">Approved, returned, aur rejected requests ka history yahan available hai.</p>
+      </div>
+    </div>
 
-  <div class="app-table-wrap">
+    <div class="app-table-wrap">
     <table class="table app-table">
       <thead>
         <tr>
@@ -137,5 +157,6 @@
         <% end %>
       </tbody>
     </table>
+    </div>
   </div>
 <% end %>

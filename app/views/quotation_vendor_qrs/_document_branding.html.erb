@@ -1,8 +1,19 @@
+<%
+  vendor_name = local_assigns[:vendor_name]
+%>
+
 <style>
   .doc-branding-shell {
-    background: #fff;
-    border: 1px solid #cfd9d2;
-    margin-bottom: 1rem;
+    padding: 1.4rem;
+    border: 1px solid #d4e8df;
+    margin: 0 auto 1rem;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 251, 247, 0.98));
+    box-shadow: 0 10px 30px rgba(26, 58, 42, 0.08);
+    box-sizing: border-box;
+    min-height: 112px;
   }
 
   .doc-branding-header {
@@ -10,48 +21,73 @@
     align-items: center;
     justify-content: space-between;
     gap: 1.5rem;
-    padding: 0.75rem 1.5rem;
-    border-bottom: 1px solid #2f2f2f;
+    min-height: 84px;
+    padding: 0;
+    box-sizing: border-box;
   }
 
   .doc-branding-left,
+  .doc-branding-center,
   .doc-branding-right {
     display: flex;
     align-items: center;
-  }
+    flex: 1;
+X  }
 
   .doc-branding-left {
     justify-content: flex-start;
-    flex: 1;
+  }
+
+  .doc-branding-center {
+    justify-content: center;
+    text-align: center;
+    padding: 0 1rem;
+    min-width: 220px;
   }
 
   .doc-branding-right {
     justify-content: flex-end;
-    flex: 1;
+  }
+
+  .doc-branding-vendor {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #18382a;
+    line-height: 1.35;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
   }
 
   .doc-branding-left img {
-    max-height: 92px;
+    max-height: 72px;
     width: auto;
     object-fit: contain;
   }
 
   .doc-branding-right img {
-    max-height: 82px;
+    max-height: 64px;
     width: auto;
     object-fit: contain;
   }
 
   @media (max-width: 768px) {
+    .doc-branding-shell {
+      padding: 1rem;
+    }
+
     .doc-branding-header {
       flex-direction: column;
       align-items: flex-start;
+      min-height: auto;
     }
 
     .doc-branding-left,
+    .doc-branding-center,
     .doc-branding-right {
       width: 100%;
       justify-content: flex-start;
+      text-align: left;
+      padding: 0;
     }
   }
 
@@ -67,6 +103,11 @@
   <div class="doc-branding-header">
     <div class="doc-branding-left">
       <%= image_tag "rci-logo.png", alt: "RCI Logo" %>
+    </div>
+    <div class="doc-branding-center">
+      <% if vendor_name.present? %>
+        <div class="doc-branding-vendor"><%= vendor_name %></div>
+      <% end %>
     </div>
     <div class="doc-branding-right">
       <%= image_tag "asset-logo.png", alt: "ASA Logo" %>

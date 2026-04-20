@@ -1,0 +1,91 @@
+<div class="app-page-header app-page-header-top">
+  <div>
+    <h2 class="app-page-title">Create Assets</h2>
+    <p class="app-page-subtitle"><%= @quotation_proposal.subject %></p>
+  </div>
+  <%= link_to "Back to Quotation", quotation_proposal_path(@quotation_proposal), class: "app-back-link" %>
+</div>
+
+<div class="app-detail-card" style="margin-bottom: 1.5rem;">
+  <div class="app-detail-grid">
+    <div class="app-detail-item">
+      <div class="app-detail-label">Vendor</div>
+      <div class="app-detail-value"><%= @invoice_request.quotation_proposal_vendor.vendor_registration.display_name %></div>
+    </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Invoice Request</div>
+      <div class="app-detail-value">#<%= @invoice_request.id %></div>
+    </div>
+    <div class="app-detail-item">
+      <div class="app-detail-label">Invoice Uploaded At</div>
+      <div class="app-detail-value"><%= @invoice_request.invoice_uploaded_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+    </div>
+  </div>
+</div>
+
+<div class="app-detail-card">
+  <div class="app-page-header app-subsection-header-tight">
+    <div>
+      <h3 style="margin-bottom: 0.25rem;">Asset Creation Workspace</h3>
+      <p class="app-section-note mb-0">Uploaded invoice ke fixed-asset items unit-wise rows me break kiye gaye hain. Har row ke liye unique product code dalo, save par asset code auto-generate ho jayega aur record Asset module me chala jayega.</p>
+    </div>
+  </div>
+
+  <% if @asset_rows.blank? %>
+    <div class="text-muted">Is invoice request me koi fixed asset item available nahi hai.</div>
+  <% else %>
+    <%= form_with url: create_invoice_request_assets_quotation_proposal_path(@quotation_proposal, invoice_request_id: @invoice_request.id), method: :post, local: true do %>
+      <div class="app-table-wrap" style="overflow-x: auto;">
+        <table class="table app-table" style="min-width: 1100px;">
+          <thead>
+            <tr>
+              <th>S.No.</th>
+              <th>Asset Row</th>
+              <th>Item Name</th>
+              <th>Unit</th>
+              <th>Product</th>
+              <th>Unique Product Code</th>
+              <th>Generated Asset Code</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @asset_rows.each_with_index do |row, index| %>
+              <tr>
+                <td><%= index + 1 %></td>
+                <td>
+                  <strong><%= row[:row_label] %></strong>
+                  <%= hidden_field_tag "asset_rows[#{index}][vendor_item_id]", row[:vendor_item_id] %>
+                  <%= hidden_field_tag "asset_rows[#{index}][asset_name]", row[:asset_name] %>
+                </td>
+                <td><%= row[:asset_name] %></td>
+                <td><%= row[:unit_name].presence || "-" %></td>
+                <td>
+                  <%= select_tag "asset_rows[#{index}][product_id]",
+                        options_from_collection_for_select(@asset_products, :id, :name, row[:suggested_product_id]),
+                        prompt: "Select product",
+                        class: "form-control",
+                        style: "min-width: 220px;" %>
+                </td>
+                <td>
+                  <%= text_field_tag "asset_rows[#{index}][unique_product_code]",
+                        row[:unique_product_code],
+                        class: "form-control",
+                        placeholder: "Enter unique product code",
+                        required: true,
+                        style: "min-width: 220px;" %>
+                </td>
+                <td>
+                  <span class="badge border bg-light text-dark">Auto generate on submit</span>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="d-flex justify-content-end mt-3">
+        <%= submit_tag "Create Assets", class: "app-form-submit" %>
+      </div>
+    <% end %>
+  <% end %>
+</div>

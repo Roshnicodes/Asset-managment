@@ -2,13 +2,204 @@
   direct_access_mode = params[:direct_access] == "1" && @quotation_proposal.below_10k?
   otp_verified = direct_access_mode ? (@otp_verified_for_render || false) : ((@otp_verified_for_render || false) && @quotation_vendor_dispatch.access_open?)
   vendor_remark_lines = @quotation_proposal_vendor.vendor_remark.to_s.lines.map(&:strip).reject(&:blank?)
+  default_cover_note = "Dear Sir / Madam,\n\nWe are pleased to submit our quotation for your kind consideration. Please find our best rates and commercial details below."
+  vendor_cover_note_value = @quotation_proposal_vendor.vendor_cover_note.presence || default_cover_note
   payment_terms_value = vendor_remark_lines.find { |line| line.downcase.start_with?("payment terms and condition:") }&.split(":", 2)&.last.to_s.strip
   completion_value = vendor_remark_lines.find { |line| line.downcase.start_with?("date of completion:") }&.split(":", 2)&.last.to_s.strip
   warranty_value = vendor_remark_lines.find { |line| line.downcase.start_with?("warranty period:") }&.split(":", 2)&.last.to_s.strip
   earnest_money_value = vendor_remark_lines.find { |line| line.downcase.start_with?("earnest money deposit:") }&.split(":", 2)&.last.to_s.strip
+  asa_reference_no = "ASA/#{@quotation_proposal.id}/#{(@quotation_proposal.sent_to_vendors_at&.year || Time.current.year)}"
 %>
 
 <% if otp_verified %>
+  <style>
+    .vendor-quote-shell {
+      display: grid;
+      gap: 1.4rem;
+    }
+
+    .vendor-quote-card {
+      padding: 1.4rem;
+    }
+
+    .vendor-quote-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid #d9e6de;
+      flex-wrap: wrap;
+    }
+
+    .vendor-quote-card-head h3 {
+      margin: 0;
+      color: #163526;
+      font-size: 1.15rem;
+    }
+
+    .vendor-quote-card-note {
+      margin: 0.2rem 0 0;
+      color: #6b8e7f;
+      font-size: 0.92rem;
+    }
+
+    .vendor-quote-ref-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+      align-items: end;
+    }
+
+    .vendor-quote-ref-value {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #1a3a2a;
+      letter-spacing: 0.01em;
+    }
+
+    .vendor-quote-ref-input label {
+      margin-bottom: 0.45rem;
+    }
+
+    .vendor-quote-hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .vendor-quote-hero-title {
+      margin: 0;
+      font-size: 2rem;
+      color: #18382a;
+    }
+
+    .vendor-quote-hero-subtitle {
+      margin: 0.45rem 0 0;
+      color: #6b8e7f;
+      font-size: 1rem;
+    }
+
+    .vendor-quote-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      flex-wrap: wrap;
+    }
+
+    .vendor-quote-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .vendor-quote-summary .app-detail-item {
+      min-height: 100%;
+    }
+
+    .vendor-quote-summary .is-wide {
+      grid-column: span 2;
+    }
+
+    .vendor-quote-section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+      flex-wrap: wrap;
+    }
+
+    .vendor-quote-section-head h3 {
+      margin: 0;
+    }
+
+    .vendor-quote-table th {
+      white-space: nowrap;
+    }
+
+    .vendor-quote-table td {
+      vertical-align: middle;
+    }
+
+    .vendor-quote-table input,
+    .vendor-quote-table textarea,
+    .vendor-quote-table select {
+      min-width: 120px;
+    }
+
+    .vendor-quote-terms th {
+      width: 22%;
+      min-width: 220px;
+      white-space: nowrap;
+    }
+
+    .vendor-quote-actionbar {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.8rem;
+      padding: 1rem 1.2rem;
+      border: 1px solid #d4e8df;
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 250, 246, 0.98));
+      box-shadow: 0 10px 24px rgba(26, 58, 42, 0.06);
+      position: sticky;
+      bottom: 1rem;
+      z-index: 2;
+    }
+
+    .vendor-quote-actionbar .app-form-submit,
+    .vendor-quote-actionbar .app-secondary-btn {
+      min-width: 168px;
+      min-height: 52px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.85rem 1.5rem;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    @media (max-width: 900px) {
+      .vendor-quote-ref-grid,
+      .vendor-quote-summary,
+      .vendor-quote-summary-compact {
+        grid-template-columns: 1fr !important;
+      }
+
+      .vendor-quote-card {
+        padding: 1rem;
+      }
+
+      .vendor-quote-summary .is-wide {
+        grid-column: span 1;
+      }
+
+      .vendor-quote-terms th {
+        width: auto;
+        min-width: 0;
+      }
+
+      .vendor-quote-actionbar {
+        position: static;
+        padding: 0;
+        border: 0;
+        box-shadow: none;
+        background: transparent;
+        justify-content: flex-start;
+      }
+
+      .vendor-quote-actionbar .app-form-submit,
+      .vendor-quote-actionbar .app-secondary-btn {
+        min-width: 0;
+        width: 100%;
+      }
+    }
+  </style>
+
   <script>
     window.history.pushState(null, "", window.location.href);
     window.addEventListener("popstate", function () {
@@ -16,29 +207,17 @@
     });
   </script>
 
-  <%= render "document_branding" %>
+  <%= form_with model: @quotation_proposal_vendor, url: quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token, direct_access: ("1" if direct_access_mode), verified: ("1" if direct_access_mode)), method: :patch, local: true, data: { vendor_quote_calc: true } do |form| %>
+    <div class="vendor-quote-shell">
+      <%= render "document_branding", firm_name: (@vendor_registration.firm_name.presence || @vendor_registration.display_name) %>
 
-  <div class="app-detail-card" style="margin-bottom: 1.5rem; padding: 1.25rem 1.5rem;">
-    <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
-      <div class="d-flex align-items-center gap-3">
-        <div style="width: 84px; height: 84px; border-radius: 18px; background: #fff; border: 1px solid #d4e8df; display: flex; align-items: center; justify-content: center; padding: 0.75rem; box-shadow: 0 8px 20px rgba(26, 58, 42, 0.08);">
-          <% if @stakeholder_category&.logo_file&.attached? %>
-            <%= image_tag @stakeholder_category.logo_file, alt: "#{@stakeholder_category.name} Logo", style: "max-width: 100%; max-height: 100%; object-fit: contain;" %>
-          <% elsif @stakeholder_category&.logo_url.present? %>
-            <%= image_tag @stakeholder_category.logo_url, alt: "#{@stakeholder_category.name} Logo", style: "max-width: 100%; max-height: 100%; object-fit: contain;" %>
-          <% else %>
-            <%= image_tag "asset-logo.png", alt: "ASA Logo", style: "max-width: 100%; max-height: 100%; object-fit: contain;" %>
-          <% end %>
-        </div>
-
-        <div>
-          <div class="app-detail-label" style="margin-bottom: 0.2rem;">Stakeholder Branding</div>
-          <div class="fw-semibold" style="font-size: 1.1rem; color: #1a3a2a;">
-            <%= @stakeholder_category&.name || "ASA" %>
+      <div class="app-detail-card vendor-quote-card">
+        <div class="vendor-quote-hero">
+          <div>
+            <div class="app-detail-label" style="margin-bottom: 0.25rem;">Vendor quotation response</div>
+            <h1 class="vendor-quote-hero-title">Vendor Quotation Form</h1>
+            <p class="vendor-quote-hero-subtitle"><%= @vendor_registration.display_name %> for <%= @quotation_proposal.subject %></p>
           </div>
-          <div class="text-muted small">Vendor quotation response</div>
-        </div>
-      </div>
 
       <span class="badge border bg-success bg-opacity-10 text-success px-3 py-2" style="font-size: 0.9rem;">
         OTP Verified
@@ -130,62 +309,13 @@
                 <td><%= item_form.text_field :remark %></td>
               </tr>
             <% end %>
-          <% end %>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="app-detail-card" style="margin-top: 1rem;">
-      <div class="app-detail-grid">
-        <div class="app-detail-item">
-          <div class="app-detail-label">Amount Total</div>
-          <div class="app-detail-value" data-summary-amount-total><%= number_with_precision(@quotation_proposal_vendor.total_quoted_amount, precision: 2) %></div>
-        </div>
-
-        <div class="app-detail-item">
-          <div class="app-detail-label">Grand Total</div>
-          <div class="app-detail-value" data-summary-grand-total><%= number_with_precision(@quotation_proposal_vendor.grand_total_amount, precision: 2) %></div>
-        </div>
-
-        <div class="app-detail-item" style="grid-column: 1 / -1;">
-          <div class="app-detail-label">Amount in Words</div>
-          <div class="app-detail-value" data-summary-grand-words><%= amount_in_words(@quotation_proposal_vendor.grand_total_amount) %></div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="app-detail-card" style="margin-top: 1rem;">
-      <div class="app-detail-label" style="margin-bottom: 0.75rem;">Terms & Conditions</div>
-      <table class="table app-table" style="margin-bottom: 0;">
-        <tbody>
-          <tr>
-            <th style="width: 34%; white-space: nowrap;">Payment Terms and condition</th>
-            <td>
-              <input type="text" class="app-form-control" value="<%= payment_terms_value %>" data-vendor-remark-part="payment_terms" />
-            </td>
-          </tr>
-          <tr>
-            <th style="white-space: nowrap;">Date of completion</th>
-            <td>
-              <input type="text" class="app-form-control" value="<%= completion_value %>" data-vendor-remark-part="completion" />
-            </td>
-          </tr>
-          <tr>
-            <th style="white-space: nowrap;">Warranty period</th>
-            <td>
-              <input type="text" class="app-form-control" value="<%= warranty_value %>" data-vendor-remark-part="warranty" />
-            </td>
-          </tr>
-          <tr>
-            <th style="white-space: nowrap;">Earnest Money deposit</th>
-            <td>
-              <input type="text" class="app-form-control" value="<%= earnest_money_value %>" data-vendor-remark-part="earnest_money" />
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <%= form.hidden_field :vendor_remark, data: { vendor_remark_target: true } %>
-    </div>
+      <div class="app-detail-card vendor-quote-card">
+        <div class="vendor-quote-card-head">
+        </div>
 
     <div class="app-form-actions">
       <%= form.submit(@quotation_proposal_vendor.response_submitted? ? "Update Response" : "Submit Response", class: "app-form-submit") %>

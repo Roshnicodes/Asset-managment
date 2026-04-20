@@ -1,0 +1,176 @@
+<% otp_verified = @otp_verified_for_render || false %>
+
+<% if otp_verified %>
+  <div class="app-card" style="max-width: 1080px; margin: 0 auto 1.5rem; padding: 1.6rem;">
+    <div class="d-flex justify-content-between gap-3 flex-wrap align-items-start">
+      <div>
+        <h1 style="margin-bottom: 0.3rem;">Goods Receive Invoice Upload</h1>
+        <p class="text-muted mb-0">Neeche dikh rahe received goods ke against invoice upload karein. Ye information maker aur committee members ko dikh jayegi.</p>
+      </div>
+      <div class="app-detail-item" style="min-width: 240px; margin: 0;">
+        <div class="app-detail-label">Request Status</div>
+        <div class="app-detail-value"><%= @invoice_request.status.to_s.humanize %></div>
+        <div class="small text-muted mt-1">Requested at: <%= @invoice_request.requested_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+        <div class="small text-muted mt-1">Uploaded at: <%= @invoice_request.invoice_uploaded_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+        <div class="small text-muted mt-1">Returned at: <%= @invoice_request.returned_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+        <div class="small text-muted mt-1">Accepted at: <%= @invoice_request.accepted_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-card" style="max-width: 1080px; margin: 0 auto 1.5rem; padding: 1.4rem;">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="app-detail-item h-100">
+          <div class="app-detail-label">Quotation</div>
+          <div class="app-detail-value"><%= @quotation_proposal.subject %></div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="app-detail-item h-100">
+          <div class="app-detail-label">Vendor</div>
+          <div class="app-detail-value"><%= @vendor_registration.display_name %></div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="app-detail-item h-100">
+          <div class="app-detail-label">Received Quantity Total</div>
+          <div class="app-detail-value"><%= number_with_precision(@invoice_request.received_quantity_total, precision: 2, strip_insignificant_zeros: true) %></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-card" style="max-width: 1080px; margin: 0 auto 1.5rem; padding: 1.4rem;">
+    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap" style="margin-bottom: 1rem;">
+      <div>
+        <h2 style="margin-bottom: 0.25rem;">Received Goods Summary</h2>
+        <p class="text-muted mb-0">Sirf is round me receive hue items yahan show ho rahe hain.</p>
+      </div>
+      <span class="badge border <%= @invoice_request.accepted? ? "bg-success bg-opacity-10 text-success" : @invoice_request.returned? ? "bg-danger bg-opacity-10 text-danger" : @invoice_request.uploaded? ? "bg-info bg-opacity-10 text-info" : "bg-warning bg-opacity-10 text-warning" %>">
+        <%= @invoice_request.accepted? ? "Invoice Accepted" : @invoice_request.returned? ? "Invoice Returned" : @invoice_request.uploaded? ? "Invoice Uploaded" : "Invoice Pending" %>
+      </span>
+    </div>
+
+    <div class="app-table-wrap" style="overflow-x: auto;">
+      <table class="table app-table">
+        <thead>
+          <tr>
+            <th>S.No.</th>
+            <th>Item Name</th>
+            <th>Received Qty</th>
+            <th>Unit</th>
+            <th>Ordered Qty</th>
+            <th>Cumulative Received</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @invoice_request.snapshot_items.each_with_index do |item, index| %>
+            <tr>
+              <td><%= index + 1 %></td>
+              <td><strong><%= item[:item_name] %></strong></td>
+              <td><%= number_with_precision(item[:received_quantity], precision: 2, strip_insignificant_zeros: true) %></td>
+              <td><%= item[:unit_name].presence || "-" %></td>
+              <td><%= number_with_precision(item[:ordered_quantity], precision: 2, strip_insignificant_zeros: true) %></td>
+              <td><%= number_with_precision(item[:cumulative_received_quantity], precision: 2, strip_insignificant_zeros: true) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <% if @invoice_request.maker_review_remark.present? %>
+    <div class="app-card" style="max-width: 1080px; margin: 0 auto 1.5rem; padding: 1.4rem; border-color: <%= @invoice_request.returned? ? "#f1c4c4" : "#d8e6de" %>;">
+      <h2 style="margin-bottom: 0.8rem;">Maker Review</h2>
+      <div class="app-detail-item">
+        <div class="app-detail-label">Remark</div>
+        <div class="app-detail-value" style="white-space: pre-wrap;"><%= @invoice_request.maker_review_remark %></div>
+      </div>
+      <div class="small text-muted mt-2">
+        Reviewed by: <strong><%= @invoice_request.maker_reviewed_by&.name.presence || "Maker" %></strong>
+        | Reviewed at: <strong><%= @invoice_request.maker_reviewed_at&.strftime("%d-%m-%Y %H:%M") || "-" %></strong>
+      </div>
+    </div>
+  <% end %>
+
+  <% if @invoice_request.accepted? || @invoice_request.uploaded? || @invoice_request.vendor_invoices.attached? %>
+    <div class="app-card" style="max-width: 1080px; margin: 0 auto; padding: 1.4rem;">
+      <h2 style="margin-bottom: 0.8rem;">Uploaded Invoices</h2>
+      <% if @invoice_request.vendor_remark.present? %>
+        <div class="app-detail-item" style="margin-bottom: 1rem;">
+          <div class="app-detail-label">Vendor Remark</div>
+          <div class="app-detail-value" style="white-space: pre-wrap;"><%= @invoice_request.vendor_remark %></div>
+        </div>
+      <% end %>
+      <div class="d-flex flex-wrap gap-2">
+        <% @invoice_request.vendor_invoices.each_with_index do |document, index| %>
+          <%= link_to rails_blob_path(document, disposition: "attachment"), class: "app-secondary-btn", style: "display: inline-flex; align-items: center; gap: .35rem;" do %>
+            <span><%= index.zero? ? "Invoice 1" : "Invoice #{index + 1}" %></span>
+            <span style="opacity: .75;"><%= document.filename.to_s %></span>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <% if @invoice_request.awaiting_vendor_upload? %>
+    <div class="app-card" style="max-width: 1080px; margin: 0 auto; padding: 1.4rem;">
+      <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap" style="margin-bottom: 1rem;">
+        <div>
+          <h2 style="margin-bottom: 0.25rem;"><%= @invoice_request.returned? ? "Re-upload Invoice" : "Upload Invoice" %></h2>
+          <p class="text-muted mb-0"><%= @invoice_request.returned? ? "Maker ne invoice return kiya hai. OTP verify ke baad corrected invoice dubara upload karein." : "Invoice PDF ya image upload karein. Multiple files bhi attach kar sakte hain." %></p>
+        </div>
+        <span class="badge border bg-light text-dark">Mobile: <%= @vendor_registration.mobile_no.presence || "-" %></span>
+      </div>
+
+      <%= form_with url: goods_receive_vendor_qr_path(@invoice_request.request_token, verified: 1), method: :patch, local: true, multipart: true do |form| %>
+        <div class="mb-3">
+          <label class="form-label" style="font-weight: 700;">Upload Invoice Documents</label>
+          <%= form.file_field :vendor_invoices, multiple: true, accept: ".pdf,image/*", name: "invoice_request[vendor_invoices][]", class: "form-control", required: true %>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="font-weight: 700;">Remark (Optional)</label>
+          <%= form.text_area :vendor_remark, name: "invoice_request[vendor_remark]", rows: 4, class: "form-control", placeholder: "Add any invoice or delivery related note here." %>
+        </div>
+        <div class="d-flex justify-content-end">
+          <%= form.submit "Submit Invoice", class: "app-form-submit" %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+<% else %>
+  <div class="app-card" style="max-width: 720px; margin: 0 auto; padding: 1.5rem;">
+    <h1 style="margin-bottom: 0.35rem;">Invoice Upload OTP Verification</h1>
+    <p class="text-muted" style="margin-bottom: 1.25rem;">Enter the OTP sent to your registered mobile number to open the invoice upload form.</p>
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <div class="app-card" style="padding: 1rem;">
+          <div class="text-muted small mb-1">Mobile Number</div>
+          <strong><%= @vendor_registration.mobile_no.presence || "-" %></strong>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="app-card" style="padding: 1rem;">
+          <div class="text-muted small mb-1">Last OTP Sent At</div>
+          <strong><%= @quotation_vendor_dispatch.latest_active_otp&.sent_at&.strftime("%d-%m-%Y %H:%M") || "-" %></strong>
+        </div>
+      </div>
+    </div>
+
+    <%= form_with url: verify_goods_receive_vendor_qr_otp_path(@invoice_request.request_token), method: :post, local: true do |form| %>
+      <div class="mb-3">
+        <%= form.label :otp_code, "Enter OTP", class: "form-label", style: "font-weight: 700;" %>
+        <%= form.text_field :otp_code, maxlength: 6, required: true, class: "form-control" %>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <%= form.submit "Verify OTP", class: "app-form-submit" %>
+      </div>
+    <% end %>
+
+    <div class="mt-2">
+      <%= button_to "Send New OTP", send_goods_receive_vendor_qr_otp_path(@invoice_request.request_token), method: :post, class: "app-secondary-btn" %>
+    </div>
+  </div>
+<% end %>

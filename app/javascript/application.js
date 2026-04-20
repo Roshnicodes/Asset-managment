@@ -300,6 +300,92 @@ const setupQuotationApprovalSelections = () => {
 }
 
 const setupQuotationProposalForm = () => {
+  const quotationForms = document.querySelectorAll("[data-quotation-validation-form]")
+  quotationForms.forEach((form) => {
+    if (form.dataset.validationReady === "true") return
+
+    const fieldWrapperFor = (input) => input?.closest(".app-form-field")
+    const clientErrorFor = (input) => fieldWrapperFor(input)?.querySelector("[data-field-error='true']")
+    const validatableSelector = "input[required], input[pattern], input[type='email'], input[min], select[required], textarea[required]"
+
+    const clearFieldError = (input) => {
+      const wrapper = fieldWrapperFor(input)
+      const errorNode = clientErrorFor(input)
+      if (wrapper) wrapper.classList.remove("has-error")
+      if (errorNode) {
+        errorNode.textContent = ""
+        errorNode.classList.remove("is-visible")
+      }
+    }
+
+    const showFieldError = (input, message) => {
+      const wrapper = fieldWrapperFor(input)
+      const errorNode = clientErrorFor(input)
+      if (wrapper) wrapper.classList.add("has-error")
+      if (errorNode) {
+        errorNode.textContent = message
+        errorNode.classList.add("is-visible")
+      }
+    }
+
+    const validateField = (input) => {
+      if (!input || input.disabled || input.type === "hidden") return true
+
+      clearFieldError(input)
+
+      if (input.checkValidity()) return true
+
+      const label = input.dataset.validationLabel || input.getAttribute("aria-label") || "This field"
+      let message = `${label} is invalid.`
+
+      if (input.validity.valueMissing) {
+        message = `${label} is required.`
+      } else if (input.validity.typeMismatch || input.validity.patternMismatch) {
+        message = input.title || `Enter a valid ${label.toLowerCase()}.`
+      } else if (input.validity.rangeUnderflow) {
+        message = `${label} must be greater than ${input.min}.`
+      } else if (input.validationMessage) {
+        message = input.validationMessage
+      }
+
+      showFieldError(input, message)
+      return false
+    }
+
+    form.querySelectorAll(validatableSelector).forEach((input) => {
+      input.addEventListener("input", () => validateField(input))
+      input.addEventListener("change", () => validateField(input))
+    })
+
+    const delegatedValidationHandler = (event) => {
+      const input = event.target
+      if (!(input instanceof HTMLElement)) return
+      if (!input.matches(validatableSelector)) return
+
+      validateField(input)
+    }
+
+    form.addEventListener("input", delegatedValidationHandler)
+    form.addEventListener("change", delegatedValidationHandler)
+    form.addEventListener("submit", (event) => {
+      let firstInvalidField = null
+
+      form.querySelectorAll(validatableSelector).forEach((input) => {
+        if (input.disabled || input.type === "hidden") return
+
+        const isValid = validateField(input)
+        if (!isValid && !firstInvalidField) firstInvalidField = input
+      })
+
+      if (firstInvalidField) {
+        event.preventDefault()
+        firstInvalidField.focus()
+      }
+    })
+
+    form.dataset.validationReady = "true"
+  })
+
   const themeSelect = document.getElementById("quotation_proposal_theme_id")
   const amountBucketSelect = document.getElementById("quotation_proposal_procurement_amount_bucket")
   const vendorDropdown = document.querySelector("[data-quotation-vendor-dropdown]")
@@ -421,18 +507,73 @@ const setupQuotationProposalForm = () => {
     syncVendors()
   }
 
+  const syncProposalItemOptions = () => {
+    const selectedThemeId = themeSelect?.value || ""
+
+    document.querySelectorAll("[data-proposal-item-name]").forEach((selectField) => {
+      const currentValue = selectField.value
+      let currentValueStillVisible = currentValue === ""
+
+      Array.from(selectField.querySelectorAll("option[data-theme-id]")).forEach((option) => {
+        const matchesTheme = selectedThemeId === "" || option.dataset.themeId === selectedThemeId
+        option.hidden = !matchesTheme
+        option.disabled = !matchesTheme
+
+        if (matchesTheme && option.value === currentValue) currentValueStillVisible = true
+      })
+
+      if (!currentValueStillVisible) selectField.value = ""
+    })
+  }
+
   document.querySelectorAll("[data-quotation-items]").forEach((container) => {
     if (container.dataset.ready === "true") return
 
     const list = container.querySelector("[data-quotation-item-list]")
     const template = container.querySelector("[data-quotation-item-template]")
     const addButton = container.querySelector("[data-add-quotation-item]")
+    const form = container.closest("[data-quotation-validation-form]")
+    const errorNode = container.querySelector("[data-quotation-items-error='true']")
     if (!list || !template || !addButton) return
+
+    const activeRows = () =>
+      Array.from(list.querySelectorAll("[data-quotation-item-row]")).filter((row) => {
+        const destroyField = row.querySelector("[data-quotation-item-destroy]")
+        return !destroyField || destroyField.value !== "1"
+      })
+
+    const validateItems = () => {
+      const rows = activeRows()
+      let isValid = rows.length > 0
+
+      if (errorNode) {
+        errorNode.textContent = ""
+        errorNode.classList.remove("is-visible")
+      }
+
+      rows.forEach((row) => {
+        row.querySelectorAll("input[required], input[min], select[required]").forEach((input) => {
+          if (!input.checkValidity()) {
+            input.dispatchEvent(new Event("change", { bubbles: true }))
+            isValid = false
+          }
+        })
+      })
+
+      if (rows.length === 0 && errorNode) {
+        errorNode.textContent = "Add at least one proposal item."
+        errorNode.classList.add("is-visible")
+      }
+
+      return isValid
+    }
 
     addButton.addEventListener("click", () => {
       const uniqueKey = `${Date.now()}-${Math.floor(Math.random() * 1000)}`
       const html = template.innerHTML.replace(/NEW_ITEM/g, uniqueKey)
       list.insertAdjacentHTML("beforeend", html)
+      syncProposalItemOptions()
+      validateItems()
     })
 
     container.addEventListener("click", (event) => {
@@ -449,8 +590,15 @@ const setupQuotationProposalForm = () => {
       } else {
         row.remove()
       }
+
+      validateItems()
     })
 
+    form?.addEventListener("submit", (event) => {
+      if (!validateItems()) event.preventDefault()
+    })
+
+    syncProposalItemOptions()
     container.dataset.ready = "true"
   })
 
@@ -461,6 +609,7 @@ const setupQuotationProposalForm = () => {
     const template = container.querySelector("[data-quotation-committee-template]")
     const addButton = container.querySelector("[data-add-committee-step]")
     const minimumMembers = Number(container.dataset.minCommitteeMembers || "2")
+    const form = container.closest("[data-quotation-validation-form]")
     if (!list || !template || !addButton) return
 
     const activeRows = () =>
@@ -470,16 +619,88 @@ const setupQuotationProposalForm = () => {
       })
 
     const syncCommitteeRows = () => {
-      activeRows().forEach((row, index) => {
+      const rows = activeRows()
+      const selectedMemberIds = rows
+        .map((row) => row.querySelector("[data-committee-member-select]")?.value)
+        .filter((value) => value)
+
+      rows.forEach((row, index) => {
         const level = index + 1
         const label = row.querySelector("[data-committee-label]")
         const levelField = row.querySelector("[data-committee-level]")
         const removeButton = row.querySelector("[data-remove-committee-step]")
+        const selectField = row.querySelector("[data-committee-member-select]")
+        const requiredLevel = level <= 3
 
-        if (label) label.textContent = `L${level} Committee Member`
+        if (label) label.textContent = `Committee Member ${level}`
         if (levelField) levelField.value = level
-        if (removeButton) removeButton.disabled = activeRows().length <= minimumMembers
+        if (selectField) {
+          selectField.required = requiredLevel
+          selectField.dataset.validationLabel = `Committee Member ${level}`
+          Array.from(selectField.querySelectorAll("option")).forEach((option) => {
+            if (!option.value) return
+
+            const selectedElsewhere = selectedMemberIds.includes(option.value) && option.value !== selectField.value
+            option.disabled = selectedElsewhere
+            option.hidden = selectedElsewhere
+          })
+        }
+        if (removeButton) removeButton.disabled = requiredLevel || rows.length <= minimumMembers
       })
+    }
+
+    const showCommitteeFieldError = (selectField, message) => {
+      const wrapper = selectField?.closest(".app-form-field")
+      const errorNode = wrapper?.querySelector("[data-field-error='true']")
+      if (wrapper) wrapper.classList.add("has-error")
+      if (errorNode) {
+        errorNode.textContent = message
+        errorNode.classList.add("is-visible")
+      }
+    }
+
+    const clearCommitteeFieldError = (selectField) => {
+      const wrapper = selectField?.closest(".app-form-field")
+      const errorNode = wrapper?.querySelector("[data-field-error='true']")
+      if (wrapper) wrapper.classList.remove("has-error")
+      if (errorNode) {
+        errorNode.textContent = ""
+        errorNode.classList.remove("is-visible")
+      }
+    }
+
+    const validateCommittee = () => {
+      const rows = activeRows()
+      let isValid = rows.length >= 3
+      const selectedCounts = {}
+
+      rows.forEach((row) => {
+        const selectField = row.querySelector("[data-committee-member-select]")
+        if (!selectField?.value) return
+
+        selectedCounts[selectField.value] = (selectedCounts[selectField.value] || 0) + 1
+      })
+
+      rows.forEach((row, index) => {
+        const selectField = row.querySelector("[data-committee-member-select]")
+
+        if (!selectField) {
+          isValid = false
+          return
+        }
+
+        if (!selectField.value && index < 3) {
+          showCommitteeFieldError(selectField, `Committee Member ${index + 1} is required.`)
+          isValid = false
+        } else if (selectedCounts[selectField.value] > 1) {
+          showCommitteeFieldError(selectField, "Committee member must be unique.")
+          isValid = false
+        } else {
+          clearCommitteeFieldError(selectField)
+        }
+      })
+
+      return isValid
     }
 
     addButton.addEventListener("click", () => {
@@ -487,13 +708,14 @@ const setupQuotationProposalForm = () => {
       const html = template.innerHTML.replace(/NEW_COMMITTEE_STEP/g, uniqueKey)
       list.insertAdjacentHTML("beforeend", html)
       syncCommitteeRows()
+      validateCommittee()
     })
 
     container.addEventListener("click", (event) => {
       const removeButton = event.target.closest("[data-remove-committee-step]")
       if (!removeButton) return
 
-      if (activeRows().length <= minimumMembers) return
+      if (removeButton.disabled || activeRows().length <= minimumMembers) return
 
       const row = removeButton.closest("[data-quotation-committee-row]")
       if (!row) return
@@ -507,11 +729,50 @@ const setupQuotationProposalForm = () => {
       }
 
       syncCommitteeRows()
+      validateCommittee()
+    })
+
+    container.addEventListener("change", (event) => {
+      if (!event.target.matches("[data-committee-member-select]")) return
+      syncCommitteeRows()
+      validateCommittee()
+    })
+
+    form?.addEventListener("submit", (event) => {
+      if (!validateCommittee()) event.preventDefault()
     })
 
     syncCommitteeRows()
     container.dataset.ready = "true"
   })
+
+  if (vendorDropdown) {
+    const form = vendorDropdown.closest("[data-quotation-validation-form]")
+    const errorNode = form?.querySelector("[data-vendor-selection-error='true']")
+    const fieldWrapper = form?.querySelector("[data-vendor-selection-field]")
+    const vendorCheckboxes = Array.from(vendorDropdown.querySelectorAll(".quotation-vendor-checkbox"))
+
+    const validateVendorSelection = () => {
+      const hasSelectedVendor = vendorCheckboxes.some((checkbox) => checkbox.checked)
+      if (fieldWrapper) fieldWrapper.classList.toggle("has-error", !hasSelectedVendor)
+      if (errorNode) {
+        errorNode.textContent = hasSelectedVendor ? "" : "Select at least one vendor."
+        errorNode.classList.toggle("is-visible", !hasSelectedVendor)
+      }
+      return hasSelectedVendor
+    }
+
+    vendorCheckboxes.forEach((checkbox) => {
+      checkbox.addEventListener("change", validateVendorSelection)
+    })
+
+    form?.addEventListener("submit", (event) => {
+      if (!validateVendorSelection()) event.preventDefault()
+    })
+  }
+
+  themeSelect?.addEventListener("change", syncProposalItemOptions)
+  syncProposalItemOptions()
 }
 
 const setupVendorQuotationCalculations = () => {

@@ -1,0 +1,316 @@
+<%
+  selected_vendor = proposal_vendor.vendor_registration
+  po_items = proposal_vendor.vendor_items.includes(:quotation_proposal_item).sort_by(&:quotation_proposal_item_id)
+  purchase_order_date = proposal_vendor.purchase_order_sent_at&.to_date || Date.current
+  quotation_date = quotation_proposal.sent_to_vendors_at&.to_date
+  vendor_address_lines = selected_vendor.address.to_s.split(",").map(&:strip).reject(&:blank?)
+  vendor_street_line = vendor_address_lines.first
+  vendor_city_line = vendor_address_lines[1..].presence&.join(", ")
+%>
+
+<style>
+  .po-sheet {
+    width: 210mm;
+    max-width: 100%;
+    margin: 0 auto;
+    background-color: #fff;
+    background-image:
+      linear-gradient(to right, rgba(130, 130, 130, 0.22) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(130, 130, 130, 0.22) 1px, transparent 1px);
+    background-size: 104px 23px;
+    color: #000;
+    border: 1px solid #666;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
+    font-family: "Trebuchet MS", Arial, sans-serif;
+    font-size: 12px;
+    line-height: 1.2;
+  }
+
+  .po-sheet-inner {
+    padding: 8px 10px 12px;
+  }
+
+  .po-head {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+  }
+
+  .po-head td {
+    vertical-align: top;
+    padding: 0;
+  }
+
+  .po-head-center {
+    text-align: center;
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding-top: 2px !important;
+  }
+
+  .po-title-box {
+    display: inline-block;
+    min-width: 440px;
+    padding: 10px 20px 12px;
+    border: 2px solid #8b72aa;
+    background: linear-gradient(180deg, #f7f0ff 0%, #d8c6f1 100%);
+    box-shadow: 0 3px 8px rgba(78, 45, 116, 0.28);
+  }
+
+  .po-asa-logo {
+    width: 225px;
+    max-width: 100%;
+  }
+
+  .po-rci-logo {
+    width: 88px;
+    max-width: 100%;
+    display: block;
+    margin-left: auto;
+  }
+
+  .po-info,
+  .po-items {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .po-info td,
+  .po-info th,
+  .po-items td,
+  .po-items th {
+    border: 1px dashed #555;
+    padding: 4px 6px;
+    vertical-align: top;
+  }
+
+  .po-info th,
+  .po-items th {
+    font-weight: 700;
+    background: #fff;
+  }
+
+  .po-info {
+    margin-bottom: 8px;
+  }
+
+  .po-vendor-title,
+  .po-block-title {
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .po-meta-right-label {
+    width: 26%;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .po-meta-right-value {
+    width: 24%;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .po-items {
+    margin-bottom: 8px;
+  }
+
+  .po-items td:nth-child(1),
+  .po-items td:nth-child(4) {
+    text-align: center;
+  }
+
+  .po-items td:nth-child(5),
+  .po-items td:nth-child(6),
+  .po-items td:nth-child(7),
+  .po-items td:nth-child(8) {
+    text-align: right;
+  }
+
+  .po-small {
+    font-size: 11px;
+  }
+
+  .po-general-box {
+    border: 1px solid #4f4f4f;
+    padding: 6px 8px;
+    margin-top: 8px;
+  }
+
+  .po-general-box ol {
+    margin: 4px 0 0 16px;
+    padding: 0;
+  }
+
+  .po-general-box li {
+    margin-bottom: 3px;
+  }
+
+  .po-sign {
+    margin-top: 14px;
+    text-align: right;
+  }
+
+  .po-sign-name {
+    margin-top: 14px;
+    font-weight: 700;
+  }
+
+  @media print {
+    body {
+      background: #fff !important;
+    }
+
+    main {
+      max-width: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    .print-hide,
+    .alert {
+      display: none !important;
+    }
+
+    .po-sheet {
+      width: 100%;
+      border: 0;
+      box-shadow: none;
+      margin: 0;
+    }
+
+    @page {
+      size: A4;
+      margin: 6mm;
+    }
+  }
+</style>
+
+<div class="po-sheet">
+  <div class="po-sheet-inner">
+    <table class="po-head">
+      <tr>
+        <td style="width: 27%;">
+          <%= image_tag "po_asa_logo.png", alt: "ASA Logo", class: "po-asa-logo" %>
+        </td>
+        <td style="width: 58%;" class="po-head-center">
+          <div class="po-title-box">PURCHASE ORDER</div>
+        </td>
+        <td style="width: 15%;">
+          <%= image_tag "po_rci_logo.png", alt: "RCI Logo", class: "po-rci-logo" %>
+        </td>
+      </tr>
+    </table>
+
+    <table class="po-info">
+      <tr>
+        <td colspan="3" rowspan="3">
+          <strong>Action for Social Advancement (ASA)</strong><br>
+          "The Farmers House"Plan-C,<br>
+          Tulip Greens, Vill. Mahabadia, Kolar Road, Bhopal-462042, Madhya Pradesh,<br>
+          Mobile.No- 09109988781, 09109988785, 09109988784.
+        </td>
+        <td class="po-meta-right-label">P.O. /Dispatch No. ASA/</td>
+        <td colspan="2" class="po-meta-right-value">/<%= purchase_order_year_label %></td>
+      </tr>
+      <tr>
+        <td class="po-meta-right-label">Date</td>
+        <td colspan="2"><%= purchase_order_date.strftime("%-d/%-m/%Y") %></td>
+      </tr>
+      <tr></tr>
+      <tr>
+        <td style="width: 16%;"><span class="po-vendor-title">VENDOR</span></td>
+        <td colspan="5">
+          <%= selected_vendor.contact_person_name.presence || selected_vendor.vendor_name.presence || "-" %><br>
+          <strong><%= selected_vendor.display_name %></strong><br>
+          [Street Address] <%= vendor_street_line.presence || "-" %><br>
+          [City, ST ZIP Code] <%= vendor_city_line.presence || "-" %><br>
+          [Phone] <%= selected_vendor.mobile_no.presence || "-" %><br>
+          Email ID- <%= selected_vendor.email.presence || "-" %>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="3" style="width: 58%;">
+          <div class="po-block-title">REFERENCE &amp; DISCRIPTION</div>
+          As per quotation date :- <%= quotation_date&.strftime("%d.%m.%Y") || "-" %><br>
+          Subject: <%= quotation_proposal.subject %><br>
+          Vendor Ref.: <%= proposal_vendor.vendor_reference_no.presence || "-" %>
+        </td>
+        <td colspan="3" style="width: 42%;">
+          <div class="po-block-title">TERMS &amp; CONDITIONS</div>
+          Payment : <%= po_payment_terms.presence || "As per approved quotation." %><br>
+          Date of completion : <%= po_completion_terms.presence || "-" %><br>
+          Warranty period : <%= po_warranty_terms.presence || "-" %><br>
+          Earnest Money deposit : <%= po_earnest_money_terms.presence || "-" %>
+        </td>
+      </tr>
+    </table>
+
+    <table class="po-items">
+      <thead>
+        <tr>
+          <th style="width: 6%;">S.NO.</th>
+          <th style="width: 12%;">ITEM #</th>
+          <th>PRODUCT DESCRIPTION</th>
+          <th style="width: 8%;">Qty</th>
+          <th style="width: 9%;">Rate</th>
+          <th style="width: 14%;">UNIT PRICE (Billing Price)</th>
+          <th style="width: 7%;">GST</th>
+          <th style="width: 12%;">LINE TOTAL</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% po_items.each_with_index do |vendor_item, index| %>
+          <tr>
+            <td><%= index + 1 %></td>
+            <td><%= vendor_item.item_name.presence || "-" %></td>
+            <td>
+              <strong><%= vendor_item.item_name %></strong>
+              <% if vendor_item.quotation_proposal_item.remark.present? %>
+                <div class="po-small"><%= vendor_item.quotation_proposal_item.remark %></div>
+              <% end %>
+            </td>
+            <td><%= number_with_precision(vendor_item.quantity, precision: 2, strip_insignificant_zeros: true) %></td>
+            <td><%= vendor_item.quoted_rate.present? ? number_with_precision(vendor_item.quoted_rate, precision: 2) : "-" %></td>
+            <td><%= vendor_item.line_total.present? ? number_with_precision(vendor_item.line_total, precision: 2) : "-" %></td>
+            <td><%= vendor_item.gst_percentage.present? ? number_with_precision(vendor_item.gst_percentage, precision: 2) : "-" %></td>
+            <td><%= vendor_item.grand_total.present? ? number_with_precision(vendor_item.grand_total, precision: 2) : "-" %></td>
+          </tr>
+        <% end %>
+        <tr>
+          <td colspan="7" style="text-align: right;"><strong>SUBTOTAL</strong></td>
+          <td><%= number_with_precision(proposal_vendor.total_quoted_amount, precision: 2) %></td>
+        </tr>
+        <tr>
+          <td colspan="7" style="text-align: right;"><strong>Taxes Included</strong></td>
+          <td><%= number_with_precision(proposal_vendor.total_gst_amount, precision: 2) %></td>
+        </tr>
+        <tr>
+          <td colspan="7" style="text-align: right;"><strong>TOTAL</strong></td>
+          <td><%= number_with_precision(proposal_vendor.grand_total_amount, precision: 2) %></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="po-general-box">
+      <div class="po-block-title">General Terms and Conditions:</div>
+      <ol>
+        <li>Please send two copies of your proforma invoice.</li>
+        <li>Execute this order in accordance with the prices, terms &amp; conditions, and specifications listed above.</li>
+        <li>Please notify us immediately if you are unable to provide as specified.</li>
+        <li>With the acceptance of this Purchase Order, the supplier agreed to abide by the Anti-bribery policy of ASA and further undertakes that it will promptly report any violation or potential violation of the same by any person to goodgovernance@asabhopal.org.</li>
+        <li>Any dispute or cause of action which arises in connection with the Purchase Order shall be subject to the jurisdiction of the Courts situated at Bhopal, Madhya Pradesh.</li>
+      </ol>
+      <div style="margin-top: 6px;">goodgovernance@asabhopal.org</div>
+    </div>
+
+    <div style="margin-top: 8px;"><strong>Amount in Words:</strong> <%= amount_in_words(proposal_vendor.grand_total_amount) %></div>
+
+    <div class="po-sign">
+      <div>Authorized by: <%= authorized_by&.name.presence || quotation_proposal.user&.email || "-" %></div>
+      <div class="po-sign-name">Date: <%= purchase_order_date.strftime("%d-%m-%Y") %></div>
+    </div>
+  </div>
+</div>

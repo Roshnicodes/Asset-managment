@@ -2,8 +2,6 @@
 <% current_step = approval_request&.current_step %>
 <% approver_view = approval_request.present? && current_step&.employee_master_id == current_employee_master&.id && approval_request.status == "pending" %>
 <% owner_or_admin = current_user == @vendor_registration.user || current_user.email == "admin@example.com" || current_user.employee_master&.user_type == "Admin" %>
-<% editable_by_owner = approval_request.blank? || approval_request.employee_return_pending? %>
-
 <div class="app-page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
   <div>
     <h2 style="margin: 0; font-size: 1.8rem; color: #1a3a2a;">Vendor Registration Details</h2>
@@ -12,9 +10,7 @@
   <div style="display: flex; gap: 1rem; align-items: center;">
     <%= link_to "← Back", vendor_registrations_path, class: "app-back-link" %>
     <% if owner_or_admin %>
-      <% if current_user == @vendor_registration.user ? editable_by_owner : true %>
-        <%= link_to "Edit", edit_vendor_registration_path(@vendor_registration), class: "app-primary-btn", style: "padding: 0.75rem 1.5rem; font-weight: 600;" %>
-      <% end %>
+      <%= link_to "Edit", edit_vendor_registration_path(@vendor_registration), class: "app-primary-btn", style: "padding: 0.75rem 1.5rem; font-weight: 600;" %>
       <%= button_to "Delete", @vendor_registration, method: :delete, data: { turbo_confirm: "Are you sure you want to delete this vendor registration?" }, class: "app-danger-btn", style: "padding: 0.75rem 1.5rem; font-weight: 600;" %>
     <% end %>
   </div>

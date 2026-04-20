@@ -3,15 +3,24 @@ class QuotationProposalVendor < ApplicationRecord
 
   belongs_to :quotation_proposal
   belongs_to :vendor_registration
+  belongs_to :purchase_order_authorized_by, class_name: "EmployeeMaster", optional: true
+  belongs_to :purchase_order_reply_updated_by, class_name: "EmployeeMaster", optional: true
   has_many :vendor_items, class_name: "QuotationProposalVendorItem", dependent: :destroy
   has_one :vendor_dispatch, class_name: "QuotationVendorDispatch", dependent: :destroy
+  has_many :committee_member_scores, class_name: "QuotationProposalVendorScore", dependent: :destroy
+  has_many :purchase_order_activities, class_name: "QuotationProposalVendorPoActivity", dependent: :destroy
+  has_many :invoice_requests, class_name: "QuotationProposalVendorInvoiceRequest", dependent: :destroy
+  has_many_attached :vendor_documents
 
   accepts_nested_attributes_for :vendor_items
 
   RESPONSE_STATUSES = %w[pending responded].freeze
+  PURCHASE_ORDER_STATUSES = %w[draft sent accepted returned rejected].freeze
 
   validates :qr_token, uniqueness: true, allow_nil: true
+  validates :po_token, uniqueness: true, allow_nil: true
   validates :response_status, inclusion: { in: RESPONSE_STATUSES }, allow_blank: true
+  validates :purchase_order_status, inclusion: { in: PURCHASE_ORDER_STATUSES }, allow_blank: true
 
   scope :responded, -> { where(response_status: "responded") }
 
@@ -40,6 +49,90 @@ class QuotationProposalVendor < ApplicationRecord
 
   def comparable?
     response_submitted?
+  end
+
+  def ensure_po_token!
+    return po_token if sms_friendly_token?(po_token)
+
+    update!(po_token: generate_unique_token_for(:po_token))
+    po_token
+  end
+
+  def purchase_order_sent?
+    purchase_order_status.in?(%w[sent accepted returned rejected])
+  end
+
+  def purchase_order_pending_vendor_action?
+    purchase_order_status == "sent"
+  end
+
+  def purchase_order_expired?
+    purchase_order_due_date.present? && purchase_order_due_date < Date.current
+  end
+
+  def purchase_order_returned_once?
+    if purchase_order_activities.loaded?
+      purchase_order_activities.any? { |activity| activity.action_type == "vendor_returned" }
+    else
+      purchase_order_activities.where(action_type: "vendor_returned").exists?
+    end
+  end
+
+  def pending_invoice_requests?
+    if invoice_requests.loaded?
+      invoice_requests.any? { |request| request.status == "pending_invoice" }
+    else
+      invoice_requests.where(status: "pending_invoice").exists?
+    end
+  end
+
+  def add_purchase_order_activity!(action_type:, actor_name:, actor_role:, note: nil, employee_master: nil, user: nil, occurred_at: Time.current)
+    purchase_order_activities.create!(
+      action_type: action_type,
+      actor_name: actor_name,
+      actor_role: actor_role,
+      note: note.presence,
+      employee_master: employee_master,
+      user: user,
+      occurred_at: occurred_at
+    )
+  end
+
+  def score_for(employee)
+    return unless employee
+
+    if committee_member_scores.loaded?
+      committee_member_scores.find { |record| record.employee_master_id == employee.id }&.score
+    else
+      committee_member_scores.find_by(employee_master_id: employee.id)&.score
+    end
+  end
+
+  def committee_score_value
+    if committee_member_scores.loaded?
+      scores = committee_member_scores.filter_map(&:score)
+      return committee_score if scores.empty?
+
+      scores.sum
+    else
+      return committee_score unless committee_member_scores.exists?
+
+      committee_member_scores.sum(:score)
+    end
+  end
+
+  def committee_score_count
+    if committee_member_scores.loaded?
+      committee_member_scores.count { |record| record.score.present? }
+    else
+      committee_member_scores.where.not(score: nil).count
+    end
+  end
+
+  def sync_cached_committee_score!
+    return if destroyed?
+
+    update_column(:committee_score, committee_member_scores.where.not(score: nil).sum(:score).presence)
   end
 
   def dispatch_record!
@@ -73,13 +166,21 @@ class QuotationProposalVendor < ApplicationRecord
   private
 
   def sms_friendly_qr_token?
-    qr_token.present? && qr_token.match?(/\A[a-zA-Z0-9]{1,#{SMS_TOKEN_LENGTH}}\z/)
+    sms_friendly_token?(qr_token)
+  end
+
+  def sms_friendly_token?(token)
+    token.present? && token.match?(/\A[a-zA-Z0-9]{1,#{SMS_TOKEN_LENGTH}}\z/)
   end
 
   def generate_unique_qr_token
+    generate_unique_token_for(:qr_token)
+  end
+
+  def generate_unique_token_for(attribute_name)
     loop do
       token = SecureRandom.alphanumeric(SMS_TOKEN_LENGTH)
-      break token unless self.class.exists?(qr_token: token)
+      break token unless self.class.exists?(attribute_name => token)
     end
   end
 end

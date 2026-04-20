@@ -1,16 +1,12 @@
 <%
-  creator_employee = @quotation_proposal.user&.employee_master
-  creator_name = creator_employee&.name.presence || @quotation_proposal.user&.email.presence || "Authorized Signatory"
-  proposal_remark = @quotation_proposal.remark.presence || "-"
-  project_district = creator_employee&.district&.name.presence || @vendor_registration&.district&.name.presence || "-"
-  project_village = creator_employee&.village.presence || "-"
-  project_block = creator_employee&.block&.name.presence || @vendor_registration&.block&.name.presence || "-"
-  project_panchayat = creator_employee&.gram_panchayat.presence || "-"
-  brief_work_description = @quotation_proposal.subject
+  vendor_contact_person = @vendor_registration.contact_person_name.presence || @vendor_registration.display_name
   sent_date = @quotation_proposal.sent_to_vendors_at&.to_date
   reference_year = sent_date&.year || Time.current.year
-  submission_deadline = @quotation_proposal.proposal_end_date
-  submission_deadline_text = submission_deadline.present? ? "#{submission_deadline.day.ordinalize} #{submission_deadline.strftime("%B %Y")}" : "-"
+  default_cover_note = "Dear Sir / Madam,\n\nWe are pleased to submit our quotation for your kind consideration. Please find our best rates and commercial details below."
+  vendor_cover_note_value = @quotation_proposal_vendor.vendor_cover_note.presence || default_cover_note
+  vendor_cover_note_lines = vendor_cover_note_value.to_s.lines.map(&:strip)
+  vendor_cover_note_lines.shift if vendor_cover_note_lines.first.to_s.downcase.start_with?("dear sir / madam")
+  vendor_cover_note_body = vendor_cover_note_lines.reject(&:blank?).join("\n")
   vendor_remark_lines = @quotation_proposal_vendor.vendor_remark.to_s.lines.map(&:strip).reject(&:blank?)
   payment_terms_value = vendor_remark_lines.find { |line| line.downcase.start_with?("payment terms and condition:") }&.split(":", 2)&.last.to_s.strip
   completion_value = vendor_remark_lines.find { |line| line.downcase.start_with?("date of completion:") }&.split(":", 2)&.last.to_s.strip
@@ -43,39 +39,37 @@
     padding: 1.1rem 1.7rem 1.25rem;
   }
 
+  .rfq-doc-firm-name {
+    padding: 1.2rem 1.7rem 0.3rem;
+    text-align: center;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #18382a;
+    letter-spacing: 0.01em;
+  }
+
   .rfq-doc-refrow {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1.5rem;
-    margin-bottom: 0.75rem;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 0.9fr;
+    gap: 0.9rem;
+    margin-bottom: 1rem;
+    padding: 0.8rem 0.95rem;
+    border: 1px solid #c8d3cc;
+    border-radius: 12px;
+    background: #f8fbf8;
   }
 
   .rfq-doc-refrow div {
-    width: 48%;
-    font-size: 16px;
-  }
-
-  .rfq-doc-to {
-    margin: 0.2rem 0 1.1rem 0;
-    line-height: 1.6;
     font-size: 16px;
   }
 
   .rfq-doc-subject {
-    margin: 1rem 0 0.7rem;
+    margin: 0 0 0.9rem;
     font-size: 18px;
     font-weight: 700;
     line-height: 1.35;
-    white-space: nowrap;
-  }
-
-  .rfq-doc-last-date {
-    margin: 0 0 1rem;
-    font-size: 18px;
-    font-weight: 700;
-    line-height: 1.35;
-    white-space: nowrap;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid #d7e1db;
   }
 
   .rfq-doc p {
@@ -83,7 +77,6 @@
     text-align: justify;
   }
 
-  .rfq-project-table,
   .rfq-estimate-table,
   .rfq-summary-table,
   .rfq-terms-table {
@@ -92,8 +85,6 @@
     margin: 0.7rem 0 1rem;
   }
 
-  .rfq-project-table th,
-  .rfq-project-table td,
   .rfq-estimate-table th,
   .rfq-estimate-table td,
   .rfq-summary-table th,
@@ -105,7 +96,6 @@
     vertical-align: top;
   }
 
-  .rfq-project-table th,
   .rfq-estimate-table th,
   .rfq-summary-table th,
   .rfq-terms-table th {
@@ -113,17 +103,18 @@
     background: #fff;
   }
 
-  .rfq-note-list {
-    margin: 0.25rem 0 0;
-    padding-left: 1.1rem;
-  }
-
-  .rfq-note-list li {
-    margin-bottom: 0.35rem;
-  }
-
   .rfq-doc-signoff {
     margin-top: 1.4rem;
+  }
+
+  .rfq-doc-signoff-name {
+    margin-top: 0.75rem !important;
+  }
+
+  .rfq-doc-section-title {
+    margin: 1rem 0 0.55rem;
+    font-size: 16px;
+    font-weight: 700;
   }
 
   @media print {
@@ -156,64 +147,45 @@
   }
 </style>
 
+<script>
+  window.addEventListener("load", function () {
+    window.setTimeout(function () {
+      window.print();
+    }, 300);
+  });
+</script>
+
 <div class="rfq-print-toolbar print-hide">
   <button type="button" class="app-form-submit" onclick="window.print()">Print / Save PDF</button>
   <%= link_to "Back to Form", quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token, verified: 1), class: "app-secondary-btn" %>
 </div>
 
 <div class="rfq-doc">
-  <%= render "document_branding" %>
-
+  <div class="rfq-doc-firm-name"><%= @vendor_registration.firm_name.presence || @vendor_registration.display_name %></div>
   <div class="rfq-doc-body">
     <div class="rfq-doc-refrow">
-      <div style="white-space: nowrap;"><strong>Ref.</strong> ASA/<%= @quotation_proposal.id %>/<%= reference_year %></div>
-      <div style="text-align: right; white-space: nowrap;"><strong>Date:</strong> <%= sent_date&.strftime("%d-%m-%Y") || "-" %></div>
-    </div>
-
-    <div class="rfq-doc-to">
-      <div style="white-space: nowrap;"><strong>To,</strong></div>
-      <div style="margin-top: 0.4rem; white-space: nowrap;"><strong><%= @vendor_registration.display_name %></strong></div>
+      <div style="white-space: nowrap;">
+        <strong>Ref.</strong> ASA/<%= @quotation_proposal.id %>/<%= reference_year %>
+      </div>
+      <div style="white-space: nowrap;">
+        <strong>Vendor Ref.</strong>
+        <%= @quotation_proposal_vendor.vendor_reference_no.presence || "-" %>
+      </div>
+      <div style="text-align: right; white-space: nowrap;">
+        <strong>Submission Date:</strong> <%= sent_date&.strftime("%d-%m-%Y") || "-" %>
+      </div>
     </div>
 
     <div class="rfq-doc-subject">
-      <strong>Sub:</strong> Request for Quotation (RFQ) for <%= @quotation_proposal.subject %>
+      <strong>Sub:</strong> Vendor Quotation for <%= @quotation_proposal.subject %>
     </div>
 
-    <div class="rfq-doc-last-date">
-      Last date of Submission of RFQ is <%= submission_deadline_text %>
-    </div>
+    <p><strong>Dear Sir / Madam,</strong></p>
+    <% if vendor_cover_note_body.present? %>
+      <p style="white-space: pre-line;"><%= vendor_cover_note_body %></p>
+    <% end %>
 
-    <p>Dear Sir/Madam</p>
-
-    <p>
-      Action for Social Advancement (ASA) is a National level NGO working for Farm based livelihood development of small farmers since 1996. Please visit our website <strong>www.asaindia.org</strong> for more information. ASA intends to construct Warehouse at
-    </p>
-
-    <table class="rfq-project-table">
-      <thead>
-        <tr>
-          <th style="width: 6%;">S.</th>
-          <th style="width: 11%;">District</th>
-          <th style="width: 12%;">Village</th>
-          <th style="width: 12%;">Block</th>
-          <th style="width: 14%;">Panchayat</th>
-          <th>Brief work description</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>1</td>
-          <td><%= project_district %></td>
-          <td><%= project_village %></td>
-          <td><%= project_block %></td>
-          <td><%= project_panchayat %></td>
-          <td><%= brief_work_description %></td>
-        </tr>
-      </tbody>
-    </table>
-
-    <p>It requests your organization to submit quotations showing rates for the items mentioned below in the prescribed format as given below.</p>
-
+    <div class="rfq-doc-section-title">Quoted Items</div>
     <table class="rfq-estimate-table">
       <tr>
         <th style="width: 8%;">S.No.</th>
@@ -254,7 +226,7 @@
       </tr>
     </table>
 
-    <p><strong>Terms & Conditions:</strong></p>
+    <div class="rfq-doc-section-title">Terms & Conditions</div>
 
     <table class="rfq-terms-table">
       <tr>
@@ -275,23 +247,23 @@
       </tr>
     </table>
 
-    <p><strong>Note:</strong></p>
-    <ul class="rfq-note-list">
-      <li>Submit quotation in a sealed envelope in the above format to the ASA office, Bhopal.</li>
-      <li>By E-mail to: Krishnanandan krishnanandan@asabhopal.org</li>
-      <li>Incomplete quotations and also without seal/sign/letter head will not be accepted.</li>
-      <li>Submit Quotation inclusive of all GST charges wherever applicable.</li>
-      <li>All Statutory taxes shall be borne by the organization.</li>
-      <li>You will be required to submit before the start of the work all necessary statutory permission for doing the work and engaging labourers.</li>
-      <li>We shall provide the encumbrances free/ undisputed work location, all other work in relation to the completion will be in your account.</li>
-      <li>The Organization shall be liable for settling any dispute/liabilities arisen for undertaking the construction work.</li>
-    </ul>
-
     <div class="rfq-doc-signoff">
       <p>Best regards</p>
-      <p style="margin-top: 3rem;"><%= creator_name %></p>
+      <p class="rfq-doc-signoff-name"><%= vendor_contact_person %></p>
     </div>
+
+    <% if @quotation_proposal_vendor.vendor_documents.attached? %>
+      <div class="rfq-doc-section-title">Uploaded Documents</div>
+      <table class="rfq-terms-table">
+        <% @quotation_proposal_vendor.vendor_documents.each_with_index do |document, index| %>
+          <tr>
+            <th style="width: 34%;">Document <%= index + 1 %></th>
+            <td><%= document.filename.to_s %></td>
+          </tr>
+        <% end %>
+      </table>
+    <% end %>
   </div>
 
-  <%= render "document_footer" %>
+  <%= render "document_footer", vendor_registration: @vendor_registration %>
 </div>

@@ -85,7 +85,7 @@ module ApplicationHelper
       return true if role_perms.find_by(menu_identifier: "quotation_proposal_form")&.can_view?
       return true if role_perms.find_by(menu_identifier: "quotation_proposal_list")&.can_view?
     end
-
+    
     perm = role_perms.find_by(menu_identifier: identifier)
     perm ? perm.can_view? : false
   end
@@ -146,7 +146,7 @@ module ApplicationHelper
 
   def viewer_approval_status_summary(approval_request)
     viewer_approval_steps_for(approval_request).map do |step|
-      "L#{step.level} #{step.effective_status_label}"
+      "#{WorkflowLevelNaming.humanize_level_label(step.level)} #{step.effective_status_label}"
     end.join(", ")
   end
 

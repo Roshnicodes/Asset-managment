@@ -65,11 +65,11 @@ class ApprovalRequestsController < ApplicationController
     elsif return_target.start_with?("level:")
       target_level = return_target.delete_prefix("level:").to_i
       @approval_request.return_to_level!(employee: approval_actor_for(@approval_request), target_level: target_level, remark: remark)
-      redirect_to approval_requests_path(status: "all", form_name: @approval_request.form_name), notice: "Request returned to L#{target_level} successfully."
+      redirect_to approval_requests_path(status: "all", form_name: @approval_request.form_name), notice: "Request returned to #{WorkflowLevelNaming.humanize_level_label(target_level)} successfully."
     elsif return_target == "previous_level"
       @approval_request.return_to_previous_level!(employee: approval_actor_for(@approval_request), remark: remark)
       previous_level = @approval_request.returned_to_level || @approval_request.current_level
-      redirect_to approval_requests_path(status: "all", form_name: @approval_request.form_name), notice: "Request returned to L#{previous_level} successfully."
+      redirect_to approval_requests_path(status: "all", form_name: @approval_request.form_name), notice: "Request returned to #{WorkflowLevelNaming.humanize_level_label(previous_level)} successfully."
     else
       redirect_to approval_requests_path(status: "pending", form_name: @approval_request.form_name), alert: "Please select a valid return target."
     end

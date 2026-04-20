@@ -205,7 +205,7 @@ class ApprovalRequest < ApplicationRecord
     return "-" if pending_steps.empty?
 
     if committee_parallel_flow?
-      pending_steps.map { |step| "L#{step.level} - #{step.action_label}" }.join(", ")
+      pending_steps.map { |step| "#{WorkflowLevelNaming.humanize_level_label(step.level)} - #{step.action_label}" }.join(", ")
     else
       step = pending_steps.first
       "#{step.action_label} - #{step.current_action_label}"
@@ -217,9 +217,9 @@ class ApprovalRequest < ApplicationRecord
     return "-" if pending_steps.empty?
 
     if committee_parallel_flow?
-      pending_steps.map { |step| "L#{step.level}" }.join(", ")
+      pending_steps.map { |step| WorkflowLevelNaming.humanize_level_label(step.level) }.join(", ")
     else
-      "L#{pending_steps.first.level}"
+      WorkflowLevelNaming.humanize_level_label(pending_steps.first.level)
     end
   end
 
@@ -236,11 +236,11 @@ class ApprovalRequest < ApplicationRecord
 
   def status_label
     if level_return_pending?
-      return "L#{returned_by_level} Return To L#{returned_to_level}"
+      return "#{WorkflowLevelNaming.humanize_level_label(returned_by_level)} Return To #{WorkflowLevelNaming.humanize_level_label(returned_to_level)}"
     end
 
     if employee_return_pending? && returned_by_level.present?
-      return "L#{returned_by_level} Return To Employee"
+      return "#{WorkflowLevelNaming.humanize_level_label(returned_by_level)} Return To Employee"
     end
 
     return "Returned" if status == "returned"
@@ -469,10 +469,10 @@ class ApprovalRequest < ApplicationRecord
     return_level_targets_for(step).map do |candidate|
       ReturnTargetOption.new(
         value: "level:#{candidate.level}",
-        label: "L#{candidate.level} - #{candidate.action_label}",
-        submit_label: "Return To L#{candidate.level}",
-        remark_label: "Return To L#{candidate.level} Remark",
-        remark_placeholder: "Return to L#{candidate.level} remark"
+        label: "#{WorkflowLevelNaming.humanize_level_label(candidate.level)} - #{candidate.action_label}",
+        submit_label: "Return To #{WorkflowLevelNaming.humanize_level_label(candidate.level)}",
+        remark_label: "Return To #{WorkflowLevelNaming.humanize_level_label(candidate.level)} Remark",
+        remark_placeholder: "Return to #{WorkflowLevelNaming.humanize_level_label(candidate.level)} remark"
       )
     end + [
       ReturnTargetOption.new(

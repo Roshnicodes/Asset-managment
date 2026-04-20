@@ -3,13 +3,14 @@ class QuotationProposalsController < ApplicationController
 
   before_action :set_quotation_proposal, only: %i[
     show edit update destroy approve_committee return_committee
-    send_to_vendors score_vendor score_vendors select_vendor
+    send_to_vendors score_vendor score_vendors select_vendor purchase_order send_purchase_order update_purchase_order_reply goods_receive update_goods_receive
+    new_invoice_request_assets create_invoice_request_assets review_invoice_request
   ]
-  before_action :ensure_quotation_owner_access!, only: %i[edit update destroy send_to_vendors]
-  before_action :authorize_quotation_form_access!, only: %i[index new create edit update destroy send_for_approval send_to_vendors score_vendor score_vendors select_vendor]
+  before_action :ensure_quotation_owner_access!, only: %i[edit update destroy send_to_vendors purchase_order send_purchase_order goods_receive update_goods_receive new_invoice_request_assets create_invoice_request_assets review_invoice_request]
+  before_action :authorize_quotation_form_access!, only: %i[index new create edit update destroy send_for_approval send_to_vendors]
   before_action :authorize_quotation_list_access!, only: %i[list]
   before_action :authorize_quotation_view_access!, only: %i[show approve_committee return_committee]
-  before_action :authorize_committee_comparison_access!, only: %i[score_vendor select_vendor]
+  before_action :authorize_committee_comparison_access!, only: %i[score_vendor score_vendors select_vendor]
 
   def index
     @quotation_proposals = own_quotation_scope.order(created_at: :desc)
@@ -49,6 +50,17 @@ class QuotationProposalsController < ApplicationController
 
   def show
     @quotation_proposal.approval_request&.ensure_channel_steps_synced!
+    @authorized_by_options = EmployeeMaster.order(:name)
+    @selected_authorized_by_id = params[:authorized_by_id].presence
+    @selected_vendor_response = @quotation_proposal.quotation_proposal_vendors
+      .includes(
+        :vendor_registration,
+        :purchase_order_authorized_by,
+        :purchase_order_reply_updated_by,
+        purchase_order_activities: :employee_master,
+        invoice_requests: [:maker_reviewed_by, { assets: :product }, { vendor_invoices_attachments: :blob }]
+      )
+      .find_by(selected: true)
   end
 
   def new
@@ -211,21 +223,375 @@ class QuotationProposalsController < ApplicationController
     redirect_to quotation_proposal_path(@quotation_proposal), alert: error.message
   end
 
+  def purchase_order
+    load_purchase_order_context!
+  end
+
+  def goods_receive
+    load_goods_receive_context!
+  end
+
+  def send_purchase_order
+    load_purchase_order_context!
+    return if performed?
+    was_sent_before = @selected_proposal_vendor.purchase_order_sent_at.present?
+    due_date = parse_purchase_order_due_date
+    locked_authorized_by = @selected_proposal_vendor.purchase_order_authorized_by if was_sent_before
+
+    if @selected_proposal_vendor.vendor_registration.mobile_no.blank?
+      redirect_to purchase_order_quotation_proposal_path(@quotation_proposal, authorized_by_id: @authorized_by&.id), alert: "Selected vendor does not have a registered mobile number."
+      return
+    end
+
+    if due_date.blank?
+      redirect_to purchase_order_quotation_proposal_path(@quotation_proposal, authorized_by_id: @authorized_by&.id), alert: "Please add the purchase order last date before sending."
+      return
+    end
+
+    @selected_proposal_vendor.ensure_po_token!
+    dispatch = @selected_proposal_vendor.dispatch_record!
+    sent = QuotationVendorSmsGateway.send_purchase_order_link(dispatch, @selected_proposal_vendor)
+
+    unless sent
+      redirect_to purchase_order_quotation_proposal_path(@quotation_proposal, authorized_by_id: @authorized_by&.id), alert: "Purchase order SMS could not be delivered. Please verify the SMS setup and try again."
+      return
+    end
+
+    @selected_proposal_vendor.update!(
+      purchase_order_authorized_by: locked_authorized_by || @authorized_by,
+      purchase_order_status: "sent",
+      purchase_order_due_date: due_date,
+      purchase_order_sent_at: Time.current,
+      purchase_order_actioned_at: nil,
+      purchase_order_remark: nil
+    )
+    @selected_proposal_vendor.add_purchase_order_activity!(
+      action_type: was_sent_before ? "resent_to_vendor" : "sent_to_vendor",
+      actor_name: actor_display_name,
+      actor_role: actor_role_label,
+      note: "Purchase order sent to vendor mobile number #{@selected_proposal_vendor.vendor_registration.mobile_no}. Last response date: #{due_date.strftime("%d-%m-%Y")}.",
+      employee_master: approval_actor_for(@quotation_proposal),
+      user: current_user,
+      occurred_at: Time.current
+    )
+    NotificationDispatcher.notify_purchase_order_sent(@quotation_proposal, @selected_proposal_vendor)
+    redirect_to purchase_order_quotation_proposal_path(@quotation_proposal, authorized_by_id: @authorized_by&.id), notice: "Purchase order link has been sent to the selected vendor."
+  end
+
+  def update_purchase_order_reply
+    proposal_vendor = @quotation_proposal.quotation_proposal_vendors.find(params[:proposal_vendor_id])
+    unless current_user == @quotation_proposal.user || @quotation_proposal.committee_user?(current_user)
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Only maker or committee members can update the purchase order reply."
+      return
+    end
+
+    reply_text = params[:purchase_order_reply].to_s.strip
+    if reply_text.blank?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Reply cannot be blank."
+      return
+    end
+
+    actor_employee = approval_actor_for(@quotation_proposal)
+    proposal_vendor.update!(
+      purchase_order_reply: reply_text,
+      purchase_order_reply_updated_at: Time.current,
+      purchase_order_reply_updated_by: actor_employee
+    )
+    proposal_vendor.add_purchase_order_activity!(
+      action_type: "reply_updated",
+      actor_name: actor_display_name,
+      actor_role: actor_role_label,
+      note: reply_text,
+      employee_master: actor_employee,
+      user: current_user,
+      occurred_at: Time.current
+    )
+
+    NotificationDispatcher.notify_purchase_order_reply_updated(@quotation_proposal, proposal_vendor, actor_name: actor_display_name)
+    redirect_to quotation_proposal_path(@quotation_proposal), notice: "Purchase order reply has been updated."
+  end
+
+  def update_goods_receive
+    load_goods_receive_context!
+    return if performed?
+
+    item_params = params.fetch(:goods_receive_items, {}).permit!.to_h
+    received_batch_items = []
+
+    QuotationProposalVendorItem.transaction do
+      @goods_receive_vendor.vendor_items.each do |vendor_item|
+        raw_item_params = item_params[vendor_item.id.to_s] || {}
+        goods_received_value = parse_boolean_param(raw_item_params["goods_received"])
+        fixed_asset_value = parse_boolean_param(raw_item_params["fixed_asset"])
+        receive_now_quantity = raw_item_params["receive_now_quantity"].to_d
+
+        if goods_received_value == true
+          if receive_now_quantity <= 0
+            raise ActiveRecord::RecordInvalid.new(vendor_item), "Receive now quantity must be greater than zero when goods receive is Yes."
+          end
+
+          if receive_now_quantity > vendor_item.pending_quantity
+            raise ActiveRecord::RecordInvalid.new(vendor_item), "Receive now quantity cannot be greater than pending quantity."
+          end
+        else
+          receive_now_quantity = 0.to_d
+        end
+
+        if receive_now_quantity.positive?
+          received_batch_items << build_received_batch_item(vendor_item, receive_now_quantity)
+        end
+
+        updated_received_quantity = vendor_item.received_quantity.to_d + receive_now_quantity
+        completed_receive = updated_received_quantity >= vendor_item.quantity.to_d
+
+        vendor_item.update!(
+          received_quantity: updated_received_quantity,
+          goods_received: completed_receive,
+          fixed_asset: updated_received_quantity.positive? ? fixed_asset_value : nil,
+          last_goods_received_at: receive_now_quantity.positive? ? Time.current : vendor_item.last_goods_received_at
+        )
+      end
+    end
+
+    invoice_request = nil
+    invoice_request_notice = nil
+    if received_batch_items.any?
+      invoice_request = @goods_receive_vendor.invoice_requests.create!(
+        item_snapshot: received_batch_items,
+        requested_at: Time.current,
+        status: "pending_invoice"
+      )
+      invoice_request.ensure_request_token!
+
+      @goods_receive_vendor.add_purchase_order_activity!(
+        action_type: "goods_receive_invoice_requested",
+        actor_name: actor_display_name,
+        actor_role: actor_role_label,
+        note: goods_receive_invoice_note_for(received_batch_items),
+        employee_master: approval_actor_for(@quotation_proposal),
+        user: current_user,
+        occurred_at: invoice_request.requested_at
+      )
+
+      dispatch = @goods_receive_vendor.dispatch_record!
+      sms_sent = QuotationVendorSmsGateway.send_goods_receive_invoice_link(dispatch, invoice_request)
+      if sms_sent
+        NotificationDispatcher.notify_goods_receive_invoice_requested(@quotation_proposal, @goods_receive_vendor, invoice_request)
+        invoice_request_notice = " Invoice upload link has been sent to the vendor mobile number."
+      else
+        invoice_request_notice = " Goods receive saved, but invoice upload SMS could not be delivered."
+      end
+    end
+
+    refreshed_items = @goods_receive_vendor.vendor_items.includes(:quotation_proposal_item).sort_by(&:quotation_proposal_item_id)
+    payload = {
+      notice: "Goods receive details have been submitted successfully.#{invoice_request_notice}",
+      items: refreshed_items.map do |vendor_item|
+        {
+          id: vendor_item.id,
+          ordered_quantity: vendor_item.quantity.to_s,
+          received_quantity: vendor_item.received_quantity.to_s,
+          pending_quantity: vendor_item.pending_quantity.to_s,
+          goods_received: vendor_item.goods_received,
+          fixed_asset: vendor_item.fixed_asset,
+          fully_received: vendor_item.fully_received?,
+          partially_received: vendor_item.partially_received?,
+          last_goods_received_at: vendor_item.last_goods_received_at&.strftime("%d-%m-%Y %H:%M")
+        }
+      end,
+      invoice_request: invoice_request.present? ? {
+        id: invoice_request.id,
+        status: invoice_request.status.to_s.humanize,
+        requested_at: invoice_request.requested_at&.strftime("%d-%m-%Y %H:%M"),
+        items_label: received_batch_items.map { |item| "#{item[:item_name]} (#{item[:received_quantity]})" }.join(", ")
+      } : nil
+    }
+
+    respond_to do |format|
+      format.html { redirect_to goods_receive_quotation_proposal_path(@quotation_proposal), notice: payload[:notice] }
+      format.json { render json: payload }
+    end
+  rescue ActiveRecord::RecordInvalid => error
+    respond_to do |format|
+      format.html { redirect_to goods_receive_quotation_proposal_path(@quotation_proposal), alert: error.message }
+      format.json { render json: { error: error.message }, status: :unprocessable_entity }
+    end
+  end
+
+  def new_invoice_request_assets
+    redirect_to assets_path(invoice_request_id: params[:invoice_request_id], anchor: "asset-workspace")
+  end
+
+  def review_invoice_request
+    @invoice_request = QuotationProposalVendorInvoiceRequest
+      .includes(:maker_reviewed_by, quotation_proposal_vendor: :vendor_registration)
+      .find_by(
+        id: params[:invoice_request_id],
+        quotation_proposal_vendor_id: @quotation_proposal.quotation_proposal_vendors.select(:id)
+      )
+
+    if @invoice_request.blank?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Invoice request was not found."
+      return
+    end
+
+    unless current_user == @quotation_proposal.user
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Only maker can accept or return the vendor invoice."
+      return
+    end
+
+    unless @invoice_request.uploaded?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Only uploaded invoices can be reviewed."
+      return
+    end
+
+    review_action = params[:invoice_review_action].to_s
+    review_remark = params[:maker_review_remark].to_s.strip
+    review_time = Time.current
+
+    case review_action
+    when "accept"
+      @invoice_request.update!(
+        status: "accepted",
+        maker_review_remark: review_remark.presence,
+        maker_reviewed_at: review_time,
+        maker_reviewed_by: current_employee_master,
+        accepted_at: review_time,
+        returned_at: nil
+      )
+
+      @invoice_request.quotation_proposal_vendor.add_purchase_order_activity!(
+        action_type: "goods_receive_invoice_accepted",
+        actor_name: actor_display_name,
+        actor_role: "Maker",
+        employee_master: current_employee_master,
+        user: current_user,
+        note: review_remark.presence || "Vendor invoice accepted by maker.",
+        occurred_at: review_time
+      )
+
+      NotificationDispatcher.notify_goods_receive_invoice_accepted(@quotation_proposal, @invoice_request.quotation_proposal_vendor, @invoice_request)
+      redirect_to quotation_proposal_path(@quotation_proposal), notice: "Vendor invoice accepted successfully."
+    when "return"
+      if review_remark.blank?
+        redirect_to quotation_proposal_path(@quotation_proposal), alert: "Return remark is required before sending invoice back to vendor."
+        return
+      end
+
+      @invoice_request.update!(
+        status: "returned",
+        maker_review_remark: review_remark,
+        maker_reviewed_at: review_time,
+        maker_reviewed_by: current_employee_master,
+        returned_at: review_time,
+        accepted_at: nil,
+        assets_created_at: nil
+      )
+
+      @invoice_request.quotation_proposal_vendor.add_purchase_order_activity!(
+        action_type: "goods_receive_invoice_returned",
+        actor_name: actor_display_name,
+        actor_role: "Maker",
+        employee_master: current_employee_master,
+        user: current_user,
+        note: review_remark,
+        occurred_at: review_time
+      )
+
+      dispatch = @invoice_request.quotation_proposal_vendor.dispatch_record!
+      sms_sent = QuotationVendorSmsGateway.send_goods_receive_invoice_link(dispatch, @invoice_request)
+      NotificationDispatcher.notify_goods_receive_invoice_returned(@quotation_proposal, @invoice_request.quotation_proposal_vendor, @invoice_request)
+
+      redirect_to quotation_proposal_path(@quotation_proposal), notice: "Vendor invoice returned successfully.#{sms_sent ? " Re-upload link has been sent to vendor." : " SMS could not be delivered to vendor."}"
+    else
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Please choose a valid invoice review action."
+    end
+  end
+
+  def create_invoice_request_assets
+    load_invoice_request_asset_context!
+    return if performed?
+
+    @asset_products = Product.order(:name)
+    @asset_rows = asset_row_params
+
+    if @asset_rows.blank?
+      redirect_to assets_path(invoice_request_id: @invoice_request.id, anchor: "asset-workspace"), alert: "No asset rows were submitted."
+      return
+    end
+
+    Asset.transaction do
+      @asset_rows.each do |row|
+        unique_product_code = row[:unique_product_code].to_s.strip
+        product_id = row[:product_id].presence
+
+        if unique_product_code.blank?
+          raise ActiveRecord::RecordInvalid.new(Asset.new), "Unique product code is required for every asset row."
+        end
+
+        if product_id.blank?
+          raise ActiveRecord::RecordInvalid.new(Asset.new), "Please select a product for every asset row."
+        end
+
+        vendor_item = @invoice_request.quotation_proposal_vendor.vendor_items.find(row[:vendor_item_id])
+        product = Product.find(product_id)
+
+        Asset.create!(
+          name: row[:asset_name].presence || vendor_item.item_name,
+          product: product,
+          unique_product_code: unique_product_code,
+          quotation_proposal_vendor_invoice_request: @invoice_request,
+          quotation_proposal_vendor_item: vendor_item
+        )
+      end
+
+      @invoice_request.update!(assets_created_at: Time.current)
+    end
+
+    @invoice_request.quotation_proposal_vendor.add_purchase_order_activity!(
+      action_type: "assets_created",
+      actor_name: actor_display_name,
+      actor_role: actor_role_label,
+      note: "Assets created for invoice request #{@invoice_request.id} on #{@invoice_request.assets_created_at&.strftime("%d-%m-%Y %H:%M") || Time.current.strftime("%d-%m-%Y %H:%M")}.",
+      employee_master: approval_actor_for(@quotation_proposal),
+      user: current_user,
+      occurred_at: @invoice_request.assets_created_at || Time.current
+    )
+
+    redirect_to assets_path, notice: "Assets have been created successfully."
+  rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => error
+    redirect_to assets_path(invoice_request_id: @invoice_request.id, anchor: "asset-workspace"), alert: error.message
+  end
+
   def score_vendor
+    actor_employee = approval_actor_for(@quotation_proposal)
+    unless actor_employee.present?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Committee member login required to save vendor score."
+      return
+    end
+
     proposal_vendor = @quotation_proposal.quotation_proposal_vendors.find(params[:proposal_vendor_id])
     unless proposal_vendor.response_submitted?
       redirect_to quotation_proposal_path(@quotation_proposal), alert: "Committee score can be added only after the vendor submits a response."
       return
     end
 
-    proposal_vendor.update!(committee_score: params[:committee_score].to_i)
+    score_record = proposal_vendor.committee_member_scores.find_or_initialize_by(employee_master: actor_employee)
+    raw_score = params[:committee_score]
+    score_record.update!(score: raw_score.present? ? raw_score.to_i : nil)
     @quotation_proposal.recalculate_vendor_rankings!
     sync_rank_based_vendor_selection!
     @quotation_proposal.refresh_response_status!
-    redirect_to quotation_proposal_path(@quotation_proposal), notice: "The vendor comparison score has been updated."
+    redirect_to quotation_proposal_path(@quotation_proposal), notice: "Your committee score has been updated."
   end
 
   def score_vendors
+    actor_employee = approval_actor_for(@quotation_proposal)
+    unless actor_employee.present?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Committee member login required to save vendor scores."
+      return
+    end
+
     scores_param = params[:committee_scores]
     scores = if scores_param.is_a?(ActionController::Parameters)
       scores_param.permit!.to_h
@@ -239,14 +605,15 @@ class QuotationProposalsController < ApplicationController
       next unless scores.key?(proposal_vendor.id.to_s)
 
       raw_score = scores[proposal_vendor.id.to_s]
-      proposal_vendor.update!(committee_score: raw_score.present? ? raw_score.to_i : nil)
+      score_record = proposal_vendor.committee_member_scores.find_or_initialize_by(employee_master: actor_employee)
+      score_record.update!(score: raw_score.present? ? raw_score.to_i : nil)
       updated += 1
     end
 
     @quotation_proposal.recalculate_vendor_rankings!
     sync_rank_based_vendor_selection!
     @quotation_proposal.refresh_response_status!
-    redirect_to quotation_proposal_path(@quotation_proposal), notice: updated.positive? ? "Committee comparison scores have been updated." : "No committee score changes were submitted."
+    redirect_to quotation_proposal_path(@quotation_proposal), notice: updated.positive? ? "Your committee comparison scores have been updated." : "No committee score changes were submitted."
   end
 
   def select_vendor
@@ -378,7 +745,7 @@ class QuotationProposalsController < ApplicationController
       :theme,
       :vendor_registrations,
       { committee_steps: :employee_master },
-      { quotation_proposal_vendors: [:vendor_registration, { vendor_items: { quotation_proposal_item: :unit } }] },
+      { quotation_proposal_vendors: [:vendor_registration, :committee_member_scores, { vendor_items: { quotation_proposal_item: :unit } }] },
       approval_request: { approval_steps: :employee_master }
     )
   end
@@ -445,13 +812,196 @@ class QuotationProposalsController < ApplicationController
   def load_form_collections
     @themes = Theme.order(:name)
     @units = Unit.order(:name)
+    @products = Product.includes(:theme).order(:name)
+    @product_varieties = ProductVariety.includes(product: :theme).order(:name)
     @vendors = VendorRegistration
       .includes(:themes, :approval_request)
       .joins(:approval_request)
       .where(approval_requests: { status: "approved" })
       .distinct
       .order(:vendor_name)
-    @committee_members = EmployeeMaster.order(:name)
+    maker_employee_ids = [
+      @quotation_proposal&.user&.employee_master&.id,
+      current_employee_master&.id
+    ].compact.uniq
+    @committee_members = EmployeeMaster.where.not(id: maker_employee_ids).order(:name)
+  end
+
+  def load_purchase_order_context!
+    @selected_proposal_vendor = @quotation_proposal.quotation_proposal_vendors
+      .includes(
+        :vendor_registration,
+        :purchase_order_authorized_by,
+        :purchase_order_reply_updated_by,
+        purchase_order_activities: :employee_master,
+        vendor_items: { quotation_proposal_item: :unit },
+        invoice_requests: [:assets, { vendor_invoices_attachments: :blob }]
+      )
+      .find_by(vendor_registration_id: @quotation_proposal.selected_vendor_registration_id)
+
+    if @selected_proposal_vendor.blank?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Selected vendor response was not found for purchase order."
+      return
+    end
+
+    vendor_remark_lines = @selected_proposal_vendor.vendor_remark.to_s.lines.map(&:strip).reject(&:blank?)
+    @po_payment_terms = vendor_remark_lines.find { |line| line.downcase.start_with?("payment terms and condition:") }&.split(":", 2)&.last.to_s.strip
+    @po_completion_terms = vendor_remark_lines.find { |line| line.downcase.start_with?("date of completion:") }&.split(":", 2)&.last.to_s.strip
+    @po_warranty_terms = vendor_remark_lines.find { |line| line.downcase.start_with?("warranty period:") }&.split(":", 2)&.last.to_s.strip
+    @po_earnest_money_terms = vendor_remark_lines.find { |line| line.downcase.start_with?("earnest money deposit:") }&.split(":", 2)&.last.to_s.strip
+    current_year = Date.current.year
+    next_year_short = (current_year + 1).to_s.last(2)
+    @purchase_order_year_label = "#{current_year}-#{next_year_short}"
+    @purchase_order_number = "ASA/PO/#{@quotation_proposal.id}/#{@purchase_order_year_label}"
+    @authorized_by_options = EmployeeMaster.order(:name)
+    @purchase_order_authorized_by_locked = @selected_proposal_vendor.purchase_order_sent_at.present? && @selected_proposal_vendor.purchase_order_authorized_by.present?
+    @authorized_by =
+      if @purchase_order_authorized_by_locked
+        @selected_proposal_vendor.purchase_order_authorized_by
+      else
+        @authorized_by_options.find_by(id: params[:authorized_by_id]) || @selected_proposal_vendor.purchase_order_authorized_by || current_employee_master
+      end
+    @purchase_order_due_date = params[:purchase_order_due_date].presence || @selected_proposal_vendor.purchase_order_due_date
+  end
+
+  def load_goods_receive_context!
+    @goods_receive_vendor = @quotation_proposal.quotation_proposal_vendors
+      .includes(:vendor_registration, vendor_items: { quotation_proposal_item: :unit }, invoice_requests: [:assets, { vendor_invoices_attachments: :blob }])
+      .find_by(vendor_registration_id: @quotation_proposal.selected_vendor_registration_id)
+
+    if @goods_receive_vendor.blank?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Selected vendor was not found for goods receive."
+      return
+    end
+
+    unless @goods_receive_vendor.purchase_order_status == "accepted"
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Goods receive can be updated only after the purchase order is accepted."
+      return
+    end
+  end
+
+  def load_invoice_request_asset_context!
+    @invoice_request = QuotationProposalVendorInvoiceRequest
+      .includes(
+        :assets,
+        quotation_proposal_vendor: [
+          :vendor_registration,
+          { vendor_items: { quotation_proposal_item: :unit } }
+        ]
+      )
+      .find_by(id: params[:invoice_request_id], quotation_proposal_vendor_id: @quotation_proposal.quotation_proposal_vendors.select(:id))
+
+    if @invoice_request.blank?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Invoice request was not found."
+      return
+    end
+
+    unless @invoice_request.accepted?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Assets can be created only after maker accepts the uploaded invoice."
+      return
+    end
+
+    if @invoice_request.assets_created?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Assets have already been created for this invoice request."
+    end
+  end
+
+  def parse_purchase_order_due_date
+    raw_value = params[:purchase_order_due_date].presence
+    return @selected_proposal_vendor.purchase_order_due_date if raw_value.blank?
+
+    Date.parse(raw_value)
+  rescue ArgumentError
+    nil
+  end
+
+  def actor_display_name
+    current_employee_master&.name.presence || current_user&.email.to_s
+  end
+
+  def actor_role_label
+    return "Maker" if current_user == @quotation_proposal.user
+    return "Committee" if @quotation_proposal.committee_user?(current_user)
+
+    "System"
+  end
+
+  def parse_boolean_param(value)
+    return true if value == "yes"
+    return false if value == "no"
+
+    nil
+  end
+
+  def build_received_batch_item(vendor_item, receive_now_quantity)
+    {
+      vendor_item_id: vendor_item.id,
+      quotation_proposal_item_id: vendor_item.quotation_proposal_item_id,
+      item_name: vendor_item.item_name,
+      unit_name: vendor_item.unit&.name,
+      ordered_quantity: vendor_item.quantity.to_s,
+      received_quantity: receive_now_quantity.to_s,
+      cumulative_received_quantity: (vendor_item.received_quantity.to_d + receive_now_quantity).to_s
+    }
+  end
+
+  def goods_receive_invoice_note_for(received_batch_items)
+    summary = received_batch_items.map do |item|
+      "#{item[:item_name]} #{item[:received_quantity]} #{item[:unit_name]}".strip
+    end.join(", ")
+    "Goods received and invoice requested for: #{summary}"
+  end
+
+  def build_invoice_request_asset_rows(invoice_request)
+    rows = []
+
+    invoice_request.snapshot_items.each do |item|
+      vendor_item = invoice_request.quotation_proposal_vendor.vendor_items.find { |record| record.id == item[:vendor_item_id].to_i }
+      next unless vendor_item&.fixed_asset == true
+
+      suggested_product = Product.find_by(name: item[:item_name])
+      quantity_count = item[:received_quantity].to_d.to_i
+
+      quantity_count.times do |index|
+        rows << {
+          vendor_item_id: vendor_item.id,
+          asset_name: item[:item_name],
+          suggested_product_id: suggested_product&.id,
+          unit_name: item[:unit_name],
+          row_label: "#{item[:item_name]} ##{index + 1}",
+          unique_product_code: nil
+        }
+      end
+    end
+
+    if rows.blank? && invoice_request.uploaded?
+      invoice_request.snapshot_items.each do |item|
+        vendor_item = invoice_request.quotation_proposal_vendor.vendor_items.find { |record| record.id == item[:vendor_item_id].to_i }
+        next unless vendor_item
+
+        suggested_product = Product.find_by(name: item[:item_name])
+        quantity_count = [item[:received_quantity].to_d.to_i, 1].max
+
+        quantity_count.times do |index|
+          rows << {
+            vendor_item_id: vendor_item.id,
+            asset_name: item[:item_name],
+            suggested_product_id: suggested_product&.id,
+            unit_name: item[:unit_name],
+            row_label: "#{item[:item_name]} ##{index + 1}",
+            unique_product_code: nil
+          }
+        end
+      end
+    end
+
+    rows
+  end
+
+  def asset_row_params
+    params.fetch(:asset_rows, {}).permit!.to_h.values.map do |row|
+      row.to_h.symbolize_keys
+    end
   end
 
   def build_committee_steps(quotation_proposal)

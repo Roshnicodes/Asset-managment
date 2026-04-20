@@ -1,0 +1,138 @@
+<% otp_verified = @otp_verified_for_render || false %>
+
+<% if otp_verified || @purchase_order_expired %>
+  <%= render "quotation_proposals/purchase_order_sheet",
+        proposal_vendor: @quotation_proposal_vendor,
+        quotation_proposal: @quotation_proposal,
+        purchase_order_year_label: @purchase_order_year_label,
+        authorized_by: @quotation_proposal_vendor.purchase_order_authorized_by,
+        po_payment_terms: @po_payment_terms,
+        po_completion_terms: @po_completion_terms,
+        po_warranty_terms: @po_warranty_terms,
+        po_earnest_money_terms: @po_earnest_money_terms %>
+
+  <div class="app-card mt-4 mb-4" style="max-width: 1080px; margin: 0 auto; padding: 1.5rem 1.6rem;">
+    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap" style="margin-bottom: 1.15rem;">
+      <div>
+        <h2 style="margin-bottom: 0.3rem;">Response Workspace</h2>
+        <p class="text-muted mb-0">Purchase order review, vendor response, ASA reply, aur full activity timeline yahin available hai.</p>
+      </div>
+      <div class="app-detail-item" style="min-width: 240px; margin: 0;">
+        <div class="app-detail-label">Current Status</div>
+        <div class="app-detail-value"><%= @quotation_proposal_vendor.purchase_order_status.to_s.humanize %></div>
+        <div class="small text-muted mt-1">Sent at: <%= @quotation_proposal_vendor.purchase_order_sent_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+        <div class="small text-muted mt-1">Action at: <%= @quotation_proposal_vendor.purchase_order_actioned_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+        <div class="small text-muted mt-1">Last date: <%= @quotation_proposal_vendor.purchase_order_due_date&.strftime("%d-%m-%Y") || "-" %></div>
+      </div>
+    </div>
+
+    <% if @purchase_order_expired %>
+      <div style="border: 1px solid #f0d6d6; border-radius: 18px; padding: 1.05rem 1.15rem; background: #fff8f8; color: #8a2f2f;">
+        <div style="font-weight: 700;">Response Closed</div>
+        <div class="mt-1">Purchase order ki last date <%= @quotation_proposal_vendor.purchase_order_due_date&.strftime("%d-%m-%Y") || "-" %> thi. Ab vendor response form available nahi hai.</div>
+      </div>
+    <% elsif @quotation_proposal_vendor.purchase_order_status.in?(%w[sent returned]) %>
+      <div style="border: 1px solid #d7e6de; border-radius: 18px; padding: 1.15rem 1.2rem; background: linear-gradient(180deg, #fbfefd 0%, #f6fbf8 100%);">
+        <div style="font-weight: 700; font-size: 1.02rem; margin-bottom: 0.2rem;">Submit Your Response</div>
+        <div class="text-muted small" style="margin-bottom: 1rem;">Remark mandatory hai. Aap accept, return, ya reject kar sakte hain, aur har response date-time ke saath save hoga.</div>
+
+      <%= form_with url: purchase_order_vendor_qr_path(@quotation_proposal_vendor.po_token, verified: 1), method: :patch, local: true do %>
+        <div class="mb-3">
+          <label for="purchase_order_remark" class="form-label" style="font-weight: 700;">Remark</label>
+          <%= text_area_tag :purchase_order_remark, @quotation_proposal_vendor.purchase_order_remark, rows: 4, class: "form-control", placeholder: "Add your detailed response remark here." %>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <%= button_tag "Accept", name: :purchase_order_decision, value: "accepted", class: "app-form-submit" %>
+          <% unless @quotation_proposal_vendor.purchase_order_returned_once? %>
+            <%= button_tag "Return", name: :purchase_order_decision, value: "returned", class: "app-secondary-btn" %>
+          <% end %>
+          <%= button_tag "Reject", name: :purchase_order_decision, value: "rejected", class: "app-secondary-btn", style: "border-color: #dc3545; color: #dc3545;" %>
+        </div>
+        <% if @quotation_proposal_vendor.purchase_order_returned_once? %>
+          <div class="small text-muted mt-2">Return option ek baar use ho chuka hai. Ab aap accept ya reject kar sakte hain.</div>
+        <% end %>
+      <% end %>
+      </div>
+    <% else %>
+      <div style="border: 1px solid #d7e6de; border-radius: 18px; padding: 1.05rem 1.15rem; background: #fcfefd;">
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+          <strong>Status:</strong>
+          <span class="badge border <%= @quotation_proposal_vendor.purchase_order_status == "accepted" ? "bg-success bg-opacity-10 text-success" : @quotation_proposal_vendor.purchase_order_status == "returned" ? "bg-warning bg-opacity-10 text-warning" : "bg-danger bg-opacity-10 text-danger" %>">
+            <%= @quotation_proposal_vendor.purchase_order_status.humanize %>
+          </span>
+          <span class="small text-muted">Action at: <%= @quotation_proposal_vendor.purchase_order_actioned_at&.strftime("%d-%m-%Y %H:%M") || "-" %></span>
+        </div>
+        <% if @quotation_proposal_vendor.purchase_order_remark.present? %>
+          <div class="mt-2"><strong>Remark:</strong> <%= @quotation_proposal_vendor.purchase_order_remark %></div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <% if @quotation_proposal_vendor.purchase_order_reply.present? %>
+      <div style="margin-top: 1rem; border: 1px solid #d5e7df; border-radius: 18px; padding: 1.1rem 1.2rem; background: #f7fbf8;">
+        <div style="font-weight: 700; margin-bottom: 0.3rem;">Reply From ASA</div>
+        <div style="white-space: pre-wrap;"><%= @quotation_proposal_vendor.purchase_order_reply %></div>
+        <div class="small text-muted mt-2">
+          Updated by <%= @quotation_proposal_vendor.purchase_order_reply_updated_by&.name.presence || "ASA team" %> on
+          <%= @quotation_proposal_vendor.purchase_order_reply_updated_at&.strftime("%d-%m-%Y %H:%M") || "-" %>
+        </div>
+      </div>
+    <% end %>
+
+    <% if @quotation_proposal_vendor.purchase_order_activities.any? %>
+      <div style="margin-top: 1.35rem;">
+        <h3 style="margin-bottom: 0.85rem;">Response Timeline</h3>
+        <div class="d-grid gap-2">
+          <% @quotation_proposal_vendor.purchase_order_activities.recent_first.each do |activity| %>
+            <div style="border: 1px solid #d8e6de; border-radius: 16px; padding: 0.95rem 1rem; background: #ffffff;">
+              <div class="d-flex justify-content-between gap-3 flex-wrap">
+                <div>
+                  <strong><%= activity.actor_name %></strong>
+                  <span class="text-muted">(<%= activity.actor_role.presence || "Update" %>)</span>
+                </div>
+                <div class="small text-muted"><%= activity.occurred_at.strftime("%d-%m-%Y %H:%M") %></div>
+              </div>
+              <div class="mt-1"><%= activity.action_type.to_s.humanize %></div>
+              <% if activity.note.present? %>
+                <div class="mt-1 text-muted" style="white-space: pre-wrap;"><%= activity.note %></div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <div class="app-card" style="max-width: 720px; margin: 0 auto; padding: 1.5rem;">
+    <h1 style="margin-bottom: 0.35rem;">Purchase Order OTP Verification</h1>
+    <p class="text-muted" style="margin-bottom: 1.25rem;">Enter the OTP sent to your registered mobile number to review the purchase order.</p>
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <div class="app-card" style="padding: 1rem;">
+          <div class="text-muted small mb-1">Mobile Number</div>
+          <strong><%= @vendor_registration.mobile_no.presence || "-" %></strong>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="app-card" style="padding: 1rem;">
+          <div class="text-muted small mb-1">Last OTP Sent At</div>
+          <strong><%= @quotation_vendor_dispatch.latest_active_otp&.sent_at&.strftime("%d-%m-%Y %H:%M") || "-" %></strong>
+        </div>
+      </div>
+    </div>
+
+    <%= form_with url: verify_purchase_order_vendor_qr_otp_path(@quotation_proposal_vendor.po_token), method: :post, local: true do |form| %>
+      <div class="mb-3">
+        <%= form.label :otp_code, "Enter OTP", class: "form-label", style: "font-weight: 700;" %>
+        <%= form.text_field :otp_code, maxlength: 6, required: true, class: "form-control" %>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <%= form.submit "Verify OTP", class: "app-form-submit" %>
+      </div>
+    <% end %>
+    <div class="mt-2">
+      <%= button_to "Send New OTP", send_purchase_order_vendor_qr_otp_path(@quotation_proposal_vendor.po_token), method: :post, class: "app-secondary-btn" %>
+    </div>
+  </div>
+<% end %>

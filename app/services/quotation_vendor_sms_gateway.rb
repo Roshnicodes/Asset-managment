@@ -46,8 +46,46 @@ class QuotationVendorSmsGateway
     )
   end
 
+  def self.send_purchase_order_link(dispatch, proposal_vendor)
+    config = sms_config_for(dispatch)
+    send_sms(
+      mobile_no: dispatch.mobile_no,
+      message: purchase_order_link_message(dispatch, proposal_vendor, config: config),
+      template_id: config[:link_template_id],
+      config: config
+    )
+  end
+
+  def self.send_goods_receive_invoice_link(dispatch, invoice_request)
+    config = sms_config_for(dispatch)
+    send_sms(
+      mobile_no: dispatch.mobile_no,
+      message: goods_receive_invoice_link_message(dispatch, invoice_request, config: config),
+      template_id: config[:link_template_id],
+      config: config
+    )
+  end
+
+  def self.send_goods_receive_invoice_return_link(dispatch, invoice_request)
+    config = sms_config_for(dispatch)
+    send_sms(
+      mobile_no: dispatch.mobile_no,
+      message: goods_receive_invoice_return_link_message(dispatch, invoice_request, config: config),
+      template_id: config[:link_template_id],
+      config: config
+    )
+  end
+
   def self.vendor_link_for(token)
     "#{base_url}/q/#{token}"
+  end
+
+  def self.purchase_order_link_for(token)
+    "#{base_url}/p/#{token}"
+  end
+
+  def self.goods_receive_invoice_link_for(token)
+    "#{base_url}/gr/#{token}"
   end
 
   def self.vendor_link_message(dispatch, config:)
@@ -59,6 +97,42 @@ class QuotationVendorSmsGateway
       "Dear #{vendor_name}, We kindly request you to accept the Quotation Proposal: #{quotation_reference}. Please submit the quotation through link: #{link}. - ACTION FOR SOCIAL ADVANCEMENT"
     else
       "Dear #{vendor_name}, PLOUGHMAN AGRO PRIVATE LIMITED requests you to review and accept the quotation proposal #{quotation_reference}. Please submit the quotation using the following link: #{link}."
+    end
+  end
+
+  def self.purchase_order_link_message(dispatch, proposal_vendor, config:)
+    vendor_name = sms_vendor_name(dispatch, config: config)
+    quotation_reference = quotation_reference_for(dispatch)
+    link = purchase_order_link_for(proposal_vendor.po_token)
+
+    if config[:profile] == :asa
+      "Dear #{vendor_name}, We kindly request you to accept the Quotation Proposal: #{quotation_reference}. Please submit the quotation through link: #{link}. - ACTION FOR SOCIAL ADVANCEMENT"
+    else
+      "Dear #{vendor_name}, PLOUGHMAN AGRO PRIVATE LIMITED requests you to review and accept the quotation proposal #{quotation_reference}. Please submit the quotation using the following link: #{link}."
+    end
+  end
+
+  def self.goods_receive_invoice_link_message(dispatch, invoice_request, config:)
+    vendor_name = sms_vendor_name(dispatch, config: config)
+    quotation_reference = quotation_reference_for(dispatch)
+    link = goods_receive_invoice_link_for(invoice_request.request_token)
+
+    if config[:profile] == :asa
+      "Dear #{vendor_name}, We kindly request you to accept the Quotation Proposal: #{quotation_reference}. Please submit the quotation through link: #{link}. - ACTION FOR SOCIAL ADVANCEMENT"
+    else
+      "Dear #{vendor_name}, PLOUGHMAN AGRO PRIVATE LIMITED requests you to review and accept the quotation proposal #{quotation_reference}. Please submit the quotation using the following link: #{link}."
+    end
+  end
+
+  def self.goods_receive_invoice_return_link_message(dispatch, invoice_request, config:)
+    vendor_name = sms_vendor_name(dispatch, config: config)
+    quotation_reference = quotation_reference_for(dispatch)
+    link = goods_receive_invoice_link_for(invoice_request.request_token)
+
+    if config[:profile] == :asa
+      "Dear #{vendor_name}, Invoice for quotation #{quotation_reference} has been returned. Please re-upload the corrected invoice through link: #{link}. - ACTION FOR SOCIAL ADVANCEMENT"
+    else
+      "Dear #{vendor_name}, invoice for quotation #{quotation_reference} has been returned. Please re-upload the corrected invoice using this link: #{link}."
     end
   end
 

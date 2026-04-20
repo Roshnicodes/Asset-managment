@@ -1,6 +1,7 @@
 class QuotationProposal < ApplicationRecord
   class VendorDispatchError < StandardError; end
   MIN_COMMITTEE_MEMBERS = 2
+  REQUIRED_COMMITTEE_LEVELS = [1, 2, 3].freeze
   DEFAULT_COMMITTEE_MEMBERS = 4
   PROCUREMENT_AMOUNT_BUCKETS = %w[above_10k below_10k].freeze
 
@@ -27,12 +28,14 @@ class QuotationProposal < ApplicationRecord
   accepts_nested_attributes_for :quotation_proposal_items, allow_destroy: true, reject_if: :all_blank
   accepts_nested_attributes_for :committee_steps, allow_destroy: true, reject_if: proc { |attributes| attributes["employee_master_id"].blank? }
 
-  validates :subject, :proposal_end_date, :theme, presence: true
+  validates :subject, :proposal_end_date, :remark, :theme, presence: true
   validates :workflow_status, inclusion: { in: WORKFLOW_STATUSES }
   validates :procurement_amount_bucket, inclusion: { in: PROCUREMENT_AMOUNT_BUCKETS }
   validate :must_have_at_least_one_vendor
   validate :must_have_at_least_one_item
   validate :must_have_all_committee_levels
+  validate :maker_cannot_be_committee_member
+  validate :committee_members_must_be_unique
   validate :selected_vendors_must_match_stakeholder
 
   after_commit :sync_vendor_item_rows, on: %i[create update]
@@ -327,12 +330,12 @@ class QuotationProposal < ApplicationRecord
   end
 
   def recalculate_vendor_rankings!
-    comparable_vendors, pending_vendors = quotation_proposal_vendors.includes(:vendor_items).partition(&:comparable?)
-    scored_vendors, unscored_vendors = comparable_vendors.partition { |proposal_vendor| proposal_vendor.committee_score.present? }
+    comparable_vendors, pending_vendors = quotation_proposal_vendors.includes(:vendor_items, :committee_member_scores).partition(&:comparable?)
+    scored_vendors, unscored_vendors = comparable_vendors.partition { |proposal_vendor| proposal_vendor.committee_score_value.present? }
 
     ranked_vendors = scored_vendors.sort_by do |proposal_vendor|
       [
-        -proposal_vendor.committee_score.to_i,
+        -proposal_vendor.committee_score_value.to_i,
         proposal_vendor.grand_total_amount.to_d,
         proposal_vendor.total_quoted_amount.to_d,
         proposal_vendor.id
@@ -504,6 +507,7 @@ class QuotationProposal < ApplicationRecord
   def must_have_all_committee_levels
     kept_steps = committee_steps.reject(&:marked_for_destruction?)
     levels = kept_steps.map(&:level).compact.sort
+    levels_with_members = kept_steps.select { |step| step.employee_master_id.present? }.map(&:level).compact.sort
 
     if kept_steps.size < MIN_COMMITTEE_MEMBERS
       errors.add(:base, "Committee me kam se kam #{MIN_COMMITTEE_MEMBERS} members required hain.")
@@ -511,7 +515,30 @@ class QuotationProposal < ApplicationRecord
     end
 
     expected_levels = (1..kept_steps.size).to_a
-    errors.add(:base, "Committee levels L1 se bina gap ke continue hone chahiye.") if levels != expected_levels
+    errors.add(:base, "Committee Member 1 se levels bina gap ke continue hone chahiye.") if levels != expected_levels
+
+    missing_required_levels = REQUIRED_COMMITTEE_LEVELS - levels_with_members
+    return if missing_required_levels.empty?
+
+    missing_labels = missing_required_levels.map { |level| WorkflowLevelNaming.humanize_level_label(level) }.join(", ")
+    errors.add(:base, "#{missing_labels} committee member mandatory hai.")
+  end
+
+  def maker_cannot_be_committee_member
+    maker_employee = user&.employee_master
+    return if maker_employee.blank?
+
+    committee_member_ids = committee_steps.reject(&:marked_for_destruction?).map(&:employee_master_id).compact
+    return unless committee_member_ids.include?(maker_employee.id)
+
+    errors.add(:base, "Maker cannot be part of the approval committee.")
+  end
+
+  def committee_members_must_be_unique
+    committee_member_ids = committee_steps.reject(&:marked_for_destruction?).map(&:employee_master_id).compact
+    return if committee_member_ids.uniq.size == committee_member_ids.size
+
+    errors.add(:base, "Committee members must be unique.")
   end
 
   def selected_vendors_must_match_stakeholder

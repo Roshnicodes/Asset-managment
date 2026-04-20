@@ -102,7 +102,7 @@
                     <span class="<%= dot_class %>" style="font-size: 1.2rem;">●</span>
                     <div class="text-truncate" style="max-width: 240px;">
                       <span class="fw-bold"><%= step.employee_master.name %></span>
-                      <span class="text-muted opacity-75">(<%= step.respond_to?(:current_action_label) ? step.current_action_label : "L#{step.level} Approval" %>)</span>
+                      <span class="text-muted opacity-75">(<%= step.respond_to?(:current_action_label) ? step.current_action_label : WorkflowLevelNaming.humanize_action_label("L#{step.level} Approval") %>)</span>
                       <% show_status = approval_started ? (step.respond_to?(:show_status_in_trail?) ? step.show_status_in_trail? : true) : true %>
                       <% if show_status %>
                         <span class="<%= dot_class %> fw-semibold">: <%= step_label %></span>
@@ -119,6 +119,11 @@
           <% if can_view_menu?("quotation_proposal_form") %>
             <td class="app-row-actions">
               <div class="d-flex align-items-center gap-2">
+                <% if quotation_proposal.selected_vendor_registration_id.present? %>
+                  <%= link_to purchase_order_quotation_proposal_path(quotation_proposal), class: "app-action-icon text-success", title: "Purchase Order" do %>
+                    <%= app_icon(:document, size: 18) %>
+                  <% end %>
+                <% end %>
                 <%= link_to edit_quotation_proposal_path(quotation_proposal), class: "app-action-icon text-warning", title: "Edit" do %>
                   <%= app_icon(:pencil, size: 18) %>
                 <% end %>
