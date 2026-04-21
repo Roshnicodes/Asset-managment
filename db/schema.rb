@@ -351,7 +351,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_20_110000) do
     t.datetime "updated_at", null: false
     t.index ["quotation_proposal_item_id"], name: "idx_on_quotation_proposal_item_id_b6e79a168e"
     t.index ["quotation_proposal_vendor_id", "quotation_proposal_item_id"], name: "idx_qp_vendor_items_on_vendor_and_item", unique: true
-    t.index ["quotation_proposal_vendor_id", "quotation_proposal_item_id"], name: "idx_quote_vendor_items_unique", unique: true
     t.index ["quotation_proposal_vendor_id"], name: "idx_on_quotation_proposal_vendor_id_51fa0ebc7e"
   end
 
@@ -401,7 +400,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_20_110000) do
     t.integer "rank_position"
     t.datetime "responded_at"
     t.string "response_status", default: "pending", null: false
-    t.datetime "response_submitted_at"
     t.boolean "selected", default: false, null: false
     t.datetime "updated_at", null: false
     t.text "vendor_cover_note"
