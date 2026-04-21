@@ -23,134 +23,135 @@
                    end
 %>
 
-<div class="app-page-header app-page-header-top">
-  <div>
-    <h2 class="app-page-title">Quotation Proposal Details</h2>
-    <p class="app-page-subtitle"><%= @quotation_proposal.subject %></p>
+<div class="quotation-proposal-show">
+  <div class="app-page-header app-page-header-top quotation-proposal-show__hero">
+    <div>
+      <h2 class="app-page-title quotation-proposal-show__title">Quotation Proposal Details</h2>
+      <p class="app-page-subtitle quotation-proposal-show__subtitle"><%= @quotation_proposal.subject %></p>
+    </div>
+    <%= link_to "Back", quotation_proposals_path, class: "app-back-link quotation-proposal-show__back-link" %>
   </div>
-  <%= link_to "Back", quotation_proposals_path, class: "app-back-link" %>
-</div>
 
-<div class="app-detail-actions app-detail-actions-spread">
-  <div class="d-flex align-items-center gap-2 flex-wrap">
-    <span class="badge border <%= workflow_class %> fw-semibold px-3 py-2" style="font-size: 0.9rem;">
-      <%= @quotation_proposal.workflow_status.humanize %>
-    </span>
-
-    <% viewer_committee_steps.each do |viewer_step| %>
-      <span class="badge border <%= approval_status_css_class_for(viewer_step.effective_status) %> px-3 py-2" style="font-size: 0.9rem;">
-        L<%= viewer_step.level %>: <%= viewer_step.effective_status_label %>
+  <div class="app-detail-actions app-detail-actions-spread quotation-proposal-show__status-bar">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <span class="badge border <%= workflow_class %> fw-semibold px-3 py-2" style="font-size: 0.9rem;">
+        <%= @quotation_proposal.workflow_status.humanize %>
       </span>
-    <% end %>
 
-    <% if pending_approval_count.positive? %>
+      <% viewer_committee_steps.each do |viewer_step| %>
+        <span class="badge border <%= approval_status_css_class_for(viewer_step.effective_status) %> px-3 py-2" style="font-size: 0.9rem;">
+          L<%= viewer_step.level %>: <%= viewer_step.effective_status_label %>
+        </span>
+      <% end %>
+
+      <% if pending_approval_count.positive? %>
+        <span class="badge border bg-light text-dark px-3 py-2" style="font-size: 0.9rem;">
+          Pending Approvals: <%= pending_approval_count %>
+        </span>
+      <% end %>
+
       <span class="badge border bg-light text-dark px-3 py-2" style="font-size: 0.9rem;">
-        Pending Approvals: <%= pending_approval_count %>
+        Vendors: <%= @quotation_proposal.vendor_registrations.size %>
       </span>
-    <% end %>
-
-    <span class="badge border bg-light text-dark px-3 py-2" style="font-size: 0.9rem;">
-      Vendors: <%= @quotation_proposal.vendor_registrations.size %>
-    </span>
-  </div>
-
-  <div class="d-flex align-items-center gap-2 flex-wrap">
-    <% if owner_or_admin && (current_user == @quotation_proposal.user ? editable_by_owner : true) %>
-      <%= link_to "Edit", edit_quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn" %>
-    <% end %>
-    <% if owner_or_admin && @quotation_proposal.approval_request.blank? && @quotation_proposal.sent_to_vendors_at.blank? && !@quotation_proposal.committee_completed? %>
-      <%= button_to "Start Committee Approval", send_for_approval_quotation_proposal_path(@quotation_proposal), method: :post, class: "app-secondary-btn" %>
-    <% end %>
-    <% if creator_can_dispatch && @quotation_proposal.committee_completed? && !@quotation_proposal.vendor_responses_received? %>
-      <% send_button_label = if direct_response_mode
-           @quotation_proposal.sent_to_vendors_at.present? ? "Reopen Direct Form" : "Open Direct Form"
-         else
-           @quotation_proposal.sent_to_vendors_at.present? ? "Resend To Vendor" : "Send To Vendor"
-         end %>
-      <%= button_to send_button_label, send_to_vendors_quotation_proposal_path(@quotation_proposal), method: :post, class: "app-form-submit" %>
-    <% end %>
-  </div>
-</div>
-
-<% if approval_request&.employee_return_pending? %>
-  <div class="app-form-card" style="margin-bottom: 2rem;">
-    <div class="app-page-header app-subsection-header-tight">
-      <div>
-        <h3 style="margin-bottom: 0.35rem;">Returned To Employee</h3>
-        <p class="app-section-note mb-0">Returned remark dekhkar quotation update karo. Save karte hi same approval chain phir se Committee Member 1 se restart ho jayegi.</p>
-      </div>
     </div>
 
-    <div class="app-detail-grid">
-      <div class="app-detail-item">
-        <div class="app-detail-label">Returned By</div>
-        <div class="app-detail-value"><%= approval_request.employee_return_actor_label %></div>
-      </div>
-
-      <div class="app-detail-item app-detail-item-full">
-        <div class="app-detail-label">Return Remark</div>
-        <div class="app-detail-value" style="white-space: pre-wrap;"><%= approval_request.employee_return_remark.presence || "No remark was added." %></div>
-      </div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <% if owner_or_admin && (current_user == @quotation_proposal.user ? editable_by_owner : true) %>
+        <%= link_to "Edit", edit_quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn" %>
+      <% end %>
+      <% if owner_or_admin && @quotation_proposal.approval_request.blank? && @quotation_proposal.sent_to_vendors_at.blank? && !@quotation_proposal.committee_completed? %>
+        <%= button_to "Start Committee Approval", send_for_approval_quotation_proposal_path(@quotation_proposal), method: :post, class: "app-secondary-btn" %>
+      <% end %>
+      <% if creator_can_dispatch && @quotation_proposal.committee_completed? && !@quotation_proposal.vendor_responses_received? %>
+        <% send_button_label = if direct_response_mode
+             @quotation_proposal.sent_to_vendors_at.present? ? "Reopen Direct Form" : "Open Direct Form"
+           else
+             @quotation_proposal.sent_to_vendors_at.present? ? "Resend To Vendor" : "Send To Vendor"
+           end %>
+        <%= button_to send_button_label, send_to_vendors_quotation_proposal_path(@quotation_proposal), method: :post, class: "app-form-submit" %>
+      <% end %>
     </div>
   </div>
-<% end %>
 
-<div class="app-detail-card">
-  <div class="app-detail-grid">
-    <div class="app-detail-item">
-      <div class="app-detail-label">Subject</div>
-      <div class="app-detail-value"><%= @quotation_proposal.subject %></div>
-    </div>
+  <% if approval_request&.employee_return_pending? %>
+    <div class="app-form-card" style="margin-bottom: 2rem;">
+      <div class="app-page-header app-subsection-header-tight">
+        <div>
+          <h3 style="margin-bottom: 0.35rem;">Returned To Employee</h3>
+          <p class="app-section-note mb-0">Returned remark dekhkar quotation update karo. Save karte hi same approval chain phir se Committee Member 1 se restart ho jayegi.</p>
+        </div>
+      </div>
 
-    <div class="app-detail-item">
-      <div class="app-detail-label">Theme</div>
-      <div class="app-detail-value"><%= @quotation_proposal.theme.name %></div>
-    </div>
+      <div class="app-detail-grid">
+        <div class="app-detail-item">
+          <div class="app-detail-label">Returned By</div>
+          <div class="app-detail-value"><%= approval_request.employee_return_actor_label %></div>
+        </div>
 
-    <div class="app-detail-item">
-      <div class="app-detail-label">Proposal End Date</div>
-      <div class="app-detail-value"><%= @quotation_proposal.proposal_end_date.strftime("%d-%m-%Y") %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Quotation Value</div>
-      <div class="app-detail-value"><%= @quotation_proposal.procurement_amount_bucket_label %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Workflow Status</div>
-      <div class="app-detail-value"><%= @quotation_proposal.workflow_status.humanize %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Sent To Vendor At</div>
-      <div class="app-detail-value"><%= @quotation_proposal.sent_to_vendors_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Selected Vendor</div>
-      <div class="app-detail-value"><%= @quotation_proposal.selected_vendor_registration&.display_name || "-" %></div>
-    </div>
-
-    <div class="app-detail-item app-detail-item-full">
-      <div class="app-detail-label">Selected Vendors</div>
-      <div class="app-detail-value">
-        <div class="d-flex flex-wrap gap-2">
-          <% @quotation_proposal.vendor_registrations.each do |vendor| %>
-            <span class="badge border bg-light text-dark px-3 py-2" style="font-size: 0.9rem; font-weight: 500;">
-              <%= vendor.display_name %>
-            </span>
-          <% end %>
+        <div class="app-detail-item app-detail-item-full">
+          <div class="app-detail-label">Return Remark</div>
+          <div class="app-detail-value" style="white-space: pre-wrap;"><%= approval_request.employee_return_remark.presence || "No remark was added." %></div>
         </div>
       </div>
     </div>
+  <% end %>
 
-    <div class="app-detail-item app-detail-item-full">
-      <div class="app-detail-label">Remark</div>
-      <div class="app-detail-value"><%= @quotation_proposal.remark.presence || "-" %></div>
+  <div class="app-detail-card">
+    <div class="app-detail-grid quotation-proposal-show__detail-grid">
+      <div class="app-detail-item">
+        <div class="app-detail-label">Subject</div>
+        <div class="app-detail-value"><%= @quotation_proposal.subject %></div>
+      </div>
+
+      <div class="app-detail-item">
+        <div class="app-detail-label">Theme</div>
+        <div class="app-detail-value"><%= @quotation_proposal.theme.name %></div>
+      </div>
+
+      <div class="app-detail-item">
+        <div class="app-detail-label">Proposal End Date</div>
+        <div class="app-detail-value"><%= @quotation_proposal.proposal_end_date.strftime("%d-%m-%Y") %></div>
+      </div>
+
+      <div class="app-detail-item">
+        <div class="app-detail-label">Quotation Value</div>
+        <div class="app-detail-value"><%= @quotation_proposal.procurement_amount_bucket_label %></div>
+      </div>
+
+      <div class="app-detail-item">
+        <div class="app-detail-label">Workflow Status</div>
+        <div class="app-detail-value"><%= @quotation_proposal.workflow_status.humanize %></div>
+      </div>
+
+      <div class="app-detail-item">
+        <div class="app-detail-label">Sent To Vendor At</div>
+        <div class="app-detail-value"><%= @quotation_proposal.sent_to_vendors_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+      </div>
+
+      <div class="app-detail-item">
+        <div class="app-detail-label">Selected Vendor</div>
+        <div class="app-detail-value"><%= @quotation_proposal.selected_vendor_registration&.display_name || "-" %></div>
+      </div>
+
+      <div class="app-detail-item">
+        <div class="app-detail-label">Remark</div>
+        <div class="app-detail-value"><%= @quotation_proposal.remark.presence || "-" %></div>
+      </div>
+
+      <div class="app-detail-item app-detail-item-full">
+        <div class="app-detail-label">Selected Vendors</div>
+        <div class="app-detail-value">
+          <div class="d-flex flex-wrap gap-2">
+            <% @quotation_proposal.vendor_registrations.each do |vendor| %>
+              <span class="badge border bg-light text-dark px-3 py-2" style="font-size: 0.9rem; font-weight: 500;">
+                <%= vendor.display_name %>
+              </span>
+            <% end %>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-</div>
 
 <% if creator_can_dispatch && direct_response_mode && @quotation_proposal.committee_completed? %>
   <div class="app-detail-card app-stack-gap-lg">
@@ -255,18 +256,18 @@
   </div>
 <% end %>
 
-<div class="app-page-header app-page-header-top app-page-header-center">
-  <div>
-    <h3 style="margin-bottom: 0.25rem;">Proposal Items</h3>
-    <p class="app-section-note mb-0">Requested items and quantities for this quotation proposal.</p>
+  <div class="app-page-header app-page-header-top app-page-header-center quotation-proposal-show__section-header">
+    <div>
+      <h3 style="margin-bottom: 0.25rem;">Proposal Items</h3>
+      <p class="app-section-note mb-0">Requested items and quantities for this quotation proposal.</p>
+    </div>
+    <span class="badge border bg-light text-dark px-3 py-2" style="font-size: 0.9rem;">
+      Total Items: <%= @quotation_proposal.quotation_proposal_items.size %>
+    </span>
   </div>
-  <span class="badge border bg-light text-dark px-3 py-2" style="font-size: 0.9rem;">
-    Total Items: <%= @quotation_proposal.quotation_proposal_items.size %>
-  </span>
-</div>
 
-<div class="app-table-wrap">
-  <table class="table app-table">
+  <div class="app-table-wrap quotation-proposal-show__table-wrap">
+    <table class="table app-table">
     <thead>
       <tr>
         <th>Item Name</th>
@@ -287,8 +288,8 @@
         </tr>
       <% end %>
     </tbody>
-  </table>
-</div>
+    </table>
+  </div>
 
 <% if @quotation_proposal.vendor_responses_received? && @quotation_proposal.missing_max_rates? %>
   <div class="app-detail-card app-stack-gap-lg">
@@ -502,13 +503,13 @@
     <% end %>
 
     <% if @selected_vendor_response.present? %>
-      <div class="app-card mt-4" style="padding: 1.3rem 1.45rem;">
-        <div class="d-flex justify-content-between gap-3 flex-wrap align-items-start">
+      <div class="app-card mt-4 quotation-proposal-show__workflow-card" style="padding: 1.3rem 1.45rem;">
+        <div class="d-flex justify-content-between gap-3 flex-wrap align-items-start quotation-proposal-show__workflow-header">
           <div>
             <h3 style="margin-bottom: 0.35rem;">Selected Vendor PO Workflow</h3>
             <p class="app-section-note mb-0">Maker aur committee yahan vendor response, reply updates, aur full dated timeline dekh sakte hain.</p>
           </div>
-          <div class="d-flex gap-2 flex-wrap">
+          <div class="d-flex gap-2 flex-wrap quotation-proposal-show__workflow-badges">
             <% if current_user == @quotation_proposal.user && @selected_vendor_response.purchase_order_status == "accepted" %>
               <%= link_to "Goods Receive", goods_receive_quotation_proposal_path(@quotation_proposal), class: "app-form-submit" %>
             <% end %>
@@ -529,13 +530,13 @@
               <div class="app-detail-label">Vendor Response</div>
               <div class="app-detail-value"><%= @selected_vendor_response.purchase_order_status.to_s.humanize %></div>
               <div class="small text-muted mt-1">Action time: <%= @selected_vendor_response.purchase_order_actioned_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
-              <div class="mt-2" style="white-space: pre-wrap;"><%= @selected_vendor_response.purchase_order_remark.presence || "No vendor remark added." %></div>
+              <div class="mt-2 quotation-proposal-show__prewrap"><%= @selected_vendor_response.purchase_order_remark.presence || "No vendor remark added." %></div>
             </div>
           </div>
           <div class="col-lg-6">
             <div class="app-detail-item h-100">
               <div class="app-detail-label">ASA Reply</div>
-              <div class="app-detail-value" style="white-space: pre-wrap;"><%= @selected_vendor_response.purchase_order_reply.presence || "No reply added yet." %></div>
+              <div class="app-detail-value quotation-proposal-show__prewrap"><%= @selected_vendor_response.purchase_order_reply.presence || "No reply added yet." %></div>
               <div class="small text-muted mt-2">
                 Updated by: <strong><%= @selected_vendor_response.purchase_order_reply_updated_by&.name.presence || "-" %></strong>
               </div>
@@ -564,10 +565,10 @@
           <h4 style="margin-bottom: 0.85rem;">Goods Receive Invoice Requests</h4>
           <% finance_ready_requests = @selected_vendor_response.invoice_requests.recent_first.select { |request| request.accepted? && !request.payment_reference_assigned? } %>
           <% if current_user == @quotation_proposal.user %>
-            <div style="border: 1px solid #d8e6de; border-radius: 16px; padding: 1rem 1.05rem; background: #fcfefd; margin-bottom: 1rem;">
+            <div class="quotation-proposal-show__finance-panel">
               <div class="d-flex justify-content-between gap-3 flex-wrap align-items-start">
                 <div>
-                  <div style="font-weight: 700;">Send Accepted Invoices To Finance</div>
+                  <div class="quotation-proposal-show__finance-panel-title">Send Accepted Invoices To Finance</div>
                   <div class="small text-muted mt-1">Jin accepted invoices ki payment process karni hai unhe tick karke same PDO/RFP/date ke saath finance queue me bhej sakte hain.</div>
                 </div>
                 <% if @selected_vendor_response.invoice_requests.any?(&:payment_advice_pending?) %>
@@ -577,9 +578,9 @@
 
               <% if finance_ready_requests.any? %>
                 <%= form_with url: assign_payment_references_quotation_proposal_path(@quotation_proposal), method: :patch, local: true do %>
-                  <div class="mt-3 d-flex gap-2 flex-wrap">
+                  <div class="mt-3 d-flex gap-2 flex-wrap quotation-proposal-show__finance-panel-chips">
                     <% finance_ready_requests.each do |invoice_request| %>
-                      <label style="border: 1px solid #d9e5df; border-radius: 999px; padding: 0.4rem 0.8rem; background: #fff; display: inline-flex; align-items: center; gap: 0.45rem; cursor: pointer;">
+                      <label class="quotation-proposal-show__finance-chip">
                         <%= check_box_tag "invoice_request_ids[]", invoice_request.id, false %>
                         <span>Invoice Request <%= invoice_request.id %></span>
                       </label>
@@ -611,7 +612,7 @@
             </div>
           <% end %>
 
-          <div class="d-grid gap-3">
+          <div class="d-grid gap-3 quotation-proposal-show__invoice-request-list">
             <% if @selected_vendor_response.invoice_requests.recent_first.any? %>
               <% @selected_vendor_response.invoice_requests.recent_first.each do |invoice_request| %>
                 <%= render "invoice_request_card", invoice_request: invoice_request %>
@@ -623,31 +624,70 @@
         </div>
 
         <% if @selected_vendor_response.purchase_order_activities.any? %>
-          <div class="mt-4">
-            <h4 style="margin-bottom: 0.85rem;">Response Timeline</h4>
-            <div class="d-grid gap-2">
-              <% @selected_vendor_response.purchase_order_activities.recent_first.each do |activity| %>
-                <div style="border: 1px solid #d8e6de; border-radius: 14px; padding: 0.85rem 1rem; background: #fcfefd;">
-                  <div class="d-flex justify-content-between gap-3 flex-wrap">
-                    <div>
-                      <strong><%= activity.actor_name %></strong>
-                      <span class="text-muted">(<%= activity.actor_role.presence || "Update" %>)</span>
+          <div class="mt-4 quotation-proposal-show__timeline-block">
+            <div class="d-flex justify-content-between gap-3 flex-wrap align-items-end quotation-proposal-show__timeline-header" style="margin-bottom: 0.85rem;">
+              <div>
+                <h4 style="margin-bottom: 0.2rem;">Response Timeline</h4>
+                <p class="app-section-note mb-0">All purchase order, invoice, finance, and asset updates in one compact trail.</p>
+              </div>
+              <span class="badge border bg-light text-dark"><%= @selected_vendor_response.purchase_order_activities.size %> updates</span>
+            </div>
+            <details class="quotation-proposal-show__timeline-details" <%= "open" if @selected_vendor_response.purchase_order_activities.size <= 3 %>>
+              <summary class="quotation-proposal-show__timeline-summary">
+                <span>View Response Timeline</span>
+                <span class="badge border bg-light text-dark"><%= @selected_vendor_response.purchase_order_activities.size %> updates</span>
+              </summary>
+              <div class="d-none d-md-grid quotation-proposal-show__timeline-grid quotation-proposal-show__timeline-grid--head">
+                <div>Name</div>
+                <div>Role</div>
+                <div>Status</div>
+                <div>Date & Time</div>
+                <div>Invoice Details</div>
+              </div>
+
+              <% @selected_vendor_response.purchase_order_activities.recent_first.each_with_index do |activity, index| %>
+                <div class="quotation-proposal-show__timeline-row <%= "quotation-proposal-show__timeline-row--last" if index == @selected_vendor_response.purchase_order_activities.size - 1 %>">
+                  <div class="d-grid quotation-proposal-show__timeline-grid">
+                    <div class="quotation-proposal-show__timeline-cell">
+                      <div class="small text-muted d-md-none mb-1">Name</div>
+                      <div class="quotation-proposal-show__timeline-actor"><%= activity.actor_name %></div>
                     </div>
-                    <div class="small text-muted"><%= activity.occurred_at.strftime("%d-%m-%Y %H:%M") %></div>
+                    <div class="quotation-proposal-show__timeline-cell">
+                      <div class="small text-muted d-md-none mb-1">Role</div>
+                      <span class="badge border bg-light text-dark"><%= activity.actor_role.presence || "Update" %></span>
+                    </div>
+                    <div class="quotation-proposal-show__timeline-cell">
+                      <div class="small text-muted d-md-none mb-1">Status</div>
+                      <span class="badge border bg-info bg-opacity-10 text-info quotation-proposal-show__timeline-status"><%= activity.action_type.to_s.humanize %></span>
+                    </div>
+                    <div class="quotation-proposal-show__timeline-cell">
+                      <div class="small text-muted d-md-none mb-1">Date & Time</div>
+                      <div class="small text-muted quotation-proposal-show__timeline-date"><%= activity.occurred_at.strftime("%d-%m-%Y %H:%M") %></div>
+                    </div>
+                    <div class="quotation-proposal-show__timeline-cell">
+                      <div class="small text-muted d-md-none mb-1">Invoice Details</div>
+                      <div class="quotation-proposal-show__timeline-note">
+                        <% if activity.note.present? %>
+                          <div class="text-muted quotation-proposal-show__timeline-note-text">
+                            <%= simple_format(activity.note, {}, wrapper_tag: "div") %>
+                          </div>
+                        <% else %>
+                          <div class="text-muted quotation-proposal-show__timeline-note-text">-</div>
+                        <% end %>
+                      </div>
+                    </div>
                   </div>
-                  <div class="mt-1"><%= activity.action_type.to_s.humanize %></div>
-                  <% if activity.note.present? %>
-                    <div class="mt-1 text-muted" style="white-space: pre-wrap;"><%= activity.note %></div>
-                  <% end %>
                 </div>
               <% end %>
-            </div>
+            </details>
           </div>
         <% end %>
       </div>
     <% end %>
   </div>
 <% end %>
+
+</div>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {

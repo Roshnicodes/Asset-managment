@@ -6,6 +6,11 @@
   vendor_address_lines = selected_vendor.address.to_s.split(",").map(&:strip).reject(&:blank?)
   vendor_street_line = vendor_address_lines.first
   vendor_city_line = vendor_address_lines[1..].presence&.join(", ")
+  stakeholder_category = quotation_proposal.theme&.stakeholder_category || selected_vendor.stakeholder_category
+  stakeholder_name = stakeholder_category&.name.to_s.strip.presence || "Action for Social Advancement (ASA)"
+  stakeholder_address = stakeholder_category&.address.to_s.strip.presence || "\"The Farmers House\"Plan-C, Tulip Greens, Vill. Mahabadia, Kolar Road, Bhopal-462042, Madhya Pradesh"
+  stakeholder_contact = stakeholder_category&.contact_no.to_s.strip.presence || "09109988781, 09109988785, 09109988784"
+  stakeholder_code = stakeholder_category&.name.to_s.strip.presence || "ASA"
 %>
 
 <style>
@@ -58,9 +63,12 @@
     box-shadow: 0 3px 8px rgba(78, 45, 116, 0.28);
   }
 
-  .po-asa-logo {
+  .po-stakeholder-logo {
     width: 225px;
     max-width: 100%;
+    max-height: 76px;
+    object-fit: contain;
+    object-position: left center;
   }
 
   .po-rci-logo {
@@ -193,7 +201,7 @@
     <table class="po-head">
       <tr>
         <td style="width: 27%;">
-          <%= image_tag "po_asa_logo.png", alt: "ASA Logo", class: "po-asa-logo" %>
+          <%= image_tag stakeholder_logo_source(stakeholder_category, fallback: "asset-logo.png"), alt: stakeholder_logo_alt(stakeholder_category, fallback: "Stakeholder Logo"), class: "po-stakeholder-logo" %>
         </td>
         <td style="width: 58%;" class="po-head-center">
           <div class="po-title-box">PURCHASE ORDER</div>
@@ -207,12 +215,11 @@
     <table class="po-info">
       <tr>
         <td colspan="3" rowspan="3">
-          <strong>Action for Social Advancement (ASA)</strong><br>
-          "The Farmers House"Plan-C,<br>
-          Tulip Greens, Vill. Mahabadia, Kolar Road, Bhopal-462042, Madhya Pradesh,<br>
-          Mobile.No- 09109988781, 09109988785, 09109988784.
+          <strong><%= stakeholder_name %></strong><br>
+          <%= stakeholder_address %><br>
+          Mobile.No- <%= stakeholder_contact %>.
         </td>
-        <td class="po-meta-right-label">P.O. /Dispatch No. ASA/</td>
+        <td class="po-meta-right-label">P.O. /Dispatch No. <%= stakeholder_code %>/</td>
         <td colspan="2" class="po-meta-right-value">/<%= purchase_order_year_label %></td>
       </tr>
       <tr>

@@ -1,14 +1,17 @@
-<div style="border: 1px solid #d8e6de; border-radius: 16px; padding: 1rem 1.05rem; background: #fcfefd;">
-  <div class="d-flex justify-content-between gap-3 flex-wrap align-items-start">
+<%
+  assets_by_name = invoice_request.assets.group_by(&:name)
+  total_assets_count = invoice_request.assets.size
+  total_invoices_count = invoice_request.vendor_invoices.attachments.size
+%>
+
+<article class="quotation-proposal-show__invoice-card">
+  <header class="quotation-proposal-show__invoice-card-header">
     <div>
-      <div style="font-weight: 700;">Invoice Request <%= invoice_request.id %></div>
-      <div class="small text-muted mt-1">Requested: <%= invoice_request.requested_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
-      <div class="small text-muted mt-1">Uploaded: <%= invoice_request.invoice_uploaded_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
-      <div class="small text-muted mt-1">Returned: <%= invoice_request.returned_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
-      <div class="small text-muted mt-1">Accepted: <%= invoice_request.accepted_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
-      <div class="small text-muted mt-1">Assets Created: <%= invoice_request.assets_created_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+      <h5 class="quotation-proposal-show__invoice-card-title">Invoice Request <%= invoice_request.id %></h5>
+      <p class="app-section-note mb-0">Invoice review, finance, and asset trail for this request.</p>
     </div>
-    <div class="d-flex gap-2 flex-wrap">
+
+    <div class="quotation-proposal-show__invoice-badges">
       <span class="badge border <%= invoice_request.accepted? ? "bg-success bg-opacity-10 text-success" : invoice_request.returned? ? "bg-danger bg-opacity-10 text-danger" : invoice_request.uploaded? ? "bg-info bg-opacity-10 text-info" : "bg-warning bg-opacity-10 text-warning" %>">
         <%= invoice_request.status.to_s.humanize %>
       </span>
@@ -24,141 +27,200 @@
       <% elsif invoice_request.accepted? && current_user == @quotation_proposal.user %>
         <%= link_to "Create Assets",
               assets_path(invoice_request_id: invoice_request.id, anchor: "asset-workspace"),
-              class: "app-form-submit",
-              style: "padding: 0.35rem 0.85rem; font-size: 0.82rem;" %>
+              class: "app-form-submit quotation-proposal-show__invoice-inline-action" %>
       <% end %>
+    </div>
+  </header>
+
+  <div class="quotation-proposal-show__invoice-metrics">
+    <div class="quotation-proposal-show__invoice-metric">
+      <span class="quotation-proposal-show__invoice-metric-label">Requested</span>
+      <strong><%= invoice_request.requested_at&.strftime("%d-%m-%Y %H:%M") || "-" %></strong>
+    </div>
+    <div class="quotation-proposal-show__invoice-metric">
+      <span class="quotation-proposal-show__invoice-metric-label">Uploaded</span>
+      <strong><%= invoice_request.invoice_uploaded_at&.strftime("%d-%m-%Y %H:%M") || "-" %></strong>
+    </div>
+    <div class="quotation-proposal-show__invoice-metric">
+      <span class="quotation-proposal-show__invoice-metric-label">Accepted</span>
+      <strong><%= invoice_request.accepted_at&.strftime("%d-%m-%Y %H:%M") || "-" %></strong>
+    </div>
+    <div class="quotation-proposal-show__invoice-metric">
+      <span class="quotation-proposal-show__invoice-metric-label">Files</span>
+      <strong><%= total_invoices_count %></strong>
+    </div>
+    <div class="quotation-proposal-show__invoice-metric">
+      <span class="quotation-proposal-show__invoice-metric-label">Received Qty</span>
+      <strong><%= number_with_precision(invoice_request.received_quantity_total, precision: 2, strip_insignificant_zeros: true) %></strong>
+    </div>
+    <div class="quotation-proposal-show__invoice-metric">
+      <span class="quotation-proposal-show__invoice-metric-label">Assets</span>
+      <strong><%= total_assets_count %></strong>
     </div>
   </div>
 
-  <div class="mt-3">
-    <div class="small text-muted" style="font-weight: 700;">Received Items</div>
-    <div class="mt-1">
+  <section class="quotation-proposal-show__invoice-section">
+    <div class="quotation-proposal-show__invoice-section-title">Received Items</div>
+    <div class="quotation-proposal-show__tag-list">
       <% invoice_request.snapshot_items.each do |item| %>
-        <span class="badge border bg-light text-dark me-1 mb-1">
+        <span class="badge border bg-light text-dark quotation-proposal-show__tag">
           <%= item[:item_name] %>: <%= number_with_precision(item[:received_quantity], precision: 2, strip_insignificant_zeros: true) %> <%= item[:unit_name].presence || "" %>
         </span>
       <% end %>
     </div>
-  </div>
+  </section>
 
-  <% if invoice_request.vendor_remark.present? %>
-    <div class="mt-3">
-      <div class="small text-muted" style="font-weight: 700;">Vendor Remark</div>
-      <div class="mt-1" style="white-space: pre-wrap;"><%= invoice_request.vendor_remark %></div>
-    </div>
-  <% end %>
-
-  <% if invoice_request.maker_review_remark.present? %>
-    <div class="mt-3">
-      <div class="small text-muted" style="font-weight: 700;">Maker Review Remark</div>
-      <div class="mt-1" style="white-space: pre-wrap;"><%= invoice_request.maker_review_remark %></div>
-      <div class="small text-muted mt-1">
-        Reviewed by: <strong><%= invoice_request.maker_reviewed_by&.name.presence || "-" %></strong>
-        | Reviewed at: <strong><%= invoice_request.maker_reviewed_at&.strftime("%d-%m-%Y %H:%M") || "-" %></strong>
-      </div>
-    </div>
-  <% end %>
-
-  <% if invoice_request.payment_reference_assigned? %>
-    <div class="mt-3">
-      <div class="small text-muted" style="font-weight: 700;">Finance Processing Details</div>
-      <div class="row g-3 mt-1">
-        <div class="col-md-4">
-          <div class="small text-muted">PDO No</div>
-          <div><strong><%= invoice_request.pdo_no %></strong></div>
-        </div>
-        <div class="col-md-4">
-          <div class="small text-muted">RFP No</div>
-          <div><strong><%= invoice_request.rfp_no %></strong></div>
-        </div>
-        <div class="col-md-4">
-          <div class="small text-muted">RFP Create Date</div>
-          <div><strong><%= invoice_request.rfp_created_on&.strftime("%d-%m-%Y") || "-" %></strong></div>
-        </div>
-      </div>
-      <div class="small text-muted mt-2">
-        Marked by: <strong><%= invoice_request.payment_reference_marked_by&.name.presence || "-" %></strong>
-        | Marked at: <strong><%= invoice_request.payment_reference_marked_at&.strftime("%d-%m-%Y %H:%M") || "-" %></strong>
-      </div>
-    </div>
-  <% end %>
-
-  <% if invoice_request.payment_advised? %>
-    <div class="mt-3">
-      <div class="small text-muted" style="font-weight: 700;">Payment Advice</div>
-      <div class="row g-3 mt-1">
-        <div class="col-md-3">
-          <div class="small text-muted">UTR No</div>
-          <div><strong><%= invoice_request.utr_no.presence || "-" %></strong></div>
-        </div>
-        <div class="col-md-3">
-          <div class="small text-muted">UTR Date</div>
-          <div><strong><%= invoice_request.utr_date&.strftime("%d-%m-%Y") || "-" %></strong></div>
-        </div>
-        <div class="col-md-3">
-          <div class="small text-muted">Bank</div>
-          <div><strong><%= invoice_request.asa_bank_name.presence || "-" %></strong></div>
-        </div>
-        <div class="col-md-3">
-          <div class="small text-muted">ASA Account No</div>
-          <div><strong><%= invoice_request.asa_account_no.presence || "-" %></strong></div>
-        </div>
-      </div>
-      <div class="small text-muted mt-2">
-        Submitted by: <strong><%= invoice_request.payment_advice_updated_by&.name.presence || "-" %></strong>
-        | Submitted at: <strong><%= invoice_request.payment_advice_sent_at&.strftime("%d-%m-%Y %H:%M") || "-" %></strong>
-      </div>
-    </div>
-  <% end %>
-
-  <div class="mt-3">
-    <div class="small text-muted" style="font-weight: 700;">Uploaded Invoice Files</div>
-    <div class="mt-2 d-flex gap-2 flex-wrap">
-    <% if invoice_request.vendor_invoices.attached? %>
-      <% invoice_request.vendor_invoices.each_with_index do |document, index| %>
-        <%= link_to rails_blob_path(document, disposition: "attachment"), class: "app-secondary-btn", style: "display: inline-flex; align-items: center; gap: .35rem;" do %>
-          <span><%= index.zero? ? "Invoice 1" : "Invoice #{index + 1}" %></span>
-          <span style="opacity: .75;"><%= document.filename.to_s %></span>
-        <% end %>
+  <% if invoice_request.vendor_remark.present? || invoice_request.maker_review_remark.present? || invoice_request.payment_reference_assigned? || invoice_request.payment_advised? %>
+    <div class="quotation-proposal-show__invoice-info-grid">
+      <% if invoice_request.vendor_remark.present? %>
+        <section class="quotation-proposal-show__invoice-section">
+          <div class="quotation-proposal-show__invoice-section-title">Vendor Remark</div>
+          <div class="quotation-proposal-show__invoice-copy"><%= invoice_request.vendor_remark %></div>
+        </section>
       <% end %>
-    <% else %>
-      <span class="small text-muted">Invoice upload abhi pending hai.</span>
-    <% end %>
+
+      <% if invoice_request.maker_review_remark.present? %>
+        <section class="quotation-proposal-show__invoice-section">
+          <div class="quotation-proposal-show__invoice-section-title">Maker Review Remark</div>
+          <div class="quotation-proposal-show__invoice-copy quotation-proposal-show__invoice-copy--strong"><%= invoice_request.maker_review_remark %></div>
+          <div class="small text-muted mt-2">
+            Reviewed by: <strong><%= invoice_request.maker_reviewed_by&.name.presence || "-" %></strong>
+            | Reviewed at: <strong><%= invoice_request.maker_reviewed_at&.strftime("%d-%m-%Y %H:%M") || "-" %></strong>
+          </div>
+        </section>
+      <% end %>
+
+      <% if invoice_request.payment_reference_assigned? %>
+        <section class="quotation-proposal-show__invoice-section">
+          <div class="quotation-proposal-show__invoice-section-title">Finance Processing Details</div>
+          <div class="quotation-proposal-show__tag-list">
+            <span class="badge border bg-light text-dark quotation-proposal-show__tag">PDO No: <strong><%= invoice_request.pdo_no %></strong></span>
+            <span class="badge border bg-light text-dark quotation-proposal-show__tag">RFP No: <strong><%= invoice_request.rfp_no %></strong></span>
+            <span class="badge border bg-light text-dark quotation-proposal-show__tag">RFP Create Date: <strong><%= invoice_request.rfp_created_on&.strftime("%d-%m-%Y") || "-" %></strong></span>
+          </div>
+          <div class="small text-muted mt-2">
+            Marked by: <strong><%= invoice_request.payment_reference_marked_by&.name.presence || "-" %></strong>
+            | Marked at: <strong><%= invoice_request.payment_reference_marked_at&.strftime("%d-%m-%Y %H:%M") || "-" %></strong>
+          </div>
+        </section>
+      <% end %>
+
+      <% if invoice_request.payment_advised? %>
+        <section class="quotation-proposal-show__invoice-section">
+          <div class="quotation-proposal-show__invoice-section-title">Payment Advice</div>
+          <div class="quotation-proposal-show__invoice-advice-grid">
+            <div class="quotation-proposal-show__invoice-metric">
+              <span class="quotation-proposal-show__invoice-metric-label">UTR No</span>
+              <strong><%= invoice_request.utr_no.presence || "-" %></strong>
+            </div>
+            <div class="quotation-proposal-show__invoice-metric">
+              <span class="quotation-proposal-show__invoice-metric-label">UTR Date</span>
+              <strong><%= invoice_request.utr_date&.strftime("%d-%m-%Y") || "-" %></strong>
+            </div>
+            <div class="quotation-proposal-show__invoice-metric">
+              <span class="quotation-proposal-show__invoice-metric-label">Bank</span>
+              <strong><%= invoice_request.asa_bank_name.presence || "-" %></strong>
+            </div>
+            <div class="quotation-proposal-show__invoice-metric">
+              <span class="quotation-proposal-show__invoice-metric-label">ASA Account No</span>
+              <strong><%= invoice_request.asa_account_no.presence || "-" %></strong>
+            </div>
+          </div>
+          <div class="small text-muted mt-2">
+            Submitted by: <strong><%= invoice_request.payment_advice_updated_by&.name.presence || "-" %></strong>
+            | Submitted at: <strong><%= invoice_request.payment_advice_sent_at&.strftime("%d-%m-%Y %H:%M") || "-" %></strong>
+          </div>
+        </section>
+      <% end %>
     </div>
-  </div>
+  <% end %>
+
+  <section class="quotation-proposal-show__invoice-section">
+    <div class="quotation-proposal-show__invoice-section-head">
+      <div>
+        <div class="quotation-proposal-show__invoice-section-title">Uploaded Invoice Files</div>
+        <p class="app-section-note mb-0">Download vendor-uploaded files for this request.</p>
+      </div>
+      <% if invoice_request.vendor_invoices.attached? %>
+        <span class="badge border bg-light text-dark"><%= total_invoices_count %> file<%= "s" unless total_invoices_count == 1 %></span>
+      <% end %>
+    </div>
+
+    <% if invoice_request.vendor_invoices.attached? %>
+      <div class="quotation-proposal-show__file-links">
+        <% invoice_request.vendor_invoices.each_with_index do |document, index| %>
+          <%= link_to rails_blob_path(document, disposition: "attachment"), class: "app-secondary-btn quotation-proposal-show__file-link" do %>
+            <span>Invoice <%= index + 1 %></span>
+            <span class="quotation-proposal-show__file-name"><%= document.filename.to_s %></span>
+          <% end %>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="small text-muted mt-2">Invoice upload abhi pending hai.</div>
+    <% end %>
+  </section>
 
   <% if current_user == @quotation_proposal.user && invoice_request.awaiting_maker_review? && !invoice_request.assets_created? %>
-    <div class="mt-3" style="border-top: 1px solid #e2ece6; padding-top: 1rem;">
+    <section class="quotation-proposal-show__invoice-section quotation-proposal-show__invoice-section--form">
       <%= form_with url: review_invoice_request_quotation_proposal_path(@quotation_proposal, invoice_request_id: invoice_request.id), method: :patch, local: true do %>
         <div class="mb-2">
           <label class="form-label" style="font-weight: 700;">Maker Review Remark</label>
           <%= text_area_tag :maker_review_remark, invoice_request.maker_review_remark, rows: 3, class: "form-control", placeholder: "Accept par optional remark, return par mandatory remark." %>
         </div>
         <div class="d-flex gap-2 flex-wrap justify-content-end">
-          <%= button_tag "Accept Invoice", type: "submit", name: "invoice_review_action", value: "accept", class: "app-form-submit", style: "padding: 0.45rem 0.95rem;" %>
-          <%= button_tag "Return Invoice", type: "submit", name: "invoice_review_action", value: "return", class: "app-secondary-btn", style: "padding: 0.45rem 0.95rem;" %>
+          <%= button_tag "Accept Invoice", type: "submit", name: "invoice_review_action", value: "accept", class: "app-form-submit quotation-proposal-show__invoice-inline-action" %>
+          <%= button_tag "Return Invoice", type: "submit", name: "invoice_review_action", value: "return", class: "app-secondary-btn quotation-proposal-show__invoice-inline-action" %>
         </div>
       <% end %>
-    </div>
+    </section>
   <% end %>
 
   <% if invoice_request.assets.any? %>
-    <div class="mt-3">
-      <div class="small text-muted" style="font-weight: 700;">Created Assets</div>
-      <div class="d-grid gap-2 mt-2">
-        <% invoice_request.assets.each do |asset| %>
-          <div style="border: 1px solid #d9e5df; border-radius: 12px; padding: 0.75rem 0.9rem; background: #fff;">
-            <div class="d-flex justify-content-between gap-2 flex-wrap">
-              <div><strong><%= asset.name %></strong></div>
-              <div class="small text-muted"><%= asset.product&.name %></div>
-            </div>
-            <div class="small text-muted mt-1">
-              Asset Code: <strong><%= asset.asset_code.presence || "-" %></strong>
-              | Unique Product Code: <strong><%= asset.unique_product_code.presence || "-" %></strong>
-            </div>
-          </div>
-        <% end %>
+    <section class="quotation-proposal-show__invoice-section">
+      <div class="quotation-proposal-show__invoice-section-head">
+        <div>
+          <div class="quotation-proposal-show__invoice-section-title">Created Assets</div>
+          <p class="app-section-note mb-0">Asset records created from this invoice request.</p>
+        </div>
+        <div class="quotation-proposal-show__tag-list quotation-proposal-show__tag-list--compact">
+          <% assets_by_name.each do |asset_name, grouped_assets| %>
+            <span class="badge border bg-light text-dark quotation-proposal-show__tag">
+              <%= asset_name %>: <%= grouped_assets.size %>
+            </span>
+          <% end %>
+        </div>
       </div>
-    </div>
+
+      <details class="quotation-proposal-show__nested-details">
+        <summary class="quotation-proposal-show__nested-summary">
+          <span>View Created Assets</span>
+          <span class="badge border bg-info bg-opacity-10 text-info"><%= total_assets_count %> asset<%= "s" unless total_assets_count == 1 %></span>
+        </summary>
+        <div class="quotation-proposal-show__nested-body">
+          <div class="quotation-proposal-show__table-inline-wrap">
+            <table class="table align-middle mb-0 quotation-proposal-show__nested-table">
+              <thead>
+                <tr>
+                  <th>Asset</th>
+                  <th>Asset Code</th>
+                  <th>Unique Product Code</th>
+                  <th>Product</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% invoice_request.assets.each do |asset| %>
+                  <tr>
+                    <td><strong><%= asset.name %></strong></td>
+                    <td><%= asset.asset_code.presence || "-" %></td>
+                    <td><%= asset.unique_product_code.presence || "-" %></td>
+                    <td><%= asset.product&.name.presence || "-" %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </details>
+    </section>
   <% end %>
-</div>
+</article>

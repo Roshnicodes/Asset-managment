@@ -151,7 +151,7 @@ class QuotationProposalVendor < ApplicationRecord
       quotation_proposal: quotation_proposal,
       vendor_registration: vendor_registration,
       user: quotation_proposal.user,
-      stakeholder_category: vendor_registration.stakeholder_category || quotation_proposal.theme&.stakeholder_category,
+      stakeholder_category: quotation_proposal.theme&.stakeholder_category || vendor_registration.stakeholder_category,
       vendor_name: vendor_registration.display_name,
       mobile_no: vendor_registration.mobile_no
     )

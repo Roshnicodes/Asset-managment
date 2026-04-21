@@ -1,74 +1,177 @@
-<style>
-  .po-toolbar {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-  }
-</style>
+<%
+  purchase_order_status = @selected_proposal_vendor.purchase_order_status.to_s
+  selected_vendor = @selected_proposal_vendor.vendor_registration
+  purchase_order_status_label = purchase_order_status.present? ? purchase_order_status.humanize : "Draft"
+  purchase_order_status_class =
+    case purchase_order_status
+    when "accepted"
+      "po-status-badge--accepted"
+    when "returned"
+      "po-status-badge--returned"
+    when "rejected"
+      "po-status-badge--rejected"
+    when "sent"
+      "po-status-badge--sent"
+    else
+      "po-status-badge--draft"
+    end
+%>
 
-<div class="po-toolbar print-hide">
-  <%= form_with url: purchase_order_quotation_proposal_path(@quotation_proposal), method: :get, local: true, html: { style: "display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;" } do %>
-    <label for="authorized_by_id"><strong>Authorized by</strong></label>
-    <%= select_tag :authorized_by_id,
-          options_from_collection_for_select(@authorized_by_options, :id, :name, @authorized_by&.id),
-          include_blank: "Select authorized person",
-          id: "authorized_by_id",
-          onchange: (@purchase_order_authorized_by_locked ? nil : "this.form.submit()"),
-          disabled: @purchase_order_authorized_by_locked,
-          style: "min-width: 220px; padding: 0.55rem 0.8rem; border-radius: 10px; border: 1px solid #b7cfc6; background: #{@purchase_order_authorized_by_locked ? '#f4f7f5' : '#fff'};" %>
-    <% if @purchase_order_authorized_by_locked %>
-      <span class="small text-muted">Locked after sending to vendor</span>
-    <% end %>
-  <% end %>
-
-  <% unless @selected_proposal_vendor.purchase_order_status.in?(%w[accepted rejected]) %>
-    <%= form_with url: send_purchase_order_quotation_proposal_path(@quotation_proposal), method: :post, local: true, html: { style: "margin: 0; display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;" } do %>
-      <%= hidden_field_tag :authorized_by_id, @authorized_by&.id %>
-      <label for="purchase_order_due_date"><strong>Last Date</strong></label>
-      <%= date_field_tag :purchase_order_due_date,
-            @purchase_order_due_date,
-            min: Date.current.iso8601,
-            id: "purchase_order_due_date",
-            style: "min-width: 180px; padding: 0.55rem 0.8rem; border-radius: 10px; border: 1px solid #b7cfc6; background: #fff;" %>
-      <%= submit_tag(@selected_proposal_vendor.purchase_order_status == "returned" ? "Resend to Vendor" : "Send to Vendor", class: "app-form-submit") %>
-    <% end %>
-  <% end %>
-
-  <button type="button" class="app-form-submit" onclick="window.print()">Print Purchase Order</button>
-  <%= link_to "Back to Quotation", quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn" %>
-</div>
-
-<% if @selected_proposal_vendor.purchase_order_status.in?(%w[sent accepted returned rejected]) %>
-  <div class="app-card mb-3" style="padding: 1rem 1.2rem;">
-    <div class="d-flex gap-2 flex-wrap align-items-center">
-      <strong>Purchase Order Status:</strong>
-      <span class="badge border <%= @selected_proposal_vendor.purchase_order_status == "accepted" ? "bg-success bg-opacity-10 text-success" : @selected_proposal_vendor.purchase_order_status == "returned" ? "bg-warning bg-opacity-10 text-warning" : @selected_proposal_vendor.purchase_order_status == "rejected" ? "bg-danger bg-opacity-10 text-danger" : "bg-primary bg-opacity-10 text-primary" %>">
-        <%= @selected_proposal_vendor.purchase_order_status.humanize %>
-      </span>
-      <% if @selected_proposal_vendor.purchase_order_sent_at.present? %>
-        <span class="text-muted small">Sent at <%= @selected_proposal_vendor.purchase_order_sent_at.strftime("%d-%m-%Y %H:%M") %></span>
-      <% end %>
-      <% if @selected_proposal_vendor.purchase_order_actioned_at.present? %>
-        <span class="text-muted small">Vendor action at <%= @selected_proposal_vendor.purchase_order_actioned_at.strftime("%d-%m-%Y %H:%M") %></span>
-      <% end %>
-      <% if @selected_proposal_vendor.purchase_order_due_date.present? %>
-        <span class="text-muted small">Last date <%= @selected_proposal_vendor.purchase_order_due_date.strftime("%d-%m-%Y") %></span>
-      <% end %>
+<div class="po-page">
+  <div class="app-page-header app-page-header-top po-page-header print-hide">
+    <div>
+      <span class="po-page-eyebrow">Purchase Dispatch Workspace</span>
+      <h1 class="app-page-title">Purchase Order</h1>
+      <p class="app-page-subtitle"><%= @quotation_proposal.subject %></p>
     </div>
-    <% if @selected_proposal_vendor.purchase_order_remark.present? %>
-      <div class="mt-2"><strong>Vendor Remark:</strong> <%= @selected_proposal_vendor.purchase_order_remark %></div>
-    <% end %>
+    <%= link_to "Back to Quotation", quotation_proposal_path(@quotation_proposal), class: "po-back-link" %>
   </div>
-<% end %>
 
-<%= render "purchase_order_sheet",
-      proposal_vendor: @selected_proposal_vendor,
-      quotation_proposal: @quotation_proposal,
-      purchase_order_year_label: @purchase_order_year_label,
-      authorized_by: @authorized_by,
-      po_payment_terms: @po_payment_terms,
-      po_completion_terms: @po_completion_terms,
-      po_warranty_terms: @po_warranty_terms,
-      po_earnest_money_terms: @po_earnest_money_terms %>
+  <section class="po-hero print-hide">
+    <div class="po-hero-copy">
+      <span class="po-hero-chip">Document layout preserved</span>
+      <h2 class="po-hero-title"><%= selected_vendor.display_name %></h2>
+      <p class="po-hero-text">
+        Review the signer, choose the response deadline, and print the final purchase order from the preview below.
+        The purchase order sheet itself stays unchanged.
+      </p>
+    </div>
+
+    <div class="po-hero-meta">
+      <div class="po-hero-stat">
+        <span class="po-hero-stat-label">Status</span>
+        <strong><%= purchase_order_status_label %></strong>
+      </div>
+      <div class="po-hero-stat">
+        <span class="po-hero-stat-label">Authorized By</span>
+        <strong><%= @authorized_by&.name.presence || "-" %></strong>
+      </div>
+      <div class="po-hero-stat">
+        <span class="po-hero-stat-label">Items</span>
+        <strong><%= @selected_proposal_vendor.vendor_items.size %></strong>
+      </div>
+      <div class="po-hero-stat">
+        <span class="po-hero-stat-label">Last Date</span>
+        <strong><%= @selected_proposal_vendor.purchase_order_due_date&.strftime("%d-%m-%Y") || "Not set" %></strong>
+      </div>
+    </div>
+  </section>
+
+  <div class="po-actions-grid print-hide">
+    <section class="po-panel">
+      <div class="po-panel-header">
+        <div>
+          <h3>Authorization</h3>
+          <p class="po-panel-note">Choose the person whose name will appear on the purchase order sheet.</p>
+        </div>
+      </div>
+
+      <%= form_with url: purchase_order_quotation_proposal_path(@quotation_proposal), method: :get, local: true, html: { class: "po-control-form" } do %>
+        <div class="app-form-field po-control-field">
+          <label for="authorized_by_id">Authorized by</label>
+          <%= select_tag :authorized_by_id,
+                options_from_collection_for_select(@authorized_by_options, :id, :name, @authorized_by&.id),
+                include_blank: "Select authorized person",
+                id: "authorized_by_id",
+                class: "po-form-input",
+                onchange: (@purchase_order_authorized_by_locked ? nil : "this.form.submit()"),
+                disabled: @purchase_order_authorized_by_locked %>
+          <span class="po-field-hint">
+            <%= @purchase_order_authorized_by_locked ? "Locked after sending to vendor." : "The preview updates as soon as you change the signatory." %>
+          </span>
+        </div>
+      <% end %>
+    </section>
+
+    <% unless @selected_proposal_vendor.purchase_order_status.in?(%w[accepted rejected]) %>
+      <section class="po-panel">
+        <div class="po-panel-header">
+          <div>
+            <h3>Vendor Dispatch</h3>
+            <p class="po-panel-note">Set the final response date before sharing or resending the purchase order link.</p>
+          </div>
+        </div>
+
+        <%= form_with url: send_purchase_order_quotation_proposal_path(@quotation_proposal), method: :post, local: true, html: { class: "po-control-form" } do %>
+          <%= hidden_field_tag :authorized_by_id, @authorized_by&.id %>
+
+          <div class="app-form-field po-control-field">
+            <label for="purchase_order_due_date">Last date</label>
+            <%= date_field_tag :purchase_order_due_date,
+                  @purchase_order_due_date,
+                  min: Date.current.iso8601,
+                  id: "purchase_order_due_date",
+                  class: "po-form-input" %>
+            <span class="po-field-hint">Vendor response will stay open until this date.</span>
+          </div>
+
+          <div class="po-control-actions">
+            <%= submit_tag(@selected_proposal_vendor.purchase_order_status == "returned" ? "Resend to Vendor" : "Send to Vendor", class: "app-form-submit") %>
+          </div>
+        <% end %>
+      </section>
+    <% end %>
+
+    <section class="po-panel po-quick-actions">
+      <div class="po-panel-header">
+        <div>
+          <h3>Quick Actions</h3>
+          <p class="po-panel-note">Print the current purchase order once the signer and response deadline look right.</p>
+        </div>
+      </div>
+
+      <div class="po-quick-action-buttons">
+        <button type="button" class="app-form-submit" onclick="window.print()">Print Purchase Order</button>
+      </div>
+      <p class="po-quick-note">Use the back link above whenever you want to return to the quotation details.</p>
+    </section>
+  </div>
+
+  <% if @selected_proposal_vendor.purchase_order_status.in?(%w[sent accepted returned rejected]) %>
+    <section class="po-status-panel print-hide">
+      <div class="po-status-row">
+        <span class="po-status-label">Purchase Order Status</span>
+        <span class="po-status-badge <%= purchase_order_status_class %>"><%= purchase_order_status_label %></span>
+
+        <% if @selected_proposal_vendor.purchase_order_sent_at.present? %>
+          <span class="po-status-pill">Sent at <%= @selected_proposal_vendor.purchase_order_sent_at.strftime("%d-%m-%Y %H:%M") %></span>
+        <% end %>
+        <% if @selected_proposal_vendor.purchase_order_actioned_at.present? %>
+          <span class="po-status-pill">Vendor action at <%= @selected_proposal_vendor.purchase_order_actioned_at.strftime("%d-%m-%Y %H:%M") %></span>
+        <% end %>
+        <% if @selected_proposal_vendor.purchase_order_due_date.present? %>
+          <span class="po-status-pill">Last date <%= @selected_proposal_vendor.purchase_order_due_date.strftime("%d-%m-%Y") %></span>
+        <% end %>
+      </div>
+
+      <% if @selected_proposal_vendor.purchase_order_remark.present? %>
+        <div class="po-status-remark">
+          <span class="po-status-remark-label">Vendor Remark</span>
+          <p><%= @selected_proposal_vendor.purchase_order_remark %></p>
+        </div>
+      <% end %>
+    </section>
+  <% end %>
+
+  <section class="po-preview-frame">
+    <div class="po-preview-head print-hide">
+      <div>
+        <h2 class="po-preview-title">Purchase Order Preview</h2>
+        <p class="po-preview-note">This area only frames the document for easier reading. The sheet below keeps its original layout for printing.</p>
+      </div>
+      <span class="po-preview-tag">A4 Ready</span>
+    </div>
+
+    <div class="po-preview-sheet">
+      <%= render "purchase_order_sheet",
+            proposal_vendor: @selected_proposal_vendor,
+            quotation_proposal: @quotation_proposal,
+            purchase_order_year_label: @purchase_order_year_label,
+            authorized_by: @authorized_by,
+            po_payment_terms: @po_payment_terms,
+            po_completion_terms: @po_completion_terms,
+            po_warranty_terms: @po_warranty_terms,
+            po_earnest_money_terms: @po_earnest_money_terms %>
+    </div>
+  </section>
+</div>

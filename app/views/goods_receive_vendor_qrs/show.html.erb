@@ -1,176 +1,942 @@
-<% otp_verified = @otp_verified_for_render || false %>
+<%
+  otp_verified = @otp_verified_for_render || false
+  vendor_display_name = @vendor_registration.firm_name.presence || @vendor_registration.display_name
+
+  status_key =
+    if @invoice_request.accepted?
+      "accepted"
+    elsif @invoice_request.returned?
+      "returned"
+    elsif @invoice_request.uploaded?
+      "uploaded"
+    else
+      "pending"
+    end
+
+  status_label =
+    case status_key
+    when "accepted" then "Invoice Accepted"
+    when "returned" then "Invoice Returned"
+    when "uploaded" then "Invoice Uploaded"
+    else "Invoice Pending"
+    end
+
+  upload_heading = @invoice_request.returned? ? "Re-upload Invoice" : "Upload Invoice"
+  upload_note = @invoice_request.returned? ? "Maker ne invoice return kiya hai. Corrected invoice dubara upload karein." : "Invoice PDF ya image upload karein. Multiple files attach kar sakte hain."
+%>
+
+<style>
+  .gr-vendor-page {
+    --gr-ink: #14241c;
+    --gr-muted: #5d6f64;
+    --gr-soft: #f5faf7;
+    --gr-line: #d8e8de;
+    --gr-green: #0f6b3d;
+    --gr-green-bright: #1c9b58;
+    --gr-gold: #b9821c;
+    --gr-red: #b2453c;
+    --gr-blue: #236f91;
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    gap: clamp(0.85rem, 1.8vw, 1.25rem);
+    width: min(100%, 1120px);
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: clamp(0.85rem, 2.1vw, 1.35rem);
+    border: 1px solid rgba(176, 209, 189, 0.72);
+    border-radius: 34px;
+    background:
+      radial-gradient(circle at 8% 0%, rgba(28, 155, 88, 0.12), transparent 20rem),
+      radial-gradient(circle at 96% 14%, rgba(242, 177, 52, 0.1), transparent 15rem),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(245, 251, 247, 0.98));
+    box-shadow:
+      0 24px 62px rgba(22, 70, 43, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  }
+
+  .gr-vendor-page,
+  .gr-vendor-page * {
+    box-sizing: border-box;
+  }
+
+  .gr-branding .doc-branding-shell {
+    margin-bottom: 0;
+    border-color: rgba(216, 232, 222, 0.95);
+    border-radius: 26px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 10px 28px rgba(17, 59, 37, 0.06);
+  }
+
+  .gr-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--gr-line);
+    border-radius: 26px;
+    background:
+      radial-gradient(circle at top left, rgba(28, 155, 88, 0.1), transparent 32rem),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(250, 253, 251, 0.98));
+    box-shadow: 0 12px 30px rgba(17, 59, 37, 0.06);
+  }
+
+  .gr-card__inner {
+    position: relative;
+    z-index: 1;
+    padding: clamp(1rem, 2.4vw, 1.55rem);
+  }
+
+  .gr-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 0.42fr);
+    gap: clamp(1rem, 2.4vw, 1.7rem);
+    align-items: stretch;
+  }
+
+  .gr-hero-copy {
+    min-width: 0;
+  }
+
+  .gr-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-bottom: 0.7rem;
+    color: var(--gr-green);
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+  }
+
+  .gr-eyebrow::before {
+    content: "";
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--gr-green), var(--gr-green-bright));
+    box-shadow: 0 0 0 0.35rem rgba(28, 155, 88, 0.12);
+  }
+
+  .gr-title {
+    margin: 0;
+    color: var(--gr-ink);
+    font-size: clamp(1.75rem, 4vw, 2.65rem);
+    font-weight: 850;
+    letter-spacing: -0.045em;
+    line-height: 1.05;
+  }
+
+  .gr-subtitle {
+    max-width: 720px;
+    margin: 0.8rem 0 0;
+    color: var(--gr-muted);
+    font-size: 1rem;
+    line-height: 1.75;
+  }
+
+  .gr-status-panel {
+    display: grid;
+    align-content: start;
+    gap: 0.95rem;
+    padding: 1rem;
+    border: 1px solid rgba(15, 107, 61, 0.16);
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow:
+      0 8px 18px rgba(17, 59, 37, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+
+  .gr-status-pill {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.52rem 0.82rem;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 800;
+  }
+
+  .gr-status-pill::before {
+    content: "";
+    width: 0.48rem;
+    height: 0.48rem;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .gr-status--accepted {
+    color: var(--gr-green);
+    background: rgba(15, 107, 61, 0.09);
+  }
+
+  .gr-status--returned {
+    color: var(--gr-red);
+    background: rgba(178, 69, 60, 0.09);
+  }
+
+  .gr-status--uploaded {
+    color: var(--gr-blue);
+    background: rgba(35, 111, 145, 0.1);
+  }
+
+  .gr-status--pending {
+    color: var(--gr-gold);
+    background: rgba(185, 130, 28, 0.12);
+  }
+
+  .gr-status-list {
+    display: grid;
+    gap: 0.55rem;
+    margin: 0;
+  }
+
+  .gr-status-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    color: var(--gr-muted);
+    font-size: 0.9rem;
+  }
+
+  .gr-status-row dt,
+  .gr-status-row dd {
+    margin: 0;
+  }
+
+  .gr-status-row dt {
+    font-weight: 700;
+  }
+
+  .gr-status-row dd {
+    color: var(--gr-ink);
+    font-weight: 650;
+    text-align: right;
+  }
+
+  .gr-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .gr-meta-card {
+    min-height: 100%;
+    padding: 1.1rem;
+    border: 1px solid var(--gr-line);
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 10px 24px rgba(17, 59, 37, 0.045);
+  }
+
+  .gr-label {
+    margin-bottom: 0.45rem;
+    color: #587b66;
+    font-size: 0.76rem;
+    font-weight: 850;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .gr-value {
+    color: var(--gr-ink);
+    font-size: 1rem;
+    font-weight: 750;
+    line-height: 1.55;
+    word-break: break-word;
+  }
+
+  .gr-value--large {
+    font-size: clamp(1.45rem, 3vw, 2rem);
+    line-height: 1.1;
+  }
+
+  .gr-section-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .gr-section-title {
+    margin: 0;
+    color: var(--gr-ink);
+    font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+    font-weight: 850;
+    letter-spacing: -0.025em;
+  }
+
+  .gr-section-note {
+    margin: 0.35rem 0 0;
+    color: var(--gr-muted);
+    line-height: 1.65;
+  }
+
+  .gr-table-wrap {
+    overflow: hidden;
+    border: 1px solid var(--gr-line);
+    border-radius: 20px;
+    background: #ffffff;
+  }
+
+  .gr-table-scroll {
+    overflow-x: auto;
+  }
+
+  .gr-table {
+    width: 100%;
+    margin: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .gr-table th {
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid var(--gr-line);
+    background: linear-gradient(180deg, #eef8f2, #fbfdfc);
+    color: #164f31;
+    font-size: 0.84rem;
+    font-weight: 850;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  .gr-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #e7f0eb;
+    color: #18231d;
+    vertical-align: middle;
+  }
+
+  .gr-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .gr-table tbody tr:hover td {
+    background: #f8fcfa;
+  }
+
+  .gr-maker-card {
+    border-color: <%= @invoice_request.returned? ? "#efcbc7" : "#d8e8de" %>;
+  }
+
+  .gr-copy-box {
+    padding: 1rem;
+    border: 1px solid var(--gr-line);
+    border-radius: 18px;
+    background: #ffffff;
+    color: var(--gr-ink);
+    line-height: 1.65;
+    white-space: pre-wrap;
+  }
+
+  .gr-copy-box--spaced {
+    margin-bottom: 1rem;
+  }
+
+  .gr-review-meta {
+    margin-top: 0.8rem;
+    color: var(--gr-muted);
+    font-size: 0.9rem;
+  }
+
+  .gr-file-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+  }
+
+  .gr-file-link {
+    display: inline-flex;
+    min-width: 0;
+    max-width: 100%;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.72rem 0.95rem;
+    border: 1px solid #cae0d2;
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--gr-green);
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .gr-file-link:hover {
+    color: #0a5932;
+    border-color: #99c7a8;
+  }
+
+  .gr-file-name {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--gr-muted);
+    font-weight: 650;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .gr-upload-form {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .gr-upload-box {
+    padding: 1rem;
+    border: 1px dashed #a9cab5;
+    border-radius: 20px;
+    background: linear-gradient(180deg, #f8fcfa, #ffffff);
+  }
+
+  .gr-form-label {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--gr-ink);
+    font-weight: 850;
+  }
+
+  .gr-form-help {
+    margin: 0 0 0.85rem;
+    color: var(--gr-muted);
+    font-size: 0.92rem;
+  }
+
+  .gr-vendor-page .form-control {
+    border: 1px solid #cfe0d5;
+    border-radius: 14px;
+    color: var(--gr-ink);
+    min-height: 48px;
+  }
+
+  .gr-vendor-page textarea.form-control {
+    min-height: 118px;
+  }
+
+  .gr-vendor-page .form-control:focus {
+    border-color: #74b88d;
+    box-shadow: 0 0 0 0.22rem rgba(28, 155, 88, 0.13);
+  }
+
+  .gr-form-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .gr-form-field {
+    margin-bottom: 1rem;
+  }
+
+  .gr-submit {
+    min-height: 50px;
+    border-radius: 999px;
+    padding-inline: 1.35rem;
+  }
+
+  .gr-otp-page {
+    max-width: 900px;
+  }
+
+  .gr-otp-card {
+    display: grid;
+    grid-template-columns: minmax(250px, 0.86fr) minmax(300px, 1.14fr);
+  }
+
+  .gr-otp-side {
+    position: relative;
+    display: flex;
+    min-height: 330px;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 1.4rem;
+    padding: clamp(1.2rem, 3vw, 1.7rem);
+    background:
+      radial-gradient(circle at 86% 12%, rgba(216, 242, 226, 0.22), transparent 6rem),
+      radial-gradient(circle at top left, rgba(255, 255, 255, 0.24), transparent 17rem),
+      linear-gradient(145deg, #0f5f38, #174630);
+    color: #ffffff;
+  }
+
+  .gr-otp-side .gr-eyebrow {
+    color: #d8f2e2;
+  }
+
+  .gr-otp-side .gr-eyebrow::before {
+    background: #d8f2e2;
+    box-shadow: 0 0 0 0.35rem rgba(216, 242, 226, 0.13);
+  }
+
+  .gr-otp-title {
+    margin: 0;
+    font-size: clamp(1.7rem, 3.6vw, 2.35rem);
+    font-weight: 850;
+    letter-spacing: -0.04em;
+    line-height: 1.08;
+  }
+
+  .gr-otp-mark {
+    display: grid;
+    width: 108px;
+    height: 108px;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 32px;
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      0 18px 36px rgba(6, 38, 22, 0.2);
+    color: #ffffff;
+    font-size: 1.35rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+  }
+
+  .gr-otp-mini {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.58rem 0.82rem;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.86);
+    font-size: 0.82rem;
+    font-weight: 750;
+  }
+
+  .gr-otp-mini::before {
+    content: "";
+    width: 0.46rem;
+    height: 0.46rem;
+    border-radius: 50%;
+    background: #b9f3cc;
+  }
+
+  .gr-otp-form {
+    display: grid;
+    align-content: center;
+    padding: clamp(1.2rem, 3vw, 1.7rem);
+  }
+
+  .gr-otp-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .gr-otp-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .gr-otp-input {
+    min-height: 54px;
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: 0.25em;
+    text-align: center;
+  }
+
+  .gr-otp-input::placeholder {
+    color: #9aaea2;
+    letter-spacing: 0.08em;
+  }
+
+  .gr-secondary-action form {
+    margin: 0;
+  }
+
+  .gr-secondary-action {
+    margin-top: 0.75rem;
+  }
+
+  .gr-secondary-action .app-secondary-btn {
+    min-height: 50px;
+    border-radius: 999px;
+  }
+
+  @media (max-width: 900px) {
+    .gr-hero,
+    .gr-otp-card {
+      grid-template-columns: 1fr;
+    }
+
+    .gr-status-panel {
+      padding: 0.95rem;
+    }
+
+    .gr-meta-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .gr-otp-side {
+      min-height: auto;
+    }
+  }
+
+  @media (max-width: 680px) {
+    .gr-vendor-page {
+      gap: 0.75rem;
+      padding: 0.7rem;
+      border-radius: 24px;
+      box-shadow: 0 14px 32px rgba(22, 70, 43, 0.09);
+    }
+
+    .gr-card {
+      border-radius: 20px;
+    }
+
+    .gr-branding .doc-branding-shell {
+      border-radius: 20px;
+    }
+
+    .gr-card__inner {
+      padding: 0.92rem;
+    }
+
+    .gr-meta-card {
+      padding: 0.92rem;
+      border-radius: 18px;
+    }
+
+    .gr-section-head,
+    .gr-status-row,
+    .gr-otp-actions {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .gr-status-row {
+      gap: 0.15rem;
+    }
+
+    .gr-status-row dd {
+      text-align: left;
+    }
+
+    .gr-status-pill,
+    .gr-submit,
+    .gr-file-link,
+    .gr-vendor-page .app-secondary-btn,
+    .gr-vendor-page .app-form-submit {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .gr-table-wrap {
+      border: 0;
+      background: transparent;
+    }
+
+    .gr-table-scroll {
+      overflow: visible;
+    }
+
+    .gr-table,
+    .gr-table thead,
+    .gr-table tbody,
+    .gr-table tr,
+    .gr-table th,
+    .gr-table td {
+      display: block;
+      width: 100%;
+    }
+
+    .gr-table thead {
+      display: none;
+    }
+
+    .gr-table tbody {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .gr-table tr {
+      overflow: hidden;
+      border: 1px solid var(--gr-line);
+      border-radius: 18px;
+      background: #ffffff;
+      box-shadow: 0 8px 18px rgba(17, 59, 37, 0.05);
+    }
+
+    .gr-table td {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.78rem 0.9rem;
+      border-bottom: 1px solid #edf4f0;
+      text-align: right;
+    }
+
+    .gr-table td::before {
+      content: attr(data-label);
+      color: #5c7f68;
+      font-weight: 850;
+      text-align: left;
+    }
+
+    .gr-table td:last-child {
+      border-bottom: 0;
+    }
+
+    .gr-otp-facts {
+      grid-template-columns: 1fr;
+    }
+
+    .gr-otp-side,
+    .gr-otp-form {
+      padding: 1rem;
+    }
+
+    .gr-otp-side {
+      align-items: flex-start;
+      border-radius: 22px 22px 0 0;
+    }
+
+    .gr-otp-mark {
+      width: 78px;
+      height: 78px;
+      border-radius: 24px;
+      font-size: 1rem;
+    }
+
+    .gr-otp-title {
+      font-size: clamp(1.45rem, 8vw, 1.9rem);
+    }
+
+    .gr-otp-mini {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .gr-secondary-action form {
+      width: 100%;
+    }
+  }
+</style>
 
 <% if otp_verified %>
-  <div class="app-card" style="max-width: 1080px; margin: 0 auto 1.5rem; padding: 1.6rem;">
-    <div class="d-flex justify-content-between gap-3 flex-wrap align-items-start">
-      <div>
-        <h1 style="margin-bottom: 0.3rem;">Goods Receive Invoice Upload</h1>
-        <p class="text-muted mb-0">Neeche dikh rahe received goods ke against invoice upload karein. Ye information maker aur committee members ko dikh jayegi.</p>
-      </div>
-      <div class="app-detail-item" style="min-width: 240px; margin: 0;">
-        <div class="app-detail-label">Request Status</div>
-        <div class="app-detail-value"><%= @invoice_request.status.to_s.humanize %></div>
-        <div class="small text-muted mt-1">Requested at: <%= @invoice_request.requested_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
-        <div class="small text-muted mt-1">Uploaded at: <%= @invoice_request.invoice_uploaded_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
-        <div class="small text-muted mt-1">Returned at: <%= @invoice_request.returned_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
-        <div class="small text-muted mt-1">Accepted at: <%= @invoice_request.accepted_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="app-card" style="max-width: 1080px; margin: 0 auto 1.5rem; padding: 1.4rem;">
-    <div class="row g-3">
-      <div class="col-md-4">
-        <div class="app-detail-item h-100">
-          <div class="app-detail-label">Quotation</div>
-          <div class="app-detail-value"><%= @quotation_proposal.subject %></div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="app-detail-item h-100">
-          <div class="app-detail-label">Vendor</div>
-          <div class="app-detail-value"><%= @vendor_registration.display_name %></div>
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="app-detail-item h-100">
-          <div class="app-detail-label">Received Quantity Total</div>
-          <div class="app-detail-value"><%= number_with_precision(@invoice_request.received_quantity_total, precision: 2, strip_insignificant_zeros: true) %></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="app-card" style="max-width: 1080px; margin: 0 auto 1.5rem; padding: 1.4rem;">
-    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap" style="margin-bottom: 1rem;">
-      <div>
-        <h2 style="margin-bottom: 0.25rem;">Received Goods Summary</h2>
-        <p class="text-muted mb-0">Sirf is round me receive hue items yahan show ho rahe hain.</p>
-      </div>
-      <span class="badge border <%= @invoice_request.accepted? ? "bg-success bg-opacity-10 text-success" : @invoice_request.returned? ? "bg-danger bg-opacity-10 text-danger" : @invoice_request.uploaded? ? "bg-info bg-opacity-10 text-info" : "bg-warning bg-opacity-10 text-warning" %>">
-        <%= @invoice_request.accepted? ? "Invoice Accepted" : @invoice_request.returned? ? "Invoice Returned" : @invoice_request.uploaded? ? "Invoice Uploaded" : "Invoice Pending" %>
-      </span>
+  <div class="gr-vendor-page">
+    <div class="gr-branding">
+      <%= render "quotation_vendor_qrs/document_branding", vendor_name: vendor_display_name, stakeholder_category: @stakeholder_category %>
     </div>
 
-    <div class="app-table-wrap" style="overflow-x: auto;">
-      <table class="table app-table">
-        <thead>
-          <tr>
-            <th>S.No.</th>
-            <th>Item Name</th>
-            <th>Received Qty</th>
-            <th>Unit</th>
-            <th>Ordered Qty</th>
-            <th>Cumulative Received</th>
-          </tr>
-        </thead>
-        <tbody>
-          <% @invoice_request.snapshot_items.each_with_index do |item, index| %>
-            <tr>
-              <td><%= index + 1 %></td>
-              <td><strong><%= item[:item_name] %></strong></td>
-              <td><%= number_with_precision(item[:received_quantity], precision: 2, strip_insignificant_zeros: true) %></td>
-              <td><%= item[:unit_name].presence || "-" %></td>
-              <td><%= number_with_precision(item[:ordered_quantity], precision: 2, strip_insignificant_zeros: true) %></td>
-              <td><%= number_with_precision(item[:cumulative_received_quantity], precision: 2, strip_insignificant_zeros: true) %></td>
-            </tr>
-          <% end %>
-        </tbody>
-      </table>
-    </div>
-  </div>
+    <section class="gr-card">
+      <div class="gr-card__inner gr-hero">
+        <div class="gr-hero-copy">
+          <div class="gr-eyebrow">Goods Receive Portal</div>
+          <h1 class="gr-title">Invoice Upload</h1>
+          <p class="gr-subtitle">Neeche dikh rahe received goods ke against invoice upload karein. Ye information maker aur committee members ko clearly dikh jayegi.</p>
+        </div>
 
-  <% if @invoice_request.maker_review_remark.present? %>
-    <div class="app-card" style="max-width: 1080px; margin: 0 auto 1.5rem; padding: 1.4rem; border-color: <%= @invoice_request.returned? ? "#f1c4c4" : "#d8e6de" %>;">
-      <h2 style="margin-bottom: 0.8rem;">Maker Review</h2>
-      <div class="app-detail-item">
-        <div class="app-detail-label">Remark</div>
-        <div class="app-detail-value" style="white-space: pre-wrap;"><%= @invoice_request.maker_review_remark %></div>
+        <aside class="gr-status-panel" aria-label="Request status">
+          <span class="gr-status-pill gr-status--<%= status_key %>"><%= status_label %></span>
+          <dl class="gr-status-list">
+            <div class="gr-status-row">
+              <dt>Requested</dt>
+              <dd><%= @invoice_request.requested_at&.strftime("%d-%m-%Y %H:%M") || "-" %></dd>
+            </div>
+            <div class="gr-status-row">
+              <dt>Uploaded</dt>
+              <dd><%= @invoice_request.invoice_uploaded_at&.strftime("%d-%m-%Y %H:%M") || "-" %></dd>
+            </div>
+            <div class="gr-status-row">
+              <dt>Returned</dt>
+              <dd><%= @invoice_request.returned_at&.strftime("%d-%m-%Y %H:%M") || "-" %></dd>
+            </div>
+            <div class="gr-status-row">
+              <dt>Accepted</dt>
+              <dd><%= @invoice_request.accepted_at&.strftime("%d-%m-%Y %H:%M") || "-" %></dd>
+            </div>
+          </dl>
+        </aside>
       </div>
-      <div class="small text-muted mt-2">
-        Reviewed by: <strong><%= @invoice_request.maker_reviewed_by&.name.presence || "Maker" %></strong>
-        | Reviewed at: <strong><%= @invoice_request.maker_reviewed_at&.strftime("%d-%m-%Y %H:%M") || "-" %></strong>
-      </div>
-    </div>
-  <% end %>
+    </section>
 
-  <% if @invoice_request.accepted? || @invoice_request.uploaded? || @invoice_request.vendor_invoices.attached? %>
-    <div class="app-card" style="max-width: 1080px; margin: 0 auto; padding: 1.4rem;">
-      <h2 style="margin-bottom: 0.8rem;">Uploaded Invoices</h2>
-      <% if @invoice_request.vendor_remark.present? %>
-        <div class="app-detail-item" style="margin-bottom: 1rem;">
-          <div class="app-detail-label">Vendor Remark</div>
-          <div class="app-detail-value" style="white-space: pre-wrap;"><%= @invoice_request.vendor_remark %></div>
-        </div>
-      <% end %>
-      <div class="d-flex flex-wrap gap-2">
-        <% @invoice_request.vendor_invoices.each_with_index do |document, index| %>
-          <%= link_to rails_blob_path(document, disposition: "attachment"), class: "app-secondary-btn", style: "display: inline-flex; align-items: center; gap: .35rem;" do %>
-            <span><%= index.zero? ? "Invoice 1" : "Invoice #{index + 1}" %></span>
-            <span style="opacity: .75;"><%= document.filename.to_s %></span>
-          <% end %>
-        <% end %>
+    <section class="gr-meta-grid" aria-label="Invoice request summary">
+      <div class="gr-meta-card">
+        <div class="gr-label">Quotation</div>
+        <div class="gr-value"><%= @quotation_proposal.subject %></div>
       </div>
-    </div>
-  <% end %>
+      <div class="gr-meta-card">
+        <div class="gr-label">Vendor</div>
+        <div class="gr-value"><%= @vendor_registration.display_name %></div>
+      </div>
+      <div class="gr-meta-card">
+        <div class="gr-label">Received Quantity Total</div>
+        <div class="gr-value gr-value--large"><%= number_with_precision(@invoice_request.received_quantity_total, precision: 2, strip_insignificant_zeros: true) %></div>
+      </div>
+    </section>
 
-  <% if @invoice_request.awaiting_vendor_upload? %>
-    <div class="app-card" style="max-width: 1080px; margin: 0 auto; padding: 1.4rem;">
-      <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap" style="margin-bottom: 1rem;">
-        <div>
-          <h2 style="margin-bottom: 0.25rem;"><%= @invoice_request.returned? ? "Re-upload Invoice" : "Upload Invoice" %></h2>
-          <p class="text-muted mb-0"><%= @invoice_request.returned? ? "Maker ne invoice return kiya hai. OTP verify ke baad corrected invoice dubara upload karein." : "Invoice PDF ya image upload karein. Multiple files bhi attach kar sakte hain." %></p>
+    <section class="gr-card">
+      <div class="gr-card__inner">
+        <div class="gr-section-head">
+          <div>
+            <h2 class="gr-section-title">Received Goods Summary</h2>
+            <p class="gr-section-note">Sirf is round me receive hue items yahan show ho rahe hain.</p>
+          </div>
+          <span class="gr-status-pill gr-status--<%= status_key %>"><%= status_label %></span>
         </div>
-        <span class="badge border bg-light text-dark">Mobile: <%= @vendor_registration.mobile_no.presence || "-" %></span>
-      </div>
 
-      <%= form_with url: goods_receive_vendor_qr_path(@invoice_request.request_token, verified: 1), method: :patch, local: true, multipart: true do |form| %>
-        <div class="mb-3">
-          <label class="form-label" style="font-weight: 700;">Upload Invoice Documents</label>
-          <%= form.file_field :vendor_invoices, multiple: true, accept: ".pdf,image/*", name: "invoice_request[vendor_invoices][]", class: "form-control", required: true %>
+        <div class="gr-table-wrap">
+          <div class="gr-table-scroll">
+            <table class="gr-table">
+              <thead>
+                <tr>
+                  <th>S.No.</th>
+                  <th>Item Name</th>
+                  <th>Received Qty</th>
+                  <th>Unit</th>
+                  <th>Ordered Qty</th>
+                  <th>Cumulative Received</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% @invoice_request.snapshot_items.each_with_index do |item, index| %>
+                  <tr>
+                    <td data-label="S.No."><%= index + 1 %></td>
+                    <td data-label="Item Name"><strong><%= item[:item_name] %></strong></td>
+                    <td data-label="Received Qty"><%= number_with_precision(item[:received_quantity], precision: 2, strip_insignificant_zeros: true) %></td>
+                    <td data-label="Unit"><%= item[:unit_name].presence || "-" %></td>
+                    <td data-label="Ordered Qty"><%= number_with_precision(item[:ordered_quantity], precision: 2, strip_insignificant_zeros: true) %></td>
+                    <td data-label="Cumulative Received"><%= number_with_precision(item[:cumulative_received_quantity], precision: 2, strip_insignificant_zeros: true) %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
         </div>
-        <div class="mb-3">
-          <label class="form-label" style="font-weight: 700;">Remark (Optional)</label>
-          <%= form.text_area :vendor_remark, name: "invoice_request[vendor_remark]", rows: 4, class: "form-control", placeholder: "Add any invoice or delivery related note here." %>
-        </div>
-        <div class="d-flex justify-content-end">
-          <%= form.submit "Submit Invoice", class: "app-form-submit" %>
-        </div>
-      <% end %>
-    </div>
-  <% end %>
-<% else %>
-  <div class="app-card" style="max-width: 720px; margin: 0 auto; padding: 1.5rem;">
-    <h1 style="margin-bottom: 0.35rem;">Invoice Upload OTP Verification</h1>
-    <p class="text-muted" style="margin-bottom: 1.25rem;">Enter the OTP sent to your registered mobile number to open the invoice upload form.</p>
+      </div>
+    </section>
 
-    <div class="row g-3 mb-3">
-      <div class="col-md-6">
-        <div class="app-card" style="padding: 1rem;">
-          <div class="text-muted small mb-1">Mobile Number</div>
-          <strong><%= @vendor_registration.mobile_no.presence || "-" %></strong>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="app-card" style="padding: 1rem;">
-          <div class="text-muted small mb-1">Last OTP Sent At</div>
-          <strong><%= @quotation_vendor_dispatch.latest_active_otp&.sent_at&.strftime("%d-%m-%Y %H:%M") || "-" %></strong>
-        </div>
-      </div>
-    </div>
+    <% if @invoice_request.maker_review_remark.present? %>
+      <section class="gr-card gr-maker-card">
+        <div class="gr-card__inner">
+          <div class="gr-section-head">
+            <div>
+              <h2 class="gr-section-title">Maker Review</h2>
+              <p class="gr-section-note">Maker ka remark aur review details.</p>
+            </div>
+            <span class="gr-status-pill gr-status--<%= @invoice_request.returned? ? "returned" : status_key %>"><%= @invoice_request.returned? ? "Action Needed" : status_label %></span>
+          </div>
 
-    <%= form_with url: verify_goods_receive_vendor_qr_otp_path(@invoice_request.request_token), method: :post, local: true do |form| %>
-      <div class="mb-3">
-        <%= form.label :otp_code, "Enter OTP", class: "form-label", style: "font-weight: 700;" %>
-        <%= form.text_field :otp_code, maxlength: 6, required: true, class: "form-control" %>
-      </div>
-      <div class="d-flex gap-2 flex-wrap">
-        <%= form.submit "Verify OTP", class: "app-form-submit" %>
-      </div>
+          <div class="gr-copy-box"><%= @invoice_request.maker_review_remark %></div>
+          <div class="gr-review-meta">
+            Reviewed by: <strong><%= @invoice_request.maker_reviewed_by&.name.presence || "Maker" %></strong>
+            | Reviewed at: <strong><%= @invoice_request.maker_reviewed_at&.strftime("%d-%m-%Y %H:%M") || "-" %></strong>
+          </div>
+        </div>
+      </section>
     <% end %>
 
-    <div class="mt-2">
-      <%= button_to "Send New OTP", send_goods_receive_vendor_qr_otp_path(@invoice_request.request_token), method: :post, class: "app-secondary-btn" %>
+    <% if @invoice_request.accepted? || @invoice_request.uploaded? || @invoice_request.vendor_invoices.attached? %>
+      <section class="gr-card">
+        <div class="gr-card__inner">
+          <div class="gr-section-head">
+            <div>
+              <h2 class="gr-section-title">Uploaded Invoices</h2>
+              <p class="gr-section-note">Uploaded invoice files yahan se download kiye ja sakte hain.</p>
+            </div>
+          </div>
+
+          <% if @invoice_request.vendor_remark.present? %>
+            <div class="gr-copy-box gr-copy-box--spaced">
+              <div class="gr-label">Vendor Remark</div>
+              <%= @invoice_request.vendor_remark %>
+            </div>
+          <% end %>
+
+          <div class="gr-file-list">
+            <% @invoice_request.vendor_invoices.each_with_index do |document, index| %>
+              <%= link_to rails_blob_path(document, disposition: "attachment"), class: "gr-file-link" do %>
+                <span><%= index.zero? ? "Invoice 1" : "Invoice #{index + 1}" %></span>
+                <span class="gr-file-name"><%= document.filename.to_s %></span>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      </section>
+    <% end %>
+
+    <% if @invoice_request.awaiting_vendor_upload? %>
+      <section class="gr-card">
+        <div class="gr-card__inner">
+          <div class="gr-section-head">
+            <div>
+              <h2 class="gr-section-title"><%= upload_heading %></h2>
+              <p class="gr-section-note"><%= upload_note %></p>
+            </div>
+            <span class="gr-status-pill gr-status--pending">Mobile: <%= @vendor_registration.mobile_no.presence || "-" %></span>
+          </div>
+
+          <%= form_with url: goods_receive_vendor_qr_path(@invoice_request.request_token, verified: 1), method: :patch, local: true, multipart: true, html: { class: "gr-upload-form" } do |form| %>
+            <div class="gr-upload-box">
+              <label class="gr-form-label">Upload Invoice Documents</label>
+              <p class="gr-form-help">PDF, JPG, JPEG, PNG ya invoice image files select karein.</p>
+              <%= form.file_field :vendor_invoices, multiple: true, accept: ".pdf,image/*", name: "invoice_request[vendor_invoices][]", class: "form-control", required: true %>
+            </div>
+
+            <div>
+              <label class="gr-form-label">Remark (Optional)</label>
+              <%= form.text_area :vendor_remark, name: "invoice_request[vendor_remark]", rows: 4, class: "form-control", placeholder: "Add any invoice or delivery related note here." %>
+            </div>
+
+            <div class="gr-form-actions">
+              <%= form.submit "Submit Invoice", class: "app-form-submit gr-submit" %>
+            </div>
+          <% end %>
+        </div>
+      </section>
+    <% end %>
+  </div>
+<% else %>
+  <div class="gr-vendor-page gr-otp-page">
+    <div class="gr-branding">
+      <%= render "quotation_vendor_qrs/document_branding", vendor_name: vendor_display_name, stakeholder_category: @stakeholder_category %>
     </div>
+
+    <section class="gr-card gr-otp-card">
+      <div class="gr-otp-side">
+        <div>
+          <div class="gr-eyebrow">Secure Verification</div>
+          <h1 class="gr-otp-title">Invoice Upload OTP Verification</h1>
+        </div>
+        <div class="gr-otp-mark">OTP</div>
+        <div class="gr-otp-mini">Protected invoice access</div>
+      </div>
+
+      <div class="gr-otp-form">
+        <div class="gr-otp-facts">
+          <div class="gr-meta-card">
+            <div class="gr-label">Mobile Number</div>
+            <div class="gr-value"><%= @vendor_registration.mobile_no.presence || "-" %></div>
+          </div>
+          <div class="gr-meta-card">
+            <div class="gr-label">Last OTP Sent At</div>
+            <div class="gr-value"><%= @quotation_vendor_dispatch.latest_active_otp&.sent_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+          </div>
+        </div>
+
+        <%= form_with url: verify_goods_receive_vendor_qr_otp_path(@invoice_request.request_token), method: :post, local: true do |form| %>
+          <div class="gr-form-field">
+            <%= form.label :otp_code, "Enter OTP", class: "gr-form-label" %>
+            <%= form.text_field :otp_code, maxlength: 6, required: true, class: "form-control gr-otp-input", inputmode: "numeric", autocomplete: "one-time-code", placeholder: "------" %>
+          </div>
+
+          <div class="gr-otp-actions">
+            <%= form.submit "Verify OTP", class: "app-form-submit gr-submit" %>
+          </div>
+        <% end %>
+
+        <div class="gr-secondary-action">
+          <%= button_to "Send New OTP", send_goods_receive_vendor_qr_otp_path(@invoice_request.request_token), method: :post, class: "app-secondary-btn" %>
+        </div>
+      </div>
+    </section>
   </div>
 <% end %>

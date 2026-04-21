@@ -1,27 +1,42 @@
 <%
   vendor_name = local_assigns[:vendor_name]
+  stakeholder_category = local_assigns[:stakeholder_category] || @stakeholder_category
 %>
 
 <style>
   .doc-branding-shell {
-    padding: 1.4rem;
+    position: relative;
+    overflow: hidden;
+    padding: 1.15rem 1.25rem;
     border: 1px solid #d4e8df;
     margin: 0 auto 1rem;
     width: 100%;
     max-width: 100%;
-    border-radius: 16px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 251, 247, 0.98));
-    box-shadow: 0 10px 30px rgba(26, 58, 42, 0.08);
+    border-radius: 24px;
+    background:
+      radial-gradient(circle at top left, rgba(242, 177, 52, 0.14), transparent 26%),
+      radial-gradient(circle at bottom right, rgba(11, 74, 79, 0.1), transparent 24%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 250, 247, 0.98));
+    box-shadow: 0 16px 40px rgba(26, 58, 42, 0.08);
     box-sizing: border-box;
-    min-height: 112px;
+    min-height: 124px;
+  }
+
+  .doc-branding-shell::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.08), transparent 35%, rgba(255, 255, 255, 0.14));
+    pointer-events: none;
   }
 
   .doc-branding-header {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1.5rem;
-    min-height: 84px;
+    min-height: 92px;
     padding: 0;
     box-sizing: border-box;
   }
@@ -42,30 +57,48 @@
     justify-content: center;
     text-align: center;
     padding: 0 1rem;
-    min-width: 220px;
+    min-width: 240px;
   }
 
   .doc-branding-right {
     justify-content: flex-end;
   }
 
+  .doc-branding-vendor-wrap {
+    display: grid;
+    gap: 0.35rem;
+    padding: 0.9rem 1.25rem;
+    border: 1px solid rgba(212, 232, 223, 0.86);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.82);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  }
+
+  .doc-branding-eyebrow {
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #668578;
+  }
+
   .doc-branding-vendor {
-    font-size: 1.3rem;
+    font-size: clamp(1.1rem, 2vw, 1.45rem);
     font-weight: 700;
     color: #18382a;
-    line-height: 1.35;
+    line-height: 1.25;
     letter-spacing: 0.01em;
     text-transform: uppercase;
   }
 
   .doc-branding-left img {
-    max-height: 72px;
+    max-height: 76px;
     width: auto;
     object-fit: contain;
   }
 
   .doc-branding-right img {
-    max-height: 64px;
+    max-height: 68px;
     width: auto;
     object-fit: contain;
   }
@@ -77,7 +110,7 @@
 
     .doc-branding-header {
       flex-direction: column;
-      align-items: flex-start;
+      align-items: stretch;
       min-height: auto;
     }
 
@@ -85,9 +118,14 @@
     .doc-branding-center,
     .doc-branding-right {
       width: 100%;
-      justify-content: flex-start;
-      text-align: left;
+      justify-content: center;
+      text-align: center;
       padding: 0;
+    }
+
+    .doc-branding-vendor-wrap {
+      width: 100%;
+      padding: 0.85rem 1rem;
     }
   }
 
@@ -106,11 +144,14 @@
     </div>
     <div class="doc-branding-center">
       <% if vendor_name.present? %>
-        <div class="doc-branding-vendor"><%= vendor_name %></div>
+        <div class="doc-branding-vendor-wrap">
+          <div class="doc-branding-eyebrow">Vendor Workspace</div>
+          <div class="doc-branding-vendor"><%= vendor_name %></div>
+        </div>
       <% end %>
     </div>
     <div class="doc-branding-right">
-      <%= image_tag "asset-logo.png", alt: "ASA Logo" %>
+      <%= image_tag stakeholder_logo_source(stakeholder_category, fallback: "asset-logo.png"), alt: stakeholder_logo_alt(stakeholder_category, fallback: "Stakeholder Logo") %>
     </div>
   </div>
 </div>

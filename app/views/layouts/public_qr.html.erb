@@ -15,17 +15,54 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    .public-qr-page {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(242, 177, 52, 0.08), transparent 22%),
+        linear-gradient(180deg, #f6fbf7 0%, #eef7f1 100%);
+    }
+
+    .public-qr-main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 2rem 1rem 3rem;
+    }
+
+    .public-qr-flash-stack {
+      display: grid;
+      gap: 0.85rem;
+      margin-bottom: 0.95rem;
+    }
+
+    .public-qr-flash {
+      margin: 0;
+      padding: 0.9rem 1.1rem;
+      border-radius: 18px;
+      border-width: 1px;
+      box-shadow: 0 12px 28px rgba(26, 58, 42, 0.06);
+    }
+
+    @media (max-width: 768px) {
+      .public-qr-main {
+        padding: 1rem 0.85rem 2rem;
+      }
+    }
+  </style>
 </head>
 
-<body style="background: linear-gradient(180deg, #f6fbf7 0%, #eef7f1 100%); min-height: 100vh;">
-  <main style="max-width: 1180px; margin: 0 auto; padding: 2rem 1rem 3rem;">
-    <% if notice %>
-      <div class="alert alert-success"><%= notice %></div>
-    <% end %>
+<body class="public-qr-page">
+  <main class="public-qr-main">
+    <div class="public-qr-flash-stack">
+      <% if notice %>
+        <div class="alert alert-success public-qr-flash"><%= notice %></div>
+      <% end %>
 
-    <% if alert %>
-      <div class="alert alert-danger"><%= alert %></div>
-    <% end %>
+      <% if alert %>
+        <div class="alert alert-danger public-qr-flash"><%= alert %></div>
+      <% end %>
+    </div>
 
     <%= yield %>
   </main>

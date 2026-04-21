@@ -95,7 +95,7 @@ class GoodsReceiveVendorQrsController < ApplicationController
         quotation_proposal_vendor: [
           :vendor_registration,
           :purchase_order_authorized_by,
-          { quotation_proposal: [:theme] },
+          { quotation_proposal: { theme: :stakeholder_category } },
           { vendor_items: { quotation_proposal_item: :unit } },
           { vendor_dispatch: :quotation_vendor_otps }
         ]
@@ -111,6 +111,7 @@ class GoodsReceiveVendorQrsController < ApplicationController
     @quotation_proposal_vendor = @invoice_request.quotation_proposal_vendor
     @quotation_proposal = @quotation_proposal_vendor.quotation_proposal
     @vendor_registration = @quotation_proposal_vendor.vendor_registration
+    @stakeholder_category = @quotation_proposal.theme&.stakeholder_category
     @quotation_vendor_dispatch = @quotation_proposal_vendor.dispatch_record!
   end
 

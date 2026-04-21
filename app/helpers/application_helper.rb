@@ -49,19 +49,33 @@ module ApplicationHelper
     end
   end
 
-  def navbar_logo_source
-    stakeholder = current_user&.employee_master&.stakeholder_category
+  def current_stakeholder_category
+    current_employee_master&.stakeholder_category
+  end
 
-    if stakeholder&.logo_file&.attached?
-      url_for(stakeholder.logo_file)
+  def stakeholder_logo_source(stakeholder = current_stakeholder_category, fallback: "asset-logoq.svg")
+    return fallback if stakeholder.blank?
+
+    if stakeholder.respond_to?(:logo_file) && stakeholder.logo_file.attached?
+      rails_blob_path(stakeholder.logo_file, only_path: true)
+    elsif stakeholder.respond_to?(:logo_url) && stakeholder.logo_url.present?
+      stakeholder.logo_url
     else
-      "asset-logoq.svg"
+      fallback
     end
   end
 
+  def navbar_logo_source
+    stakeholder_logo_source
+  end
+
+  def stakeholder_logo_alt(stakeholder = current_stakeholder_category, fallback: "Company Logo")
+    stakeholder_name = stakeholder&.name.to_s.strip
+    stakeholder_name.present? ? "#{stakeholder_name} Logo" : fallback
+  end
+
   def navbar_logo_alt
-    stakeholder_name = current_user&.employee_master&.stakeholder_category&.name
-    stakeholder_name.present? ? "#{stakeholder_name} Logo" : "Company Logo"
+    stakeholder_logo_alt
   end
 
   def can_view_menu?(identifier)

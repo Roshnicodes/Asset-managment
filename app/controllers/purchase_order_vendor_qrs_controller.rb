@@ -25,7 +25,7 @@ class PurchaseOrderVendorQrsController < ApplicationController
     end
 
     @quotation_vendor_dispatch.update!(last_opened_at: Time.current, access_granted: false, access_expires_at: nil)
-    @quotation_vendor_dispatch.send_new_otp!
+    @quotation_vendor_dispatch.send_new_otp!(purpose: :purchase_order)
     redirect_to purchase_order_vendor_qr_path(params[:token], skip_auto_otp: 1), notice: "A new OTP has been sent to the vendor mobile number."
   rescue QuotationVendorDispatch::SmsDeliveryError => error
     redirect_to purchase_order_vendor_qr_path(params[:token], skip_auto_otp: 1), alert: error.message
@@ -107,7 +107,7 @@ class PurchaseOrderVendorQrsController < ApplicationController
     token = params[:token].to_s.strip
     @quotation_proposal_vendor = QuotationProposalVendor
       .includes(
-        { quotation_proposal: [:theme, { quotation_proposal_items: :unit }] },
+        { quotation_proposal: [{ theme: :stakeholder_category }, { quotation_proposal_items: :unit }] },
         :vendor_registration,
         :purchase_order_authorized_by,
         { vendor_items: { quotation_proposal_item: :unit } },
@@ -149,7 +149,7 @@ class PurchaseOrderVendorQrsController < ApplicationController
     latest_otp = @quotation_vendor_dispatch.latest_active_otp
     return if latest_otp.present? && latest_otp.expires_at.present? && latest_otp.expires_at.future?
 
-    @quotation_vendor_dispatch.send_new_otp!
+    @quotation_vendor_dispatch.send_new_otp!(purpose: :purchase_order)
     flash.now[:notice] = "An OTP has been sent to the vendor mobile number."
   rescue QuotationVendorDispatch::SmsDeliveryError => error
     flash.now[:alert] = error.message

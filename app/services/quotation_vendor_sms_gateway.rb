@@ -13,9 +13,13 @@ class QuotationVendorSmsGateway
   DEFAULT_RESPONSE_FORMAT = "json".freeze
   DEFAULT_LINK_TEMPLATE_ID = "1707177502703834106".freeze
   DEFAULT_OTP_TEMPLATE_ID = "1707177503375571501".freeze
+  DEFAULT_PURCHASE_ORDER_LINK_TEMPLATE_ID = "1707177641235050439".freeze
+  DEFAULT_PURCHASE_ORDER_OTP_TEMPLATE_ID = "1707177641235050439".freeze
   DEFAULT_BASE_URL = "http://127.0.0.1:3000".freeze
   ASA_LINK_TEMPLATE_ID = "1707177512006405172".freeze
   ASA_OTP_TEMPLATE_ID = "1707177528687356932".freeze
+  ASA_PURCHASE_ORDER_LINK_TEMPLATE_ID = "1707177632997145777".freeze
+  ASA_PURCHASE_ORDER_OTP_TEMPLATE_ID = "1707177633788078441".freeze
   ASA_SENDER = "ACTFSA".freeze
 
   def self.send_vendor_link(dispatch)
@@ -23,25 +27,18 @@ class QuotationVendorSmsGateway
     send_sms(
       mobile_no: dispatch.mobile_no,
       message: vendor_link_message(dispatch, config: config),
-      template_id: config[:link_template_id],
+      template_id: config[:quotation_link_template_id],
       config: config
     )
   end
 
-  def self.send_vendor_otp(dispatch, otp_record)
+  def self.send_vendor_otp(dispatch, otp_record, purpose: :quotation)
     config = sms_config_for(dispatch)
-    vendor_name = sms_vendor_name(dispatch, config: config)
-    message =
-      if config[:profile] == :asa
-        "Dear #{vendor_name}, #{otp_record.otp_code} is your one-time password to proceed with the quotation process. Please do not share this OTP. - ACTION FOR SOCIAL ADVANCEMENT"
-      else
-        "Dear #{vendor_name}, #{otp_record.otp_code} is your one-time password to proceed further with the quotation process. Please do not share this OTP. - PLOUGHMAN AGRO PRIVATE LIMITED"
-      end
 
     send_sms(
       mobile_no: dispatch.mobile_no,
-      message: message,
-      template_id: config[:otp_template_id],
+      message: vendor_otp_message(dispatch, otp_record, config: config, purpose: purpose),
+      template_id: otp_template_id_for(config, purpose: purpose),
       config: config
     )
   end
@@ -51,7 +48,7 @@ class QuotationVendorSmsGateway
     send_sms(
       mobile_no: dispatch.mobile_no,
       message: purchase_order_link_message(dispatch, proposal_vendor, config: config),
-      template_id: config[:link_template_id],
+      template_id: config[:purchase_order_link_template_id],
       config: config
     )
   end
@@ -61,7 +58,7 @@ class QuotationVendorSmsGateway
     send_sms(
       mobile_no: dispatch.mobile_no,
       message: goods_receive_invoice_link_message(dispatch, invoice_request, config: config),
-      template_id: config[:link_template_id],
+      template_id: config[:quotation_link_template_id],
       config: config
     )
   end
@@ -71,7 +68,7 @@ class QuotationVendorSmsGateway
     send_sms(
       mobile_no: dispatch.mobile_no,
       message: goods_receive_invoice_return_link_message(dispatch, invoice_request, config: config),
-      template_id: config[:link_template_id],
+      template_id: config[:quotation_link_template_id],
       config: config
     )
   end
@@ -81,7 +78,7 @@ class QuotationVendorSmsGateway
     send_sms(
       mobile_no: dispatch.mobile_no,
       message: payment_advice_message(dispatch, invoice_request, config: config),
-      template_id: config[:link_template_id],
+      template_id: config[:quotation_link_template_id],
       config: config
     )
   end
@@ -110,15 +107,28 @@ class QuotationVendorSmsGateway
     end
   end
 
+  def self.vendor_otp_message(dispatch, otp_record, config:, purpose:)
+    vendor_name = sms_vendor_name(dispatch, config: config)
+
+    if purpose.to_sym == :purchase_order
+      brand_name = config[:profile] == :asa ? "Action for social advancement" : "Ploughman Agro Private Limited (PAPL)"
+      "Dear #{vendor_name}, #{otp_record.otp_code} is your one-time password to proceed with the purchase order process. Please do not share this OTP. - #{brand_name}"
+    elsif config[:profile] == :asa
+      "Dear #{vendor_name}, #{otp_record.otp_code} is your one-time password to proceed with the quotation process. Please do not share this OTP. - ACTION FOR SOCIAL ADVANCEMENT"
+    else
+      "Dear #{vendor_name}, #{otp_record.otp_code} is your one-time password to proceed further with the quotation process. Please do not share this OTP. - PLOUGHMAN AGRO PRIVATE LIMITED"
+    end
+  end
+
   def self.purchase_order_link_message(dispatch, proposal_vendor, config:)
     vendor_name = sms_vendor_name(dispatch, config: config)
-    quotation_reference = quotation_reference_for(dispatch)
+    purchase_order_reference = purchase_order_reference_for(dispatch, proposal_vendor)
     link = purchase_order_link_for(proposal_vendor.po_token)
 
     if config[:profile] == :asa
-      "Dear #{vendor_name}, We kindly request you to accept the Quotation Proposal: #{quotation_reference}. Please submit the quotation through link: #{link}. - ACTION FOR SOCIAL ADVANCEMENT"
+      "Dear #{vendor_name}, We kindly request you to accept the purchase order: #{purchase_order_reference}.through link: #{link}. - Action for social advancement (ASA)"
     else
-      "Dear #{vendor_name}, PLOUGHMAN AGRO PRIVATE LIMITED requests you to review and accept the quotation proposal #{quotation_reference}. Please submit the quotation using the following link: #{link}."
+      "Dear #{vendor_name}, We kindly request you to accept the purchase order: #{purchase_order_reference}.through link: #{link}. - Ploughman Agro Private Limited"
     end
   end
 
@@ -190,15 +200,16 @@ class QuotationVendorSmsGateway
 
     if retry_with_legacy_sender?(delivery_result, config)
       fallback_config = default_sms_config.merge(profile: :asa_legacy_fallback)
+      fallback_template_id = fallback_template_id_for(config, template_id)
       Rails.logger.warn(
-        "QuotationVendorSmsGateway retrying with legacy profile sender=#{fallback_config[:sender]} for mobile=#{normalize_mobile_no(mobile_no)} template_id=#{fallback_config[:otp_template_id]}"
+        "QuotationVendorSmsGateway retrying with legacy profile sender=#{fallback_config[:sender]} for mobile=#{normalize_mobile_no(mobile_no)} template_id=#{fallback_template_id}"
       )
       delivery_result =
         begin
           perform_sms_request(
             mobile_no: mobile_no,
             message: legacy_fallback_message(message, config),
-            template_id: fallback_template_id_for(config),
+            template_id: fallback_template_id,
             config: fallback_config
           )
         rescue StandardError => error
@@ -301,6 +312,27 @@ class QuotationVendorSmsGateway
     dispatch.quotation_proposal_id
   end
 
+  def self.purchase_order_reference_for(dispatch, proposal_vendor)
+    quotation_proposal = proposal_vendor.try(:quotation_proposal) || dispatch.try(:quotation_proposal)
+    proposal_id = quotation_proposal.try(:id).presence || dispatch.try(:quotation_proposal_id).presence
+    return quotation_reference_for(dispatch) if proposal_id.blank?
+
+    stakeholder_code = [
+      quotation_proposal&.theme&.stakeholder_category&.name,
+      dispatch.try(:stakeholder_category)&.name,
+      dispatch.try(:vendor_registration)&.stakeholder_category&.name,
+      proposal_vendor.try(:vendor_registration)&.stakeholder_category&.name
+    ].compact.map { |value| value.to_s.strip }.find(&:present?).presence || "ASA"
+
+    "#{stakeholder_code}/PO/#{proposal_id}/#{purchase_order_year_label}"
+  end
+
+  def self.purchase_order_year_label
+    current_year = Date.current.year
+    next_year_short = (current_year + 1).to_s.last(2)
+    "#{current_year}-#{next_year_short}"
+  end
+
   def self.normalize_mobile_no(mobile_no)
     digits = mobile_no.to_s.gsub(/\D+/, "")
     digits = digits.delete_prefix("0") if digits.length == 11 && digits.start_with?("0")
@@ -357,8 +389,10 @@ class QuotationVendorSmsGateway
       country: ENV.fetch("ASA_SMS_COUNTRY", ENV.fetch("SMS_COUNTRY", DEFAULT_COUNTRY)),
       unicode: ENV.fetch("ASA_SMS_UNICODE", ENV.fetch("SMS_UNICODE", DEFAULT_UNICODE)),
       pe_id: ENV.fetch("ASA_SMS_DLT_PE_ID", ENV.fetch("SMS_DLT_PE_ID", "")),
-      link_template_id: ENV.fetch("ASA_SMS_LINK_DLT_TEMPLATE_ID", ASA_LINK_TEMPLATE_ID),
-      otp_template_id: ENV.fetch("ASA_SMS_OTP_DLT_TEMPLATE_ID", ASA_OTP_TEMPLATE_ID)
+      quotation_link_template_id: ENV.fetch("ASA_SMS_LINK_DLT_TEMPLATE_ID", ASA_LINK_TEMPLATE_ID),
+      quotation_otp_template_id: ENV.fetch("ASA_SMS_OTP_DLT_TEMPLATE_ID", ASA_OTP_TEMPLATE_ID),
+      purchase_order_link_template_id: ENV.fetch("ASA_SMS_PURCHASE_ORDER_LINK_DLT_TEMPLATE_ID", ASA_PURCHASE_ORDER_LINK_TEMPLATE_ID),
+      purchase_order_otp_template_id: ENV.fetch("ASA_SMS_PURCHASE_ORDER_OTP_DLT_TEMPLATE_ID", ASA_PURCHASE_ORDER_OTP_TEMPLATE_ID)
     }
   end
 
@@ -372,21 +406,35 @@ class QuotationVendorSmsGateway
       country: ENV.fetch("SMS_COUNTRY", DEFAULT_COUNTRY),
       unicode: ENV.fetch("SMS_UNICODE", DEFAULT_UNICODE),
       pe_id: ENV.fetch("SMS_DLT_PE_ID", ""),
-      link_template_id: ENV.fetch("SMS_LINK_DLT_TEMPLATE_ID", DEFAULT_LINK_TEMPLATE_ID),
-      otp_template_id: ENV.fetch("SMS_OTP_DLT_TEMPLATE_ID", DEFAULT_OTP_TEMPLATE_ID)
+      quotation_link_template_id: ENV.fetch("SMS_LINK_DLT_TEMPLATE_ID", DEFAULT_LINK_TEMPLATE_ID),
+      quotation_otp_template_id: ENV.fetch("SMS_OTP_DLT_TEMPLATE_ID", DEFAULT_OTP_TEMPLATE_ID),
+      purchase_order_link_template_id: ENV.fetch("SMS_PURCHASE_ORDER_LINK_DLT_TEMPLATE_ID", DEFAULT_PURCHASE_ORDER_LINK_TEMPLATE_ID),
+      purchase_order_otp_template_id: ENV.fetch("SMS_PURCHASE_ORDER_OTP_DLT_TEMPLATE_ID", DEFAULT_PURCHASE_ORDER_OTP_TEMPLATE_ID)
     }
   end
 
-  def self.fallback_template_id_for(config)
-    return default_sms_config[:link_template_id] if config[:link_template_id] == ASA_LINK_TEMPLATE_ID
+  def self.otp_template_id_for(config, purpose:)
+    purpose.to_sym == :purchase_order ? config[:purchase_order_otp_template_id] : config[:quotation_otp_template_id]
+  end
 
-    default_sms_config[:otp_template_id]
+  def self.fallback_template_id_for(config, template_id)
+    if template_id.to_s == config[:quotation_link_template_id].to_s
+      default_sms_config[:quotation_link_template_id]
+    elsif template_id.to_s == config[:purchase_order_link_template_id].to_s
+      default_sms_config[:purchase_order_link_template_id]
+    elsif template_id.to_s == config[:purchase_order_otp_template_id].to_s
+      default_sms_config[:purchase_order_otp_template_id]
+    else
+      default_sms_config[:quotation_otp_template_id]
+    end
   end
 
   def self.legacy_fallback_message(message, config)
     return message unless config[:profile] == :asa
 
     message
+      .gsub("Action for social advancement (ASA)", "Ploughman Agro Private Limited")
+      .gsub("Action for social advancement", "Ploughman Agro Private Limited (PAPL)")
       .gsub("proceed with the quotation process", "proceed further with the quotation process")
       .gsub("ACTION FOR SOCIAL ADVANCEMENT", "PLOUGHMAN AGRO PRIVATE LIMITED")
       .gsub("We kindly request you to accept the Quotation Proposal", "PLOUGHMAN AGRO PRIVATE LIMITED requests you to review and accept the quotation proposal")
@@ -402,9 +450,9 @@ class QuotationVendorSmsGateway
 
   def self.stakeholder_name_for(dispatch)
     [
+      dispatch.quotation_proposal&.theme&.stakeholder_category&.name,
       dispatch.stakeholder_category&.name,
       dispatch.vendor_registration&.stakeholder_category&.name,
-      dispatch.quotation_proposal&.theme&.stakeholder_category&.name
     ].compact.map { |value| value.to_s.strip }.find(&:present?).to_s.upcase
   end
 

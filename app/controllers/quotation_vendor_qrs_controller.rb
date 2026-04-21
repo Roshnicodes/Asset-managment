@@ -114,7 +114,7 @@ class QuotationVendorQrsController < ApplicationController
     token = params[:token].to_s.strip
     @quotation_proposal_vendor = QuotationProposalVendor
       .includes(
-        quotation_proposal: [:theme, { quotation_proposal_items: :unit }],
+        quotation_proposal: [{ theme: :stakeholder_category }, { quotation_proposal_items: :unit }],
         vendor_registration: [],
         vendor_items: { quotation_proposal_item: :unit },
         vendor_dispatch: :quotation_vendor_otps

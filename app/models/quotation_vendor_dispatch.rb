@@ -22,7 +22,7 @@ class QuotationVendorDispatch < ApplicationRecord
     quotation_vendor_otps.where(active: true).order(created_at: :desc).first
   end
 
-  def send_new_otp!
+  def send_new_otp!(purpose: :quotation)
     quotation_vendor_otps.where(active: true).update_all(active: false)
 
     otp = format("%06d", rand(0..999_999))
@@ -36,7 +36,7 @@ class QuotationVendorDispatch < ApplicationRecord
       expires_at: Time.current + OTP_WINDOW,
       active: true
     )
-    delivered = QuotationVendorSmsGateway.send_vendor_otp(self, otp_record)
+    delivered = QuotationVendorSmsGateway.send_vendor_otp(self, otp_record, purpose: purpose)
     unless delivered
       otp_record.update!(active: false)
       raise SmsDeliveryError, "OTP SMS could not be delivered. Please verify the SMS sender/header and template configuration."

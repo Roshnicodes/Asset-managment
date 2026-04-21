@@ -763,7 +763,7 @@ class QuotationProposalsController < ApplicationController
   private
 
   def set_quotation_proposal
-    @quotation_proposal = QuotationProposal.find(params[:id])
+    @quotation_proposal = QuotationProposal.includes(theme: :stakeholder_category).find(params[:id])
   end
 
   def handle_quotation_not_found
@@ -982,7 +982,8 @@ class QuotationProposalsController < ApplicationController
     current_year = Date.current.year
     next_year_short = (current_year + 1).to_s.last(2)
     @purchase_order_year_label = "#{current_year}-#{next_year_short}"
-    @purchase_order_number = "ASA/PO/#{@quotation_proposal.id}/#{@purchase_order_year_label}"
+    stakeholder_code = @quotation_proposal.theme&.stakeholder_category&.name.to_s.strip.presence || "ASA"
+    @purchase_order_number = "#{stakeholder_code}/PO/#{@quotation_proposal.id}/#{@purchase_order_year_label}"
     @authorized_by_options = EmployeeMaster.order(:name)
     @purchase_order_authorized_by_locked = @selected_proposal_vendor.purchase_order_sent_at.present? && @selected_proposal_vendor.purchase_order_authorized_by.present?
     @authorized_by =
