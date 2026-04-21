@@ -517,7 +517,7 @@ class QuotationProposalsController < ApplicationController
       )
 
       dispatch = @invoice_request.quotation_proposal_vendor.dispatch_record!
-      sms_sent = QuotationVendorSmsGateway.send_goods_receive_invoice_link(dispatch, @invoice_request)
+      sms_sent = QuotationVendorSmsGateway.send_goods_receive_invoice_return_link(dispatch, @invoice_request)
       NotificationDispatcher.notify_goods_receive_invoice_returned(@quotation_proposal, @invoice_request.quotation_proposal_vendor, @invoice_request)
 
       redirect_to quotation_proposal_path(@quotation_proposal), notice: "Vendor invoice returned successfully.#{sms_sent ? " Re-upload link has been sent to vendor." : " SMS could not be delivered to vendor."}"

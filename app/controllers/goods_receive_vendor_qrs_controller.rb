@@ -12,7 +12,7 @@ class GoodsReceiveVendorQrsController < ApplicationController
 
   def send_otp
     @quotation_vendor_dispatch.update!(last_opened_at: Time.current, access_granted: false, access_expires_at: nil)
-    @quotation_vendor_dispatch.send_new_otp!
+    @quotation_vendor_dispatch.send_new_otp!(purpose: :invoice)
     redirect_to goods_receive_vendor_qr_path(params[:token], skip_auto_otp: 1), notice: "A new OTP has been sent to the vendor mobile number."
   rescue QuotationVendorDispatch::SmsDeliveryError => error
     redirect_to goods_receive_vendor_qr_path(params[:token], skip_auto_otp: 1), alert: error.message
@@ -36,7 +36,7 @@ class GoodsReceiveVendorQrsController < ApplicationController
     end
 
     if @invoice_request.accepted?
-      redirect_to goods_receive_vendor_qr_path(params[:token], verified: 1), alert: "This invoice has already been accepted by ASA."
+      redirect_to goods_receive_vendor_qr_path(params[:token], verified: 1), alert: "This invoice has already been accepted."
       return
     end
 
@@ -122,7 +122,7 @@ class GoodsReceiveVendorQrsController < ApplicationController
     latest_otp = @quotation_vendor_dispatch.latest_active_otp
     return if latest_otp.present? && latest_otp.expires_at.present? && latest_otp.expires_at.future?
 
-    @quotation_vendor_dispatch.send_new_otp!
+    @quotation_vendor_dispatch.send_new_otp!(purpose: :invoice)
     flash.now[:notice] = "An OTP has been sent to the vendor mobile number."
   rescue QuotationVendorDispatch::SmsDeliveryError => error
     flash.now[:alert] = error.message

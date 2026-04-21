@@ -135,6 +135,109 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     assert_equal "Dear G.TECH, 458921 is your one-time password to proceed with the purchase order process. Please do not share this OTP. - Ploughman Agro Private Limited (PAPL)", params["message"]
   end
 
+  test "send_goods_receive_invoice_link uses PAPL invoice template for PGPL stakeholders" do
+    captured_uri = nil
+    response = Net::HTTPOK.new("1.1", "200", "OK")
+
+    def response.body
+      '{"Status":"Success","Code":"000","Description":"Sent"}'
+    end
+
+    quotation_proposal = OpenStruct.new(
+      id: 102,
+      theme: OpenStruct.new(
+        stakeholder_category: OpenStruct.new(name: "PGPL")
+      )
+    )
+    dispatch = OpenStruct.new(
+      vendor_name: "SUNIL CHOUBEY",
+      mobile_no: "9876543210",
+      quotation_proposal: quotation_proposal
+    )
+    proposal_vendor = OpenStruct.new(quotation_proposal: quotation_proposal)
+    invoice_request = OpenStruct.new(
+      request_token: "qO7wmv7tqEEV",
+      quotation_proposal_vendor: proposal_vendor
+    )
+
+    QuotationVendorSmsGateway.stub(:base_url, "https://asa360.asaindia.org") do
+      Net::HTTP.stub(:get_response, ->(uri) { captured_uri = uri; response }) do
+        assert QuotationVendorSmsGateway.send_goods_receive_invoice_link(dispatch, invoice_request)
+      end
+    end
+
+    params = URI.decode_www_form(captured_uri.query).to_h
+    expected_year_label = "#{Date.current.year}-#{(Date.current.year + 1).to_s.last(2)}"
+
+    assert_equal "9876543210", params["mobiles"]
+    assert_equal "PLOAPL", params["sender"]
+    assert_equal "1707177648937573645", params["DLT_TE_ID"]
+    assert_equal "Dear SUNIL CHOUBEY, We kindly request you to upload the invoice for the purchase order: PGPL/PO/102/#{expected_year_label}.through link: https://asa360.asaindia.org/gr/qO7wmv7tqEEV. - Ploughman Agro Private Limited (PAPL)", params["message"]
+  end
+
+  test "send_goods_receive_invoice_return_link uses PAPL rejected invoice template for PGPL stakeholders" do
+    captured_uri = nil
+    response = Net::HTTPOK.new("1.1", "200", "OK")
+
+    def response.body
+      '{"Status":"Success","Code":"000","Description":"Sent"}'
+    end
+
+    quotation_proposal = OpenStruct.new(
+      id: 102,
+      theme: OpenStruct.new(
+        stakeholder_category: OpenStruct.new(name: "PGPL")
+      )
+    )
+    dispatch = OpenStruct.new(
+      vendor_name: "Sunil Choubey",
+      mobile_no: "9876543210",
+      quotation_proposal: quotation_proposal
+    )
+    proposal_vendor = OpenStruct.new(quotation_proposal: quotation_proposal)
+    invoice_request = OpenStruct.new(
+      request_token: "qO7wmv7tqEEV",
+      quotation_proposal_vendor: proposal_vendor
+    )
+
+    QuotationVendorSmsGateway.stub(:base_url, "https://asa360.asaindia.org") do
+      Net::HTTP.stub(:get_response, ->(uri) { captured_uri = uri; response }) do
+        assert QuotationVendorSmsGateway.send_goods_receive_invoice_return_link(dispatch, invoice_request)
+      end
+    end
+
+    params = URI.decode_www_form(captured_uri.query).to_h
+    expected_year_label = "#{Date.current.year}-#{(Date.current.year + 1).to_s.last(2)}"
+
+    assert_equal "9876543210", params["mobiles"]
+    assert_equal "PLOAPL", params["sender"]
+    assert_equal "1707177650435445886", params["DLT_TE_ID"]
+    assert_equal "Dear Sunil Choubey, Your invoice has been rejected. Please upload a revised invoice for PO: PGPL/PO/102/#{expected_year_label} using the link below: https://asa360.asaindia.org/gr/qO7wmv7tqEEV. - Ploughman Agro Private Limited (PAPL)", params["message"]
+  end
+
+  test "send_vendor_otp uses PAPL invoice otp template and content" do
+    captured_uri = nil
+    response = Net::HTTPOK.new("1.1", "200", "OK")
+
+    def response.body
+      '{"Status":"Success","Code":"000","Description":"Sent"}'
+    end
+
+    dispatch = OpenStruct.new(vendor_name: "G.TECH", mobile_no: "9876543210")
+    otp_record = OpenStruct.new(otp_code: "458921")
+
+    Net::HTTP.stub(:get_response, ->(uri) { captured_uri = uri; response }) do
+      assert QuotationVendorSmsGateway.send_vendor_otp(dispatch, otp_record, purpose: :invoice)
+    end
+
+    params = URI.decode_www_form(captured_uri.query).to_h
+
+    assert_equal "9876543210", params["mobiles"]
+    assert_equal "PLOAPL", params["sender"]
+    assert_equal "1707177675366996869", params["DLT_TE_ID"]
+    assert_equal "Dear G.TECH, 458921 is your one-time password to proceed with the invoice for purchase order process. Please do not share this OTP. - Ploughman Agro Private Limited (PAPL)", params["message"]
+  end
+
   test "send_vendor_link includes pe id when configured" do
     captured_uri = nil
     response = Net::HTTPOK.new("1.1", "200", "OK")
@@ -278,6 +381,114 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     assert_equal "ACTFSA", params["sender"]
     assert_equal "1707177633788078441", params["DLT_TE_ID"]
     assert_equal "Dear G.TECH, 458921 is your one-time password to proceed with the purchase order process. Please do not share this OTP. - Action for social advancement", params["message"]
+  end
+
+  test "send_goods_receive_invoice_link uses ASA invoice template and content for ASA stakeholders" do
+    captured_uri = nil
+    response = Net::HTTPOK.new("1.1", "200", "OK")
+
+    def response.body
+      '{"Status":"Success","Code":"000","Description":"Sent"}'
+    end
+
+    quotation_proposal = OpenStruct.new(
+      id: 102,
+      theme: OpenStruct.new(
+        stakeholder_category: OpenStruct.new(name: "ASA")
+      )
+    )
+    dispatch = AsaDispatchStub.new(
+      vendor_name: "Sunil Choubey",
+      mobile_no: "9876543210",
+      stakeholder_category: OpenStruct.new(name: "ASA"),
+      quotation_proposal: quotation_proposal
+    )
+    proposal_vendor = OpenStruct.new(quotation_proposal: quotation_proposal)
+    invoice_request = OpenStruct.new(
+      request_token: "qO7wmv7tqEEV",
+      quotation_proposal_vendor: proposal_vendor
+    )
+
+    QuotationVendorSmsGateway.stub(:base_url, "https://asa360.asaindia.org") do
+      Net::HTTP.stub(:get_response, ->(uri) { captured_uri = uri; response }) do
+        assert QuotationVendorSmsGateway.send_goods_receive_invoice_link(dispatch, invoice_request)
+      end
+    end
+
+    params = URI.decode_www_form(captured_uri.query).to_h
+    expected_year_label = "#{Date.current.year}-#{(Date.current.year + 1).to_s.last(2)}"
+
+    assert_equal "3230666f72736131353261", params["authkey"]
+    assert_equal "ACTFSA", params["sender"]
+    assert_equal "1707177674942135728", params["DLT_TE_ID"]
+    assert_equal "Dear SUNIL CHOUBEY, We kindly request you to upload the invoice for the purchase order: ASA/PO/102/#{expected_year_label}.through link: https://asa360.asaindia.org/gr/qO7wmv7tqEEV. - Action For Social Advancement(ASA)", params["message"]
+  end
+
+  test "send_goods_receive_invoice_return_link uses ASA rejected invoice template and content for ASA stakeholders" do
+    captured_uri = nil
+    response = Net::HTTPOK.new("1.1", "200", "OK")
+
+    def response.body
+      '{"Status":"Success","Code":"000","Description":"Sent"}'
+    end
+
+    quotation_proposal = OpenStruct.new(
+      id: 102,
+      theme: OpenStruct.new(
+        stakeholder_category: OpenStruct.new(name: "ASA")
+      )
+    )
+    dispatch = AsaDispatchStub.new(
+      vendor_name: "Sunil Choubey",
+      mobile_no: "9876543210",
+      stakeholder_category: OpenStruct.new(name: "ASA"),
+      quotation_proposal: quotation_proposal
+    )
+    proposal_vendor = OpenStruct.new(quotation_proposal: quotation_proposal)
+    invoice_request = OpenStruct.new(
+      request_token: "qO7wmv7tqEEV",
+      quotation_proposal_vendor: proposal_vendor
+    )
+
+    QuotationVendorSmsGateway.stub(:base_url, "https://asa360.asaindia.org") do
+      Net::HTTP.stub(:get_response, ->(uri) { captured_uri = uri; response }) do
+        assert QuotationVendorSmsGateway.send_goods_receive_invoice_return_link(dispatch, invoice_request)
+      end
+    end
+
+    params = URI.decode_www_form(captured_uri.query).to_h
+    expected_year_label = "#{Date.current.year}-#{(Date.current.year + 1).to_s.last(2)}"
+
+    assert_equal "3230666f72736131353261", params["authkey"]
+    assert_equal "ACTFSA", params["sender"]
+    assert_equal "1707177674947419559", params["DLT_TE_ID"]
+    assert_equal "Dear SUNIL CHOUBEY, Your invoice has been rejected. Please upload a revised invoice for PO: ASA/PO/102/#{expected_year_label} using the link below:https://asa360.asaindia.org/gr/qO7wmv7tqEEV.-Action For Social Advancement (ASA)", params["message"]
+  end
+
+  test "send_vendor_otp uses ASA invoice otp template and content for ASA stakeholders" do
+    captured_uri = nil
+    response = Net::HTTPOK.new("1.1", "200", "OK")
+
+    def response.body
+      '{"Status":"Success","Code":"000","Description":"Sent"}'
+    end
+
+    dispatch = AsaDispatchStub.new(
+      vendor_name: "G.TECH",
+      mobile_no: "9876543210",
+      stakeholder_category: OpenStruct.new(name: "ASA")
+    )
+    otp_record = OpenStruct.new(otp_code: "458921")
+
+    Net::HTTP.stub(:get_response, ->(uri) { captured_uri = uri; response }) do
+      assert QuotationVendorSmsGateway.send_vendor_otp(dispatch, otp_record, purpose: :invoice)
+    end
+
+    params = URI.decode_www_form(captured_uri.query).to_h
+
+    assert_equal "ACTFSA", params["sender"]
+    assert_equal "1707177675358503792", params["DLT_TE_ID"]
+    assert_equal "Dear G.TECH, 458921 is your one-time password to proceed with the invoice for purchase order process. Please do not share this OTP. - Action for social advancement", params["message"]
   end
 
   test "send_vendor_link uses ASA default authkey, sender, template, and content for ASA stakeholders" do

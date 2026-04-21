@@ -15,11 +15,17 @@ class QuotationVendorSmsGateway
   DEFAULT_OTP_TEMPLATE_ID = "1707177503375571501".freeze
   DEFAULT_PURCHASE_ORDER_LINK_TEMPLATE_ID = "1707177641235050439".freeze
   DEFAULT_PURCHASE_ORDER_OTP_TEMPLATE_ID = "1707177641235050439".freeze
+  DEFAULT_INVOICE_LINK_TEMPLATE_ID = "1707177648937573645".freeze
+  DEFAULT_INVOICE_RETURN_LINK_TEMPLATE_ID = "1707177650435445886".freeze
+  DEFAULT_INVOICE_OTP_TEMPLATE_ID = "1707177675366996869".freeze
   DEFAULT_BASE_URL = "http://127.0.0.1:3000".freeze
   ASA_LINK_TEMPLATE_ID = "1707177512006405172".freeze
   ASA_OTP_TEMPLATE_ID = "1707177528687356932".freeze
   ASA_PURCHASE_ORDER_LINK_TEMPLATE_ID = "1707177632997145777".freeze
   ASA_PURCHASE_ORDER_OTP_TEMPLATE_ID = "1707177633788078441".freeze
+  ASA_INVOICE_LINK_TEMPLATE_ID = "1707177674942135728".freeze
+  ASA_INVOICE_RETURN_LINK_TEMPLATE_ID = "1707177674947419559".freeze
+  ASA_INVOICE_OTP_TEMPLATE_ID = "1707177675358503792".freeze
   ASA_SENDER = "ACTFSA".freeze
 
   def self.send_vendor_link(dispatch)
@@ -58,7 +64,7 @@ class QuotationVendorSmsGateway
     send_sms(
       mobile_no: dispatch.mobile_no,
       message: goods_receive_invoice_link_message(dispatch, invoice_request, config: config),
-      template_id: config[:quotation_link_template_id],
+      template_id: config[:invoice_link_template_id],
       config: config
     )
   end
@@ -68,7 +74,7 @@ class QuotationVendorSmsGateway
     send_sms(
       mobile_no: dispatch.mobile_no,
       message: goods_receive_invoice_return_link_message(dispatch, invoice_request, config: config),
-      template_id: config[:quotation_link_template_id],
+      template_id: config[:invoice_return_link_template_id],
       config: config
     )
   end
@@ -113,6 +119,9 @@ class QuotationVendorSmsGateway
     if purpose.to_sym == :purchase_order
       brand_name = config[:profile] == :asa ? "Action for social advancement" : "Ploughman Agro Private Limited (PAPL)"
       "Dear #{vendor_name}, #{otp_record.otp_code} is your one-time password to proceed with the purchase order process. Please do not share this OTP. - #{brand_name}"
+    elsif purpose.to_sym == :invoice
+      brand_name = config[:profile] == :asa ? "Action for social advancement" : "Ploughman Agro Private Limited (PAPL)"
+      "Dear #{vendor_name}, #{otp_record.otp_code} is your one-time password to proceed with the invoice for purchase order process. Please do not share this OTP. - #{brand_name}"
     elsif config[:profile] == :asa
       "Dear #{vendor_name}, #{otp_record.otp_code} is your one-time password to proceed with the quotation process. Please do not share this OTP. - ACTION FOR SOCIAL ADVANCEMENT"
     else
@@ -134,25 +143,25 @@ class QuotationVendorSmsGateway
 
   def self.goods_receive_invoice_link_message(dispatch, invoice_request, config:)
     vendor_name = sms_vendor_name(dispatch, config: config)
-    quotation_reference = quotation_reference_for(dispatch)
+    purchase_order_reference = purchase_order_reference_for(dispatch, invoice_request.quotation_proposal_vendor)
     link = goods_receive_invoice_link_for(invoice_request.request_token)
 
     if config[:profile] == :asa
-      "Dear #{vendor_name}, We kindly request you to accept the Quotation Proposal: #{quotation_reference}. Please submit the quotation through link: #{link}. - ACTION FOR SOCIAL ADVANCEMENT"
+      "Dear #{vendor_name}, We kindly request you to upload the invoice for the purchase order: #{purchase_order_reference}.through link: #{link}. - Action For Social Advancement(ASA)"
     else
-      "Dear #{vendor_name}, PLOUGHMAN AGRO PRIVATE LIMITED requests you to review and accept the quotation proposal #{quotation_reference}. Please submit the quotation using the following link: #{link}."
+      "Dear #{vendor_name}, We kindly request you to upload the invoice for the purchase order: #{purchase_order_reference}.through link: #{link}. - Ploughman Agro Private Limited (PAPL)"
     end
   end
 
   def self.goods_receive_invoice_return_link_message(dispatch, invoice_request, config:)
     vendor_name = sms_vendor_name(dispatch, config: config)
-    quotation_reference = quotation_reference_for(dispatch)
+    purchase_order_reference = purchase_order_reference_for(dispatch, invoice_request.quotation_proposal_vendor)
     link = goods_receive_invoice_link_for(invoice_request.request_token)
 
     if config[:profile] == :asa
-      "Dear #{vendor_name}, Invoice for quotation #{quotation_reference} has been returned. Please re-upload the corrected invoice through link: #{link}. - ACTION FOR SOCIAL ADVANCEMENT"
+      "Dear #{vendor_name}, Your invoice has been rejected. Please upload a revised invoice for PO: #{purchase_order_reference} using the link below:#{link}.-Action For Social Advancement (ASA)"
     else
-      "Dear #{vendor_name}, invoice for quotation #{quotation_reference} has been returned. Please re-upload the corrected invoice using this link: #{link}."
+      "Dear #{vendor_name}, Your invoice has been rejected. Please upload a revised invoice for PO: #{purchase_order_reference} using the link below: #{link}. - Ploughman Agro Private Limited (PAPL)"
     end
   end
 
@@ -392,7 +401,10 @@ class QuotationVendorSmsGateway
       quotation_link_template_id: ENV.fetch("ASA_SMS_LINK_DLT_TEMPLATE_ID", ASA_LINK_TEMPLATE_ID),
       quotation_otp_template_id: ENV.fetch("ASA_SMS_OTP_DLT_TEMPLATE_ID", ASA_OTP_TEMPLATE_ID),
       purchase_order_link_template_id: ENV.fetch("ASA_SMS_PURCHASE_ORDER_LINK_DLT_TEMPLATE_ID", ASA_PURCHASE_ORDER_LINK_TEMPLATE_ID),
-      purchase_order_otp_template_id: ENV.fetch("ASA_SMS_PURCHASE_ORDER_OTP_DLT_TEMPLATE_ID", ASA_PURCHASE_ORDER_OTP_TEMPLATE_ID)
+      purchase_order_otp_template_id: ENV.fetch("ASA_SMS_PURCHASE_ORDER_OTP_DLT_TEMPLATE_ID", ASA_PURCHASE_ORDER_OTP_TEMPLATE_ID),
+      invoice_link_template_id: ENV.fetch("ASA_SMS_INVOICE_LINK_DLT_TEMPLATE_ID", ASA_INVOICE_LINK_TEMPLATE_ID),
+      invoice_return_link_template_id: ENV.fetch("ASA_SMS_INVOICE_RETURN_LINK_DLT_TEMPLATE_ID", ASA_INVOICE_RETURN_LINK_TEMPLATE_ID),
+      invoice_otp_template_id: ENV.fetch("ASA_SMS_INVOICE_OTP_DLT_TEMPLATE_ID", ASA_INVOICE_OTP_TEMPLATE_ID)
     }
   end
 
@@ -409,12 +421,22 @@ class QuotationVendorSmsGateway
       quotation_link_template_id: ENV.fetch("SMS_LINK_DLT_TEMPLATE_ID", DEFAULT_LINK_TEMPLATE_ID),
       quotation_otp_template_id: ENV.fetch("SMS_OTP_DLT_TEMPLATE_ID", DEFAULT_OTP_TEMPLATE_ID),
       purchase_order_link_template_id: ENV.fetch("SMS_PURCHASE_ORDER_LINK_DLT_TEMPLATE_ID", DEFAULT_PURCHASE_ORDER_LINK_TEMPLATE_ID),
-      purchase_order_otp_template_id: ENV.fetch("SMS_PURCHASE_ORDER_OTP_DLT_TEMPLATE_ID", DEFAULT_PURCHASE_ORDER_OTP_TEMPLATE_ID)
+      purchase_order_otp_template_id: ENV.fetch("SMS_PURCHASE_ORDER_OTP_DLT_TEMPLATE_ID", DEFAULT_PURCHASE_ORDER_OTP_TEMPLATE_ID),
+      invoice_link_template_id: ENV.fetch("SMS_INVOICE_LINK_DLT_TEMPLATE_ID", DEFAULT_INVOICE_LINK_TEMPLATE_ID),
+      invoice_return_link_template_id: ENV.fetch("SMS_INVOICE_RETURN_LINK_DLT_TEMPLATE_ID", DEFAULT_INVOICE_RETURN_LINK_TEMPLATE_ID),
+      invoice_otp_template_id: ENV.fetch("SMS_INVOICE_OTP_DLT_TEMPLATE_ID", DEFAULT_INVOICE_OTP_TEMPLATE_ID)
     }
   end
 
   def self.otp_template_id_for(config, purpose:)
-    purpose.to_sym == :purchase_order ? config[:purchase_order_otp_template_id] : config[:quotation_otp_template_id]
+    case purpose.to_sym
+    when :purchase_order
+      config[:purchase_order_otp_template_id]
+    when :invoice
+      config[:invoice_otp_template_id]
+    else
+      config[:quotation_otp_template_id]
+    end
   end
 
   def self.fallback_template_id_for(config, template_id)
@@ -424,6 +446,12 @@ class QuotationVendorSmsGateway
       default_sms_config[:purchase_order_link_template_id]
     elsif template_id.to_s == config[:purchase_order_otp_template_id].to_s
       default_sms_config[:purchase_order_otp_template_id]
+    elsif template_id.to_s == config[:invoice_link_template_id].to_s
+      default_sms_config[:invoice_link_template_id]
+    elsif template_id.to_s == config[:invoice_return_link_template_id].to_s
+      default_sms_config[:invoice_return_link_template_id]
+    elsif template_id.to_s == config[:invoice_otp_template_id].to_s
+      default_sms_config[:invoice_otp_template_id]
     else
       default_sms_config[:quotation_otp_template_id]
     end
@@ -433,6 +461,10 @@ class QuotationVendorSmsGateway
     return message unless config[:profile] == :asa
 
     message
+      .gsub("Action For Social Advancement(ASA)", "Ploughman Agro Private Limited (PAPL)")
+      .gsub("Action For Social Advancement (ASA)", "Ploughman Agro Private Limited (PAPL)")
+      .gsub(" using the link below:", " using the link below: ")
+      .gsub(".-Ploughman Agro Private Limited (PAPL)", ". - Ploughman Agro Private Limited (PAPL)")
       .gsub("Action for social advancement (ASA)", "Ploughman Agro Private Limited")
       .gsub("Action for social advancement", "Ploughman Agro Private Limited (PAPL)")
       .gsub("proceed with the quotation process", "proceed further with the quotation process")
