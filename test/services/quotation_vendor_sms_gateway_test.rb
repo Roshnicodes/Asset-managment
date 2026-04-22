@@ -108,7 +108,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
 
     assert_equal "9876543210", params["mobiles"]
     assert_equal "PLOAPL", params["sender"]
-    assert_equal "1707177641235050439", params["DLT_TE_ID"]
+    assert_equal "1707177641694704075", params["DLT_TE_ID"]
     assert_equal "Dear SUNIL CHOUBEY, We kindly request you to accept the purchase order: PLOAPL/PO/123/#{expected_year_label}.through link: https://asa360.asaindia.org/p/qO7wmv7tqEEV. - Ploughman Agro Private Limited", params["message"]
   end
 

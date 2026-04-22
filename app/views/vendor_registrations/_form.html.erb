@@ -364,6 +364,7 @@
       <% vendor_registration.document_masters_for_form(@document_masters).each do |document_master| %>
         <% attachment_name = document_master.attachment_name %>
         <% attachment = vendor_registration.document_attachment_for(document_master) %>
+        <% attachment_saved = attachment&.attached? && attachment.attachment&.persisted? && attachment.blob&.persisted? %>
         <% wrap_attributes = [] %>
         <% wrap_attributes << 'data-aadhar-upload-wrap="true"' if attachment_name == "aadhar_document" %>
         <% wrap_attributes << 'data-proprietor-only-document="true"' if attachment_name == "aadhar_document" %>
@@ -378,20 +379,20 @@
                   accept: ".pdf,image/*",
                   required: (
                     if attachment_name == "aadhar_document"
-                      vendor_registration.firm_type.to_s.strip.casecmp("proprietor").zero? && !attachment&.attached?
+                      vendor_registration.firm_type.to_s.strip.casecmp("proprietor").zero? && !attachment_saved
                     elsif attachment_name == "msme_certificate"
-                      vendor_registration.msme? && !attachment&.attached?
+                      vendor_registration.msme? && !attachment_saved
                     else
-                      document_master.mandatory? && !attachment&.attached?
+                      document_master.mandatory? && !attachment_saved
                     end
                   ),
                   data: (
                     if attachment_name == "aadhar_document"
-                      { aadhar_upload: true, validation_label: document_master.name, document_input: true, has_attachment: attachment&.attached? }
+                      { aadhar_upload: true, validation_label: document_master.name, document_input: true, has_attachment: attachment_saved }
                     elsif attachment_name == "msme_certificate"
-                      { msme_certificate: true, validation_label: document_master.name, document_input: true, has_attachment: attachment&.attached? }
+                      { msme_certificate: true, validation_label: document_master.name, document_input: true, has_attachment: attachment_saved }
                     else
-                      { validation_label: document_master.name, document_input: true, mandatory_document: document_master.mandatory?, has_attachment: attachment&.attached?, msme_only_document: document_master.msme_only? }
+                      { validation_label: document_master.name, document_input: true, mandatory_document: document_master.mandatory?, has_attachment: attachment_saved, msme_only_document: document_master.msme_only? }
                     end
                   ) %>
             <% field_errors.call(attachment_name.to_sym).each do |message| %>
@@ -403,8 +404,8 @@
             <%= file_field_tag "vendor_registration[document_uploads][#{document_master.id}]",
                   accept: ".pdf,image/*",
                   id: input_id,
-                  required: document_master.mandatory? && !attachment&.attached?,
-                  data: { validation_label: document_master.name, document_input: true, mandatory_document: document_master.mandatory?, msme_only_document: document_master.msme_only?, has_attachment: attachment&.attached? } %>
+                  required: document_master.mandatory? && !attachment_saved,
+                  data: { validation_label: document_master.name, document_input: true, mandatory_document: document_master.mandatory?, msme_only_document: document_master.msme_only?, has_attachment: attachment_saved } %>
           <% end %>
           <div class="app-form-error app-form-error-client" data-field-error="true"></div>
           <p class="app-section-note" style="margin-top: 0.35rem;">
@@ -416,7 +417,7 @@
           <% if attachment_name == "msme_certificate" %>
             <p class="app-section-note">MSME status Yes hone par certificate upload required hoga.</p>
           <% end %>
-          <% if attachment&.attached? %>
+          <% if attachment_saved %>
             <p class="app-section-note" style="margin-top: 0.5rem;">
               Current file:
               <%= link_to attachment.filename.to_s, rails_blob_path(attachment, disposition: "attachment"), target: "_blank", rel: "noopener" %>

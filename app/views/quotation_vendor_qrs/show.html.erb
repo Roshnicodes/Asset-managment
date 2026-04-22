@@ -12,23 +12,49 @@
 
 <style>
   .vendor-quote-workspace {
-    padding: clamp(1rem, 2vw, 1.65rem);
+    position: relative;
+    isolation: isolate;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: clamp(1rem, 2vw, 1.35rem);
+    border: 1px solid #d7e5de;
+    border-radius: 32px;
     background:
-      radial-gradient(circle at top right, rgba(242, 177, 52, 0.12), transparent 24%),
-      radial-gradient(circle at bottom left, rgba(11, 74, 79, 0.08), transparent 26%),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 250, 246, 0.98));
+      radial-gradient(circle at top right, rgba(242, 177, 52, 0.08), transparent 22%),
+      radial-gradient(circle at bottom left, rgba(11, 74, 79, 0.06), transparent 24%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(245, 250, 247, 0.96));
+    box-shadow:
+      0 24px 58px rgba(20, 56, 43, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    overflow: hidden;
+  }
+
+  .vendor-quote-workspace,
+  .vendor-quote-workspace * {
+    box-sizing: border-box;
   }
 
   .vendor-quote-shell {
     display: grid;
-    gap: 1.35rem;
+    gap: 1.15rem;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    min-width: 0;
+  }
+
+  .vendor-quote-shell > * {
+    min-width: 0;
   }
 
   .vendor-quote-card {
+    width: 100%;
     padding: clamp(1rem, 2vw, 1.45rem);
     border-radius: 24px;
     background: rgba(255, 255, 255, 0.9);
     box-shadow: 0 16px 36px rgba(26, 58, 42, 0.07);
+    overflow: hidden;
   }
 
   .vendor-quote-card--hero {
@@ -71,6 +97,7 @@
   }
 
   .vendor-quote-hero-copy {
+    min-width: 0;
     max-width: 760px;
   }
 
@@ -92,6 +119,7 @@
     display: grid;
     justify-items: end;
     gap: 0.85rem;
+    min-width: 0;
   }
 
   .vendor-quote-hero-status {
@@ -141,6 +169,7 @@
 
   .vendor-quote-summary > .app-detail-item,
   .vendor-quote-summary > .app-form-field {
+    min-width: 0;
     height: 100%;
     padding: 1rem 1.05rem;
     border: 1px solid #d8e7df;
@@ -291,6 +320,7 @@
   }
 
   .vendor-quote-actioncopy {
+    min-width: 0;
     max-width: 520px;
   }
 
@@ -312,6 +342,7 @@
     align-items: center;
     gap: 0.8rem;
     flex-wrap: wrap;
+    min-width: 0;
   }
 
   .vendor-quote-actionbuttons .app-form-submit,
@@ -329,36 +360,182 @@
   .vendor-quote-otp-shell {
     display: grid;
     gap: 1.25rem;
-    max-width: 860px;
+    width: 100%;
+    max-width: 900px;
     margin: 2rem auto 0;
+    padding: clamp(1rem, 2vw, 1.25rem);
+    border: 1px solid #d7e5de;
+    border-radius: 30px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(245, 250, 247, 0.96));
+    box-shadow: 0 20px 46px rgba(20, 56, 43, 0.08);
   }
 
   .vendor-quote-otp-card {
-    padding: clamp(1rem, 2vw, 1.6rem);
-  }
-
-  .vendor-quote-otp-grid {
     display: grid;
-    grid-template-columns: 1.1fr 0.9fr;
-    gap: 1rem;
-  }
-
-  .vendor-quote-otp-panel {
-    height: 100%;
-    padding: 1rem;
+    grid-template-columns: minmax(250px, 0.86fr) minmax(300px, 1.14fr);
+    overflow: hidden;
     border: 1px solid #d8e7df;
-    border-radius: 20px;
+    border-radius: 26px;
     background: #fff;
+    box-shadow: 0 12px 30px rgba(17, 59, 37, 0.06);
   }
 
-  .vendor-quote-otp-panel .app-detail-grid {
+  .vendor-quote-otp-side {
+    position: relative;
+    display: flex;
+    min-height: 330px;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 1.35rem;
+    padding: clamp(1.2rem, 3vw, 1.7rem);
+    background:
+      radial-gradient(circle at 86% 12%, rgba(216, 242, 226, 0.22), transparent 6rem),
+      radial-gradient(circle at top left, rgba(255, 255, 255, 0.24), transparent 17rem),
+      linear-gradient(145deg, #0f5f38, #174630);
+    color: #fff;
+  }
+
+  .vendor-quote-otp-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: #d8f2e2;
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+  }
+
+  .vendor-quote-otp-eyebrow::before {
+    content: "";
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 50%;
+    background: #d8f2e2;
+    box-shadow: 0 0 0 0.35rem rgba(216, 242, 226, 0.13);
+  }
+
+  .vendor-quote-otp-title {
+    margin: 0.55rem 0 0;
+    font-size: clamp(1.7rem, 3.6vw, 2.35rem);
+    font-weight: 850;
+    letter-spacing: -0.04em;
+    line-height: 1.08;
+  }
+
+  .vendor-quote-otp-copy {
+    margin: 0.75rem 0 0;
+    color: rgba(255, 255, 255, 0.84);
+    line-height: 1.7;
+  }
+
+  .vendor-quote-otp-mark {
+    display: grid;
+    width: 108px;
+    height: 108px;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 32px;
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      0 18px 36px rgba(6, 38, 22, 0.2);
+    color: #ffffff;
+    font-size: 1.35rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+  }
+
+  .vendor-quote-otp-mini {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.58rem 0.82rem;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.86);
+    font-size: 0.82rem;
+    font-weight: 750;
+  }
+
+  .vendor-quote-otp-mini::before {
+    content: "";
+    width: 0.46rem;
+    height: 0.46rem;
+    border-radius: 50%;
+    background: #b9f3cc;
+  }
+
+  .vendor-quote-otp-form {
+    display: grid;
+    align-content: center;
+    padding: clamp(1.2rem, 3vw, 1.7rem);
+    background: linear-gradient(180deg, #ffffff, #fbfdfc);
+  }
+
+  .vendor-quote-otp-facts {
+    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1rem;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .vendor-quote-otp-fact {
+    min-width: 0;
+    padding: 1rem;
+    border: 1px solid #dbe8e1;
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 252, 249, 0.98));
+    box-shadow: none;
+  }
+
+  .vendor-quote-otp-field label {
+    margin-bottom: 0.45rem;
+    color: #18382a;
+    font-weight: 800;
+  }
+
+  .vendor-quote-otp-input {
+    min-height: 54px;
+    border-radius: 16px;
+    font-size: 1.2rem;
+    font-weight: 800;
+    letter-spacing: 0.25em;
+    text-align: center;
+  }
+
+  .vendor-quote-otp-input::placeholder {
+    color: #9aaea2;
+    letter-spacing: 0.08em;
+  }
+
+  .vendor-quote-otp-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 0.85rem;
+  }
+
+  .vendor-quote-otp-submit,
+  .vendor-quote-otp-resend {
+    min-height: 50px;
+    border-radius: 999px;
+  }
+
+  .vendor-quote-otp-resend-wrap {
+    margin-top: 0.75rem;
+  }
+
+  .vendor-quote-otp-resend-wrap form {
+    margin: 0;
   }
 
   @media (max-width: 900px) {
     .vendor-quote-workspace {
-      padding: 0.95rem;
+      padding: 0.9rem;
       border-radius: 22px;
     }
 
@@ -383,8 +560,8 @@
     }
 
     .vendor-quote-total-grid,
-    .vendor-quote-otp-grid,
-    .vendor-quote-otp-panel .app-detail-grid {
+    .vendor-quote-otp-card,
+    .vendor-quote-otp-facts {
       grid-template-columns: 1fr;
     }
 
@@ -458,6 +635,11 @@
       grid-template-columns: 1fr;
     }
 
+    .vendor-quote-otp-shell {
+      padding: 0.9rem;
+      border-radius: 24px;
+    }
+
     .vendor-quote-card,
     .vendor-quote-table-shell,
     .vendor-quote-inset,
@@ -474,6 +656,42 @@
       gap: 0.35rem;
       padding: 0.8rem 0.9rem;
     }
+
+    .vendor-quote-otp-side,
+    .vendor-quote-otp-form {
+      padding: 1rem;
+    }
+
+    .vendor-quote-otp-side {
+      min-height: auto;
+      align-items: flex-start;
+      border-radius: 22px 22px 0 0;
+    }
+
+    .vendor-quote-otp-mark {
+      width: 78px;
+      height: 78px;
+      border-radius: 24px;
+      font-size: 1rem;
+    }
+
+    .vendor-quote-otp-title {
+      font-size: clamp(1.45rem, 8vw, 1.9rem);
+    }
+
+    .vendor-quote-otp-mini,
+    .vendor-quote-otp-actions,
+    .vendor-quote-otp-resend-wrap form,
+    .vendor-quote-otp-submit,
+    .vendor-quote-otp-resend {
+      width: 100%;
+    }
+
+    .vendor-quote-otp-mini,
+    .vendor-quote-otp-submit,
+    .vendor-quote-otp-resend {
+      justify-content: center;
+    }
   }
 </style>
 
@@ -486,7 +704,7 @@
   </script>
 
   <%= form_with model: @quotation_proposal_vendor, url: quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token, direct_access: ("1" if direct_access_mode), verified: ("1" if direct_access_mode)), method: :patch, local: true, data: { vendor_quote_calc: true } do |form| %>
-    <div class="app-form-card app-form-card-wide vendor-quote-workspace">
+    <div class="vendor-quote-workspace">
       <div class="vendor-quote-shell">
         <%= render "document_branding", vendor_name: (@vendor_registration.firm_name.presence || @vendor_registration.display_name), stakeholder_category: @stakeholder_category %>
 
@@ -685,50 +903,47 @@
     </div>
   <% end %>
 <% else %>
-  <div class="app-form-card app-form-card-wide vendor-quote-otp-shell">
+  <div class="vendor-quote-otp-shell">
     <%= render "document_branding", vendor_name: (@vendor_registration.firm_name.presence || @vendor_registration.display_name), stakeholder_category: @stakeholder_category %>
 
-    <div class="app-detail-card vendor-quote-otp-card">
-      <div class="app-page-header vendor-quote-section-head">
+    <section class="vendor-quote-otp-card">
+      <div class="vendor-quote-otp-side">
         <div>
-          <h2 style="margin-bottom: 0.25rem;">Vendor OTP Verification</h2>
-          <p class="app-section-note mb-0">Enter the OTP sent to your registered mobile number to open the quotation form.</p>
+          <div class="vendor-quote-otp-eyebrow">Secure Verification</div>
+          <h1 class="vendor-quote-otp-title">Vendor Quotation OTP Verification</h1>
+          <p class="vendor-quote-otp-copy">Enter the OTP sent to your registered mobile number to open the quotation workspace and continue safely.</p>
         </div>
+        <div class="vendor-quote-otp-mark">OTP</div>
+        <div class="vendor-quote-otp-mini">Protected vendor access</div>
       </div>
 
-      <div class="vendor-quote-otp-grid">
-        <div class="vendor-quote-otp-panel">
-          <div class="app-detail-grid">
-            <div class="app-detail-item">
-              <div class="app-detail-label">Mobile Number</div>
-              <div class="app-detail-value"><%= @quotation_vendor_dispatch.mobile_no.presence || "-" %></div>
-            </div>
-            <div class="app-detail-item">
-              <div class="app-detail-label">Last OTP Sent At</div>
-              <div class="app-detail-value"><%= @quotation_vendor_dispatch.latest_active_otp&.sent_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
-            </div>
+      <div class="vendor-quote-otp-form">
+        <div class="vendor-quote-otp-facts">
+          <div class="app-detail-item vendor-quote-otp-fact">
+            <div class="app-detail-label">Mobile Number</div>
+            <div class="app-detail-value"><%= @quotation_vendor_dispatch.mobile_no.presence || "-" %></div>
           </div>
-
-          <%= form_with url: verify_quotation_vendor_qr_otp_path(@quotation_proposal_vendor.qr_token), method: :post, local: true do |form| %>
-            <div class="app-form-field mt-3">
-              <%= form.label :otp_code, "Enter OTP" %>
-              <%= form.text_field :otp_code, maxlength: 6, required: true %>
-            </div>
-            <div class="app-form-actions" style="justify-content: flex-start;">
-              <%= form.submit "Verify OTP", class: "app-form-submit" %>
-            </div>
-          <% end %>
+          <div class="app-detail-item vendor-quote-otp-fact">
+            <div class="app-detail-label">Last OTP Sent At</div>
+            <div class="app-detail-value"><%= @quotation_vendor_dispatch.latest_active_otp&.sent_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+          </div>
         </div>
 
-        <div class="vendor-quote-otp-panel">
-          <div class="app-detail-item h-100" style="height: 100%;">
-            <div class="app-detail-label">Need a New OTP?</div>
-            <p class="app-section-note" style="margin-bottom: 1rem;">If the OTP has expired, send a fresh OTP again.</p>
-            <%= button_to "Send New OTP", send_quotation_vendor_qr_otp_path(@quotation_proposal_vendor.qr_token), method: :post, class: "app-secondary-btn" %>
+        <%= form_with url: verify_quotation_vendor_qr_otp_path(@quotation_proposal_vendor.qr_token), method: :post, local: true do |form| %>
+          <div class="app-form-field vendor-quote-otp-field">
+            <%= form.label :otp_code, "Enter OTP" %>
+            <%= form.text_field :otp_code, maxlength: 6, required: true, class: "form-control vendor-quote-otp-input", inputmode: "numeric", autocomplete: "one-time-code", placeholder: "------" %>
           </div>
+          <div class="vendor-quote-otp-actions">
+            <%= form.submit "Verify OTP", class: "app-form-submit vendor-quote-otp-submit" %>
+          </div>
+        <% end %>
+
+        <div class="vendor-quote-otp-resend-wrap">
+          <%= button_to "Send New OTP", send_quotation_vendor_qr_otp_path(@quotation_proposal_vendor.qr_token), method: :post, class: "app-secondary-btn vendor-quote-otp-resend" %>
         </div>
       </div>
-    </div>
+    </section>
   </div>
 <% end %>
 

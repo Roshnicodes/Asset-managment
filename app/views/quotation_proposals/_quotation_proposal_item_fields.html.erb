@@ -10,7 +10,7 @@
     </div>
   </div>
 
-  <div class="app-form-grid three-col app-quotation-item-grid">
+  <div class="app-form-grid app-quotation-item-grid app-rfp-item-grid">
     <div class="app-form-field <%= "has-error" if form.object.errors[:item_name].any? %>">
       <%= form.label :item_name, "Item Name" %>
       <select name="<%= form.field_name(:item_name) %>" id="<%= form.field_id(:item_name) %>" required data-validation-label="Item Name" data-proposal-item-name="true">
@@ -52,17 +52,6 @@
       <% end %>
       <div class="app-form-error app-form-error-client" data-field-error="true"></div>
     </div>
-  </div>
-
-  <div class="app-form-grid three-col app-quotation-item-grid">
-    <div class="app-form-field <%= "has-error" if form.object.errors[:remark].any? %>">
-      <%= form.label :remark, "Item Remark" %>
-      <%= form.text_field :remark, placeholder: "Any special note for this item", required: true, data: { validation_label: "Item Remark" } %>
-      <% form.object.errors[:remark].uniq.each do |message| %>
-        <div class="app-form-error"><%= message %></div>
-      <% end %>
-      <div class="app-form-error app-form-error-client" data-field-error="true"></div>
-    </div>
 
     <div class="app-form-field <%= "has-error" if form.object.errors[:max_rate].any? %>">
       <%= form.label :max_rate, "Max Rate" %>
@@ -74,6 +63,14 @@
       <small class="app-field-hint">Ye internal field hai. Vendor ko nahi dikhaya jayega.</small>
     </div>
 
+    <div class="app-form-field app-rfp-item-remark-field <%= "has-error" if form.object.errors[:remark].any? %>">
+      <%= form.label :remark, "Item Remark" %>
+      <%= form.text_field :remark, placeholder: "Any special note for this item", required: true, data: { validation_label: "Item Remark" } %>
+      <% form.object.errors[:remark].uniq.each do |message| %>
+        <div class="app-form-error"><%= message %></div>
+      <% end %>
+      <div class="app-form-error app-form-error-client" data-field-error="true"></div>
+    </div>
   </div>
 
   <div class="app-approval-step-row-actions">

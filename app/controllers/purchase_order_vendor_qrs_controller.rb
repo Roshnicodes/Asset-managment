@@ -123,6 +123,7 @@ class PurchaseOrderVendorQrsController < ApplicationController
 
     @quotation_proposal = @quotation_proposal_vendor.quotation_proposal
     @vendor_registration = @quotation_proposal_vendor.vendor_registration
+    @stakeholder_category = @quotation_proposal.theme&.stakeholder_category
     @quotation_vendor_dispatch = @quotation_proposal_vendor.dispatch_record!
     vendor_remark_lines = @quotation_proposal_vendor.vendor_remark.to_s.lines.map(&:strip).reject(&:blank?)
     @po_payment_terms = vendor_remark_lines.find { |line| line.downcase.start_with?("payment terms and condition:") }&.split(":", 2)&.last.to_s.strip

@@ -66,11 +66,15 @@ class QuotationProposalsController < ApplicationController
 
   def show
     @quotation_proposal.approval_request&.ensure_channel_steps_synced!
+    if @quotation_proposal.vendor_responses_received? && @quotation_proposal.all_max_rates_present?
+      @quotation_proposal.sync_vendor_rankings_and_selection!
+      @quotation_proposal.reload
+    end
     @current_scoring_employee = current_employee_master
     @committee_member_count = @quotation_proposal.committee_steps.size
     @authorized_by_options = EmployeeMaster.order(:name)
     @selected_authorized_by_id = params[:authorized_by_id].presence
-    @selected_vendor_response = @quotation_proposal.quotation_proposal_vendors
+    @selected_vendor_response = QuotationProposalVendor
       .includes(
         :vendor_registration,
         :purchase_order_authorized_by,
@@ -78,7 +82,10 @@ class QuotationProposalsController < ApplicationController
         purchase_order_activities: :employee_master,
         invoice_requests: [:maker_reviewed_by, :payment_reference_marked_by, :payment_advice_updated_by, { assets: :product }, { vendor_invoices_attachments: :blob }]
       )
-      .find_by(selected: true)
+      .find_by(
+        quotation_proposal_id: @quotation_proposal.id,
+        vendor_registration_id: @quotation_proposal.selected_vendor_registration_id
+      )
   end
 
   def new
@@ -709,9 +716,7 @@ class QuotationProposalsController < ApplicationController
     score_record = proposal_vendor.committee_member_scores.find_or_initialize_by(employee_master: actor_employee)
     raw_score = params[:committee_score]
     score_record.update!(score: raw_score.present? ? raw_score.to_i : nil)
-    @quotation_proposal.recalculate_vendor_rankings!
-    sync_rank_based_vendor_selection!
-    @quotation_proposal.refresh_response_status!
+    @quotation_proposal.sync_vendor_rankings_and_selection!
     redirect_to quotation_proposal_path(@quotation_proposal), notice: "Your committee score has been updated."
   end
 
@@ -740,9 +745,7 @@ class QuotationProposalsController < ApplicationController
       updated += 1
     end
 
-    @quotation_proposal.recalculate_vendor_rankings!
-    sync_rank_based_vendor_selection!
-    @quotation_proposal.refresh_response_status!
+    @quotation_proposal.sync_vendor_rankings_and_selection!
     redirect_to quotation_proposal_path(@quotation_proposal), notice: updated.positive? ? "Your committee comparison scores have been updated." : "No committee score changes were submitted."
   end
 
@@ -1178,16 +1181,4 @@ class QuotationProposalsController < ApplicationController
     redirect_to quotation_proposal_path(@quotation_proposal), alert: "Only committee members can score vendors and select the final vendor."
   end
 
-  def sync_rank_based_vendor_selection!
-    ranked_vendor = @quotation_proposal.quotation_proposal_vendors.find_by(rank_position: 1)
-
-    @quotation_proposal.quotation_proposal_vendors.update_all(selected: false)
-
-    if ranked_vendor.present?
-      ranked_vendor.update!(selected: true)
-      @quotation_proposal.update!(selected_vendor_registration: ranked_vendor.vendor_registration)
-    else
-      @quotation_proposal.update!(selected_vendor_registration: nil)
-    end
-  end
 end

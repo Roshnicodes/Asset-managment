@@ -351,6 +351,36 @@ class QuotationProposal < ApplicationRecord
     end
   end
 
+  def committee_scoring_complete?
+    required_scores = committee_steps.size
+    return false if required_scores.zero?
+
+    responded_vendors = quotation_proposal_vendors.responded.includes(:committee_member_scores).to_a
+    return false if responded_vendors.empty?
+
+    responded_vendors.all? { |proposal_vendor| proposal_vendor.committee_score_count == required_scores }
+  end
+
+  def sync_vendor_rankings_and_selection!
+    recalculate_vendor_rankings!
+
+    ranked_vendor = committee_scoring_complete? ? quotation_proposal_vendors.find_by(rank_position: 1) : nil
+
+    quotation_proposal_vendors.update_all(selected: false)
+
+    if ranked_vendor.present?
+      ranked_vendor.update!(selected: true)
+      update!(selected_vendor_registration: ranked_vendor.vendor_registration)
+    else
+      update!(selected_vendor_registration: nil) if selected_vendor_registration_id.present?
+    end
+
+    refresh_response_status!
+    association(:quotation_proposal_vendors).reset
+    association(:selected_vendor_registration).reset
+    ranked_vendor
+  end
+
   private
 
   def ensure_vendor_dispatch_ready!(dispatch)

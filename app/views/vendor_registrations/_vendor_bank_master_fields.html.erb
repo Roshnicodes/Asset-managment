@@ -58,16 +58,18 @@
   </div>
 
   <div class="app-form-field <%= "has-error" if form.object.errors[:cancelled_cheque].any? %>">
+    <% cancelled_cheque = form.object.cancelled_cheque %>
+    <% cancelled_cheque_saved = cancelled_cheque.attachment&.persisted? && cancelled_cheque.blob&.persisted? %>
     <%= form.label :cancelled_cheque, "Check Book / Cancelled Cheque" %>
-    <%= form.file_field :cancelled_cheque, accept: ".pdf,image/*", required: !form.object.cancelled_cheque.attached?, data: { validation_label: "Check Book / Cancelled Cheque" } %>
+    <%= form.file_field :cancelled_cheque, accept: ".pdf,image/*", required: !cancelled_cheque_saved, data: { validation_label: "Check Book / Cancelled Cheque" } %>
     <% form.object.errors[:cancelled_cheque].each do |message| %>
       <div class="app-form-error"><%= message %></div>
     <% end %>
     <div class="app-form-error app-form-error-client" data-field-error="true"></div>
-    <% if form.object.cancelled_cheque.attached? %>
+    <% if cancelled_cheque_saved %>
       <p class="app-section-note" style="margin-top: 0.5rem;">
         Current file:
-        <%= link_to form.object.cancelled_cheque.filename.to_s, rails_blob_path(form.object.cancelled_cheque, disposition: "attachment"), target: "_blank", rel: "noopener" %>
+        <%= link_to cancelled_cheque.filename.to_s, rails_blob_path(cancelled_cheque, disposition: "attachment"), target: "_blank", rel: "noopener" %>
       </p>
     <% end %>
   </div>

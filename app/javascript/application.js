@@ -406,7 +406,7 @@ const setupQuotationProposalForm = () => {
 
     const updateLabel = () => {
       const selected = vendorOptions.filter((option) => option.querySelector(".quotation-vendor-checkbox")?.checked)
-      label.textContent = selected.length > 0 ? `${selected.length} vendor(s) selected` : "Select vendors"
+      if (label) label.textContent = selected.length > 0 ? "" : "Select vendors"
       if (selectionNote) {
         selectionNote.textContent = singleVendorMode()
           ? "Below 10K me sirf ek vendor select kiya ja sakta hai."
@@ -423,10 +423,11 @@ const setupQuotationProposalForm = () => {
           chip.type = "button"
           chip.className = "app-selected-vendor-chip"
           chip.textContent = strong ? strong.textContent : option.innerText.trim()
-          chip.addEventListener("click", () => {
+          chip.addEventListener("click", (event) => {
+            event.stopPropagation()
             if (checkbox) {
               checkbox.checked = false
-              updateLabel()
+              syncVendors()
             }
           })
           selectedWrap.appendChild(chip)
@@ -447,8 +448,9 @@ const setupQuotationProposalForm = () => {
         const text = option.innerText.toLowerCase()
         const matchesTheme = selectedThemeId === "" || themeIds.includes(selectedThemeId)
         const matchesSearch = query === "" || text.includes(query)
-        const shouldShow = matchesTheme && matchesSearch
         const checkbox = option.querySelector(".quotation-vendor-checkbox")
+        const isSelected = !!checkbox?.checked
+        const shouldShow = matchesTheme && matchesSearch && !isSelected
 
         option.classList.toggle("is-hidden", !shouldShow)
         if (!matchesTheme && checkbox) checkbox.checked = false
@@ -458,11 +460,34 @@ const setupQuotationProposalForm = () => {
       })
 
       const visibleOptions = vendorOptions.filter((option) => !option.classList.contains("is-hidden"))
-      emptyState?.classList.toggle("is-hidden", visibleOptions.length > 0)
+      if (emptyState) {
+        const selectedMatchingOptions = vendorOptions.filter((option) => {
+          const checkbox = option.querySelector(".quotation-vendor-checkbox")
+          if (!checkbox?.checked) return false
+
+          const themeIds = (option.dataset.themeIds || "").split(",").filter(Boolean)
+          const text = option.innerText.toLowerCase()
+          const matchesTheme = selectedThemeId === "" || themeIds.includes(selectedThemeId)
+          const matchesSearch = query === "" || text.includes(query)
+          return matchesTheme && matchesSearch
+        })
+
+        emptyState.textContent = selectedMatchingOptions.length > 0
+          ? "All matching vendors are selected."
+          : "No vendor matches the selected theme or search."
+        emptyState.classList.toggle("is-hidden", visibleOptions.length > 0)
+      }
       updateLabel()
     }
 
     trigger?.addEventListener("click", () => {
+      setDropdownOpen(!vendorDropdown.classList.contains("is-open"))
+    })
+
+    trigger?.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return
+
+      event.preventDefault()
       setDropdownOpen(!vendorDropdown.classList.contains("is-open"))
     })
 

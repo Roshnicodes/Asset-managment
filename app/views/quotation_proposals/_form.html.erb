@@ -1,4 +1,4 @@
-<%= form_with(model: quotation_proposal, html: { data: { quotation_validation_form: true }, novalidate: true }) do |form| %>
+<%= form_with(model: quotation_proposal, html: { class: "app-rfp-form", data: { quotation_validation_form: true }, novalidate: true }) do |form| %>
   <% approval_request = quotation_proposal.approval_request %>
   <% field_errors = ->(field_name) { quotation_proposal.errors.full_messages_for(field_name) } %>
 
@@ -25,7 +25,7 @@
     </div>
   <% end %>
 
-  <div class="app-form-card app-form-card-wide">
+  <div class="app-form-card app-form-card-wide app-rfp-card">
     <% if quotation_proposal.errors.any? %>
       <div class="app-form-errors">
         <h2><%= pluralize(quotation_proposal.errors.count, "error") %> found</h2>
@@ -37,7 +37,7 @@
       </div>
     <% end %>
 
-    <div class="app-form-grid two-col">
+    <div class="app-form-grid five-col app-rfp-meta-grid">
       <div class="app-form-field">
         <%= form.label :procurement_amount_bucket, "Quotation Value" %>
         <%= form.select :procurement_amount_bucket, [["Above 10K", "above_10k"], ["Below 10K", "below_10k"]], {}, class: "form-control", id: "quotation_proposal_procurement_amount_bucket" %>
@@ -87,14 +87,13 @@
       </div>
     </div>
 
-    <div class="app-form-field" data-vendor-selection-field>
+    <div class="app-form-field app-rfp-vendor-field" data-vendor-selection-field>
       <label>Vendor List</label>
       <div class="app-multiselect-dropdown" data-quotation-vendor-dropdown>
-        <div class="app-selected-vendors" data-quotation-vendor-selected></div>
-
-        <button type="button" class="app-multiselect-trigger" data-quotation-vendor-trigger aria-expanded="false">
-          <span data-quotation-vendor-label>Select vendors</span>
-        </button>
+        <div class="app-multiselect-trigger" data-quotation-vendor-trigger role="button" tabindex="0" aria-expanded="false">
+          <div class="app-selected-vendors" data-quotation-vendor-selected></div>
+          <span class="app-multiselect-placeholder" data-quotation-vendor-label>Select vendors</span>
+        </div>
 
         <div class="app-multiselect-panel" data-quotation-vendor-panel>
           <input type="search" class="app-multiselect-search" placeholder="Search vendor..." data-quotation-vendor-search>
@@ -125,7 +124,7 @@
       </div>
     </div>
 
-    <div class="app-quotation-items" data-quotation-items>
+    <div class="app-quotation-items app-rfp-section-panel" data-quotation-items>
       <div data-quotation-item-list>
         <%= form.fields_for :quotation_proposal_items do |item_form| %>
           <%= render "quotation_proposal_item_fields", form: item_form %>
@@ -154,8 +153,8 @@
       </div>
     </div>
 
-    <div class="app-quotation-committee" data-quotation-committee data-min-committee-members="<%= QuotationProposal::MIN_COMMITTEE_MEMBERS %>">
-      <div class="app-form-grid two-col" data-quotation-committee-list>
+    <div class="app-quotation-committee app-rfp-section-panel" data-quotation-committee data-min-committee-members="<%= QuotationProposal::MIN_COMMITTEE_MEMBERS %>">
+      <div class="app-form-grid four-col" data-quotation-committee-list>
         <%= form.fields_for :committee_steps, quotation_proposal.committee_steps.sort_by(&:level) do |committee_form| %>
           <%= render "committee_step_fields", form: committee_form %>
         <% end %>

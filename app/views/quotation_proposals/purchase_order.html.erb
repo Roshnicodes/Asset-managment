@@ -18,6 +18,16 @@
 %>
 
 <div class="po-page">
+  <section class="po-preview-banner print-hide">
+    <div class="po-preview-head po-preview-head--standalone">
+      <div>
+        <h2 class="po-preview-title">Purchase Order Preview</h2>
+        <p class="po-preview-note">This area only frames the document for easier reading. The sheet below keeps its original layout for printing.</p>
+      </div>
+      <span class="po-preview-tag">A4 Ready</span>
+    </div>
+  </section>
+
   <div class="app-page-header app-page-header-top po-page-header print-hide">
     <div>
       <span class="po-page-eyebrow">Purchase Dispatch Workspace</span>
@@ -154,14 +164,6 @@
   <% end %>
 
   <section class="po-preview-frame">
-    <div class="po-preview-head print-hide">
-      <div>
-        <h2 class="po-preview-title">Purchase Order Preview</h2>
-        <p class="po-preview-note">This area only frames the document for easier reading. The sheet below keeps its original layout for printing.</p>
-      </div>
-      <span class="po-preview-tag">A4 Ready</span>
-    </div>
-
     <div class="po-preview-sheet">
       <%= render "purchase_order_sheet",
             proposal_vendor: @selected_proposal_vendor,

@@ -42,6 +42,82 @@ class QuotationProposalTest < ActiveSupport::TestCase
     end
   end
 
+  RankedVendorStub = Struct.new(
+    :id,
+    :rank_position,
+    :selected,
+    :vendor_registration,
+    :response_status,
+    :committee_score_total,
+    :score_count,
+    :grand_total_amount,
+    :total_quoted_amount,
+    keyword_init: true
+  ) do
+    def comparable?
+      response_submitted?
+    end
+
+    def response_submitted?
+      response_status == "responded"
+    end
+
+    def committee_score_value
+      committee_score_total
+    end
+
+    def committee_score_count
+      score_count
+    end
+
+    def selected?
+      selected
+    end
+
+    def update!(attrs)
+      self.selected = attrs[:selected] if attrs.key?(:selected)
+      true
+    end
+
+    def update_column(attribute, value)
+      public_send("#{attribute}=", value)
+      true
+    end
+  end
+
+  RankedVendorCollectionStub = Struct.new(:vendors, keyword_init: true) do
+    include Enumerable
+
+    def includes(*)
+      self
+    end
+
+    def responded
+      self.class.new(vendors: vendors.select(&:response_submitted?))
+    end
+
+    def each(&block)
+      vendors.each(&block)
+    end
+
+    def to_a
+      vendors
+    end
+
+    def find_by(filters)
+      vendors.find do |vendor|
+        filters.all? { |attribute, value| vendor.public_send(attribute) == value }
+      end
+    end
+
+    def update_all(attrs)
+      vendors.each do |vendor|
+        attrs.each { |attribute, value| vendor.public_send("#{attribute}=", value) }
+      end
+      vendors.size
+    end
+  end
+
   test "send_to_vendors marks the proposal sent only after sms delivery succeeds" do
     dispatch = DispatchStub.new(
       vendor_name: "G.TECH",
@@ -184,6 +260,116 @@ class QuotationProposalTest < ActiveSupport::TestCase
     proposal.send(:committee_members_must_be_unique)
 
     assert_includes proposal.errors[:base], "Committee members must be unique."
+  end
+
+  test "committee scoring is complete only when every responded vendor has all committee scores" do
+    proposal = QuotationProposal.new
+    proposal.define_singleton_method(:committee_steps) do
+      [OpenStruct.new, OpenStruct.new, OpenStruct.new]
+    end
+
+    vendor_one = RankedVendorStub.new(id: 1, response_status: "responded", score_count: 3)
+    vendor_two = RankedVendorStub.new(id: 2, response_status: "responded", score_count: 2)
+    vendor_collection = RankedVendorCollectionStub.new(vendors: [vendor_one, vendor_two])
+    proposal.define_singleton_method(:quotation_proposal_vendors) { vendor_collection }
+
+    assert_equal false, proposal.committee_scoring_complete?
+
+    vendor_two.score_count = 3
+
+    assert_equal true, proposal.committee_scoring_complete?
+  end
+
+  test "sync_vendor_rankings_and_selection waits for all committee scores before selecting a vendor" do
+    proposal = QuotationProposal.new
+    proposal.define_singleton_method(:committee_steps) do
+      [OpenStruct.new, OpenStruct.new, OpenStruct.new]
+    end
+
+    vendor_one = RankedVendorStub.new(
+      id: 1,
+      response_status: "responded",
+      committee_score_total: 14,
+      score_count: 3,
+      grand_total_amount: 206000,
+      total_quoted_amount: 200000,
+      vendor_registration: VendorRegistration.new(id: 101),
+      selected: false
+    )
+    vendor_two = RankedVendorStub.new(
+      id: 2,
+      response_status: "responded",
+      committee_score_total: 12,
+      score_count: 2,
+      grand_total_amount: 315000,
+      total_quoted_amount: 300000,
+      vendor_registration: VendorRegistration.new(id: 102),
+      selected: true
+    )
+    vendor_collection = RankedVendorCollectionStub.new(vendors: [vendor_one, vendor_two])
+    refreshed = false
+
+    proposal.define_singleton_method(:quotation_proposal_vendors) { vendor_collection }
+    proposal.define_singleton_method(:update!) do |attrs|
+      self.selected_vendor_registration_id = attrs[:selected_vendor_registration]&.id if attrs.key?(:selected_vendor_registration)
+      true
+    end
+    proposal.define_singleton_method(:refresh_response_status!) { refreshed = true }
+
+    proposal.sync_vendor_rankings_and_selection!
+
+    assert_equal 1, vendor_one.rank_position
+    assert_equal 2, vendor_two.rank_position
+    assert_equal false, vendor_one.selected?
+    assert_equal false, vendor_two.selected?
+    assert_nil proposal.selected_vendor_registration_id
+    assert_equal true, refreshed
+  end
+
+  test "sync_vendor_rankings_and_selection selects the top ranked vendor after full committee scoring" do
+    proposal = QuotationProposal.new
+    proposal.define_singleton_method(:committee_steps) do
+      [OpenStruct.new, OpenStruct.new, OpenStruct.new]
+    end
+
+    vendor_one = RankedVendorStub.new(
+      id: 1,
+      response_status: "responded",
+      committee_score_total: 14,
+      score_count: 3,
+      grand_total_amount: 206000,
+      total_quoted_amount: 200000,
+      vendor_registration: VendorRegistration.new(id: 101),
+      selected: false
+    )
+    vendor_two = RankedVendorStub.new(
+      id: 2,
+      response_status: "responded",
+      committee_score_total: 12,
+      score_count: 3,
+      grand_total_amount: 315000,
+      total_quoted_amount: 300000,
+      vendor_registration: VendorRegistration.new(id: 102),
+      selected: false
+    )
+    vendor_collection = RankedVendorCollectionStub.new(vendors: [vendor_one, vendor_two])
+    refreshed = false
+
+    proposal.define_singleton_method(:quotation_proposal_vendors) { vendor_collection }
+    proposal.define_singleton_method(:update!) do |attrs|
+      self.selected_vendor_registration_id = attrs[:selected_vendor_registration]&.id if attrs.key?(:selected_vendor_registration)
+      true
+    end
+    proposal.define_singleton_method(:refresh_response_status!) { refreshed = true }
+
+    proposal.sync_vendor_rankings_and_selection!
+
+    assert_equal 1, vendor_one.rank_position
+    assert_equal 2, vendor_two.rank_position
+    assert_equal true, vendor_one.selected?
+    assert_equal false, vendor_two.selected?
+    assert_equal 101, proposal.selected_vendor_registration_id
+    assert_equal true, refreshed
   end
 
   private

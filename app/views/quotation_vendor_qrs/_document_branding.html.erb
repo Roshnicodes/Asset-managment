@@ -6,12 +6,16 @@
 <style>
   .doc-branding-shell {
     position: relative;
+    isolation: isolate;
     overflow: hidden;
     padding: 1.15rem 1.25rem;
     border: 1px solid #d4e8df;
-    margin: 0 auto 1rem;
-    width: 100%;
-    max-width: 100%;
+    display: block;
+    align-self: stretch;
+    margin: 0 0 1rem !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
     border-radius: 24px;
     background:
       radial-gradient(circle at top left, rgba(242, 177, 52, 0.14), transparent 26%),
@@ -47,6 +51,7 @@
     display: flex;
     align-items: center;
     flex: 1;
+    min-width: 0;
   }
 
   .doc-branding-left {
@@ -93,12 +98,14 @@
 
   .doc-branding-left img {
     max-height: 76px;
+    max-width: 100%;
     width: auto;
     object-fit: contain;
   }
 
   .doc-branding-right img {
     max-height: 68px;
+    max-width: 100%;
     width: auto;
     object-fit: contain;
   }
