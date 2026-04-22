@@ -2687,6 +2687,215 @@ body.auth-page-body {
     padding: 0.8rem;
   }
 }
+
+/* Compact purchase order preview workspace */
+.po-page {
+  gap: 0.8rem;
+}
+
+.po-page-header {
+  align-items: center;
+  margin-bottom: 0;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid rgba(217, 230, 223, 0.85);
+}
+
+.po-page-header .app-page-title {
+  font-size: 1.45rem;
+  line-height: 1.15;
+}
+
+.po-page-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.45rem;
+  color: #526359;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.po-page-meta > span:not(.po-status-badge) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0.28rem 0.65rem;
+  border: 1px solid #dbe7df;
+  border-radius: 999px;
+  background: #f8fbf9;
+}
+
+.po-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.po-header-actions .app-form-submit,
+.po-back-link {
+  min-width: 0;
+  min-height: 42px;
+  padding: 0.62rem 0.95rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.po-back-link {
+  box-shadow: none;
+}
+
+.po-control-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid #d9e6df;
+  border-radius: 18px;
+  background: #fbfdfb;
+  box-shadow: 0 12px 28px rgba(11, 74, 79, 0.04);
+}
+
+.po-toolbar-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.po-toolbar-field {
+  flex: 1 1 auto;
+  min-width: 180px;
+  gap: 0.32rem;
+}
+
+.po-toolbar-field label {
+  color: var(--brand-deep);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.po-form-input {
+  min-height: 42px;
+  padding: 0.58rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+}
+
+.po-control-lock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0.55rem 0.75rem;
+  border-radius: 12px;
+  background: rgba(11, 74, 79, 0.08);
+  color: var(--brand-deep);
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.po-toolbar-form .app-form-submit {
+  min-width: 160px;
+  min-height: 42px;
+  padding: 0.62rem 0.9rem;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.po-status-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #d9e6df;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.po-status-pill {
+  padding: 0.36rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+}
+
+.po-status-remark--compact {
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 14px;
+}
+
+.po-preview-frame {
+  padding: 0.75rem;
+  border-radius: 18px;
+  box-shadow: 0 14px 34px rgba(11, 74, 79, 0.05);
+}
+
+.po-preview-sheet {
+  padding: 0.75rem;
+  border-radius: 16px;
+  background: #f8faf8;
+}
+
+.po-preview-sheet .po-sheet {
+  margin: 0 auto;
+}
+
+@media print {
+  .po-page {
+    gap: 0;
+  }
+
+  .po-preview-frame,
+  .po-preview-sheet {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+@media (max-width: 991px) {
+  .po-page-header {
+    align-items: flex-start;
+  }
+
+  .po-control-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .po-header-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 767px) {
+  .po-page-header,
+  .po-header-actions,
+  .po-toolbar-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .po-header-actions .app-form-submit,
+  .po-back-link,
+  .po-toolbar-form .app-form-submit {
+    width: 100%;
+  }
+
+  .po-control-strip,
+  .po-preview-frame {
+    padding: 0.7rem;
+    border-radius: 16px;
+  }
+}
 /* --- Modern Auth Pages (Split Screen) --- */
 .auth-wrapper {
   display: flex;
