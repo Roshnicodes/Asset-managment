@@ -19,7 +19,7 @@ class VendorRegistrationsController < ApplicationController
       approval_request: :approval_steps
     )
 
-    if current_user.email == "admin@example.com" || current_user.employee_master&.user_type == "Admin"
+    if admin_user?
       @vendor_registrations = base_scope.order(created_at: :desc)
     else
       @vendor_registrations = base_scope.where(user_id: current_user.id).order(created_at: :desc)
@@ -40,7 +40,7 @@ class VendorRegistrationsController < ApplicationController
       approval_request: :approval_steps
     )
 
-    if current_user.email == "admin@example.com" || current_user.employee_master&.user_type == "Admin"
+    if admin_user?
       @vendor_registrations = base_scope.joins(:approval_request).distinct.order(created_at: :desc)
     else
       own_ids = base_scope.where(user_id: current_user.id).joins(:approval_request).select(:id)

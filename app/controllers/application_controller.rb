@@ -3,6 +3,7 @@ class ApplicationController < ActionController::Base
   helper QrCodesHelper
   helper QuotationVendorQrsHelper
   before_action :authenticate_user!, unless: :devise_controller?
+  before_action :configure_permitted_parameters, if: :devise_controller?
   allow_browser versions: :modern
 
   # Changes to the importmap will invalidate the etag for HTML responses
@@ -39,7 +40,7 @@ class ApplicationController < ActionController::Base
   def admin_user?
     return false unless current_user
 
-    current_user.email == "admin@example.com" || current_employee_master&.user_type == "Admin"
+    current_user.admin? || current_employee_master&.user_type == "Admin"
   end
 
   def current_approval_employee_ids
@@ -99,5 +100,11 @@ class ApplicationController < ActionController::Base
     else
       EmployeeMaster.find_by("LOWER(TRIM(email_id)) = ?", current_login_email)
     end
+  end
+
+  private
+
+  def configure_permitted_parameters
+    devise_parameter_sanitizer.permit(:sign_up, keys: [:role])
   end
 end

@@ -8,10 +8,10 @@
         <p class="auth-subtitle">Welcome back to Asset Management</p>
       </div>
 
-      <%= form_for(resource, as: resource_name, url: session_path(resource_name), html: { class: "auth-form" }) do |f| %>
+      <%= form_for(resource, as: resource_name, url: session_path(resource_name), html: { class: "auth-form", data: { turbo: false } }) do |f| %>
         <div class="form-group mb-4">
           <%= f.label :email, "Your Email", class: "form-label" %>
-          <%= f.email_field :email, class: "form-control", placeholder: "yourname@example.com", autofocus: true %>
+          <%= f.email_field :email, class: "form-control", placeholder: "yourname@example.com", autofocus: true, autocomplete: "email" %>
         </div>
 
         <div class="form-group mb-4">
@@ -19,7 +19,7 @@
             <%= f.label :password, "Your Password", class: "form-label mb-0" %>
             <%= link_to "Forgot?", new_user_password_path, class: "small text-brand-accent text-decoration-none fw-bold" %>
           </div>
-          <%= f.password_field :password, class: "form-control", placeholder: "••••••••" %>
+          <%= f.password_field :password, class: "form-control", placeholder: "••••••••", autocomplete: "current-password" %>
         </div>
 
         <div class="mb-4 form-check">

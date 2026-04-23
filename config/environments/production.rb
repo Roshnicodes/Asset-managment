@@ -1,6 +1,23 @@
 require "active_support/core_ext/integer/time"
 
 Rails.application.configure do
+  app_host = ENV["APP_HOST"].presence || Rails.application.credentials.dig(:app, :host).presence || "example.com"
+  app_protocol = ENV["APP_PROTOCOL"].presence || Rails.application.credentials.dig(:app, :protocol).presence || "https"
+  app_port = ENV["APP_PORT"].presence || Rails.application.credentials.dig(:app, :port).presence
+
+  mailer_url_options = { host: app_host, protocol: app_protocol }
+  mailer_url_options[:port] = app_port.to_i if app_port.present?
+
+  smtp_address = ENV["SMTP_ADDRESS"].presence || Rails.application.credentials.dig(:smtp, :address).presence
+  smtp_port = ENV["SMTP_PORT"].presence || Rails.application.credentials.dig(:smtp, :port).presence || 587
+  smtp_user_name = ENV["SMTP_USERNAME"].presence || Rails.application.credentials.dig(:smtp, :user_name).presence
+  smtp_password = ENV["SMTP_PASSWORD"].presence || Rails.application.credentials.dig(:smtp, :password).presence
+  smtp_domain = ENV["SMTP_DOMAIN"].presence || Rails.application.credentials.dig(:smtp, :domain).presence || app_host
+  smtp_authentication = ENV["SMTP_AUTHENTICATION"].presence || Rails.application.credentials.dig(:smtp, :authentication).presence || "plain"
+  smtp_enable_starttls_auto =
+    ENV["SMTP_ENABLE_STARTTLS_AUTO"].presence ||
+    Rails.application.credentials.dig(:smtp, :enable_starttls_auto)
+
   # Settings specified here will take precedence over those in config/application.rb.
 
   # Code is not reloaded between requests.
@@ -58,16 +75,23 @@ Rails.application.configure do
   # config.action_mailer.raise_delivery_errors = false
 
   # Set host to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: "example.com" }
+  config.action_mailer.default_url_options = mailer_url_options
 
   # Specify outgoing SMTP server. Remember to add smtp/* credentials via bin/rails credentials:edit.
-  # config.action_mailer.smtp_settings = {
-  #   user_name: Rails.application.credentials.dig(:smtp, :user_name),
-  #   password: Rails.application.credentials.dig(:smtp, :password),
-  #   address: "smtp.example.com",
-  #   port: 587,
-  #   authentication: :plain
-  # }
+  if smtp_address.present?
+    config.action_mailer.delivery_method = :smtp
+    config.action_mailer.perform_deliveries = true
+    config.action_mailer.raise_delivery_errors = true
+    config.action_mailer.smtp_settings = {
+      address: smtp_address,
+      port: smtp_port.to_i,
+      domain: smtp_domain,
+      user_name: smtp_user_name,
+      password: smtp_password,
+      authentication: smtp_authentication.to_sym,
+      enable_starttls_auto: smtp_enable_starttls_auto.nil? ? true : ActiveModel::Type::Boolean.new.cast(smtp_enable_starttls_auto)
+    }.compact
+  end
 
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
   # the I18n.default_locale when a translation cannot be found).
