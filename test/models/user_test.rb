@@ -3,6 +3,11 @@ require "test_helper"
 class UserTest < ActiveSupport::TestCase
   self.fixture_table_names = []
 
+  test "role enum is backed by a declared attribute type" do
+    assert User.attribute_types["role"]
+    assert_equal({ "user" => 0, "admin" => 1 }, User.roles)
+  end
+
   test "normalizes email and defaults role to user" do
     user = User.create!(
       email: "  Mixed.Case@example.com  ",
