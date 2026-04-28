@@ -1,6 +1,6 @@
 class EmployeeMastersController < ApplicationController
   require "csv"
-  before_action :set_employee_master, only: %i[edit update destroy]
+  before_action :set_employee_master, only: %i[edit update destroy reset_login_password]
 
   def index
     @employee_masters = EmployeeMaster.includes(:stakeholder_category).order(:name)
@@ -48,6 +48,24 @@ class EmployeeMastersController < ApplicationController
   def destroy
     @employee_master.destroy!
     redirect_to employee_masters_path, notice: "Employee master deleted successfully.", status: :see_other
+  end
+
+  def reset_login_password
+    if @employee_master.email_id.blank?
+      redirect_to employee_masters_path, alert: "This employee does not have an email ID for login reset."
+      return
+    end
+
+    default_password = EmployeeLoginProvisioner::DEFAULT_PASSWORD
+    EmployeeLoginProvisioner.provision_for!(
+      @employee_master,
+      password: default_password,
+      password_confirmation: default_password
+    )
+
+    redirect_to employee_masters_path, notice: "Login password reset to #{default_password} for #{@employee_master.email_id}."
+  rescue StandardError => error
+    redirect_to employee_masters_path, alert: "Login password reset failed: #{error.message}"
   end
 
   def import

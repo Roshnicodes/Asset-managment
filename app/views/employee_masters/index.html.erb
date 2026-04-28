@@ -36,7 +36,7 @@
   </div>
   <p class="app-section-note" style="margin-bottom: 0;">
     When an employee has an email ID, the system automatically creates a login for that email.
-    Default first-time password is <strong>Welcome@123</strong>. After first login, the employee can change password using Forgot Password.
+    Default first-time password is <strong>Welcome@123</strong>. If sign in fails, use <strong>Reset Login Password</strong> from the row action to re-apply the default password.
   </p>
 </div>
 
@@ -86,6 +86,14 @@
           <td><%= employee_master.login_ready? ? "Ready" : "Not Ready" %></td>
           <td class="app-row-actions">
             <%= link_to "Edit", edit_employee_master_path(employee_master) %> |
+            <% if employee_master.email_id.present? %>
+              <%= button_to "Reset Login Password",
+                    reset_login_password_employee_master_path(employee_master),
+                    method: :post,
+                    data: { turbo_confirm: "Reset login password to Welcome@123 for this employee?" },
+                    class: "app-action-button",
+                    form_class: "d-inline-block" %> |
+            <% end %>
             <%= button_to "Delete", employee_master_path(employee_master), method: :delete, data: { turbo_confirm: "Delete this employee?" }, class: "app-action-button app-delete-button" %>
           </td>
         </tr>

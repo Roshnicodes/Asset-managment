@@ -11,8 +11,8 @@ class User < ApplicationRecord
   has_many :vendor_registrations, dependent: :destroy
 
   before_validation :normalize_email
+  before_validation :assign_default_role
 
-  validate :admin_role_requires_admin_employee_master
   validate :role_matches_employee_master, if: :employee_master
 
   def employee_master
@@ -28,11 +28,8 @@ class User < ApplicationRecord
     self.email = email.to_s.strip.downcase
   end
 
-  def admin_role_requires_admin_employee_master
-    return unless role.to_s == "admin"
-    return if employee_master&.user_type == "Admin"
-
-    errors.add(:role, "can be Admin only when the email belongs to an Admin employee master record")
+  def assign_default_role
+    self.role = "user" if role.blank?
   end
 
   def role_matches_employee_master

@@ -62,6 +62,10 @@ Rails.application.routes.draw do
     end
   end
   resources :employee_masters do
+    member do
+      post :reset_login_password
+    end
+
     collection do
       get :export
       post :import
@@ -79,7 +83,8 @@ Rails.application.routes.draw do
   resources :registration_types, except: :show
   resources :office_categories
   resources :blocks
-  devise_for :users, controllers: { passwords: 'users/passwords' }
+  get "users", to: redirect("/users/sign_in")
+  devise_for :users, controllers: { passwords: 'users/passwords', registrations: 'users/registrations' }
   root to: "dashboard#index"
   resources :states
   resources :districts

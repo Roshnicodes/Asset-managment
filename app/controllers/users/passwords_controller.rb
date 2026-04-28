@@ -1,4 +1,23 @@
 class Users::PasswordsController < Devise::PasswordsController
+  def create
+    if Rails.env.development?
+      lookup_email = resource_params[:email].to_s.strip.downcase
+      user = User.find_by("LOWER(TRIM(email)) = ?", lookup_email)
+
+      if user.present?
+        raw_token = user.send_reset_password_instructions
+        redirect_to edit_user_password_path(reset_password_token: raw_token), notice: "Reset link opened. Set a new password now."
+      else
+        self.resource = resource_class.new
+        resource.email = lookup_email
+        resource.errors.add(:email, "was not found")
+        render :new, status: :unprocessable_entity
+      end
+    else
+      super
+    end
+  end
+
   protected
 
   def resource_params
