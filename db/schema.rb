@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_23_113000) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_29_131500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -235,14 +235,31 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_23_113000) do
   end
 
   create_table "office_categories", force: :cascade do |t|
+    t.bigint "block_id"
     t.datetime "created_at", null: false
+    t.bigint "district_id"
     t.string "name"
+    t.bigint "office_category_master_id"
     t.string "office_level"
     t.bigint "parent_id"
     t.bigint "stakeholder_category_id"
+    t.bigint "state_id"
     t.datetime "updated_at", null: false
+    t.index ["block_id"], name: "index_office_categories_on_block_id"
+    t.index ["district_id"], name: "index_office_categories_on_district_id"
+    t.index ["office_category_master_id"], name: "index_office_categories_on_office_category_master_id"
     t.index ["parent_id"], name: "index_office_categories_on_parent_id"
     t.index ["stakeholder_category_id"], name: "index_office_categories_on_stakeholder_category_id"
+    t.index ["state_id"], name: "index_office_categories_on_state_id"
+  end
+
+  create_table "office_category_masters", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.bigint "stakeholder_category_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["stakeholder_category_id", "name"], name: "index_office_category_masters_on_stakeholder_and_name", unique: true
+    t.index ["stakeholder_category_id"], name: "index_office_category_masters_on_stakeholder_category_id"
   end
 
   create_table "pmus", force: :cascade do |t|
@@ -668,7 +685,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_23_113000) do
   add_foreign_key "firms", "stakeholder_categories"
   add_foreign_key "menu_permissions", "stakeholder_categories"
   add_foreign_key "notifications", "users"
+  add_foreign_key "office_categories", "blocks"
+  add_foreign_key "office_categories", "districts"
+  add_foreign_key "office_categories", "office_category_masters"
   add_foreign_key "office_categories", "stakeholder_categories"
+  add_foreign_key "office_categories", "states"
+  add_foreign_key "office_category_masters", "stakeholder_categories"
   add_foreign_key "pmus", "blocks"
   add_foreign_key "pmus", "districts"
   add_foreign_key "product_varieties", "products"

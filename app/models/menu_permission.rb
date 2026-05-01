@@ -9,17 +9,16 @@ class MenuPermission < ApplicationRecord
   SIDEBAR_MENUS = {
     "Dashboard" => "dashboard",
     "Role Access Control" => "rbac_master",
-    "Office Category" => {
-      "main" => "office_category_main",
-      "PMU" => "office_pmu",
-      "FCO" => "office_fco",
-      "TO" => "office_to"
-    },
     "LG" => {
       "main" => "lg_main",
       "State" => "lg_state",
       "District" => "lg_district",
       "Block" => "lg_block"
+    },
+    "Office Category" => {
+      "main" => "office_category_main",
+      "Office Category Master" => "office_category_master",
+      "Office Structure" => "office_category_name"
     },
     "Stakeholder Categories" => "stakeholder_categories",
     "Registration Types" => "registration_types",

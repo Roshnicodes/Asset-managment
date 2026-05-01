@@ -1,0 +1,31 @@
+<div class="app-toolbar">
+  <div>
+    <h1>Office Category Master</h1>
+    <p class="app-section-note">Stakeholder wise category names yahan define karein, jaise PMU, FCO, TO, ya Cluster.</p>
+  </div>
+  <%= link_to "Add Office Category Master", new_office_category_master_path, class: "app-primary-btn" %>
+</div>
+
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>Stakeholder</th>
+        <th>Category Name</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @office_category_masters.each do |office_category_master| %>
+        <tr>
+          <td><%= office_category_master.stakeholder_category&.name || "-" %></td>
+          <td><%= office_category_master.name %></td>
+          <td class="app-row-actions">
+            <%= link_to "Edit", edit_office_category_master_path(office_category_master) %> |
+            <%= button_to "Delete", office_category_master_path(office_category_master), method: :delete, data: { turbo_confirm: "Delete this office category master?" }, class: "app-action-button app-delete-button" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

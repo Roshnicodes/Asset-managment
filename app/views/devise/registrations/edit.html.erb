@@ -54,15 +54,6 @@
           <%= link_to "Back", request.referer.presence || root_path, class: "btn btn-brand-outline" %>
         </div>
       <% end %>
-
-      <div class="account-danger-zone">
-        <div>
-          <h2 class="section-title">Danger Zone</h2>
-          <p class="account-settings-note mb-0">If you no longer need this account, you can permanently remove it here.</p>
-        </div>
-
-        <%= button_to "Cancel my account", registration_path(resource_name), data: { confirm: "Are you sure?", turbo_confirm: "Are you sure?" }, method: :delete, class: "btn account-delete-btn" %>
-      </div>
     </div>
   </div>
 </div>

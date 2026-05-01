@@ -1,29 +1,59 @@
-<%= form_with(model: office_category) do |form| %>
+<%= form_with(model: office_category, data: {
+  controller: "office-location",
+  office_location_districts_value: @district_filter_data.to_json,
+  office_location_blocks_value: @block_filter_data.to_json
+}) do |form| %>
   <div class="app-form-card">
+    <% if office_category.errors.any? %>
+      <div class="app-form-errors">
+        <h2><%= pluralize(office_category.errors.count, "error") %> found</h2>
+        <ul>
+          <% office_category.errors.each do |error| %>
+            <li><%= error.full_message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
     <div class="app-form-grid two-col">
       <div class="app-form-field">
         <%= form.label :stakeholder_category_id, "Stakeholder" %>
-        <%= form.collection_select :stakeholder_category_id, StakeholderCategory.order(:name), :id, :name, { prompt: "Select stakeholder" } %>
+        <%= form.collection_select :stakeholder_category_id, @stakeholders, :id, :name, { prompt: "Select stakeholder" } %>
       </div>
 
       <div class="app-form-field">
-        <%= form.label :name, "Category Name" %>
-        <%= form.text_field :name, placeholder: "Enter office category name" %>
+        <%= form.label :office_category_master_id, "Category Name" %>
+        <%= form.select :office_category_master_id, options_for_select(@category_master_options, office_category.office_category_master_id), { prompt: "Select category name" } %>
       </div>
 
       <div class="app-form-field">
-        <%= form.label :office_level, "Office Level" %>
-        <%= form.select :office_level, OfficeCategory::OFFICE_LEVELS, { prompt: "Select office level" } %>
+        <%= form.label :parent_id, "Parent Office" %>
+        <%= form.select :parent_id, options_for_select(@parent_category_options, office_category.parent_id), { prompt: "Select parent office" } %>
       </div>
 
       <div class="app-form-field">
-        <%= form.label :parent_id, "Parent Category" %>
-        <%= form.collection_select :parent_id, @parent_categories.reject { |category| category.id == office_category.id }, :id, :name, { prompt: "Select parent category" } %>
+        <%= form.label :state_id, "State" %>
+        <%= form.collection_select :state_id, @states, :id, :name, { prompt: "Select state" }, { data: { office_location_target: "state", action: "change->office-location#stateChanged" } } %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :district_id, "District" %>
+        <%= form.select :district_id, options_for_select([], office_category.district_id), { prompt: "Select district" }, { data: { office_location_target: "district", action: "change->office-location#districtChanged" } } %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :block_id, "Block" %>
+        <%= form.select :block_id, options_for_select([], office_category.block_id), { prompt: "Select block" }, { data: { office_location_target: "block" } } %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :name, "Name" %>
+        <%= form.text_field :name, placeholder: "Enter name" %>
       </div>
     </div>
 
     <div class="app-form-actions">
-      <%= form.submit "Save Office Category", class: "app-form-submit" %>
+      <%= form.submit "Save Office Structure", class: "app-form-submit" %>
     </div>
   </div>
 <% end %>

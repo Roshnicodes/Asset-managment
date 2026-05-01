@@ -1,30 +1,38 @@
 <div class="app-toolbar">
   <div>
-    <h1>Office Category</h1>
-    <p class="app-section-note">Use this for PMU, FCO, and TO categories.</p>
+    <h1>Office Structure</h1>
+    <p class="app-section-note">Stakeholder ke hisaab se office structure, category name, parent office, aur location map karein.</p>
   </div>
-  <%= link_to "Add Office Category", new_office_category_path, class: "app-primary-btn" %>
+  <%= link_to "Add Office Structure", new_office_category_path, class: "app-primary-btn" %>
 </div>
 
 <div class="app-table-wrap">
   <table class="table app-table">
     <thead>
       <tr>
+        <th>Stakeholder</th>
         <th>Category Name</th>
-        <th>Office Level</th>
-        <th>Parent Category</th>
+        <th>Parent Office</th>
+        <th>State</th>
+        <th>District</th>
+        <th>Block</th>
+        <th>Name</th>
         <th>Action</th>
       </tr>
     </thead>
     <tbody>
       <% @office_categories.each do |office_category| %>
         <tr>
-          <td><%= office_category.name %></td>
-          <td><%= office_category.office_level %></td>
-          <td><%= office_category.parent&.name || "-" %></td>
+          <td><%= office_category.stakeholder_category&.name || "-" %></td>
+          <td><%= office_category.office_category_master_name || "-" %></td>
+          <td><%= office_category.parent&.display_name || "-" %></td>
+          <td><%= office_category.state&.name || "-" %></td>
+          <td><%= office_category.district&.name || "-" %></td>
+          <td><%= office_category.block&.name || "-" %></td>
+          <td><%= office_category.name.presence || "-" %></td>
           <td class="app-row-actions">
             <%= link_to "Edit", edit_office_category_path(office_category) %> |
-            <%= link_to "Delete", office_category, method: :delete, data: { turbo_confirm: "Delete this office category?" } %>
+            <%= button_to "Delete", office_category_path(office_category), method: :delete, data: { turbo_confirm: "Delete this office structure?" }, class: "app-action-button app-delete-button" %>
           </td>
         </tr>
       <% end %>

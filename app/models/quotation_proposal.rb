@@ -44,8 +44,29 @@ class QuotationProposal < ApplicationRecord
     subject
   end
 
+  def approval_locked?
+    approval_request&.status == "approved"
+  end
+
   def stakeholder_category_id
     theme&.stakeholder_category_id
+  end
+
+  def vendor_matches_stakeholder?(vendor_registration)
+    return false if vendor_registration.blank?
+
+    proposal_stakeholder_id = stakeholder_category_id
+    return true if proposal_stakeholder_id.blank?
+
+    vendor_stakeholder_id = vendor_registration.stakeholder_category_id
+    vendor_stakeholder_id.blank? || vendor_stakeholder_id == proposal_stakeholder_id
+  end
+
+  def sync_selected_vendor_registration!(vendor_registration)
+    vendor_id = vendor_registration&.id
+    return if selected_vendor_registration_id == vendor_id
+
+    update_columns(selected_vendor_registration_id: vendor_id, updated_at: Time.current)
   end
 
   def above_10k?
@@ -365,14 +386,16 @@ class QuotationProposal < ApplicationRecord
     recalculate_vendor_rankings!
 
     ranked_vendor = committee_scoring_complete? ? quotation_proposal_vendors.find_by(rank_position: 1) : nil
+    selectable_vendor = ranked_vendor&.vendor_registration
+    selectable_vendor = nil unless vendor_matches_stakeholder?(selectable_vendor)
 
     quotation_proposal_vendors.update_all(selected: false)
 
-    if ranked_vendor.present?
-      ranked_vendor.update!(selected: true)
-      update!(selected_vendor_registration: ranked_vendor.vendor_registration)
+    if ranked_vendor.present? && selectable_vendor.present?
+      ranked_vendor.update_column(:selected, true)
+      sync_selected_vendor_registration!(selectable_vendor)
     else
-      update!(selected_vendor_registration: nil) if selected_vendor_registration_id.present?
+      sync_selected_vendor_registration!(nil) if selected_vendor_registration_id.present?
     end
 
     refresh_response_status!
@@ -576,9 +599,7 @@ class QuotationProposal < ApplicationRecord
     return if proposal_stakeholder_id.blank?
     return if vendor_registrations.blank?
 
-    mismatched_vendors = vendor_registrations.select do |vendor|
-      vendor.stakeholder_category_id.present? && vendor.stakeholder_category_id != proposal_stakeholder_id
-    end
+    mismatched_vendors = vendor_registrations.reject { |vendor| vendor_matches_stakeholder?(vendor) }
     return if mismatched_vendors.empty?
 
     vendor_names = mismatched_vendors.map(&:display_name).join(", ")

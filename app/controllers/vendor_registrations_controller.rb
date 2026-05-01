@@ -2,6 +2,7 @@ class VendorRegistrationsController < ApplicationController
   before_action :set_vendor_registration, only: %i[ show edit update destroy ]
   before_action :ensure_vendor_owner_or_admin_view_access!, only: %i[show]
   before_action :ensure_vendor_owner_access!, only: %i[edit update destroy]
+  before_action :ensure_vendor_registration_change_allowed!, only: %i[edit update destroy]
   before_action :ensure_vendor_registration_editable!, only: %i[edit update]
   before_action :set_current_stakeholder_category
 
@@ -241,6 +242,13 @@ class VendorRegistrationsController < ApplicationController
       return if admin_user? || @vendor_registration.user_id == current_user.id
 
       redirect_to vendor_registration_path(@vendor_registration), alert: "You are not authorized to edit this vendor registration."
+    end
+
+    def ensure_vendor_registration_change_allowed!
+      return unless @vendor_registration.approval_locked?
+
+      redirect_to vendor_registration_path(@vendor_registration),
+                  alert: "Approved vendor registrations cannot be edited or deleted."
     end
 
     def ensure_vendor_owner_or_admin_view_access!

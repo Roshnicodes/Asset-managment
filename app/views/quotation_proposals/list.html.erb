@@ -124,11 +124,13 @@
                     <%= app_icon(:document, size: 18) %>
                   <% end %>
                 <% end %>
-                <%= link_to edit_quotation_proposal_path(quotation_proposal), class: "app-action-icon text-warning", title: "Edit" do %>
-                  <%= app_icon(:pencil, size: 18) %>
-                <% end %>
-                <%= button_to quotation_proposal_path(quotation_proposal), method: :delete, data: { turbo_confirm: "Delete this quotation proposal?" }, class: "app-action-icon text-danger", title: "Delete" do %>
-                  <%= app_icon(:trash, size: 18) %>
+                <% unless quotation_proposal.approval_locked? %>
+                  <%= link_to edit_quotation_proposal_path(quotation_proposal), class: "app-action-icon text-warning", title: "Edit" do %>
+                    <%= app_icon(:pencil, size: 18) %>
+                  <% end %>
+                  <%= button_to quotation_proposal_path(quotation_proposal), method: :delete, data: { turbo_confirm: "Delete this quotation proposal?" }, class: "app-action-icon text-danger", title: "Delete" do %>
+                    <%= app_icon(:trash, size: 18) %>
+                  <% end %>
                 <% end %>
               </div>
             </td>

@@ -101,13 +101,15 @@
             <% if vendor_registration.approval_request.blank? %>
               <%= button_to "Send", send_for_approval_vendor_registration_path(vendor_registration), method: :post, class: "app-secondary-btn", title: "Send for Approval", form: { class: "d-inline-block" } %>
             <% end %>
-            <% if admin_user? || vendor_registration.user_id == current_user.id %>
+            <% if (admin_user? || vendor_registration.user_id == current_user.id) && !vendor_registration.approval_locked? %>
               <%= link_to edit_vendor_registration_path(vendor_registration), class: "app-action-icon text-warning", title: "Edit" do %>
                 <%= app_icon(:pencil, size: 18) %>
               <% end %>
             <% end %>
-            <%= button_to vendor_registration_path(vendor_registration), method: :delete, data: { turbo_confirm: "Delete this vendor registration?" }, class: "app-action-icon text-danger", title: "Delete" do %>
-              <%= app_icon(:trash, size: 18) %>
+            <% if (admin_user? || vendor_registration.user_id == current_user.id) && !vendor_registration.approval_locked? %>
+              <%= button_to vendor_registration_path(vendor_registration), method: :delete, data: { turbo_confirm: "Delete this vendor registration?" }, class: "app-action-icon text-danger", title: "Delete" do %>
+                <%= app_icon(:trash, size: 18) %>
+              <% end %>
             <% end %>
           </div>
         </td>

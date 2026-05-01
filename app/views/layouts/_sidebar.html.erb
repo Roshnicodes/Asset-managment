@@ -13,19 +13,6 @@
       </li>
     <% end %>
 
-    <% if can_view_menu?("office_category_main") %>
-      <li>
-        <%= app_dropdown_toggle("Office Category", "officeCategoryMenu", icon: :office, identifier: "office_category_main") %>
-        <div class="collapse submenu" id="officeCategoryMenu">
-          <ul class="nav flex-column">
-            <li><%= app_nav_link("PMU", pmus_path, icon: :office, identifier: "office_pmu") %></li>
-            <li><%= app_nav_link("FCO", fcos_path, icon: :office, identifier: "office_fco") %></li>
-            <li><%= app_nav_link("TO", tos_path, icon: :office, identifier: "office_to") %></li>
-          </ul>
-        </div>
-      </li>
-    <% end %>
-
     <% if can_view_menu?("lg_main") %>
       <li>
         <%= app_dropdown_toggle("LG", "lgMenu", icon: :map, identifier: "lg_main") %>
@@ -34,6 +21,18 @@
             <li><%= app_nav_link("State", states_path, icon: :map, identifier: "lg_state") %></li>
             <li><%= app_nav_link("District", districts_path, icon: :map, identifier: "lg_district") %></li>
             <li><%= app_nav_link("Block", blocks_path, icon: :map, identifier: "lg_block") %></li>
+          </ul>
+        </div>
+      </li>
+    <% end %>
+
+    <% if can_view_menu?("office_category_main") %>
+      <li>
+        <%= app_dropdown_toggle("Office Category", "officeCategoryMenu", icon: :office, identifier: "office_category_main") %>
+        <div class="collapse submenu" id="officeCategoryMenu">
+          <ul class="nav flex-column">
+            <li><%= app_nav_link("Office Category Master", office_category_masters_path, icon: :office, identifier: "office_category_master") %></li>
+            <li><%= app_nav_link("Office Structure", office_categories_path, icon: :office, identifier: "office_category_name") %></li>
           </ul>
         </div>
       </li>

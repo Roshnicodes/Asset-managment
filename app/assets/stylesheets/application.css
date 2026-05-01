@@ -314,6 +314,36 @@ body.auth-page-body {
   font-weight: 700;
 }
 
+.app-table-sort-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  cursor: pointer;
+}
+
+.app-table-sort-trigger::after {
+  content: "<>";
+  font-size: 0.7rem;
+  line-height: 1;
+  opacity: 0.45;
+}
+
+.app-table thead th[data-sort-direction="asc"] .app-table-sort-trigger::after {
+  content: "^";
+  opacity: 1;
+}
+
+.app-table thead th[data-sort-direction="desc"] .app-table-sort-trigger::after {
+  content: "v";
+  opacity: 1;
+}
+
 .app-table tbody td {
   padding: 0.95rem 1rem;
   vertical-align: middle;

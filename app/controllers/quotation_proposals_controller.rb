@@ -8,6 +8,7 @@ class QuotationProposalsController < ApplicationController
   ]
   before_action :ensure_quotation_owner_access!, only: %i[edit update destroy send_to_vendors purchase_order send_purchase_order goods_receive update_goods_receive new_invoice_request_assets create_invoice_request_assets review_invoice_request]
   before_action :ensure_quotation_owner_access!, only: %i[assign_payment_references]
+  before_action :ensure_quotation_change_allowed!, only: %i[edit update destroy]
   before_action :authorize_quotation_form_access!, only: %i[index new create edit update destroy send_for_approval send_to_vendors]
   before_action :authorize_quotation_list_access!, only: %i[list payment_advice update_payment_advice]
   before_action :authorize_quotation_view_access!, only: %i[show approve_committee return_committee]
@@ -755,10 +756,14 @@ class QuotationProposalsController < ApplicationController
       redirect_to quotation_proposal_path(@quotation_proposal), alert: "Only responded vendors can be selected."
       return
     end
+    unless @quotation_proposal.vendor_matches_stakeholder?(proposal_vendor.vendor_registration)
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "This vendor does not belong to the same stakeholder as the quotation theme."
+      return
+    end
 
     @quotation_proposal.quotation_proposal_vendors.update_all(selected: false)
-    proposal_vendor.update!(selected: true)
-    @quotation_proposal.update!(selected_vendor_registration: proposal_vendor.vendor_registration)
+    proposal_vendor.update_column(:selected, true)
+    @quotation_proposal.sync_selected_vendor_registration!(proposal_vendor.vendor_registration)
     @quotation_proposal.refresh_response_status!
     redirect_to quotation_proposal_path(@quotation_proposal), notice: "The vendor has been selected successfully."
   end
@@ -942,8 +947,20 @@ class QuotationProposalsController < ApplicationController
     redirect_to list_quotation_proposals_path, alert: "Only the creator can perform this action on the quotation proposal."
   end
 
+  def ensure_quotation_change_allowed!
+    return unless @quotation_proposal.approval_locked?
+
+    redirect_to quotation_proposal_path(@quotation_proposal),
+                alert: "Approved quotation proposals cannot be edited or deleted."
+  end
+
   def load_form_collections
-    @themes = Theme.order(:name)
+    stakeholder_id = quotation_form_stakeholder_id
+
+    @themes = Theme.includes(:stakeholder_category)
+    @themes = @themes.where(stakeholder_category_id: stakeholder_id) if stakeholder_id.present?
+    @themes = @themes.order(:name)
+
     @units = Unit.order(:name)
     @products = Product.includes(:theme).order(:name)
     @product_varieties = ProductVariety.includes(product: :theme).order(:name)
@@ -951,13 +968,27 @@ class QuotationProposalsController < ApplicationController
       .includes(:themes, :approval_request)
       .joins(:approval_request)
       .where(approval_requests: { status: "approved" })
-      .distinct
+    @vendors = @vendors.where(stakeholder_category_id: [stakeholder_id, nil]) if stakeholder_id.present?
+    @vendors = @vendors.distinct
       .order(:vendor_name)
     maker_employee_ids = [
       @quotation_proposal&.user&.employee_master&.id,
       current_employee_master&.id
     ].compact.uniq
     @committee_members = EmployeeMaster.where.not(id: maker_employee_ids).order(:name)
+  end
+
+  def quotation_form_stakeholder_id
+    return @quotation_proposal.theme&.stakeholder_category_id if @quotation_proposal&.theme&.stakeholder_category_id.present?
+
+    if @quotation_proposal&.theme_id.present?
+      theme_stakeholder_id = Theme.where(id: @quotation_proposal.theme_id).pick(:stakeholder_category_id)
+      return theme_stakeholder_id if theme_stakeholder_id.present?
+    end
+
+    return current_employee_master.stakeholder_category_id if current_employee_master&.stakeholder_category_id.present?
+
+    current_user&.vendor_registrations&.where.not(stakeholder_category_id: nil)&.order(:id)&.pick(:stakeholder_category_id)
   end
 
   def load_purchase_order_context!

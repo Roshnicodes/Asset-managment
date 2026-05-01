@@ -141,6 +141,53 @@ const setupTableSearch = () => {
   })
 }
 
+const setupTableSorting = () => {
+  document.querySelectorAll("table[data-sortable-table='true']").forEach((table) => {
+    if (table.dataset.sortReady === "true") return
+
+    const tbody = table.querySelector("tbody")
+    const triggers = Array.from(table.querySelectorAll("[data-sort-trigger]"))
+    if (!tbody || triggers.length === 0) return
+
+    const normalizeText = (value) => value.toString().replace(/\s+/g, " ").trim().toLowerCase()
+
+    const sortRows = (columnIndex, direction) => {
+      const rows = Array.from(tbody.querySelectorAll("tr"))
+      const multiplier = direction === "asc" ? 1 : -1
+
+      rows.sort((leftRow, rightRow) => {
+        const leftValue = normalizeText(leftRow.cells[columnIndex]?.dataset.sortValue || leftRow.cells[columnIndex]?.innerText || "")
+        const rightValue = normalizeText(rightRow.cells[columnIndex]?.dataset.sortValue || rightRow.cells[columnIndex]?.innerText || "")
+
+        return leftValue.localeCompare(rightValue, undefined, { numeric: true, sensitivity: "base" }) * multiplier
+      })
+
+      rows.forEach((row) => tbody.appendChild(row))
+    }
+
+    triggers.forEach((trigger) => {
+      const header = trigger.closest("th")
+      if (!header) return
+
+      trigger.addEventListener("click", () => {
+        const currentDirection = header.dataset.sortDirection === "asc" ? "asc" : header.dataset.sortDirection === "desc" ? "desc" : "none"
+        const nextDirection = currentDirection === "asc" ? "desc" : "asc"
+        const columnIndex = Number(trigger.dataset.sortIndex)
+
+        triggers.forEach((item) => {
+          const itemHeader = item.closest("th")
+          if (itemHeader) itemHeader.dataset.sortDirection = "none"
+        })
+
+        header.dataset.sortDirection = nextDirection
+        sortRows(columnIndex, nextDirection)
+      })
+    })
+
+    table.dataset.sortReady = "true"
+  })
+}
+
 const setupApprovalChannelSteps = () => {
   document.querySelectorAll("[data-approval-steps]").forEach((container) => {
     if (container.dataset.ready === "true") return
@@ -410,7 +457,7 @@ const setupQuotationProposalForm = () => {
       if (selectionNote) {
         selectionNote.textContent = singleVendorMode()
           ? "Below 10K me sirf ek vendor select kiya ja sakta hai."
-          : "Theme select karne ke baad sirf matching vendors yahan show honge."
+          : "Theme select karne ke baad sirf same stakeholder ke matching vendors yahan show honge."
       }
 
       if (selectedWrap) {
@@ -437,6 +484,8 @@ const setupQuotationProposalForm = () => {
 
     const syncVendors = () => {
       const selectedThemeId = themeSelect.value
+      const selectedThemeOption = themeSelect.options[themeSelect.selectedIndex]
+      const selectedStakeholderId = selectedThemeOption?.dataset?.stakeholderId || ""
       const query = (search?.value || "").trim().toLowerCase()
       const selectedCheckboxes = vendorOptions
         .map((option) => option.querySelector(".quotation-vendor-checkbox"))
@@ -445,15 +494,17 @@ const setupQuotationProposalForm = () => {
 
       vendorOptions.forEach((option) => {
         const themeIds = (option.dataset.themeIds || "").split(",").filter(Boolean)
+        const vendorStakeholderId = option.dataset.stakeholderId || ""
         const text = option.innerText.toLowerCase()
         const matchesTheme = selectedThemeId === "" || themeIds.includes(selectedThemeId)
+        const matchesStakeholder = selectedStakeholderId === "" || vendorStakeholderId === "" || vendorStakeholderId === selectedStakeholderId
         const matchesSearch = query === "" || text.includes(query)
         const checkbox = option.querySelector(".quotation-vendor-checkbox")
         const isSelected = !!checkbox?.checked
-        const shouldShow = matchesTheme && matchesSearch && !isSelected
+        const shouldShow = matchesTheme && matchesStakeholder && matchesSearch && !isSelected
 
         option.classList.toggle("is-hidden", !shouldShow)
-        if (!matchesTheme && checkbox) checkbox.checked = false
+        if ((!matchesTheme || !matchesStakeholder) && checkbox) checkbox.checked = false
         if (checkbox) {
           checkbox.disabled = !!(singleVendorMode() && lockedSelection && checkbox.value !== lockedSelection)
         }
@@ -466,15 +517,17 @@ const setupQuotationProposalForm = () => {
           if (!checkbox?.checked) return false
 
           const themeIds = (option.dataset.themeIds || "").split(",").filter(Boolean)
+          const vendorStakeholderId = option.dataset.stakeholderId || ""
           const text = option.innerText.toLowerCase()
           const matchesTheme = selectedThemeId === "" || themeIds.includes(selectedThemeId)
+          const matchesStakeholder = selectedStakeholderId === "" || vendorStakeholderId === "" || vendorStakeholderId === selectedStakeholderId
           const matchesSearch = query === "" || text.includes(query)
-          return matchesTheme && matchesSearch
+          return matchesTheme && matchesStakeholder && matchesSearch
         })
 
         emptyState.textContent = selectedMatchingOptions.length > 0
           ? "All matching vendors are selected."
-          : "No vendor matches the selected theme or search."
+          : "No vendor matches the selected theme, stakeholder, or search."
         emptyState.classList.toggle("is-hidden", visibleOptions.length > 0)
       }
       updateLabel()
@@ -872,6 +925,7 @@ document.addEventListener("turbo:load", setupVendorRegistrationSelections)
 document.addEventListener("turbo:load", setupVendorDocumentToggle)
 document.addEventListener("turbo:load", setupMsmeToggle)
 document.addEventListener("turbo:load", setupTableSearch)
+document.addEventListener("turbo:load", setupTableSorting)
 document.addEventListener("turbo:load", setupApprovalChannelSteps)
 document.addEventListener("turbo:load", setupQuotationProposalForm)
 document.addEventListener("turbo:load", setupVendorApprovalSelections)

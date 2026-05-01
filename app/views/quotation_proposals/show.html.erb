@@ -7,7 +7,7 @@
   committee_approval_started = approval_request.present?
   owner_or_admin = current_user == @quotation_proposal.user || admin_user?
   creator_can_dispatch = current_user == @quotation_proposal.user
-  editable_by_owner = approval_request.blank? || approval_request.employee_return_pending? || @quotation_proposal.missing_max_rates?
+  editable_by_owner = !@quotation_proposal.approval_locked? && (approval_request.blank? || approval_request.employee_return_pending? || @quotation_proposal.missing_max_rates?)
   committee_trail_steps = approval_request.present? ? approval_request.trail_steps : @quotation_proposal.committee_steps
   pending_approval_count = approval_request.present? ? approval_request.approval_steps.where(status: "pending").count : 0
   committee_scoring_allowed = @quotation_proposal.committee_member?(current_employee_master) || @quotation_proposal.committee_user?(current_user)

@@ -45,7 +45,17 @@
 
       <div class="app-form-field">
         <%= form.label :theme_id, "Select Theme" %>
-        <%= form.collection_select :theme_id, @themes, :id, :name, { prompt: "Select theme" }, { id: "quotation_proposal_theme_id", required: true, data: { validation_label: "Select Theme" } } %>
+        <%= form.select :theme_id,
+                        options_for_select(
+                          @themes.map do |theme|
+                            stakeholder_name = theme.stakeholder_category&.name.to_s.strip.presence
+                            theme_label = stakeholder_name.present? ? "#{theme.name} (#{stakeholder_name})" : theme.name
+                            [theme_label, theme.id, { "data-stakeholder-id": theme.stakeholder_category_id }]
+                          end,
+                          quotation_proposal.theme_id
+                        ),
+                        { prompt: "Select theme" },
+                        { id: "quotation_proposal_theme_id", required: true, data: { validation_label: "Select Theme" } } %>
         <% (field_errors.call(:theme) + field_errors.call(:theme_id)).uniq.each do |message| %>
           <div class="app-form-error"><%= message %></div>
         <% end %>
@@ -83,7 +93,7 @@
     <div class="app-page-header app-subsection-header">
       <div>
         <h3>Select Vendors</h3>
-        <p class="app-section-note mb-0" data-vendor-selection-note>Theme select karne ke baad sirf matching vendors yahan show honge.</p>
+        <p class="app-section-note mb-0" data-vendor-selection-note>Theme select karne ke baad sirf same stakeholder ke matching vendors yahan show honge.</p>
       </div>
     </div>
 
@@ -101,20 +111,32 @@
           <div class="app-multiselect-options">
             <% @vendors.each do |vendor| %>
               <% theme_ids = vendor.themes.map(&:id).join(",") %>
-              <label class="app-multiselect-option" data-theme-ids="<%= theme_ids %>" data-vendor-option>
+              <label class="app-multiselect-option"
+                     data-theme-ids="<%= theme_ids %>"
+                     data-stakeholder-id="<%= vendor.stakeholder_category_id %>"
+                     data-vendor-option>
                 <%= check_box_tag "quotation_proposal[vendor_registration_ids][]", vendor.id, quotation_proposal.vendor_registration_ids.include?(vendor.id), class: "quotation-vendor-checkbox" %>
                 <span>
                   <strong><%= vendor.display_name %></strong><br>
-                  <small><%= vendor.email %></small>
+                  <small><%= [vendor.email, vendor.stakeholder_category&.name].compact.join(" | ") %></small>
                 </span>
               </label>
             <% end %>
           </div>
 
-          <p class="app-multiselect-empty is-hidden" data-quotation-vendor-empty>No vendor matches the selected theme or search.</p>
+          <p class="app-multiselect-empty is-hidden" data-quotation-vendor-empty>No vendor matches the selected theme, stakeholder, or search.</p>
         </div>
       </div>
       <div class="app-form-error app-form-error-client" data-vendor-selection-error="true"></div>
+      <% if quotation_proposal.vendor_registrations.any? %>
+        <p class="app-section-note mb-0" style="margin-top: 0.65rem;">
+          Selected vendors:
+          <%= quotation_proposal.vendor_registrations.map { |vendor|
+                stakeholder_name = vendor.stakeholder_category&.name.to_s.strip.presence || "No stakeholder"
+                "#{vendor.display_name} (#{stakeholder_name})"
+              }.join(", ") %>
+        </p>
+      <% end %>
     </div>
 
     <div class="app-page-header app-subsection-header">

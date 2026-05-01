@@ -1,18 +1,38 @@
 <div id="<%= dom_id office_category %>" class="app-detail-card">
   <div class="app-detail-grid">
     <div class="app-detail-item">
+      <div class="app-detail-label">Stakeholder</div>
+      <div class="app-detail-value"><%= office_category.stakeholder_category&.name || "-" %></div>
+    </div>
+
+    <div class="app-detail-item">
       <div class="app-detail-label">Category Name</div>
-      <div class="app-detail-value"><%= office_category.name %></div>
+      <div class="app-detail-value"><%= office_category.office_category_master_name || "-" %></div>
     </div>
 
     <div class="app-detail-item">
-      <div class="app-detail-label">Office Level</div>
-      <div class="app-detail-value"><%= office_category.office_level %></div>
+      <div class="app-detail-label">Parent Office</div>
+      <div class="app-detail-value"><%= office_category.parent&.display_name || "None" %></div>
     </div>
 
     <div class="app-detail-item">
-      <div class="app-detail-label">Parent Category</div>
-      <div class="app-detail-value"><%= office_category.parent&.name || "None" %></div>
+      <div class="app-detail-label">State</div>
+      <div class="app-detail-value"><%= office_category.state&.name || "-" %></div>
+    </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">District</div>
+      <div class="app-detail-value"><%= office_category.district&.name || "-" %></div>
+    </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">Block</div>
+      <div class="app-detail-value"><%= office_category.block&.name || "-" %></div>
+    </div>
+
+    <div class="app-detail-item">
+      <div class="app-detail-label">Name</div>
+      <div class="app-detail-value"><%= office_category.name.presence || "-" %></div>
     </div>
   </div>
 </div>

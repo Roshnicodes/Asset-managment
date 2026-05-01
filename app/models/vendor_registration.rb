@@ -54,6 +54,10 @@ class VendorRegistration < ApplicationRecord
     vendor_name.presence || firm_name.presence || "Vendor Registration ##{id}"
   end
 
+  def approval_locked?
+    approval_request&.status == "approved"
+  end
+
   def attachment_for(document_key)
     case document_key.to_s
     when "msme_certificate" then msme_certificate

@@ -81,6 +81,7 @@ Rails.application.routes.draw do
   resources :units, except: :show
   resources :stakeholder_categories
   resources :registration_types, except: :show
+  resources :office_category_masters
   resources :office_categories
   resources :blocks
   get "users", to: redirect("/users/sign_in")

@@ -1,5 +1,5 @@
 <div class="app-page-header">
-  <h2>Office Category Details</h2>
+  <h2>Office Structure Details</h2>
   <%= link_to "Back", office_categories_path, class: "app-back-link" %>
 </div>
 
@@ -7,5 +7,5 @@
 
 <div class="app-detail-actions">
   <%= link_to "Edit", edit_office_category_path(@office_category), class: "app-secondary-btn" %>
-  <%= button_to "Delete", @office_category, method: :delete, data: { turbo_confirm: "Delete this office category?" }, class: "app-danger-btn" %>
+  <%= button_to "Delete", @office_category, method: :delete, data: { turbo_confirm: "Delete this office structure?" }, class: "app-danger-btn" %>
 </div>

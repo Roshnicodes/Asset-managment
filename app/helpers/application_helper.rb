@@ -90,6 +90,19 @@ module ApplicationHelper
     role_perms = MenuPermission.where(stakeholder_category_id: employee.stakeholder_category_id, designation: employee.designation)
     return false if role_perms.empty? # By default, when new employee logs in, nothing is visible
 
+    if identifier == "office_category_main"
+      office_menu_ids = %w[office_category_master office_category_name office_pmu office_fco office_to]
+      return true if role_perms.where(menu_identifier: office_menu_ids, can_view: true).exists?
+    end
+
+    if identifier == "office_category_master"
+      return true if role_perms.where(menu_identifier: %w[office_category_master office_pmu office_fco office_to], can_view: true).exists?
+    end
+
+    if identifier == "office_category_name"
+      return true if role_perms.where(menu_identifier: %w[office_category_name office_pmu office_fco office_to], can_view: true).exists?
+    end
+
     if identifier == "vendor_registration_main"
       return true if role_perms.find_by(menu_identifier: "vendor_registration")&.can_view?
       return true if role_perms.find_by(menu_identifier: "vendor_registration_list")&.can_view?
