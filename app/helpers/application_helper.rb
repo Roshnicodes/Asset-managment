@@ -18,6 +18,7 @@ module ApplicationHelper
     vendor: '<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/><path d="M5 20a7 7 0 0 1 14 0"/><path d="M18 8h3"/><path d="M19.5 6.5v3"/>',
     asset: '<rect x="5" y="5" width="14" height="14" rx="3"/><path d="M9 9h6v6H9z"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/>',
     allocation: '<path d="M5 7h8a3 3 0 0 1 0 6H7"/><path d="M11 17H5a3 3 0 0 1 0-6h2"/><path d="m13 14 3 3 4-4"/>',
+    insurance: '<path d="M12 3 5 6.5V12c0 4.6 2.8 8.2 7 9.8 4.2-1.6 7-5.2 7-9.8V6.5L12 3Z"/><path d="M9 12h6"/><path d="M12 9v6"/>',
     logout: '<path d="M10 6H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h3"/><path d="M14 16l4-4-4-4"/><path d="M18 12h-8"/>',
     eye: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
     pencil: '<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>',
@@ -47,6 +48,47 @@ module ApplicationHelper
     content_tag(:a, class: "nav-link dropdown-toggle-link", data: { bs_toggle: "collapse" }, href: "##{target_id}") do
       safe_join([content_tag(:span, safe_join([app_icon(icon), content_tag(:span, label, class: "app-link-label")]), class: "app-link-wrap")])
     end
+  end
+
+  def catalog_item_option_label(item)
+    return item.to_s if item.is_a?(String)
+
+    case item
+    when Product
+      [item.product_code.presence, item.name.presence].compact.join(" | ")
+    when ProductVariety
+      base_label = [item.product_type_code.presence, item.name.presence].compact.join(" | ")
+      product_name = item.product&.name.to_s.strip
+      product_name.present? ? "#{base_label} (#{product_name})" : base_label
+    else
+      item.to_s
+    end
+  end
+
+  def quotation_item_product_type_code(item_name)
+    normalized_name = item_name.to_s.strip
+    return nil if normalized_name.blank?
+
+    quotation_catalog_product_types_by_name[normalized_name]&.product_type_code.to_s.strip.presence
+  end
+
+  def asset_product_code_label(product)
+    return "" if product.blank?
+
+    product.asset_product_type_code_segment
+  end
+
+  def quotation_item_display_name(item_name)
+    normalized_name = item_name.to_s.strip
+    return "-" if normalized_name.blank?
+
+    matched_product = quotation_catalog_products_by_name[normalized_name]
+    return catalog_item_option_label(matched_product) if matched_product.present?
+
+    matched_product_type = quotation_catalog_product_types_by_name[normalized_name]
+    return catalog_item_option_label(matched_product_type) if matched_product_type.present?
+
+    normalized_name
   end
 
   def current_stakeholder_category
@@ -82,6 +124,7 @@ module ApplicationHelper
     return true if identifier.nil?
     return true if identifier == "dashboard"
     return true if admin_user?
+    return finance_queue_access? if identifier == "payment_advice_queue"
     
     employee = current_employee_master
     return false unless employee
@@ -111,6 +154,7 @@ module ApplicationHelper
     if identifier == "quotation_proposal_main"
       return true if role_perms.find_by(menu_identifier: "quotation_proposal_form")&.can_view?
       return true if role_perms.find_by(menu_identifier: "quotation_proposal_list")&.can_view?
+      return true if finance_queue_access?
     end
 
     if identifier == "assets"
@@ -218,5 +262,25 @@ module ApplicationHelper
     return "bg-warning bg-opacity-10 text-warning border-warning" if approval_request.employee_return_pending? || approval_request.level_return_pending?
 
     approval_status_css_class_for(approval_request.status)
+  end
+
+  private
+
+  def quotation_catalog_products
+    products = instance_variable_defined?(:@products) ? instance_variable_get(:@products) : nil
+    products.presence || Product.order(:name).to_a
+  end
+
+  def quotation_catalog_product_types
+    product_types = instance_variable_defined?(:@product_varieties) ? instance_variable_get(:@product_varieties) : nil
+    product_types.presence || ProductVariety.includes(:product).order(:name).to_a
+  end
+
+  def quotation_catalog_products_by_name
+    @quotation_catalog_products_by_name ||= quotation_catalog_products.index_by { |product| product.name.to_s.strip }
+  end
+
+  def quotation_catalog_product_types_by_name
+    @quotation_catalog_product_types_by_name ||= quotation_catalog_product_types.index_by { |product_type| product_type.name.to_s.strip }
   end
 end

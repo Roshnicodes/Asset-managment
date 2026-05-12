@@ -2,7 +2,7 @@
   <div class="app-hero-copy">
     <span class="app-hero-eyebrow">Access Setup</span>
     <h1 class="app-hero-title">Role Based Access Control</h1>
-    <p class="app-hero-text">Stakeholder aur designation select karke exactly decide karein ki sidebar aur page access me kya visible hoga.</p>
+    <p class="app-hero-text">Select a stakeholder and designation to control which sidebar menus and pages are visible.</p>
   </div>
   <div class="app-hero-meta">
     <div class="app-hero-stat">
@@ -20,7 +20,7 @@
   <div class="app-admin-panel-header">
     <div>
       <h2 class="app-admin-panel-title">Role Context</h2>
-      <p class="app-section-note mb-0">Pehle stakeholder category aur designation choose karein, phir permission matrix auto load hogi.</p>
+      <p class="app-section-note mb-0">Select a stakeholder category and designation to load the permission matrix.</p>
     </div>
   </div>
 
@@ -44,7 +44,7 @@
     <div class="app-context-pill app-context-pill-success">Stakeholder: <%= @current_stakeholder.name %></div>
     <div class="app-context-pill app-context-pill-info">Role: <%= @current_designation %></div>
     <div class="app-context-pill">Menus: <%= MenuPermission::SIDEBAR_MENUS.size %></div>
-    <div class="app-context-note">Checked items sidebar aur permitted pages dono me visible rahenge.</div>
+    <div class="app-context-note">Checked items remain visible in both the sidebar and permitted pages.</div>
   </div>
 
   <%= form_with url: menu_permissions_path, method: :post, local: true do |f| %>
@@ -55,7 +55,7 @@
       <div class="app-admin-panel-header">
         <div>
           <h2 class="app-admin-panel-title">Permission Matrix</h2>
-          <p class="app-section-note mb-0">Primary menu aur uske sub-menu items ko role ke hisaab se enable ya disable karein.</p>
+          <p class="app-section-note mb-0">Enable or disable primary and submenu items for the selected role.</p>
         </div>
       </div>
 

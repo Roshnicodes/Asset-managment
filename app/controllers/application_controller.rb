@@ -16,6 +16,7 @@ class ApplicationController < ActionController::Base
   helper_method :current_approval_employee_ids
   helper_method :approval_actor_for
   helper_method :employee_matches_current_login?
+  helper_method :finance_queue_access?
 
   def current_employee_master
     return @current_employee_master if defined?(@current_employee_master)
@@ -46,14 +47,11 @@ class ApplicationController < ActionController::Base
   def current_approval_employee_ids
     return @current_approval_employee_ids if defined?(@current_approval_employee_ids)
 
-    ids =
-      if current_employee_master.present?
-        [current_employee_master.id]
-      elsif current_login_email.present?
-        EmployeeMaster.where("LOWER(TRIM(email_id)) = ?", current_login_email).pluck(:id)
-      else
-        []
-      end
+    ids = []
+    ids << current_employee_master.id if current_employee_master.present?
+    if current_login_email.present?
+      ids.concat(EmployeeMaster.where("LOWER(TRIM(email_id)) = ?", current_login_email).pluck(:id))
+    end
 
     @current_approval_employee_ids = ids.compact.uniq
   end
@@ -61,12 +59,8 @@ class ApplicationController < ActionController::Base
   def employee_matches_current_login?(employee)
     return false unless employee
 
-    if current_employee_master.present?
-      employee.id == current_employee_master.id
-    else
-      current_approval_employee_ids.include?(employee.id) ||
-        employee.email_id.to_s.strip.downcase == current_login_email
-    end
+    current_approval_employee_ids.include?(employee.id) ||
+      employee.email_id.to_s.strip.downcase == current_login_email
   end
 
   def approval_actor_for(record = nil)
@@ -102,7 +96,30 @@ class ApplicationController < ActionController::Base
     end
   end
 
+  def finance_queue_access?
+    return true if admin_user?
+
+    employee = current_employee_master
+    return false unless employee
+
+    role_permissions = MenuPermission.where(
+      stakeholder_category_id: employee.stakeholder_category_id,
+      designation: employee.designation
+    )
+
+    explicit_permission = role_permissions.find_by(menu_identifier: "payment_advice_queue")
+    return explicit_permission.can_view? if explicit_permission.present?
+
+    role_permissions.find_by(menu_identifier: "quotation_proposal_list")&.can_view? &&
+      finance_designation?(employee.designation)
+  end
+
   private
+
+  def finance_designation?(designation)
+    designation_text = designation.to_s.strip.downcase
+    designation_text.include?("finance") || designation_text.include?("account")
+  end
 
   def configure_permitted_parameters
     devise_parameter_sanitizer.permit(:sign_up, keys: [:role])

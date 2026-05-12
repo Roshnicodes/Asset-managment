@@ -265,13 +265,13 @@
 
     <div class="app-form-section">
       <div class="app-form-section-title">Theme and Product Selection</div>
-      <p class="app-form-section-note">Pehle theme select karein, phir uske according product aur product variety choose karein.</p>
+      <p class="app-form-section-note">Select the theme first, then choose the related products and product varieties.</p>
     </div>
 
     <div class="app-form-grid">
       <div class="app-form-field <%= "has-error" if field_errors.call(:theme_ids).any? %>" data-checkbox-group="true" data-checkbox-group-label="Theme Name">
         <%= form.label :theme_ids, "Theme Name" %>
-        <p class="app-checkbox-note">Multiple selection ke liye checkbox use karein.</p>
+        <p class="app-checkbox-note">Use the checkboxes to select multiple options.</p>
         <%= hidden_field_tag "vendor_registration[theme_ids][]", "" %>
         <div class="app-checkbox-grid">
           <% @themes.each do |theme| %>
@@ -289,7 +289,7 @@
 
       <div class="app-form-field <%= "has-error" if field_errors.call(:product_ids).any? %>" data-checkbox-group="true" data-checkbox-group-label="Product Name">
         <%= form.label :product_ids, "Product Name" %>
-        <p class="app-checkbox-note">Selected theme ke according products dikhenge.</p>
+        <p class="app-checkbox-note">Products are filtered by the selected theme.</p>
         <%= hidden_field_tag "vendor_registration[product_ids][]", "" %>
         <div class="app-checkbox-grid">
           <% @products.each do |product| %>
@@ -305,9 +305,9 @@
         <div class="app-form-error app-form-error-client" data-field-error="true"></div>
       </div>
 
-      <div class="app-form-field <%= "has-error" if field_errors.call(:product_variety_ids).any? %>" data-checkbox-group="true" data-checkbox-group-label="Product Variety Name">
-        <%= form.label :product_variety_ids, "Product Variety Name" %>
-        <p class="app-checkbox-note">Selected product ke according product varieties dikhenge.</p>
+      <div class="app-form-field <%= "has-error" if field_errors.call(:product_variety_ids).any? %>" data-checkbox-group="true" data-checkbox-group-label="Product Type Name">
+        <%= form.label :product_variety_ids, "Product Type Name" %>
+        <p class="app-checkbox-note">Product types are filtered by the selected products.</p>
         <%= hidden_field_tag "vendor_registration[product_variety_ids][]", "" %>
         <div class="app-checkbox-grid">
           <% @product_varieties.each do |product_variety| %>
@@ -344,7 +344,7 @@
 
     <div class="app-form-section">
       <div class="app-form-section-title">Bank Details</div>
-      <p class="app-form-section-note">Bank details aur check book / cancelled cheque yahan upload karein.</p>
+      <p class="app-form-section-note">Add bank details and upload the checkbook or cancelled cheque here.</p>
     </div>
 
     <% field_errors.call(:vendor_bank_masters).each do |message| %>
@@ -357,7 +357,7 @@
 
     <div class="app-form-section">
       <div class="app-form-section-title">Document Uploads</div>
-      <p class="app-form-section-note">Document master ke hisaab se uploads yahan dikhenge.</p>
+      <p class="app-form-section-note">Uploads appear here based on the configured document master.</p>
     </div>
 
     <div class="app-form-grid four-col">
@@ -412,10 +412,10 @@
             <%= document_master.mandatory? ? "Mandatory" : "Optional" %>
           </p>
           <% if attachment_name == "aadhar_document" %>
-            <p class="app-section-note">Aadhar upload sirf Proprietor firm type ke liye enable hoga.</p>
+            <p class="app-section-note">Aadhar upload is enabled only for the Proprietor firm type.</p>
           <% end %>
           <% if attachment_name == "msme_certificate" %>
-            <p class="app-section-note">MSME status Yes hone par certificate upload required hoga.</p>
+            <p class="app-section-note">The MSME certificate becomes required when MSME status is set to Yes.</p>
           <% end %>
           <% if attachment_saved %>
             <p class="app-section-note" style="margin-top: 0.5rem;">

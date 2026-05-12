@@ -280,6 +280,27 @@ class QuotationProposalTest < ActiveSupport::TestCase
     assert_equal true, proposal.committee_scoring_complete?
   end
 
+  test "criteria based scoring is true when selection criteria are configured" do
+    proposal = QuotationProposal.new
+    proposal.define_singleton_method(:criteria_selections) do
+      [OpenStruct.new(display_label: "Past performance")]
+    end
+
+    assert_equal true, proposal.criteria_based_scoring?
+  end
+
+  test "selected criteria labels use the stored snapshot labels" do
+    proposal = QuotationProposal.new
+    proposal.define_singleton_method(:criteria_selections) do
+      [
+        OpenStruct.new(display_label: "Past performance"),
+        OpenStruct.new(display_label: "Warranty support")
+      ]
+    end
+
+    assert_equal ["Past performance", "Warranty support"], proposal.selected_criteria_labels
+  end
+
   test "sync_vendor_rankings_and_selection waits for all committee scores before selecting a vendor" do
     proposal = QuotationProposal.new
     proposal.define_singleton_method(:committee_steps) do

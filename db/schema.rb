@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_29_131500) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_12_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -122,19 +122,30 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_29_131500) do
 
   create_table "assets", force: :cascade do |t|
     t.string "asset_code"
+    t.date "asset_code_date"
     t.datetime "created_at", null: false
+    t.string "insurance_company_name"
+    t.date "insurance_date"
+    t.date "insurance_expiry_date"
+    t.string "insurance_policy_number"
+    t.boolean "insured"
     t.string "name"
+    t.bigint "primary_office_category_id"
     t.bigint "product_id", null: false
     t.bigint "quotation_proposal_vendor_invoice_request_id"
     t.bigint "quotation_proposal_vendor_item_id"
+    t.bigint "secondary_office_category_id"
     t.string "serial_number"
+    t.bigint "stakeholder_category_id"
     t.string "unique_product_code"
     t.datetime "updated_at", null: false
-    t.index ["asset_code"], name: "index_assets_on_asset_code", unique: true
+    t.index ["primary_office_category_id"], name: "index_assets_on_primary_office_category_id"
     t.index ["product_id"], name: "index_assets_on_product_id"
     t.index ["quotation_proposal_vendor_invoice_request_id"], name: "idx_assets_on_invoice_request"
     t.index ["quotation_proposal_vendor_item_id"], name: "idx_assets_on_vendor_item"
-    t.index ["unique_product_code"], name: "index_assets_on_unique_product_code", unique: true
+    t.index ["secondary_office_category_id"], name: "index_assets_on_secondary_office_category_id"
+    t.index ["serial_number"], name: "index_assets_on_serial_number", unique: true
+    t.index ["stakeholder_category_id"], name: "index_assets_on_stakeholder_category_id"
   end
 
   create_table "blocks", force: :cascade do |t|
@@ -276,9 +287,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_29_131500) do
     t.datetime "created_at", null: false
     t.string "name"
     t.bigint "product_id", null: false
+    t.string "product_type_code"
     t.bigint "stakeholder_category_id"
     t.datetime "updated_at", null: false
     t.index ["product_id"], name: "index_product_varieties_on_product_id"
+    t.index ["product_type_code"], name: "index_product_varieties_on_product_type_code", unique: true
     t.index ["stakeholder_category_id"], name: "index_product_varieties_on_stakeholder_category_id"
   end
 
@@ -286,9 +299,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_29_131500) do
     t.datetime "created_at", null: false
     t.text "description"
     t.string "name"
+    t.string "product_code"
     t.bigint "stakeholder_category_id"
     t.bigint "theme_id", null: false
     t.datetime "updated_at", null: false
+    t.index ["product_code"], name: "index_products_on_product_code", unique: true
     t.index ["stakeholder_category_id"], name: "index_products_on_stakeholder_category_id"
     t.index ["theme_id"], name: "index_products_on_theme_id"
   end
@@ -307,6 +322,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_29_131500) do
     t.index ["quotation_proposal_id"], name: "idx_on_quotation_proposal_id_134499ac03"
   end
 
+  create_table "quotation_proposal_criteria_selections", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "criterion_label", null: false
+    t.bigint "quotation_proposal_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "vendor_selection_criterion_id"
+    t.index ["quotation_proposal_id", "vendor_selection_criterion_id"], name: "idx_qp_criteria_selections_unique", unique: true
+    t.index ["quotation_proposal_id"], name: "idx_on_quotation_proposal_id_f866a9aaa5"
+    t.index ["vendor_selection_criterion_id"], name: "idx_on_vendor_selection_criterion_id_6a3825968a"
+  end
+
   create_table "quotation_proposal_items", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "item_name", null: false
@@ -318,6 +344,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_29_131500) do
     t.datetime "updated_at", null: false
     t.index ["quotation_proposal_id"], name: "index_quotation_proposal_items_on_quotation_proposal_id"
     t.index ["unit_id"], name: "index_quotation_proposal_items_on_unit_id"
+  end
+
+  create_table "quotation_proposal_vendor_criteria_scores", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "employee_master_id", null: false
+    t.bigint "quotation_proposal_criteria_selection_id", null: false
+    t.bigint "quotation_proposal_vendor_id", null: false
+    t.integer "score"
+    t.datetime "updated_at", null: false
+    t.index ["employee_master_id"], name: "idx_on_employee_master_id_9f21285c8e"
+    t.index ["quotation_proposal_criteria_selection_id"], name: "idx_on_quotation_proposal_criteria_selection_id_2ca10f2cf3"
+    t.index ["quotation_proposal_vendor_id", "quotation_proposal_criteria_selection_id", "employee_master_id"], name: "idx_qp_vendor_criteria_scores_unique", unique: true
+    t.index ["quotation_proposal_vendor_id"], name: "idx_on_quotation_proposal_vendor_id_31af49b854"
   end
 
   create_table "quotation_proposal_vendor_invoice_requests", force: :cascade do |t|
@@ -343,6 +382,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_29_131500) do
     t.date "rfp_created_on"
     t.string "rfp_no"
     t.string "status", default: "pending_invoice", null: false
+    t.date "transaction_date"
+    t.string "transaction_no"
+    t.string "transaction_type"
     t.datetime "updated_at", null: false
     t.date "utr_date"
     t.string "utr_no"
@@ -392,6 +434,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_29_131500) do
     t.datetime "created_at", null: false
     t.bigint "employee_master_id", null: false
     t.bigint "quotation_proposal_vendor_id", null: false
+    t.text "remark"
     t.integer "score"
     t.datetime "updated_at", null: false
     t.index ["employee_master_id"], name: "index_quotation_proposal_vendor_scores_on_employee_master_id"
@@ -654,6 +697,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_29_131500) do
     t.index ["user_id"], name: "index_vendor_registrations_on_user_id"
   end
 
+  create_table "vendor_selection_criteria", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "criteria", null: false
+    t.bigint "theme_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["theme_id"], name: "index_vendor_selection_criteria_on_theme_id"
+  end
+
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "allocations", "assets"
@@ -670,9 +721,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_29_131500) do
   add_foreign_key "approval_steps", "approval_requests"
   add_foreign_key "approval_steps", "employee_masters"
   add_foreign_key "approval_steps", "employee_masters", column: "from_user_id"
+  add_foreign_key "assets", "office_categories", column: "primary_office_category_id"
+  add_foreign_key "assets", "office_categories", column: "secondary_office_category_id"
   add_foreign_key "assets", "products"
   add_foreign_key "assets", "quotation_proposal_vendor_invoice_requests"
   add_foreign_key "assets", "quotation_proposal_vendor_items"
+  add_foreign_key "assets", "stakeholder_categories"
   add_foreign_key "blocks", "districts"
   add_foreign_key "districts", "states"
   add_foreign_key "document_masters", "firms"
@@ -699,8 +753,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_29_131500) do
   add_foreign_key "products", "themes"
   add_foreign_key "quotation_proposal_committee_steps", "employee_masters"
   add_foreign_key "quotation_proposal_committee_steps", "quotation_proposals"
+  add_foreign_key "quotation_proposal_criteria_selections", "quotation_proposals"
+  add_foreign_key "quotation_proposal_criteria_selections", "vendor_selection_criteria", column: "vendor_selection_criterion_id", on_delete: :nullify
   add_foreign_key "quotation_proposal_items", "quotation_proposals"
   add_foreign_key "quotation_proposal_items", "units"
+  add_foreign_key "quotation_proposal_vendor_criteria_scores", "employee_masters"
+  add_foreign_key "quotation_proposal_vendor_criteria_scores", "quotation_proposal_criteria_selections"
+  add_foreign_key "quotation_proposal_vendor_criteria_scores", "quotation_proposal_vendors"
   add_foreign_key "quotation_proposal_vendor_invoice_requests", "employee_masters", column: "maker_reviewed_by_id"
   add_foreign_key "quotation_proposal_vendor_invoice_requests", "employee_masters", column: "payment_advice_updated_by_id"
   add_foreign_key "quotation_proposal_vendor_invoice_requests", "employee_masters", column: "payment_reference_marked_by_id"
@@ -750,4 +809,5 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_29_131500) do
   add_foreign_key "vendor_registrations", "stakeholder_categories"
   add_foreign_key "vendor_registrations", "states"
   add_foreign_key "vendor_registrations", "users"
+  add_foreign_key "vendor_selection_criteria", "themes"
 end

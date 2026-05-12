@@ -23,6 +23,8 @@ class QuotationProposal < ApplicationRecord
   has_many :vendor_registrations, through: :quotation_proposal_vendors, validate: false
   has_many :quotation_proposal_items, dependent: :destroy, inverse_of: :quotation_proposal
   has_many :committee_steps, -> { order(:level) }, class_name: "QuotationProposalCommitteeStep", dependent: :destroy, inverse_of: :quotation_proposal
+  has_many :criteria_selections, -> { order(:created_at, :id) }, class_name: "QuotationProposalCriteriaSelection", dependent: :destroy, inverse_of: :quotation_proposal
+  has_many :vendor_selection_criteria, through: :criteria_selections
   has_one :approval_request, as: :approvable, dependent: :destroy
 
   accepts_nested_attributes_for :quotation_proposal_items, allow_destroy: true, reject_if: :all_blank
@@ -79,6 +81,47 @@ class QuotationProposal < ApplicationRecord
 
   def procurement_amount_bucket_label
     below_10k? ? "Below 10K" : "Above 10K"
+  end
+
+  def criteria_based_scoring?
+    criteria_selections.any?
+  end
+
+  def selected_vendor_selection_criterion_ids
+    if criteria_selections.loaded?
+      criteria_selections.filter_map(&:vendor_selection_criterion_id)
+    else
+      criteria_selections.where.not(vendor_selection_criterion_id: nil).pluck(:vendor_selection_criterion_id)
+    end
+  end
+
+  def selected_criteria_labels
+    criteria_selections.map(&:display_label)
+  end
+
+  def sync_vendor_selection_criteria!(criterion_ids)
+    selected_ids = Array(criterion_ids).reject(&:blank?).map(&:to_i).uniq
+
+    return criteria_selections.destroy_all if theme_id.blank? || selected_ids.empty?
+
+    matched_criteria = VendorSelectionCriterion
+      .where(id: selected_ids, theme_id: theme_id)
+      .order(:id)
+
+    transaction do
+      existing_records = criteria_selections.index_by(&:vendor_selection_criterion_id)
+
+      matched_criteria.each do |criterion|
+        selection = existing_records.delete(criterion.id) || criteria_selections.build
+        selection.vendor_selection_criterion = criterion
+        selection.criterion_label = criterion.criteria.to_s.strip
+        selection.save! if selection.new_record? || selection.changed?
+      end
+
+      existing_records.values.each(&:destroy!)
+    end
+
+    association(:criteria_selections).reset if association(:criteria_selections).loaded?
   end
 
   def generate_vendor_qr_tokens!

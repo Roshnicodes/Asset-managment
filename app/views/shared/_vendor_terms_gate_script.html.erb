@@ -1,0 +1,38 @@
+<script>
+  (function () {
+    function initVendorTermsGate() {
+      document.querySelectorAll("[data-vendor-terms-checkbox='true']").forEach(function (checkbox) {
+        if (checkbox.dataset.vendorTermsBound === "true") return;
+
+        var formId = checkbox.getAttribute("form");
+        var form = formId ? document.getElementById(formId) : checkbox.closest("form");
+        if (!form) return;
+
+        var buttons = form.querySelectorAll("[data-vendor-terms-submit-button='true']");
+        if (!buttons.length) return;
+
+        function syncVendorTermsState() {
+          buttons.forEach(function (button) {
+            button.disabled = !checkbox.checked;
+            button.style.opacity = checkbox.checked ? "1" : "0.55";
+            button.style.cursor = checkbox.checked ? "pointer" : "not-allowed";
+          });
+        }
+
+        syncVendorTermsState();
+        checkbox.addEventListener("change", syncVendorTermsState);
+        checkbox.dataset.vendorTermsBound = "true";
+      });
+    }
+
+    if (window.initializeVendorTermsGate) {
+      document.removeEventListener("DOMContentLoaded", window.initializeVendorTermsGate);
+      document.removeEventListener("turbo:load", window.initializeVendorTermsGate);
+    }
+
+    window.initializeVendorTermsGate = initVendorTermsGate;
+    document.addEventListener("DOMContentLoaded", initVendorTermsGate);
+    document.addEventListener("turbo:load", initVendorTermsGate);
+    initVendorTermsGate();
+  })();
+</script>

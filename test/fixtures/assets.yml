@@ -3,9 +3,9 @@
 one:
   name: MyString
   product: one
-  serial_number: MyString
+  serial_number: ASSET-SR-001
 
 two:
   name: MyString
   product: two
-  serial_number: MyString
+  serial_number: ASSET-SR-002

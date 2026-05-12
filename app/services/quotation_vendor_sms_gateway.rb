@@ -168,14 +168,14 @@ class QuotationVendorSmsGateway
   def self.payment_advice_message(dispatch, invoice_request, config:)
     vendor_name = sms_vendor_name(dispatch, config: config)
     quotation_reference = quotation_reference_for(dispatch)
-    utr_date = invoice_request.utr_date&.strftime("%d-%m-%Y")
-    bank_name = invoice_request.asa_bank_name.to_s.strip
-    account_no = invoice_request.asa_account_no.to_s.strip
+    transaction_type = invoice_request.payment_transaction_type.to_s.strip
+    transaction_no = invoice_request.payment_transaction_no.to_s.strip
+    transaction_date = invoice_request.payment_transaction_date&.strftime("%d-%m-%Y")
 
     if config[:profile] == :asa
-      "Dear #{vendor_name}, payment advice for quotation #{quotation_reference} is ready. PDO No: #{invoice_request.pdo_no}, RFP No: #{invoice_request.rfp_no}, UTR No: #{invoice_request.utr_no}, UTR Date: #{utr_date}, Bank: #{bank_name}, A/C: #{account_no}. - ACTION FOR SOCIAL ADVANCEMENT"
+      "Dear #{vendor_name}, payment update for quotation #{quotation_reference} is ready. PDO No: #{invoice_request.pdo_no}, RFP No: #{invoice_request.rfp_no}, Transaction Type: #{transaction_type}, Transaction No: #{transaction_no}, Transaction Date: #{transaction_date}. - ACTION FOR SOCIAL ADVANCEMENT"
     else
-      "Dear #{vendor_name}, payment advice for quotation #{quotation_reference} is ready. PDO No: #{invoice_request.pdo_no}, RFP No: #{invoice_request.rfp_no}, UTR No: #{invoice_request.utr_no}, UTR Date: #{utr_date}, Bank: #{bank_name}, A/C: #{account_no}."
+      "Dear #{vendor_name}, payment update for quotation #{quotation_reference} is ready. PDO No: #{invoice_request.pdo_no}, RFP No: #{invoice_request.rfp_no}, Transaction Type: #{transaction_type}, Transaction No: #{transaction_no}, Transaction Date: #{transaction_date}."
     end
   end
 

@@ -34,7 +34,7 @@ class VendorRegistrationTest < ActiveSupport::TestCase
     assert_includes @vendor_registration.errors[:firm_name], "can't be blank"
     assert_includes @vendor_registration.errors[:theme_ids], "must select at least one theme"
     assert_includes @vendor_registration.errors[:product_ids], "must select at least one product"
-    assert_includes @vendor_registration.errors[:product_variety_ids], "must select at least one product variety"
+    assert_includes @vendor_registration.errors[:product_variety_ids], "must select at least one product type"
   end
 
   test "rejects invalid gst number" do

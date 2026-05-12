@@ -24,8 +24,9 @@ class MenuPermission < ApplicationRecord
     "Registration Types" => "registration_types",
     "Service Types" => "service_types",
     "Vendor Thematic Types" => "vendor_themes",
+    "Vendor Selection Criteria" => "vendor_selection_criteria",
     "Product Entry" => "products",
-    "Product Variety Entry" => "product_varieties",
+    "Product Type Entry" => "product_varieties",
     "Units" => "units",
     "Documents" => "documents",
     "Approval Channels" => "approval_channels",
@@ -35,7 +36,8 @@ class MenuPermission < ApplicationRecord
     "Quotation Proposal" => {
       "main" => "quotation_proposal_main",
       "Quotation Proposal Form" => "quotation_proposal_form",
-      "Quotation Proposal List" => "quotation_proposal_list"
+      "Quotation Proposal List" => "quotation_proposal_list",
+      "Payment Advice Queue" => "payment_advice_queue"
     },
     "Vendor Registration Form" => {
       "main" => "vendor_registration_main",

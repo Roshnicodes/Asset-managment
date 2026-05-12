@@ -13,6 +13,7 @@ class ApprovalChannelsController < ApplicationController
   # GET /approval_channels/new
   def new
     @approval_channel = ApprovalChannel.new
+    @approval_channel.form_name = "Vendor Registration"
     @approval_channel.approval_type = "Sequential"
     @approval_channel.approval_channel_steps.build(step_number: 1, current_action: "Proposal Create")
     load_select_options
@@ -82,7 +83,11 @@ class ApprovalChannelsController < ApplicationController
 
     def load_select_options
       @themes = Theme.order(:name)
-      @form_names = ApprovalChannel::FORM_NAMES
+      @form_names = ApprovalChannel::UI_FORM_NAMES.dup
+      if @approval_channel&.persisted? && @approval_channel.form_name.present?
+        @form_names.unshift(@approval_channel.form_name)
+        @form_names.uniq!
+      end
       @approval_types = ApprovalChannel::APPROVAL_TYPES
       @approval_actions = ApprovalChannel::APPROVAL_ACTIONS
       @employee_options = EmployeeMaster.order(:name)

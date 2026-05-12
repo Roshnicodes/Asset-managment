@@ -45,11 +45,17 @@ class DocumentMastersController < ApplicationController
 
   # DELETE /document_masters/1 or /document_masters/1.json
   def destroy
-    @document_master.destroy!
-
     respond_to do |format|
-      format.html { redirect_to document_masters_path, notice: "Document master was successfully destroyed.", status: :see_other }
-      format.json { head :no_content }
+      if @document_master.destroy
+        format.html { redirect_to document_masters_path, notice: "Document master was successfully destroyed.", status: :see_other }
+        format.json { head :no_content }
+      else
+        render_document_master_destroy_error(format)
+      end
+    end
+  rescue ActiveRecord::InvalidForeignKey
+    respond_to do |format|
+      render_document_master_destroy_error(format)
     end
   end
 
@@ -62,5 +68,18 @@ class DocumentMastersController < ApplicationController
     # Only allow a list of trusted parameters through.
     def document_master_params
       params.expect(document_master: [ :name, :mandatory, :msme_only, :stakeholder_category_id, :firm_id ])
+    end
+
+    def document_master_destroy_error_message
+      if @document_master.vendor_registration_documents.exists?
+        "This document master cannot be deleted because it is already linked to vendor registration documents."
+      else
+        @document_master.errors.full_messages.to_sentence.presence || "Document master could not be deleted."
+      end
+    end
+
+    def render_document_master_destroy_error(format)
+      format.html { redirect_to document_masters_path, alert: document_master_destroy_error_message, status: :see_other }
+      format.json { render json: { error: document_master_destroy_error_message, details: @document_master.errors.full_messages }, status: :unprocessable_entity }
     end
 end

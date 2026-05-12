@@ -6,7 +6,7 @@
   <div class="app-quotation-item-row-head">
     <div>
       <h4 class="app-quotation-item-row-title">Proposal Item</h4>
-      <p class="app-quotation-item-row-note">Item details yahan fill karo.</p>
+      <p class="app-quotation-item-row-note">Enter the item details for this proposal line.</p>
     </div>
   </div>
 
@@ -17,16 +17,16 @@
         <option value="">Select item</option>
         <optgroup label="Products">
           <% @products.each do |product| %>
-            <option value="<%= product.name %>" data-theme-id="<%= product.theme_id %>" <%= "selected" if current_item_name == product.name %>><%= product.name %></option>
+            <option value="<%= product.name %>" data-theme-id="<%= product.theme_id %>" <%= "selected" if current_item_name == product.name %>><%= catalog_item_option_label(product) %></option>
           <% end %>
         </optgroup>
-        <optgroup label="Product Varieties">
+        <optgroup label="Product Types">
           <% @product_varieties.each do |variety| %>
-            <option value="<%= variety.name %>" data-theme-id="<%= variety.product.theme_id %>" <%= "selected" if current_item_name == variety.name %>><%= "#{variety.name} (#{variety.product.name})" %></option>
+            <option value="<%= variety.name %>" data-theme-id="<%= variety.product.theme_id %>" <%= "selected" if current_item_name == variety.name %>><%= catalog_item_option_label(variety) %></option>
           <% end %>
         </optgroup>
         <% if current_item_name.present? && !catalog_item_values.include?(current_item_name) %>
-          <option value="<%= current_item_name %>" selected><%= current_item_name %></option>
+          <option value="<%= current_item_name %>" selected><%= quotation_item_display_name(current_item_name) %></option>
         <% end %>
       </select>
       <% form.object.errors[:item_name].uniq.each do |message| %>
@@ -60,7 +60,7 @@
         <div class="app-form-error"><%= message %></div>
       <% end %>
       <div class="app-form-error app-form-error-client" data-field-error="true"></div>
-      <small class="app-field-hint">Ye internal field hai. Vendor ko nahi dikhaya jayega.</small>
+      <small class="app-field-hint">This is an internal field and is not shown to the vendor.</small>
     </div>
 
     <div class="app-form-field app-rfp-item-remark-field <%= "has-error" if form.object.errors[:remark].any? %>">

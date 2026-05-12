@@ -144,7 +144,7 @@ class VendorRegistration < ApplicationRecord
   end
 
   def product_variety_selection_required
-    errors.add(:product_variety_ids, "must select at least one product variety") if product_variety_ids.reject(&:blank?).blank?
+    errors.add(:product_variety_ids, "must select at least one product type") if product_variety_ids.reject(&:blank?).blank?
   end
 
   def bank_details_required

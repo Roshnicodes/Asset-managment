@@ -152,6 +152,30 @@
     margin-bottom: 3px;
   }
 
+  .po-sheet-terms-acceptance {
+    margin-top: 10px;
+    padding: 8px 10px;
+    border: 1px solid #7f9f8c;
+    border-radius: 8px;
+    background: #f6faf7;
+  }
+
+  .po-sheet-terms-acceptance__control {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    cursor: pointer;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  .po-sheet-terms-acceptance__box {
+    margin-top: 2px;
+    accent-color: #12643c;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
   .po-sign {
     margin-top: 14px;
     text-align: right;
@@ -246,7 +270,7 @@
           Payment : <%= po_payment_terms.presence || "As per approved quotation." %><br>
           Date of completion : <%= po_completion_terms.presence || "-" %><br>
           Warranty period : <%= po_warranty_terms.presence || "-" %><br>
-          Earnest Money deposit : <%= po_earnest_money_terms.presence || "-" %>
+          Ernest Money deposit : <%= po_earnest_money_terms.presence || "-" %>
         </td>
       </tr>
     </table>
@@ -268,9 +292,9 @@
         <% po_items.each_with_index do |vendor_item, index| %>
           <tr>
             <td><%= index + 1 %></td>
-            <td><%= vendor_item.item_name.presence || "-" %></td>
+            <td><%= quotation_item_display_name(vendor_item.item_name) %></td>
             <td>
-              <strong><%= vendor_item.item_name %></strong>
+              <strong><%= quotation_item_display_name(vendor_item.item_name) %></strong>
               <% if vendor_item.quotation_proposal_item.remark.present? %>
                 <div class="po-small"><%= vendor_item.quotation_proposal_item.remark %></div>
               <% end %>
@@ -300,13 +324,20 @@
     <div class="po-general-box">
       <div class="po-block-title">General Terms and Conditions:</div>
       <ol>
-        <li>Please send two copies of your proforma invoice.</li>
-        <li>Execute this order in accordance with the prices, terms &amp; conditions, and specifications listed above.</li>
-        <li>Please notify us immediately if you are unable to provide as specified.</li>
-        <li>With the acceptance of this Purchase Order, the supplier agreed to abide by the Anti-bribery policy of ASA and further undertakes that it will promptly report any violation or potential violation of the same by any person to goodgovernance@asabhopal.org.</li>
-        <li>Any dispute or cause of action which arises in connection with the Purchase Order shall be subject to the jurisdiction of the Courts situated at Bhopal, Madhya Pradesh.</li>
+        <% asa_general_terms_and_conditions.each do |term| %>
+          <li><%= term %></li>
+        <% end %>
       </ol>
-      <div style="margin-top: 6px;">goodgovernance@asabhopal.org</div>
+      <div style="margin-top: 6px;"><%= asa_general_terms_contact_email %></div>
+
+      <% if local_assigns[:show_terms_acceptance_checkbox] %>
+        <div class="po-sheet-terms-acceptance">
+          <label class="po-sheet-terms-acceptance__control" for="purchase_order_terms_accepted">
+            <%= check_box_tag :purchase_order_terms_accepted, "1", false, id: "purchase_order_terms_accepted", class: "po-sheet-terms-acceptance__box", form: local_assigns[:purchase_order_form_id], required: true, data: { vendor_terms_checkbox: true } %>
+            <span>I have read and agree to the General Terms and Conditions.</span>
+          </label>
+        </div>
+      <% end %>
     </div>
 
     <div style="margin-top: 8px;"><strong>Amount in Words:</strong> <%= amount_in_words(proposal_vendor.grand_total_amount) %></div>

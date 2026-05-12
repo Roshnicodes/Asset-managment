@@ -260,6 +260,8 @@ class NotificationDispatcher
   end
 
   def self.notify_invoice_payment_advice_sent(quotation_proposal, proposal_vendor, invoice_request, actor_name:)
+    transaction_number = invoice_request.payment_transaction_no.presence || "-"
+
     users = quotation_proposal.committee_steps.includes(:employee_master).map do |step|
       User.find_by(email: step.employee_master.email_id)
     end.compact
@@ -269,8 +271,8 @@ class NotificationDispatcher
       Notification.create!(
         user: user,
         notifiable: quotation_proposal,
-        title: "Invoice Payment Advice Sent",
-        message: "Payment advice has been recorded for invoice request #{invoice_request.id} of vendor #{proposal_vendor.vendor_registration.display_name} by #{actor_name}. UTR No: #{invoice_request.utr_no}."
+        title: "Invoice Payment Recorded",
+        message: "Payment details have been recorded for invoice request #{invoice_request.id} of vendor #{proposal_vendor.vendor_registration.display_name} by #{actor_name}. Transaction No: #{transaction_number}."
       )
     end
   end

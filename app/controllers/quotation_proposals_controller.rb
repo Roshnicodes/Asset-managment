@@ -10,7 +10,8 @@ class QuotationProposalsController < ApplicationController
   before_action :ensure_quotation_owner_access!, only: %i[assign_payment_references]
   before_action :ensure_quotation_change_allowed!, only: %i[edit update destroy]
   before_action :authorize_quotation_form_access!, only: %i[index new create edit update destroy send_for_approval send_to_vendors]
-  before_action :authorize_quotation_list_access!, only: %i[list payment_advice update_payment_advice]
+  before_action :authorize_quotation_list_access!, only: %i[list]
+  before_action :authorize_payment_advice_access!, only: %i[payment_advice update_payment_advice]
   before_action :authorize_quotation_view_access!, only: %i[show approve_committee return_committee]
   before_action :authorize_committee_comparison_access!, only: %i[score_vendor score_vendors select_vendor]
 
@@ -71,10 +72,9 @@ class QuotationProposalsController < ApplicationController
       @quotation_proposal.sync_vendor_rankings_and_selection!
       @quotation_proposal.reload
     end
-    @current_scoring_employee = current_employee_master
+    @current_scoring_employee = approval_actor_for(@quotation_proposal)
+    @committee_scoring_allowed = committee_scoring_allowed_for?(@quotation_proposal)
     @committee_member_count = @quotation_proposal.committee_steps.size
-    @authorized_by_options = EmployeeMaster.order(:name)
-    @selected_authorized_by_id = params[:authorized_by_id].presence
     @selected_vendor_response = QuotationProposalVendor
       .includes(
         :vendor_registration,
@@ -97,26 +97,30 @@ class QuotationProposalsController < ApplicationController
     )
     @quotation_proposal.quotation_proposal_items.build
     build_committee_steps(@quotation_proposal)
+    @selected_vendor_selection_criterion_ids = @quotation_proposal.selected_vendor_selection_criterion_ids
     load_form_collections
   end
 
   def edit
     @quotation_proposal.quotation_proposal_items.build if @quotation_proposal.quotation_proposal_items.empty?
     build_committee_steps(@quotation_proposal)
+    @selected_vendor_selection_criterion_ids = @quotation_proposal.selected_vendor_selection_criterion_ids
     load_form_collections
   end
 
   def create
     attrs = quotation_proposal_params.to_h.deep_dup
     item_attributes = raw_quotation_item_attributes
+    selected_criteria_ids = extract_vendor_selection_criterion_ids!(attrs)
     attrs.delete("quotation_proposal_items_attributes")
     attrs.delete(:quotation_proposal_items_attributes)
 
     @quotation_proposal = QuotationProposal.new(attrs)
     @quotation_proposal.user = current_user
     build_quotation_items(@quotation_proposal, item_attributes)
+    @selected_vendor_selection_criterion_ids = selected_criteria_ids
 
-    if @quotation_proposal.save
+    if persist_quotation_proposal_with_criteria(@quotation_proposal, selected_criteria_ids)
       @quotation_proposal.refresh_response_status!
       redirect_to quotation_proposal_path(@quotation_proposal), notice: "Quotation proposal saved successfully."
     else
@@ -129,16 +133,13 @@ class QuotationProposalsController < ApplicationController
   def update
     attrs = quotation_proposal_params.to_h.deep_dup
     item_attributes = raw_quotation_item_attributes
+    selected_criteria_ids = extract_vendor_selection_criterion_ids!(attrs)
     attrs.delete("quotation_proposal_items_attributes")
     attrs.delete(:quotation_proposal_items_attributes)
     was_returned = @quotation_proposal.approval_request&.employee_return_pending?
+    @selected_vendor_selection_criterion_ids = selected_criteria_ids
 
-    updated = QuotationProposal.transaction do
-      next false unless @quotation_proposal.update(attrs)
-
-      sync_quotation_items(@quotation_proposal, item_attributes)
-      true
-    end
+    updated = update_quotation_proposal_with_criteria(@quotation_proposal, attrs, item_attributes, selected_criteria_ids)
 
     if updated
       if was_returned
@@ -590,68 +591,88 @@ class QuotationProposalsController < ApplicationController
   end
 
   def update_payment_advice
-    @invoice_request = QuotationProposalVendorInvoiceRequest
+    invoice_request_ids = Array(params[:invoice_request_ids]).reject(&:blank?).map(&:to_i).uniq
+
+    if invoice_request_ids.blank?
+      redirect_to payment_advice_quotation_proposals_path, alert: "Please select at least one finance-queued invoice request."
+      return
+    end
+
+    unless finance_transaction_columns_available?
+      redirect_to payment_advice_quotation_proposals_path, alert: "Finance transaction fields are not available yet. Please run db:migrate first."
+      return
+    end
+
+    transaction_type = params[:transaction_type].to_s.strip
+    transaction_no = params[:transaction_no].to_s.strip
+    transaction_date = parse_finance_date(params[:transaction_date])
+
+    if transaction_type.blank? || transaction_no.blank? || transaction_date.blank?
+      redirect_to payment_advice_quotation_proposals_path, alert: "Transaction type, transaction number, and transaction date are required."
+      return
+    end
+
+    unless QuotationProposalVendorInvoiceRequest::TRANSACTION_TYPES.include?(transaction_type)
+      redirect_to payment_advice_quotation_proposals_path, alert: "Please choose a valid transaction type."
+      return
+    end
+
+    selected_requests = QuotationProposalVendorInvoiceRequest
       .includes(quotation_proposal_vendor: [:vendor_registration, :quotation_proposal])
-      .find_by(id: params[:invoice_request_id])
+      .where(id: invoice_request_ids)
 
-    if @invoice_request.blank?
-      redirect_to payment_advice_quotation_proposals_path, alert: "Invoice request was not found."
-      return
-    end
+    eligible_requests = selected_requests.select(&:payment_advice_pending?)
 
-    unless @invoice_request.payment_advice_pending?
-      redirect_to payment_advice_quotation_proposals_path, alert: "Only finance-queued invoices can receive payment advice."
-      return
-    end
-
-    utr_no = params[:utr_no].to_s.strip
-    utr_date = parse_finance_date(params[:utr_date])
-    asa_bank_name = params[:asa_bank_name].to_s.strip
-    asa_account_no = params[:asa_account_no].to_s.strip
-
-    if utr_no.blank? || utr_date.blank? || asa_bank_name.blank? || asa_account_no.blank?
-      redirect_to payment_advice_quotation_proposals_path, alert: "UTR No, UTR Date, Bank, and ASA Account No are required."
+    if eligible_requests.blank?
+      redirect_to payment_advice_quotation_proposals_path, alert: "No eligible finance-queued invoice request was selected."
       return
     end
 
     advice_time = Time.current
     actor_employee = current_employee_master
 
-    @invoice_request.update!(
-      utr_no: utr_no,
-      utr_date: utr_date,
-      asa_bank_name: asa_bank_name,
-      asa_account_no: asa_account_no,
-      payment_advice_sent_at: advice_time,
-      payment_advice_updated_by: actor_employee
-    )
+    QuotationProposalVendorInvoiceRequest.transaction do
+      eligible_requests.each do |invoice_request|
+        invoice_request.update!(
+          transaction_type: transaction_type,
+          transaction_no: transaction_no,
+          transaction_date: transaction_date,
+          payment_advice_sent_at: advice_time,
+          payment_advice_updated_by: actor_employee
+        )
 
-    proposal_vendor = @invoice_request.quotation_proposal_vendor
-    quotation_proposal = proposal_vendor.quotation_proposal
+        proposal_vendor = invoice_request.quotation_proposal_vendor
+        quotation_proposal = proposal_vendor.quotation_proposal
 
-    proposal_vendor.add_purchase_order_activity!(
-      action_type: "payment_advice_sent",
-      actor_name: actor_display_name,
-      actor_role: "Finance",
-      note: "Payment advice recorded for invoice request #{@invoice_request.id}. UTR No: #{utr_no}, UTR Date: #{utr_date.strftime("%d-%m-%Y")}, Bank: #{asa_bank_name}, ASA Account No: #{asa_account_no}.",
-      employee_master: actor_employee,
-      user: current_user,
-      occurred_at: advice_time
-    )
+        proposal_vendor.add_purchase_order_activity!(
+          action_type: "payment_advice_sent",
+          actor_name: actor_display_name,
+          actor_role: "Finance",
+          note: "Finance payment details recorded for invoice request #{invoice_request.id}. Transaction Type: #{transaction_type}, Transaction No: #{transaction_no}, Transaction Date: #{transaction_date.strftime("%d-%m-%Y")}.",
+          employee_master: actor_employee,
+          user: current_user,
+          occurred_at: advice_time
+        )
 
-    dispatch = proposal_vendor.dispatch_record!
-    sms_sent = QuotationVendorSmsGateway.send_payment_advice(dispatch, @invoice_request)
-    NotificationDispatcher.notify_invoice_payment_advice_sent(quotation_proposal, proposal_vendor, @invoice_request, actor_name: actor_display_name)
+        NotificationDispatcher.notify_invoice_payment_advice_sent(quotation_proposal, proposal_vendor, invoice_request, actor_name: actor_display_name)
+      end
+    end
 
-    redirect_to payment_advice_quotation_proposals_path, notice: "Payment advice submitted successfully.#{sms_sent ? " Vendor SMS sent." : " Vendor SMS could not be delivered."}"
+    skipped_count = invoice_request_ids.size - eligible_requests.size
+    notice = "#{eligible_requests.size} invoice request(s) updated successfully. Vendor notification API is pending integration."
+    notice = "#{notice} #{skipped_count} selected record(s) were skipped because they were no longer pending." if skipped_count.positive?
+
+    redirect_to payment_advice_quotation_proposals_path, notice: notice
   end
 
   def create_invoice_request_assets
+    Asset.ensure_structured_code_columns_loaded!
     load_invoice_request_asset_context!
     return if performed?
 
-    @asset_products = Product.order(:name)
+    @asset_products = Product.includes(:product_varieties).order(:name)
     @asset_rows = asset_row_params
+    created_assets = []
 
     if @asset_rows.blank?
       redirect_to assets_path(invoice_request_id: @invoice_request.id, anchor: "asset-workspace"), alert: "No asset rows were submitted."
@@ -660,24 +681,52 @@ class QuotationProposalsController < ApplicationController
 
     Asset.transaction do
       @asset_rows.each do |row|
-        unique_product_code = row[:unique_product_code].to_s.strip
         product_id = row[:product_id].presence
-
-        if unique_product_code.blank?
-          raise ActiveRecord::RecordInvalid.new(Asset.new), "Unique product code is required for every asset row."
-        end
+        stakeholder_category_id = row[:stakeholder_category_id].presence
+        primary_office_category_id = row[:primary_office_category_id].presence
+        secondary_office_category_id = row[:secondary_office_category_id].presence
+        asset_code_date = row[:asset_code_date].presence
 
         if product_id.blank?
           raise ActiveRecord::RecordInvalid.new(Asset.new), "Please select a product for every asset row."
         end
 
-        vendor_item = @invoice_request.quotation_proposal_vendor.vendor_items.find(row[:vendor_item_id])
-        product = Product.find(product_id)
+        if stakeholder_category_id.blank?
+          raise ActiveRecord::RecordInvalid.new(Asset.new), "Please select a stakeholder for every asset row."
+        end
 
-        Asset.create!(
+        if primary_office_category_id.blank?
+          raise ActiveRecord::RecordInvalid.new(Asset.new), "Please select the first location for every asset row."
+        end
+
+        if secondary_office_category_id.blank?
+          raise ActiveRecord::RecordInvalid.new(Asset.new), "Please select the second location for every asset row."
+        end
+
+        if asset_code_date.blank?
+          raise ActiveRecord::RecordInvalid.new(Asset.new), "Please add the asset code date for every asset row."
+        end
+
+        product = Product.find(product_id)
+        unique_product_code = row[:unique_product_code].to_s.strip.presence || product.product_code.to_s.strip.presence
+
+        if unique_product_code.blank?
+          raise ActiveRecord::RecordInvalid.new(Asset.new), "Product code is required for every asset row. Please add it in Product Entry or update the item no."
+        end
+
+        vendor_item = @invoice_request.quotation_proposal_vendor.vendor_items.find(row[:vendor_item_id])
+        stakeholder = StakeholderCategory.find(stakeholder_category_id)
+        primary_office = OfficeCategory.find(primary_office_category_id)
+        secondary_office = OfficeCategory.find(secondary_office_category_id)
+
+        created_assets << Asset.create!(
           name: row[:asset_name].presence || vendor_item.item_name,
           product: product,
           unique_product_code: unique_product_code,
+          stakeholder_category: stakeholder,
+          primary_office_category: primary_office,
+          secondary_office_category: secondary_office,
+          asset_code_date: asset_code_date,
           quotation_proposal_vendor_invoice_request: @invoice_request,
           quotation_proposal_vendor_item: vendor_item
         )
@@ -696,7 +745,8 @@ class QuotationProposalsController < ApplicationController
       occurred_at: @invoice_request.assets_created_at || Time.current
     )
 
-    redirect_to assets_path, notice: "Assets have been created successfully."
+    redirect_to asset_insurances_path(asset_ids: created_assets.map(&:id).join(",")),
+                notice: "Assets have been created successfully. Please update insurance details below."
   rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotFound => error
     redirect_to assets_path(invoice_request_id: @invoice_request.id, anchor: "asset-workspace"), alert: error.message
   end
@@ -708,6 +758,11 @@ class QuotationProposalsController < ApplicationController
       return
     end
 
+    if @quotation_proposal.criteria_based_scoring?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Please use the committee comparison matrix to save criteria-based marks."
+      return
+    end
+
     proposal_vendor = @quotation_proposal.quotation_proposal_vendors.find(params[:proposal_vendor_id])
     unless proposal_vendor.response_submitted?
       redirect_to quotation_proposal_path(@quotation_proposal), alert: "Committee score can be added only after the vendor submits a response."
@@ -716,7 +771,10 @@ class QuotationProposalsController < ApplicationController
 
     score_record = proposal_vendor.committee_member_scores.find_or_initialize_by(employee_master: actor_employee)
     raw_score = params[:committee_score]
-    score_record.update!(score: raw_score.present? ? raw_score.to_i : nil)
+    score_record.update!(
+      score: raw_score.present? ? raw_score.to_i : nil,
+      remark: params[:committee_remark].to_s.strip.presence
+    )
     @quotation_proposal.sync_vendor_rankings_and_selection!
     redirect_to quotation_proposal_path(@quotation_proposal), notice: "Your committee score has been updated."
   end
@@ -728,11 +786,21 @@ class QuotationProposalsController < ApplicationController
       return
     end
 
+    if @quotation_proposal.criteria_based_scoring?
+      updated = sync_committee_criteria_scores(actor_employee)
+      @quotation_proposal.sync_vendor_rankings_and_selection!
+      redirect_to quotation_proposal_path(@quotation_proposal), notice: updated.positive? ? "Your committee criteria marks have been updated." : "Your committee criteria marks have been saved."
+      return
+    end
+
     scores_param = params[:committee_scores]
+    remarks = raw_committee_remarks
     scores = if scores_param.is_a?(ActionController::Parameters)
       scores_param.permit!.to_h
-    else
+    elsif scores_param.respond_to?(:to_h)
       scores_param.to_h
+    else
+      {}
     end
     updated = 0
 
@@ -742,7 +810,10 @@ class QuotationProposalsController < ApplicationController
 
       raw_score = scores[proposal_vendor.id.to_s]
       score_record = proposal_vendor.committee_member_scores.find_or_initialize_by(employee_master: actor_employee)
-      score_record.update!(score: raw_score.present? ? raw_score.to_i : nil)
+      score_record.update!(
+        score: raw_score.present? ? raw_score.to_i : nil,
+        remark: remarks[proposal_vendor.id.to_s].to_s.strip.presence
+      )
       updated += 1
     end
 
@@ -771,7 +842,7 @@ class QuotationProposalsController < ApplicationController
   private
 
   def set_quotation_proposal
-    @quotation_proposal = QuotationProposal.includes(theme: :stakeholder_category).find(params[:id])
+    @quotation_proposal = QuotationProposal.includes(theme: :stakeholder_category, criteria_selections: :vendor_selection_criterion).find(params[:id])
   end
 
   def handle_quotation_not_found
@@ -786,11 +857,13 @@ class QuotationProposalsController < ApplicationController
       :remark,
       :procurement_amount_bucket,
       vendor_registration_ids: [],
+      vendor_selection_criterion_ids: [],
       quotation_proposal_items_attributes: [:id, :item_name, :unit_id, :quantity, :max_rate, :remark, :_destroy],
       committee_steps_attributes: [:id, :level, :employee_master_id, :remark, :status, :_destroy]
     )
 
     permitted[:vendor_registration_ids] = Array(permitted[:vendor_registration_ids]).reject(&:blank?)
+    permitted[:vendor_selection_criterion_ids] = Array(permitted[:vendor_selection_criterion_ids]).reject(&:blank?)
     permitted[:committee_steps_attributes] = normalize_nested_collection(permitted[:committee_steps_attributes])
     permitted
   end
@@ -896,6 +969,7 @@ class QuotationProposalsController < ApplicationController
 
   def can_access_menu?(identifier)
     return true if admin_user?
+    return finance_queue_access? if identifier == "payment_advice_queue"
 
     employee = current_employee_master
     return false unless employee
@@ -909,6 +983,7 @@ class QuotationProposalsController < ApplicationController
     if identifier == "quotation_proposal_main"
       return true if role_permissions.find_by(menu_identifier: "quotation_proposal_form")&.can_view?
       return true if role_permissions.find_by(menu_identifier: "quotation_proposal_list")&.can_view?
+      return true if finance_queue_access?
     end
 
     role_permissions.find_by(menu_identifier: identifier)&.can_view? || false
@@ -924,6 +999,12 @@ class QuotationProposalsController < ApplicationController
     return if can_access_menu?("quotation_proposal_list") || can_access_menu?("quotation_proposal_form")
 
     redirect_to root_path, alert: "You are not authorized to view Quotation Proposal list."
+  end
+
+  def authorize_payment_advice_access!
+    return if finance_queue_access?
+
+    redirect_to root_path, alert: "You are not authorized to view Payment Advice Queue."
   end
 
   def quotation_maker_eligible?
@@ -971,11 +1052,105 @@ class QuotationProposalsController < ApplicationController
     @vendors = @vendors.where(stakeholder_category_id: [stakeholder_id, nil]) if stakeholder_id.present?
     @vendors = @vendors.distinct
       .order(:vendor_name)
+    @vendor_selection_criteria = VendorSelectionCriterion
+      .includes(:theme)
+      .where(theme_id: @themes.select(:id))
+      .joins(:theme)
+      .order("themes.name ASC, vendor_selection_criteria.criteria ASC")
     maker_employee_ids = [
       @quotation_proposal&.user&.employee_master&.id,
       current_employee_master&.id
     ].compact.uniq
     @committee_members = EmployeeMaster.where.not(id: maker_employee_ids).order(:name)
+  end
+
+  def persist_quotation_proposal_with_criteria(quotation_proposal, selected_criteria_ids)
+    QuotationProposal.transaction do
+      quotation_proposal.save!
+      quotation_proposal.sync_vendor_selection_criteria!(selected_criteria_ids)
+    end
+    true
+  rescue ActiveRecord::RecordInvalid => error
+    attach_record_errors(quotation_proposal, error.record)
+    false
+  end
+
+  def update_quotation_proposal_with_criteria(quotation_proposal, attrs, item_attributes, selected_criteria_ids)
+    QuotationProposal.transaction do
+      quotation_proposal.update!(attrs)
+      sync_quotation_items(quotation_proposal, item_attributes)
+      quotation_proposal.sync_vendor_selection_criteria!(selected_criteria_ids)
+    end
+    true
+  rescue ActiveRecord::RecordInvalid => error
+    attach_record_errors(quotation_proposal, error.record)
+    false
+  end
+
+  def attach_record_errors(target_record, error_record)
+    return if error_record.blank? || error_record == target_record
+
+    message = error_record.errors.full_messages.to_sentence.presence
+    target_record.errors.add(:base, message) if message.present?
+  end
+
+  def extract_vendor_selection_criterion_ids!(attributes)
+    value = attributes.delete("vendor_selection_criterion_ids") || attributes.delete(:vendor_selection_criterion_ids)
+    Array(value).reject(&:blank?).map(&:to_i).uniq
+  end
+
+  def raw_committee_criteria_scores
+    criteria_scores = params[:committee_criteria_scores]
+
+    case criteria_scores
+    when ActionController::Parameters
+      criteria_scores.to_unsafe_h
+    when Hash
+      criteria_scores
+    else
+      {}
+    end
+  end
+
+  def raw_committee_remarks
+    remarks = params[:committee_remarks]
+
+    case remarks
+    when ActionController::Parameters
+      remarks.to_unsafe_h
+    when Hash
+      remarks
+    else
+      {}
+    end
+  end
+
+  def sync_committee_criteria_scores(actor_employee)
+    available_selection_ids = @quotation_proposal.criteria_selections.pluck(:id)
+    submitted_scores = raw_committee_criteria_scores
+    submitted_remarks = raw_committee_remarks
+    updated = 0
+
+    @quotation_proposal.quotation_proposal_vendors.find_each do |proposal_vendor|
+      next unless proposal_vendor.response_submitted?
+
+      score_payload = submitted_scores[proposal_vendor.id.to_s]
+      updated += proposal_vendor.sync_committee_criteria_scores!(
+        employee: actor_employee,
+        available_selection_ids: available_selection_ids,
+        score_by_selection_id: score_payload
+      )
+
+      score_record = proposal_vendor.committee_member_scores.find_or_initialize_by(employee_master: actor_employee)
+      remark_value = submitted_remarks[proposal_vendor.id.to_s].to_s.strip.presence
+      if score_record.remark != remark_value
+        score_record.remark = remark_value
+        score_record.save! if score_record.new_record? || score_record.changed?
+        updated += 1
+      end
+    end
+
+    updated
   end
 
   def quotation_form_stakeholder_id
@@ -1012,7 +1187,7 @@ class QuotationProposalsController < ApplicationController
     @po_payment_terms = vendor_remark_lines.find { |line| line.downcase.start_with?("payment terms and condition:") }&.split(":", 2)&.last.to_s.strip
     @po_completion_terms = vendor_remark_lines.find { |line| line.downcase.start_with?("date of completion:") }&.split(":", 2)&.last.to_s.strip
     @po_warranty_terms = vendor_remark_lines.find { |line| line.downcase.start_with?("warranty period:") }&.split(":", 2)&.last.to_s.strip
-    @po_earnest_money_terms = vendor_remark_lines.find { |line| line.downcase.start_with?("earnest money deposit:") }&.split(":", 2)&.last.to_s.strip
+    @po_earnest_money_terms = vendor_remark_lines.find { |line| line.downcase.start_with?("ernest money deposit:") || line.downcase.start_with?("earnest money deposit:") }&.split(":", 2)&.last.to_s.strip
     current_year = Date.current.year
     next_year_short = (current_year + 1).to_s.last(2)
     @purchase_order_year_label = "#{current_year}-#{next_year_short}"
@@ -1125,8 +1300,16 @@ class QuotationProposalsController < ApplicationController
     nil
   end
 
+  def finance_transaction_columns_available?
+    required_columns = %w[transaction_type transaction_no transaction_date]
+    required_columns.all? { |column_name| QuotationProposalVendorInvoiceRequest.column_names.include?(column_name) }
+  end
+
   def build_invoice_request_asset_rows(invoice_request)
     rows = []
+    suggested_stakeholder_id =
+      invoice_request.quotation_proposal_vendor.quotation_proposal.theme&.stakeholder_category_id ||
+      invoice_request.quotation_proposal_vendor.vendor_registration&.stakeholder_category_id
 
     invoice_request.snapshot_items.each do |item|
       vendor_item = invoice_request.quotation_proposal_vendor.vendor_items.find { |record| record.id == item[:vendor_item_id].to_i }
@@ -1140,9 +1323,13 @@ class QuotationProposalsController < ApplicationController
           vendor_item_id: vendor_item.id,
           asset_name: item[:item_name],
           suggested_product_id: suggested_product&.id,
+          stakeholder_category_id: suggested_stakeholder_id,
+          primary_office_category_id: nil,
+          secondary_office_category_id: nil,
+          asset_code_date: nil,
           unit_name: item[:unit_name],
           row_label: "#{item[:item_name]} ##{index + 1}",
-          unique_product_code: nil
+          unique_product_code: suggested_product&.product_code
         }
       end
     end
@@ -1160,9 +1347,13 @@ class QuotationProposalsController < ApplicationController
             vendor_item_id: vendor_item.id,
             asset_name: item[:item_name],
             suggested_product_id: suggested_product&.id,
+            stakeholder_category_id: suggested_stakeholder_id,
+            primary_office_category_id: nil,
+            secondary_office_category_id: nil,
+            asset_code_date: nil,
             unit_name: item[:unit_name],
             row_label: "#{item[:item_name]} ##{index + 1}",
-            unique_product_code: nil
+            unique_product_code: suggested_product&.product_code
           }
         end
       end
@@ -1207,9 +1398,21 @@ class QuotationProposalsController < ApplicationController
   end
 
   def authorize_committee_comparison_access!
-    return if @quotation_proposal.committee_member?(current_employee_master) || @quotation_proposal.committee_user?(current_user)
+    return if committee_scoring_allowed_for?(@quotation_proposal)
 
     redirect_to quotation_proposal_path(@quotation_proposal), alert: "Only committee members can score vendors and select the final vendor."
+  end
+
+  def committee_scoring_allowed_for?(quotation_proposal)
+    return false if quotation_proposal.blank?
+
+    step_scope = if quotation_proposal.approval_request.present?
+      quotation_proposal.approval_request.approval_steps.includes(:employee_master)
+    else
+      quotation_proposal.committee_steps.includes(:employee_master)
+    end
+
+    step_scope.any? { |step| employee_matches_current_login?(step.employee_master) }
   end
 
 end

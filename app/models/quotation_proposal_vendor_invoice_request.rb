@@ -1,6 +1,7 @@
 class QuotationProposalVendorInvoiceRequest < ApplicationRecord
   TOKEN_LENGTH = 12
   STATUSES = %w[pending_invoice uploaded accepted returned].freeze
+  TRANSACTION_TYPES = ["NEFT", "RTGS", "IMPS", "UPI", "Cheque", "Cash", "Bank Transfer", "Other"].freeze
 
   belongs_to :quotation_proposal_vendor
   belongs_to :maker_reviewed_by, class_name: "EmployeeMaster", optional: true
@@ -66,6 +67,26 @@ class QuotationProposalVendorInvoiceRequest < ApplicationRecord
     payment_advice_sent_at.present?
   end
 
+  def finance_transaction_recorded?
+    finance_transaction_type_value.present? && finance_transaction_no_value.present? && finance_transaction_date_value.present?
+  end
+
+  def payment_transaction_type
+    finance_transaction_type_value.presence || (utr_no.present? || asa_bank_name.present? ? "Bank Transfer" : nil)
+  end
+
+  def payment_transaction_no
+    finance_transaction_no_value.presence || utr_no.presence
+  end
+
+  def payment_transaction_date
+    finance_transaction_date_value || utr_date
+  end
+
+  def legacy_payment_advice_details?
+    (utr_no.present? || utr_date.present? || asa_bank_name.present? || asa_account_no.present?) && !finance_transaction_recorded?
+  end
+
   def snapshot_items
     Array(item_snapshot).map(&:with_indifferent_access)
   end
@@ -75,6 +96,24 @@ class QuotationProposalVendorInvoiceRequest < ApplicationRecord
   end
 
   private
+
+  def finance_transaction_type_value
+    read_optional_attribute(:transaction_type)
+  end
+
+  def finance_transaction_no_value
+    read_optional_attribute(:transaction_no)
+  end
+
+  def finance_transaction_date_value
+    read_optional_attribute(:transaction_date)
+  end
+
+  def read_optional_attribute(attribute_name)
+    return unless has_attribute?(attribute_name.to_s)
+
+    self[attribute_name]
+  end
 
   def assign_request_token
     self.request_token = generate_unique_token if request_token.blank?

@@ -48,6 +48,11 @@ class GoodsReceiveVendorQrsController < ApplicationController
     uploaded_files = Array(params.dig(:invoice_request, :vendor_invoices)).compact_blank
     vendor_remark = params.dig(:invoice_request, :vendor_remark).to_s.strip
 
+    unless params[:asa_terms_accepted].to_s == "1"
+      redirect_to goods_receive_vendor_qr_path(params[:token], verified: 1), alert: "Please accept the General Terms and Conditions before submitting the form."
+      return
+    end
+
     if uploaded_files.blank?
       redirect_to goods_receive_vendor_qr_path(params[:token], verified: 1), alert: "Please upload at least one invoice document."
       return

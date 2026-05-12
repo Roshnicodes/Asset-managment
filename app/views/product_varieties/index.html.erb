@@ -1,6 +1,6 @@
 <div class="app-toolbar">
-  <h1>Product Variety Entry</h1>
-  <%= link_to "Add Product Variety", new_product_variety_path, class: "app-primary-btn" %>
+  <h1>Product Type Entry</h1>
+  <%= link_to "Add Product Type", new_product_variety_path, class: "app-primary-btn" %>
 </div>
 
 <div class="app-table-wrap">
@@ -9,19 +9,21 @@
       <tr>
         <th>Thematic Type</th>
         <th>Product</th>
-        <th>Product Variety</th>
+        <th>Product Type Code</th>
+        <th>Product Type</th>
         <th>Action</th>
       </tr>
     </thead>
     <tbody>
       <% @product_varieties.each do |product_variety| %>
         <tr>
-          <td><%= product_variety.theme.name %></td>
-          <td><%= product_variety.product.name %></td>
+          <td><%= product_variety.theme&.name %></td>
+          <td><%= product_variety.product&.name %></td>
+          <td><%= product_variety.product_type_code.presence || "-" %></td>
           <td><%= product_variety.name %></td>
           <td class="app-row-actions">
             <%= link_to "Edit", edit_product_variety_path(product_variety) %> |
-            <%= link_to "Delete", product_variety, method: :delete, data: { turbo_confirm: "Delete this product variety?" } %>
+            <%= link_to "Delete", product_variety, method: :delete, data: { turbo_confirm: "Delete this product type?" } %>
           </td>
         </tr>
       <% end %>

@@ -26,10 +26,7 @@ class ApprovalStep < ApplicationRecord
   end
 
   def effective_status_label
-    return "Returned" if effective_status == "returned"
-    return "Rejected" if effective_status == "rejected"
-
-    effective_status.capitalize
+    WorkflowLevelNaming.approval_status_label_for(self, approval_request: approval_request)
   end
 
   def proposal_create_step?

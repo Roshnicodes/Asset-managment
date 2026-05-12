@@ -1,0 +1,34 @@
+<%= form_with(
+  model: vendor_selection_criterion,
+  url: vendor_selection_criterion.persisted? ? url_for(controller: "vendor_selection_criteria", action: :update, id: vendor_selection_criterion.id) : vendor_selection_criteria_path,
+  method: vendor_selection_criterion.persisted? ? :patch : :post
+) do |form| %>
+  <div class="app-form-card">
+    <% if vendor_selection_criterion.errors.any? %>
+      <div class="app-form-errors">
+        <h2><%= pluralize(vendor_selection_criterion.errors.count, "error") %> found</h2>
+        <ul>
+          <% vendor_selection_criterion.errors.each do |error| %>
+            <li><%= error.full_message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="app-form-grid">
+      <div class="app-form-field">
+        <%= form.label :theme_id, "Thematic Type" %>
+        <%= form.collection_select :theme_id, @themes, :id, :name, { prompt: "Select thematic type" } %>
+      </div>
+
+      <div class="app-form-field" style="grid-column: 1 / -1;">
+        <%= form.label :criteria, "Criteria" %>
+        <%= form.text_field :criteria, placeholder: "Enter vendor selection criteria" %>
+      </div>
+    </div>
+
+    <div class="app-form-actions">
+      <%= form.submit "Save Vendor Selection Criteria", class: "app-form-submit" %>
+    </div>
+  </div>
+<% end %>

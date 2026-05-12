@@ -1,5 +1,5 @@
 <div class="app-page-header">
-  <h2>Product Variety Details</h2>
+  <h2>Product Type Details</h2>
   <%= link_to "Back", product_varieties_path, class: "app-back-link" %>
 </div>
 
@@ -7,5 +7,5 @@
 
 <div class="app-detail-actions">
   <%= link_to "Edit", edit_product_variety_path(@product_variety), class: "app-secondary-btn" %>
-  <%= button_to "Delete", @product_variety, method: :delete, data: { turbo_confirm: "Delete this product variety?" }, class: "app-danger-btn" %>
+  <%= button_to "Delete", @product_variety, method: :delete, data: { turbo_confirm: "Delete this product type?" }, class: "app-danger-btn" %>
 </div>

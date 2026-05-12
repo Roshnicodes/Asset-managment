@@ -1,5 +1,5 @@
 <%= form_with(model: asset, local: true) do |f| %>
-  <div class="app-form-card">
+  <div class="app-form-card" data-asset-product-code-map="<%= json_escape(@asset_product_code_map.to_json) %>">
     <% if asset.errors.any? %>
       <div class="app-form-errors">
         <h2><%= pluralize(asset.errors.count, "error") %> found</h2>
@@ -11,10 +11,40 @@
       </div>
     <% end %>
 
-    <div class="app-form-grid two-col">
+    <div class="app-form-grid two-col" data-asset-product-code-row="true">
       <div class="app-form-field">
-        <%= f.label :product_id, "Product" %>
-        <%= f.collection_select :product_id, Product.order(:name), :id, :name, { prompt: "Select product" }, class: "form-control" %>
+        <%= f.label :stakeholder_category_id, "Stakeholder" %>
+        <%= f.collection_select :stakeholder_category_id, @asset_stakeholders, :id, :name, { prompt: "Select stakeholder" }, class: "form-control" %>
+      </div>
+
+      <div class="app-form-field">
+        <%= f.label :primary_office_category_id, "First Location" %>
+        <%= f.select :primary_office_category_id,
+              grouped_options_for_select(@asset_office_category_grouped_options, asset.primary_office_category_id),
+              { prompt: "Select first location" },
+              class: "form-control" %>
+      </div>
+
+      <div class="app-form-field">
+        <%= f.label :secondary_office_category_id, "Second Location" %>
+        <%= f.select :secondary_office_category_id,
+              grouped_options_for_select(@asset_office_category_grouped_options, asset.secondary_office_category_id),
+              { prompt: "Select second location" },
+              class: "form-control" %>
+      </div>
+
+      <div class="app-form-field">
+        <%= f.label :asset_code_date, "Asset Code Date" %>
+        <%= f.date_field :asset_code_date, class: "form-control" %>
+      </div>
+
+      <div class="app-form-field">
+        <%= f.label :product_id, "Product Type Code" %>
+        <%= f.select :product_id,
+              options_for_select(@products.map { |product| [asset_product_code_label(product), product.id] }, asset.product_id),
+              { prompt: "Select product type code" },
+              class: "form-control",
+              data: { asset_product_select: true } %>
       </div>
 
       <div class="app-form-field">
@@ -24,14 +54,22 @@
 
       <div class="app-form-field">
         <%= f.label :serial_number, "Serial Number" %>
-        <%= f.text_field :serial_number, class: "form-control", placeholder: "Enter serial number" %>
+        <%= f.text_field :serial_number, class: "form-control", placeholder: "Auto-generated like 1, 2, 3 if left blank" %>
       </div>
 
       <div class="app-form-field">
-        <%= f.label :unique_product_code, "Unique Product Code" %>
-        <%= f.text_field :unique_product_code, class: "form-control", placeholder: "Enter unique product code" %>
+        <%= f.label :unique_product_code, "Item No" %>
+        <%= f.text_field :unique_product_code,
+              class: "form-control",
+              placeholder: "Auto from product code",
+              data: {
+                asset_item_code: true,
+                autofilled_code: asset.unique_product_code.to_s
+              } %>
       </div>
     </div>
+
+    <p class="app-section-note" style="margin-top: 1rem;">Item no defaults from the selected product code, serial number auto-generates like `1, 2, 3...` when left blank, and the asset code includes the financial year.</p>
 
     <div class="app-form-actions">
       <%= f.submit "Save Asset", class: "app-form-submit" %>

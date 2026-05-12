@@ -10,8 +10,24 @@
   editable_by_owner = !@quotation_proposal.approval_locked? && (approval_request.blank? || approval_request.employee_return_pending? || @quotation_proposal.missing_max_rates?)
   committee_trail_steps = approval_request.present? ? approval_request.trail_steps : @quotation_proposal.committee_steps
   pending_approval_count = approval_request.present? ? approval_request.approval_steps.where(status: "pending").count : 0
-  committee_scoring_allowed = @quotation_proposal.committee_member?(current_employee_master) || @quotation_proposal.committee_user?(current_user)
+  committee_scoring_allowed = @committee_scoring_allowed
+  selected_criteria_selections = @quotation_proposal.criteria_selections.to_a
+  criteria_based_scoring = selected_criteria_selections.any?
   direct_response_mode = @quotation_proposal.below_10k?
+  proposal_items_count = @quotation_proposal.quotation_proposal_items.size
+  show_edit_action = owner_or_admin && (current_user == @quotation_proposal.user ? editable_by_owner : true)
+  show_start_approval_action = owner_or_admin && @quotation_proposal.approval_request.blank? && @quotation_proposal.sent_to_vendors_at.blank? && !@quotation_proposal.committee_completed?
+  show_send_vendor_action = creator_can_dispatch && @quotation_proposal.committee_completed? && !@quotation_proposal.vendor_responses_received?
+  status_actions_present = show_edit_action || show_start_approval_action || show_send_vendor_action
+  trail_should_open = approver_view || pending_approval_count.positive? || committee_trail_steps.size <= 2
+  trail_completed_count = if committee_approval_started
+    committee_trail_steps.count do |step|
+      step_status = step.respond_to?(:effective_status) ? step.effective_status : step.status
+      step_status.in?(%w[approved returned rejected])
+    end
+  else
+    0
+  end
   workflow_class = case @quotation_proposal.workflow_status
                    when "vendor_selected" then "bg-success bg-opacity-10 text-success border-success"
                    when "responses_received" then "bg-primary bg-opacity-10 text-primary border-primary"
@@ -32,7 +48,7 @@
     <%= link_to "Back", quotation_proposals_path, class: "app-back-link quotation-proposal-show__back-link" %>
   </div>
 
-  <div class="app-detail-actions app-detail-actions-spread quotation-proposal-show__status-bar">
+  <div class="app-detail-actions app-detail-actions-spread quotation-proposal-show__status-bar <%= "quotation-proposal-show__status-bar--single" unless status_actions_present %>">
     <div class="d-flex align-items-center gap-2 flex-wrap">
       <span class="badge border <%= workflow_class %> fw-semibold px-3 py-2" style="font-size: 0.9rem;">
         <%= @quotation_proposal.workflow_status.humanize %>
@@ -55,14 +71,15 @@
       </span>
     </div>
 
-    <div class="d-flex align-items-center gap-2 flex-wrap">
-      <% if owner_or_admin && (current_user == @quotation_proposal.user ? editable_by_owner : true) %>
+    <% if status_actions_present %>
+      <div class="d-flex align-items-center gap-2 flex-wrap quotation-proposal-show__status-actions">
+      <% if show_edit_action %>
         <%= link_to "Edit", edit_quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn" %>
       <% end %>
-      <% if owner_or_admin && @quotation_proposal.approval_request.blank? && @quotation_proposal.sent_to_vendors_at.blank? && !@quotation_proposal.committee_completed? %>
+      <% if show_start_approval_action %>
         <%= button_to "Start Committee Approval", send_for_approval_quotation_proposal_path(@quotation_proposal), method: :post, class: "app-secondary-btn" %>
       <% end %>
-      <% if creator_can_dispatch && @quotation_proposal.committee_completed? && !@quotation_proposal.vendor_responses_received? %>
+      <% if show_send_vendor_action %>
         <% send_button_label = if direct_response_mode
              @quotation_proposal.sent_to_vendors_at.present? ? "Reopen Direct Form" : "Open Direct Form"
            else
@@ -70,7 +87,8 @@
            end %>
         <%= button_to send_button_label, send_to_vendors_quotation_proposal_path(@quotation_proposal), method: :post, class: "app-form-submit" %>
       <% end %>
-    </div>
+      </div>
+    <% end %>
   </div>
 
   <% if approval_request&.employee_return_pending? %>
@@ -78,7 +96,7 @@
       <div class="app-page-header app-subsection-header-tight">
         <div>
           <h3 style="margin-bottom: 0.35rem;">Returned To Employee</h3>
-          <p class="app-section-note mb-0">Returned remark dekhkar quotation update karo. Save karte hi same approval chain phir se Committee Member 1 se restart ho jayegi.</p>
+          <p class="app-section-note mb-0">Review the returned remark, update the quotation, and save to restart the same approval chain from Committee Member 1.</p>
         </div>
       </div>
 
@@ -96,8 +114,8 @@
     </div>
   <% end %>
 
-  <div class="app-detail-card">
-    <div class="app-detail-grid quotation-proposal-show__detail-grid">
+  <div class="app-detail-card quotation-proposal-show__overview-card">
+    <div class="app-detail-grid quotation-proposal-show__detail-grid quotation-proposal-show__detail-grid--primary">
       <div class="app-detail-item">
         <div class="app-detail-label">Subject</div>
         <div class="app-detail-value"><%= @quotation_proposal.subject %></div>
@@ -117,40 +135,75 @@
         <div class="app-detail-label">Quotation Value</div>
         <div class="app-detail-value"><%= @quotation_proposal.procurement_amount_bucket_label %></div>
       </div>
+    </div>
 
-      <div class="app-detail-item">
-        <div class="app-detail-label">Workflow Status</div>
-        <div class="app-detail-value"><%= @quotation_proposal.workflow_status.humanize %></div>
-      </div>
+    <details class="quotation-proposal-show__nested-details quotation-proposal-show__section-details quotation-proposal-show__overview-details">
+      <summary class="quotation-proposal-show__nested-summary quotation-proposal-show__section-summary">
+        <div class="quotation-proposal-show__summary-copy">
+          <span class="quotation-proposal-show__summary-title">More Overview Details</span>
+          <span class="quotation-proposal-show__summary-note">Workflow fields, selected vendors, and criteria</span>
+        </div>
+        <div class="quotation-proposal-show__summary-meta">
+          <span class="badge border bg-light text-dark">4 more fields</span>
+          <span class="badge border bg-light text-dark"><%= @quotation_proposal.vendor_registrations.size %> vendors</span>
+          <% if selected_criteria_selections.any? %>
+            <span class="badge border bg-light text-dark"><%= selected_criteria_selections.size %> criteria</span>
+          <% end %>
+        </div>
+      </summary>
 
-      <div class="app-detail-item">
-        <div class="app-detail-label">Sent To Vendor At</div>
-        <div class="app-detail-value"><%= @quotation_proposal.sent_to_vendors_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
-      </div>
-
-      <div class="app-detail-item">
-        <div class="app-detail-label">Selected Vendor</div>
-        <div class="app-detail-value"><%= @quotation_proposal.selected_vendor_registration&.display_name || "-" %></div>
-      </div>
-
-      <div class="app-detail-item">
-        <div class="app-detail-label">Remark</div>
-        <div class="app-detail-value"><%= @quotation_proposal.remark.presence || "-" %></div>
-      </div>
-
-      <div class="app-detail-item app-detail-item-full">
-        <div class="app-detail-label">Selected Vendors</div>
-        <div class="app-detail-value">
-          <div class="d-flex flex-wrap gap-2">
-            <% @quotation_proposal.vendor_registrations.each do |vendor| %>
-              <span class="badge border bg-light text-dark px-3 py-2" style="font-size: 0.9rem; font-weight: 500;">
-                <%= vendor.display_name %>
-              </span>
-            <% end %>
+      <div class="quotation-proposal-show__nested-body quotation-proposal-show__section-body">
+        <div class="app-detail-grid quotation-proposal-show__detail-grid quotation-proposal-show__detail-grid--secondary">
+          <div class="app-detail-item">
+            <div class="app-detail-label">Workflow Status</div>
+            <div class="app-detail-value"><%= @quotation_proposal.workflow_status.humanize %></div>
           </div>
+
+          <div class="app-detail-item">
+            <div class="app-detail-label">Sent To Vendor At</div>
+            <div class="app-detail-value"><%= @quotation_proposal.sent_to_vendors_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+          </div>
+
+          <div class="app-detail-item">
+            <div class="app-detail-label">Selected Vendor</div>
+            <div class="app-detail-value"><%= @quotation_proposal.selected_vendor_registration&.display_name || "-" %></div>
+          </div>
+
+          <div class="app-detail-item">
+            <div class="app-detail-label">Remark</div>
+            <div class="app-detail-value"><%= @quotation_proposal.remark.presence || "-" %></div>
+          </div>
+
+          <div class="app-detail-item app-detail-item-full">
+            <div class="app-detail-label">Selected Vendors</div>
+            <div class="app-detail-value">
+              <div class="d-flex flex-wrap gap-2">
+                <% @quotation_proposal.vendor_registrations.each do |vendor| %>
+                  <span class="badge border bg-light text-dark px-3 py-2 quotation-proposal-show__tag">
+                    <%= vendor.display_name %>
+                  </span>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <% if selected_criteria_selections.any? %>
+            <div class="app-detail-item app-detail-item-full">
+              <div class="app-detail-label">Vendor Selection Criteria</div>
+              <div class="app-detail-value">
+                <div class="quotation-proposal-show__tag-list">
+                  <% selected_criteria_selections.each do |criterion_selection| %>
+                    <span class="badge border bg-light text-dark px-3 py-2 quotation-proposal-show__tag">
+                      <%= criterion_selection.display_label %>
+                    </span>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
         </div>
       </div>
-    </div>
+    </details>
   </div>
 
 <% if creator_can_dispatch && direct_response_mode && @quotation_proposal.committee_completed? %>
@@ -159,8 +212,8 @@
       <div>
         <h3 style="margin-bottom: 0.25rem;">Direct Response Forms</h3>
         <p class="app-section-note mb-0">
-          Below 10K case me vendor ko mobile par link nahi bheja jayega.
-          Approval ke baad maker yahin se direct vendor form open karke details fill karega.
+          For below 10K cases, no mobile link is sent to the vendor.
+          After approval, the maker can open the vendor form directly from here and fill in the details.
         </p>
       </div>
     </div>
@@ -173,22 +226,30 @@
       </div>
     <% else %>
       <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
-        <p class="app-section-note mb-0">Committee approval complete ho chuki hai. Ab direct vendor form open karne ke liye niche button use karo.</p>
+        <p class="app-section-note mb-0">Committee approval is complete. Use the button below to open the direct vendor form.</p>
         <%= button_to "Open Vendor Form", send_to_vendors_quotation_proposal_path(@quotation_proposal), method: :post, class: "app-form-submit" %>
       </div>
     <% end %>
   </div>
 <% end %>
 
-<div class="app-detail-card app-stack-gap-lg">
-  <div class="app-page-header app-subsection-header-tight">
-    <div>
-      <h3 style="margin-bottom: 0.25rem;">Committee Approval Trail</h3>
-      <p class="app-section-note mb-0">Start Committee Approval ke baad configured committee members ko request milegi. Uske pehle ye sirf committee setup ke roop me rahega.</p>
-    </div>
-  </div>
+  <div class="app-detail-card app-stack-gap-lg">
+    <details class="quotation-proposal-show__nested-details quotation-proposal-show__section-details" <%= "open" if trail_should_open %>>
+      <summary class="quotation-proposal-show__nested-summary quotation-proposal-show__section-summary">
+        <div class="quotation-proposal-show__summary-copy">
+          <span class="quotation-proposal-show__summary-title">Committee Approval Trail</span>
+          <span class="quotation-proposal-show__summary-note">Approval levels, timestamps, and remarks</span>
+        </div>
+        <div class="quotation-proposal-show__summary-meta">
+          <span class="badge border bg-light text-dark"><%= trail_completed_count %>/<%= committee_trail_steps.size %> updated</span>
+          <% if pending_approval_count.positive? %>
+            <span class="badge border bg-warning bg-opacity-10 text-warning"><%= pending_approval_count %> pending</span>
+          <% end %>
+        </div>
+      </summary>
 
-  <div class="row g-3">
+      <div class="quotation-proposal-show__nested-body quotation-proposal-show__section-body">
+        <div class="row g-3">
     <% committee_trail_steps.each do |step| %>
       <% step_status = if committee_approval_started
            step.respond_to?(:effective_status) ? step.effective_status : step.status
@@ -218,15 +279,17 @@
         </div>
       </div>
     <% end %>
+        </div>
+      </div>
+    </details>
   </div>
-</div>
 
 <% if approver_view %>
   <div class="app-form-card app-stack-gap-lg">
     <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
       <div>
         <h3 style="margin-bottom: 0.35rem;">Committee Action</h3>
-        <p class="app-section-note mb-0">Committee approval start hone ke baad har pending member apne login se approve, return, ya reject kar sakta hai. Return seedha employee ko jayega aur resubmit par approval chain phir se ek saath sync ho jayegi.</p>
+        <p class="app-section-note mb-0">Once committee approval starts, each pending member can approve, return, or reject from their own login. A return goes directly to the employee, and resubmission syncs the approval chain again.</p>
       </div>
       <span class="badge border bg-info bg-opacity-10 text-info px-3 py-2" style="font-size: 0.9rem;">
         Pending For You: L<%= current_step.level %>
@@ -256,39 +319,45 @@
   </div>
 <% end %>
 
-  <div class="app-page-header app-page-header-top app-page-header-center quotation-proposal-show__section-header">
-    <div>
-      <h3 style="margin-bottom: 0.25rem;">Proposal Items</h3>
-      <p class="app-section-note mb-0">Requested items and quantities for this quotation proposal.</p>
-    </div>
-    <span class="badge border bg-light text-dark px-3 py-2" style="font-size: 0.9rem;">
-      Total Items: <%= @quotation_proposal.quotation_proposal_items.size %>
-    </span>
-  </div>
+  <div class="app-detail-card app-stack-gap-lg">
+    <details class="quotation-proposal-show__nested-details quotation-proposal-show__section-details" <%= "open" if proposal_items_count <= 3 %>>
+      <summary class="quotation-proposal-show__nested-summary quotation-proposal-show__section-summary">
+        <div class="quotation-proposal-show__summary-copy">
+          <span class="quotation-proposal-show__summary-title">Proposal Items</span>
+          <span class="quotation-proposal-show__summary-note">Requested items, quantities, max rates, and remarks</span>
+        </div>
+        <div class="quotation-proposal-show__summary-meta">
+          <span class="badge border bg-light text-dark">Total Items: <%= proposal_items_count %></span>
+        </div>
+      </summary>
 
-  <div class="app-table-wrap quotation-proposal-show__table-wrap">
-    <table class="table app-table">
-    <thead>
-      <tr>
-        <th>Item Name</th>
-        <th>Unit</th>
-        <th>Quantity</th>
-        <th>Max Rate</th>
-        <th>Remark</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @quotation_proposal.quotation_proposal_items.each do |item| %>
-        <tr>
-          <td><%= item.item_name %></td>
-          <td><%= item.unit.name %></td>
-          <td><%= item.quantity %></td>
-          <td><%= item.max_rate.present? ? number_with_precision(item.max_rate, precision: 2) : "-" %></td>
-          <td><%= item.remark.presence || "-" %></td>
-        </tr>
-      <% end %>
-    </tbody>
-    </table>
+      <div class="quotation-proposal-show__nested-body quotation-proposal-show__section-body">
+        <div class="app-table-wrap quotation-proposal-show__table-wrap">
+          <table class="table app-table">
+          <thead>
+            <tr>
+              <th>Item Name</th>
+              <th>Unit</th>
+              <th>Quantity</th>
+              <th>Max Rate</th>
+              <th>Remark</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @quotation_proposal.quotation_proposal_items.each do |item| %>
+              <tr>
+                <td><%= quotation_item_display_name(item.item_name) %></td>
+                <td><%= item.unit.name %></td>
+                <td><%= item.quantity %></td>
+                <td><%= item.max_rate.present? ? number_with_precision(item.max_rate, precision: 2) : "-" %></td>
+                <td><%= item.remark.presence || "-" %></td>
+              </tr>
+            <% end %>
+          </tbody>
+          </table>
+        </div>
+      </div>
+    </details>
   </div>
 
 <% if @quotation_proposal.vendor_responses_received? && @quotation_proposal.missing_max_rates? %>
@@ -297,8 +366,8 @@
       <div>
         <h3 style="margin-bottom: 0.25rem;">Max Rate Pending</h3>
         <p class="app-section-note mb-0">
-          Vendor response aa chuka hai, lekin committee comparison se pehle max rate fill karna zaroori hai.
-          Missing items: <%= @quotation_proposal.missing_max_rate_items.map(&:item_name).join(", ") %>
+          Complete the max rate for all missing items before starting committee comparison.
+          Missing items: <%= @quotation_proposal.missing_max_rate_items.map { |item| quotation_item_display_name(item.item_name) }.join(", ") %>
         </p>
       </div>
     </div>
@@ -322,19 +391,56 @@
       </span>
     </div>
 
-    <% comparison_vendors = QuotationProposalVendor.where(quotation_proposal_id: @quotation_proposal.id).includes(vendor_registration: [], committee_member_scores: :employee_master, vendor_items: { quotation_proposal_item: :unit }) %>
+    <% comparison_vendors = QuotationProposalVendor.where(quotation_proposal_id: @quotation_proposal.id).includes(vendor_registration: [], committee_member_scores: :employee_master, committee_criteria_scores: :quotation_proposal_criteria_selection, vendor_items: { quotation_proposal_item: :unit }) %>
     <% responded_vendors = comparison_vendors.select(&:response_submitted?) %>
     <% committee_scoring_complete = @quotation_proposal.committee_scoring_complete? %>
     <% selected_vendor_registration_id = @quotation_proposal.selected_vendor_registration_id %>
     <% lowest_amount_vendor_id = responded_vendors.min_by { |vendor| vendor.total_quoted_amount.to_d }&.id %>
     <% lowest_grand_total_vendor_id = responded_vendors.min_by { |vendor| vendor.grand_total_amount.to_d }&.id %>
     <% top_rank_vendor_id = responded_vendors.find { |vendor| vendor.rank_position == 1 }&.id %>
+    <% criteria_selection_ids = selected_criteria_selections.map(&:id) %>
+    <% current_employee_criteria_map = if criteria_based_scoring && @current_scoring_employee.present?
+         comparison_vendors.each_with_object({}) do |proposal_vendor, memo|
+           memo[proposal_vendor.id] = proposal_vendor.criteria_scores_for(@current_scoring_employee)
+         end
+       else
+         {}
+       end %>
+    <% criteria_total_scores_map = if criteria_based_scoring
+         comparison_vendors.each_with_object({}) do |proposal_vendor, memo|
+           memo[proposal_vendor.id] = proposal_vendor.criteria_score_totals_for_selection_ids(criteria_selection_ids)
+         end
+       else
+         {}
+       end %>
+    <% if criteria_based_scoring %>
+      <div class="quotation-proposal-show__criteria-panel">
+        <div>
+          <h4 class="quotation-proposal-show__criteria-title">Committee Evaluation Criteria</h4>
+          <p class="quotation-proposal-show__criteria-note">Committee members assign marks from 0 to 10 for every selected criterion. Vendor ranking is based on the overall marks total.</p>
+        </div>
+
+        <% unless committee_scoring_allowed %>
+          <div class="quotation-proposal-show__criteria-help">
+            This screen is in view-only mode for your current login. Use an assigned committee member login to enter marks.
+          </div>
+        <% end %>
+
+        <div class="quotation-proposal-show__tag-list">
+          <% selected_criteria_selections.each do |criterion_selection| %>
+            <span class="badge border bg-light text-dark px-3 py-2 quotation-proposal-show__tag">
+              <%= criterion_selection.display_label %>
+            </span>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
     <%= form_with url: score_vendors_quotation_proposal_path(@quotation_proposal), method: :patch, local: true do %>
       <div class="app-table-wrap" style="overflow-x: auto; overflow-y: visible;">
         <table class="table app-table" style="min-width: <%= 320 + (comparison_vendors.size * 280) %>px;">
         <thead>
           <tr>
-            <th style="min-width: 240px; position: sticky; left: 0; z-index: 3; background: #f7fbf8; box-shadow: 8px 0 18px rgba(26, 58, 42, 0.04);">Compare Field</th>
+            <th class="quotation-proposal-show__comparison-sticky quotation-proposal-show__comparison-sticky--head" style="min-width: 240px;">Compare Field</th>
             <% comparison_vendors.each do |proposal_vendor| %>
               <% proposal_vendor_selected = selected_vendor_registration_id.present? && proposal_vendor.vendor_registration_id == selected_vendor_registration_id %>
               <% header_style = if proposal_vendor_selected
@@ -353,16 +459,10 @@
                       <span class="badge border bg-success bg-opacity-10 text-success">Selected</span>
                       <% if creator_can_dispatch %>
                         <div style="display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; margin: 0;">
-                          <%= select_tag :authorized_by_id,
-                                options_from_collection_for_select(@authorized_by_options, :id, :name, @selected_authorized_by_id),
-                                include_blank: "Authorized by",
-                                style: "min-width: 170px; padding: 0.35rem 0.65rem; border-radius: 10px; border: 1px solid #cfe1d8; background: #fff; font-size: 0.82rem;",
-                                data: { purchase_order_authorized_by: true } %>
                           <%= link_to "Create Purchase Order",
                                 purchase_order_quotation_proposal_path(@quotation_proposal),
                                 class: "app-secondary-btn",
-                                style: "padding: 0.35rem 0.8rem; font-size: 0.82rem;",
-                                data: { purchase_order_link: true, purchase_order_base_url: purchase_order_quotation_proposal_path(@quotation_proposal) } %>
+                                style: "padding: 0.35rem 0.8rem; font-size: 0.82rem;" %>
                         </div>
                       <% end %>
                       <% if proposal_vendor.purchase_order_status.present? && proposal_vendor.purchase_order_status != "draft" %>
@@ -385,21 +485,117 @@
         </thead>
         <tbody>
           <tr>
-            <td style="position: sticky; left: 0; z-index: 2; background: #fdfefe; box-shadow: 8px 0 18px rgba(26, 58, 42, 0.03);"><strong>Your Committee Score</strong></td>
+            <td class="quotation-proposal-show__comparison-sticky">
+              <strong><%= criteria_based_scoring ? "Criteria Marks" : "Your Committee Score" %></strong>
+              <% if criteria_based_scoring %>
+                <div class="small text-muted mt-1">Enter marks for every criterion. A vendor is fully scored only after all selected criteria receive marks.</div>
+              <% end %>
+            </td>
             <% comparison_vendors.each do |proposal_vendor| %>
               <td>
                 <% if proposal_vendor.response_submitted? %>
-                  <% if committee_scoring_allowed %>
+                  <% member_score_value = @current_scoring_employee.present? ? proposal_vendor.score_for(@current_scoring_employee) : nil %>
+                  <% member_remark_value = @current_scoring_employee.present? ? proposal_vendor.remark_for(@current_scoring_employee) : nil %>
+                  <% saved_score_remarks = proposal_vendor.score_remarks %>
+                  <% if criteria_based_scoring %>
+                    <% if committee_scoring_allowed %>
+                      <div class="quotation-proposal-show__criteria-checklist">
+                        <% selected_criteria_selections.each do |criterion_selection| %>
+                          <% saved_score = current_employee_criteria_map.fetch(proposal_vendor.id, {}).fetch(criterion_selection.id, nil) %>
+                          <label class="quotation-proposal-show__criteria-check quotation-proposal-show__criteria-check--score">
+                            <span class="quotation-proposal-show__criteria-check-label"><%= criterion_selection.display_label %></span>
+                            <span class="quotation-proposal-show__criteria-score-wrap">
+                              <%= number_field_tag "committee_criteria_scores[#{proposal_vendor.id}][#{criterion_selection.id}]",
+                                                   saved_score,
+                                                   min: 0,
+                                                   max: 10,
+                                                   step: 1,
+                                                   placeholder: "0",
+                                                   class: "form-control quotation-proposal-show__criteria-score-input" %>
+                              <span class="quotation-proposal-show__criteria-score-scale">/10</span>
+                            </span>
+                          </label>
+                        <% end %>
+                      </div>
+                      <div class="quotation-proposal-show__criteria-remark">
+                        <label class="quotation-proposal-show__criteria-remark-label">Your Remark</label>
+                        <%= text_area_tag "committee_remarks[#{proposal_vendor.id}]",
+                                          member_remark_value,
+                                          rows: 3,
+                                          class: "form-control quotation-proposal-show__criteria-remark-input",
+                                          placeholder: "Add a short committee remark for this vendor" %>
+                      </div>
+                    <% else %>
+                      <div class="quotation-proposal-show__criteria-list">
+                        <% selected_criteria_selections.each do |criterion_selection| %>
+                          <% criterion_total = criteria_total_scores_map.fetch(proposal_vendor.id, {}).fetch(criterion_selection.id, 0) %>
+                          <div class="quotation-proposal-show__criteria-check quotation-proposal-show__criteria-check--read-only">
+                            <span class="quotation-proposal-show__criteria-check-label"><%= criterion_selection.display_label %></span>
+                            <strong class="quotation-proposal-show__criteria-score-badge"><%= criterion_total %></strong>
+                          </div>
+                        <% end %>
+                      </div>
+                      <% if saved_score_remarks.any? %>
+                        <div class="quotation-proposal-show__criteria-remarks-list">
+                          <% saved_score_remarks.each do |author_name, remark_text| %>
+                            <div class="quotation-proposal-show__criteria-remark-card">
+                              <strong><%= author_name %></strong>
+                              <span><%= remark_text %></span>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    <% end %>
+                    <div class="small text-muted mt-2">
+                      <% if committee_scoring_allowed %>
+                        Scored criteria: <strong><%= current_employee_criteria_map.fetch(proposal_vendor.id, {}).size %>/<%= selected_criteria_selections.size %></strong>
+                        | Your total marks: <strong><%= member_score_value.nil? ? "Incomplete" : member_score_value %>/<%= selected_criteria_selections.size * 10 %></strong>
+                      <% else %>
+                        Overall criterion-wise marks awarded by the committee are shown above.
+                      <% end %>
+                    </div>
+                  <% elsif committee_scoring_allowed %>
                     <div class="d-flex gap-2 align-items-center flex-wrap">
-                      <%= number_field_tag "committee_scores[#{proposal_vendor.id}]", proposal_vendor.score_for(@current_scoring_employee), min: 0, placeholder: "Enter score", class: "form-control", style: "max-width: 130px;" %>
+                      <span class="quotation-proposal-show__criteria-score-wrap quotation-proposal-show__criteria-score-wrap--manual">
+                        <%= number_field_tag "committee_scores[#{proposal_vendor.id}]",
+                                             member_score_value,
+                                             min: 0,
+                                             placeholder: "0",
+                                             class: "form-control quotation-proposal-show__criteria-score-input quotation-proposal-show__criteria-score-input--manual" %>
+                        <span class="quotation-proposal-show__criteria-score-scale quotation-proposal-show__criteria-score-scale--manual">Score</span>
+                      </span>
+                    </div>
+                    <div class="quotation-proposal-show__criteria-remark">
+                      <label class="quotation-proposal-show__criteria-remark-label">Your Remark</label>
+                      <%= text_area_tag "committee_remarks[#{proposal_vendor.id}]",
+                                        member_remark_value,
+                                        rows: 3,
+                                        class: "form-control quotation-proposal-show__criteria-remark-input",
+                                        placeholder: "Add a short committee remark for this vendor" %>
                     </div>
                   <% else %>
                     <span class="text-muted">Committee members can update score</span>
+                    <% if saved_score_remarks.any? %>
+                      <div class="quotation-proposal-show__criteria-remarks-list">
+                        <% saved_score_remarks.each do |author_name, remark_text| %>
+                          <div class="quotation-proposal-show__criteria-remark-card">
+                            <strong><%= author_name %></strong>
+                            <span><%= remark_text %></span>
+                          </div>
+                        <% end %>
+                      </div>
+                    <% end %>
                   <% end %>
-                  <div class="small text-muted mt-2">
-                    Your saved score: <strong><%= proposal_vendor.score_for(@current_scoring_employee).presence || "Not scored yet" %></strong>
-                  </div>
+                  <% unless criteria_based_scoring %>
+                    <div class="small text-muted mt-2">
+                      Your saved score: <strong><%= member_score_value.nil? ? "Not scored yet" : member_score_value %></strong>
+                    </div>
+                  <% end %>
                   <div class="small text-muted mt-1">
+                    <% if criteria_based_scoring && committee_scoring_allowed %>
+                      Saved score from criteria: <strong><%= member_score_value.nil? ? "Incomplete" : member_score_value %></strong>
+                      |
+                    <% end %>
                     Total score: <strong><%= proposal_vendor.committee_score_value.presence || "Not scored yet" %></strong>
                     | Scored by: <strong><%= proposal_vendor.committee_score_count %>/<%= @committee_member_count %></strong>
                   </div>
@@ -411,10 +607,10 @@
           </tr>
           <% if committee_scoring_allowed %>
             <tr>
-              <td style="position: sticky; left: 0; z-index: 2; background: #fdfefe; box-shadow: 8px 0 18px rgba(26, 58, 42, 0.03);"><strong>Save Scores</strong></td>
+              <td class="quotation-proposal-show__comparison-sticky"><strong><%= criteria_based_scoring ? "Save Criteria Marks" : "Save Scores" %></strong></td>
               <td colspan="<%= comparison_vendors.size %>">
                 <div class="d-flex justify-content-end">
-                  <%= submit_tag "Save All Committee Scores", class: "app-form-submit" %>
+                  <%= submit_tag(criteria_based_scoring ? "Save Criteria-Based Marks" : "Save All Committee Scores", class: "app-form-submit") %>
                 </div>
               </td>
             </tr>
@@ -483,7 +679,7 @@
           <% @quotation_proposal.quotation_proposal_items.includes(:unit).each do |proposal_item| %>
             <tr>
               <td style="position: sticky; left: 0; z-index: 2; background: #fdfefe; box-shadow: 8px 0 18px rgba(26, 58, 42, 0.03);">
-                <strong><%= proposal_item.item_name %></strong>
+                <strong><%= quotation_item_display_name(proposal_item.item_name) %></strong>
                 <div class="small text-muted mt-1">
                   Qty: <%= proposal_item.quantity %> <%= proposal_item.unit.name %>
                 </div>
@@ -510,11 +706,26 @@
     <% end %>
 
     <% if @selected_vendor_response.present? %>
-      <div class="app-card mt-4 quotation-proposal-show__workflow-card" style="padding: 1.3rem 1.45rem;">
+      <div class="app-card mt-4 quotation-proposal-show__workflow-card">
+        <details class="quotation-proposal-show__nested-details quotation-proposal-show__section-details" <%= "open" if @selected_vendor_response.pending_invoice_requests? || @selected_vendor_response.purchase_order_status == "accepted" %>>
+          <summary class="quotation-proposal-show__nested-summary quotation-proposal-show__section-summary">
+            <div class="quotation-proposal-show__summary-copy">
+              <span class="quotation-proposal-show__summary-title">Selected Vendor PO Workflow</span>
+              <span class="quotation-proposal-show__summary-note">Vendor reply, PO updates, invoice requests, and activity trail</span>
+            </div>
+            <div class="quotation-proposal-show__summary-meta">
+              <span class="badge border bg-light text-dark"><%= @selected_vendor_response.invoice_requests.size %> invoice requests</span>
+              <span class="badge border bg-light text-dark"><%= @selected_vendor_response.purchase_order_activities.size %> updates</span>
+              <span class="badge border <%= @selected_vendor_response.purchase_order_status == "accepted" ? "bg-success bg-opacity-10 text-success" : @selected_vendor_response.purchase_order_status == "returned" ? "bg-warning bg-opacity-10 text-warning" : @selected_vendor_response.purchase_order_status == "rejected" ? "bg-danger bg-opacity-10 text-danger" : "bg-primary bg-opacity-10 text-primary" %>">
+                <%= @selected_vendor_response.purchase_order_status.to_s.humanize %>
+              </span>
+            </div>
+          </summary>
+
+          <div class="quotation-proposal-show__nested-body quotation-proposal-show__section-body quotation-proposal-show__section-body--workflow">
         <div class="d-flex justify-content-between gap-3 flex-wrap align-items-start quotation-proposal-show__workflow-header">
-          <div>
-            <h3 style="margin-bottom: 0.35rem;">Selected Vendor PO Workflow</h3>
-            <p class="app-section-note mb-0">Maker aur committee yahan vendor response, reply updates, aur full dated timeline dekh sakte hain.</p>
+          <div class="quotation-proposal-show__workflow-header-copy">
+            <p class="app-section-note mb-0">Maker and committee members can review vendor responses, reply updates, and the full dated timeline here.</p>
           </div>
           <div class="d-flex gap-2 flex-wrap quotation-proposal-show__workflow-badges">
             <% if current_user == @quotation_proposal.user && @selected_vendor_response.purchase_order_status == "accepted" %>
@@ -559,7 +770,7 @@
             <%= form_with url: update_purchase_order_reply_quotation_proposal_path(@quotation_proposal, proposal_vendor_id: @selected_vendor_response.id), method: :patch, local: true do %>
               <div class="mb-2">
                 <label class="form-label" style="font-weight: 700;">Reply / Update For Vendor</label>
-                <%= text_area_tag :purchase_order_reply, @selected_vendor_response.purchase_order_reply, rows: 4, class: "form-control", placeholder: "Write the official reply here. Maker aur committee members dono update kar sakte hain." %>
+                <%= text_area_tag :purchase_order_reply, @selected_vendor_response.purchase_order_reply, rows: 4, class: "form-control", placeholder: "Write the official reply here. Both maker and committee members can update it." %>
               </div>
               <div class="d-flex justify-content-end">
                 <%= submit_tag "Save Reply Update", class: "app-form-submit" %>
@@ -576,9 +787,9 @@
               <div class="d-flex justify-content-between gap-3 flex-wrap align-items-start">
                 <div>
                   <div class="quotation-proposal-show__finance-panel-title">Send Accepted Invoices To Finance</div>
-                  <div class="small text-muted mt-1">Jin accepted invoices ki payment process karni hai unhe tick karke same PDO/RFP/date ke saath finance queue me bhej sakte hain.</div>
+                  <div class="small text-muted mt-1">Select the accepted invoices to move them into the finance queue with the same PDO, RFP, and date details.</div>
                 </div>
-                <% if @selected_vendor_response.invoice_requests.any?(&:payment_advice_pending?) %>
+                <% if finance_queue_access? && @selected_vendor_response.invoice_requests.any?(&:payment_advice_pending?) %>
                   <%= link_to "Open Finance Queue", payment_advice_quotation_proposals_path, class: "app-secondary-btn" %>
                 <% end %>
               </div>
@@ -614,7 +825,7 @@
                   </div>
                 <% end %>
               <% else %>
-                <div class="small text-muted mt-3">Abhi koi accepted invoice request finance reference entry ke liye pending nahi hai.</div>
+                <div class="small text-muted mt-3">No accepted invoice request is pending for finance reference entry.</div>
               <% end %>
             </div>
           <% end %>
@@ -625,7 +836,7 @@
                 <%= render "invoice_request_card", invoice_request: invoice_request %>
               <% end %>
             <% else %>
-              <div class="text-muted">Goods receive ke baad vendor invoice upload requests yahan dikhengi.</div>
+              <div class="text-muted">Vendor invoice upload requests appear here after goods receive.</div>
             <% end %>
           </div>
         </div>
@@ -689,32 +900,11 @@
             </details>
           </div>
         <% end %>
+          </div>
+        </details>
       </div>
     <% end %>
   </div>
 <% end %>
 
 </div>
-
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    document.querySelectorAll("[data-purchase-order-link]").forEach(function (link) {
-      link.addEventListener("click", function (event) {
-        var wrapper = link.parentElement;
-        var select = wrapper && wrapper.querySelector("[data-purchase-order-authorized-by]");
-        var baseUrl = link.dataset.purchaseOrderBaseUrl;
-
-        if (!baseUrl) return;
-
-        event.preventDefault();
-
-        var url = new URL(baseUrl, window.location.origin);
-        if (select && select.value) {
-          url.searchParams.set("authorized_by_id", select.value);
-        }
-
-        window.location.href = url.toString();
-      });
-    });
-  });
-</script>

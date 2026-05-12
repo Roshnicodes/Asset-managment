@@ -27,7 +27,7 @@ class ProductVarietiesController < ApplicationController
 
     respond_to do |format|
       if @product_variety.save
-        format.html { redirect_to product_varieties_path, notice: "Product variety was successfully created." }
+        format.html { redirect_to product_varieties_path, notice: "Product type was successfully created." }
         format.json { render :show, status: :created, location: @product_variety }
       else
         load_themes
@@ -41,7 +41,7 @@ class ProductVarietiesController < ApplicationController
   def update
     respond_to do |format|
       if @product_variety.update(product_variety_params)
-        format.html { redirect_to product_varieties_path, notice: "Product variety was successfully updated.", status: :see_other }
+        format.html { redirect_to product_varieties_path, notice: "Product type was successfully updated.", status: :see_other }
         format.json { render :show, status: :ok, location: @product_variety }
       else
         load_themes
@@ -56,7 +56,7 @@ class ProductVarietiesController < ApplicationController
     @product_variety.destroy!
 
     respond_to do |format|
-      format.html { redirect_to product_varieties_path, notice: "Product variety was successfully destroyed.", status: :see_other }
+      format.html { redirect_to product_varieties_path, notice: "Product type was successfully deleted.", status: :see_other }
       format.json { head :no_content }
     end
   end
@@ -69,7 +69,7 @@ class ProductVarietiesController < ApplicationController
 
     # Only allow a list of trusted parameters through.
     def product_variety_params
-      params.expect(product_variety: [ :name, :product_id, :stakeholder_category_id ])
+      params.expect(product_variety: [ :name, :product_type_code, :product_id, :stakeholder_category_id ])
     end
 
     def load_themes

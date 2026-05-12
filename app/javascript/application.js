@@ -115,15 +115,17 @@ const setupMsmeToggle = () => {
 const setupTableSearch = () => {
   document.querySelectorAll(".app-table-wrap").forEach((tableWrap, index) => {
     if (tableWrap.dataset.searchReady === "true") return
+    if (tableWrap.dataset.tableSearch === "false") return
 
     const table = tableWrap.querySelector("table")
     const tbody = tableWrap.querySelector("tbody")
     if (!table || !tbody) return
 
     const searchBar = document.createElement("div")
+    const placeholder = tableWrap.dataset.searchPlaceholder || "Search in this table..."
     searchBar.className = "app-table-search"
     searchBar.innerHTML = `
-      <input type="search" class="app-table-search-input" placeholder="Search in this table...">
+      <input type="search" class="app-table-search-input" placeholder="${placeholder}">
     `
 
     const input = searchBar.querySelector("input")
@@ -436,6 +438,113 @@ const setupQuotationProposalForm = () => {
   const themeSelect = document.getElementById("quotation_proposal_theme_id")
   const amountBucketSelect = document.getElementById("quotation_proposal_procurement_amount_bucket")
   const vendorDropdown = document.querySelector("[data-quotation-vendor-dropdown]")
+  const criteriaSection = document.querySelector("[data-quotation-criteria-section]")
+
+  if (themeSelect && criteriaSection) {
+    const criteriaOptions = Array.from(criteriaSection.querySelectorAll("[data-quotation-criteria-option]"))
+    const criteriaEmpty = criteriaSection.querySelector("[data-quotation-criteria-empty]")
+    const criteriaSummary = criteriaSection.querySelector("[data-quotation-criteria-summary]")
+    const criteriaSearch = criteriaSection.querySelector("[data-quotation-criteria-search]")
+    const criteriaSelectedPreview = criteriaSection.querySelector("[data-quotation-criteria-selected-preview]")
+    const criteriaListWrap = criteriaSection.querySelector("[data-quotation-criteria-list-wrap]")
+    const criteriaToggle = criteriaSection.querySelector("[data-quotation-criteria-toggle]")
+    let criteriaExpanded = false
+    let criteriaToggleTouched = false
+
+    const syncCriteriaOptions = () => {
+      const selectedThemeId = themeSelect.value
+      const query = (criteriaSearch?.value || "").trim().toLowerCase()
+      let themeCount = 0
+      let visibleCount = 0
+      let selectedCount = 0
+      const selectedLabels = []
+
+      criteriaOptions.forEach((option) => {
+        const checkbox = option.querySelector("[data-quotation-criteria-checkbox]")
+        const labelText = option.querySelector("strong")?.textContent?.trim() || ""
+        const matchesTheme = selectedThemeId !== "" && option.dataset.themeId === selectedThemeId
+        const matchesQuery = query === "" || labelText.toLowerCase().includes(query)
+        const shouldShow = matchesTheme && matchesQuery
+
+        if (matchesTheme) themeCount += 1
+        option.classList.toggle("is-hidden", !shouldShow)
+        if (!matchesTheme && checkbox) checkbox.checked = false
+        if (shouldShow) visibleCount += 1
+        if (checkbox?.checked) {
+          selectedCount += 1
+          if (labelText !== "") selectedLabels.push(labelText)
+        }
+      })
+
+      if (criteriaEmpty) {
+        if (selectedThemeId === "") {
+          criteriaEmpty.textContent = "Select a theme to view vendor selection criteria."
+          criteriaEmpty.classList.remove("is-hidden")
+        } else if (themeCount === 0) {
+          criteriaEmpty.textContent = "No vendor selection criteria is configured for this theme."
+          criteriaEmpty.classList.remove("is-hidden")
+        } else if (visibleCount === 0) {
+          criteriaEmpty.textContent = "No criteria matches your search."
+          criteriaEmpty.classList.remove("is-hidden")
+        } else {
+          criteriaEmpty.classList.add("is-hidden")
+        }
+      }
+
+      if (criteriaSummary) {
+        if (selectedThemeId === "") {
+          criteriaSummary.textContent = "Choose a theme first to load the matching criteria."
+        } else {
+          criteriaSummary.textContent = `${selectedCount} selected out of ${themeCount} available criteria.`
+        }
+      }
+
+      if (criteriaSelectedPreview) {
+        if (selectedCount === 0) {
+          criteriaSelectedPreview.textContent = "No criteria selected yet. The committee can still use manual scoring if you leave this blank."
+        } else {
+          const previewLabels = selectedLabels.slice(0, 3)
+          const remainingCount = selectedLabels.length - previewLabels.length
+          const suffix = remainingCount > 0 ? ` +${remainingCount} more` : ""
+          criteriaSelectedPreview.textContent = `Selected: ${previewLabels.join(", ")}${suffix}`
+        }
+      }
+
+      if (criteriaSearch) {
+        criteriaSearch.disabled = selectedThemeId === "" || themeCount === 0
+      }
+
+      const hasThemeCriteria = selectedThemeId !== "" && themeCount > 0
+      const hasActiveSearch = query !== ""
+      const shouldAutoExpand = hasThemeCriteria && themeCount <= 8
+      const effectiveExpanded = hasThemeCriteria && (hasActiveSearch || (criteriaToggleTouched ? criteriaExpanded : shouldAutoExpand))
+
+      if (criteriaListWrap) {
+        criteriaListWrap.classList.toggle("is-hidden", !hasThemeCriteria)
+        criteriaListWrap.classList.toggle("is-collapsed", hasThemeCriteria && !effectiveExpanded)
+      }
+
+      if (criteriaToggle) {
+        criteriaToggle.disabled = !hasThemeCriteria
+        criteriaToggle.classList.toggle("is-hidden", !hasThemeCriteria)
+        criteriaToggle.textContent = effectiveExpanded ? "Hide Criteria" : `Show Criteria (${themeCount})`
+      }
+    }
+
+    criteriaOptions.forEach((option) => {
+      option.querySelector("[data-quotation-criteria-checkbox]")?.addEventListener("change", syncCriteriaOptions)
+    })
+
+    criteriaToggle?.addEventListener("click", () => {
+      criteriaToggleTouched = true
+      criteriaExpanded = !criteriaExpanded
+      syncCriteriaOptions()
+    })
+
+    criteriaSearch?.addEventListener("input", syncCriteriaOptions)
+    themeSelect.addEventListener("change", syncCriteriaOptions)
+    syncCriteriaOptions()
+  }
 
   if (themeSelect && vendorDropdown) {
     const trigger = vendorDropdown.querySelector("[data-quotation-vendor-trigger]")
@@ -456,8 +565,8 @@ const setupQuotationProposalForm = () => {
       if (label) label.textContent = selected.length > 0 ? "" : "Select vendors"
       if (selectionNote) {
         selectionNote.textContent = singleVendorMode()
-          ? "Below 10K me sirf ek vendor select kiya ja sakta hai."
-          : "Theme select karne ke baad sirf same stakeholder ke matching vendors yahan show honge."
+          ? "Only one vendor can be selected for Below 10K quotations."
+          : "After you select a theme, only vendors matching the same stakeholder appear here."
       }
 
       if (selectedWrap) {
@@ -921,6 +1030,106 @@ const setupVendorQuotationCalculations = () => {
   })
 }
 
+const setupAssetProductCodeAutofill = () => {
+  document.querySelectorAll("[data-asset-product-code-map]").forEach((container) => {
+    if (container.dataset.assetProductCodeReady === "true") return
+
+    let productCodeMap = {}
+
+    try {
+      productCodeMap = JSON.parse(container.dataset.assetProductCodeMap || "{}")
+    } catch (error) {
+      productCodeMap = {}
+    }
+
+    const rows = Array.from(container.querySelectorAll("[data-asset-product-code-row]"))
+    const scopedRows = rows.length > 0 ? rows : [container]
+
+    const syncItemCode = (row) => {
+      const productSelect = row.querySelector("[data-asset-product-select]")
+      const itemCodeInput = row.querySelector("[data-asset-item-code]")
+      if (!productSelect || !itemCodeInput) return
+
+      const selectedCode = productCodeMap[productSelect.value] || ""
+      const previousAutofilledCode = itemCodeInput.dataset.autofilledCode || ""
+      const currentValue = itemCodeInput.value.trim()
+      const shouldAutofill = currentValue === "" || currentValue === previousAutofilledCode
+
+      if (shouldAutofill) itemCodeInput.value = selectedCode
+      itemCodeInput.dataset.autofilledCode = selectedCode
+    }
+
+    scopedRows.forEach((row) => {
+      const productSelect = row.querySelector("[data-asset-product-select]")
+      if (!productSelect) return
+
+      productSelect.addEventListener("change", () => syncItemCode(row))
+      syncItemCode(row)
+    })
+
+    container.dataset.assetProductCodeReady = "true"
+  })
+}
+
+const setupAssetInsuranceFields = () => {
+  document.querySelectorAll("[data-asset-insurance-card]").forEach((card) => {
+    if (card.dataset.assetInsuranceReady === "true") return
+
+    const statusSelect = card.querySelector("[data-insurance-status-select]")
+    const extraFields = card.querySelector("[data-insurance-extra-fields]")
+    if (!statusSelect || !extraFields) return
+
+    const syncInsuranceFields = () => {
+      const showInsuranceFields = statusSelect.value === "true"
+
+      extraFields.classList.toggle("is-hidden", !showInsuranceFields)
+      extraFields.hidden = !showInsuranceFields
+      extraFields.querySelectorAll("input").forEach((input) => {
+        input.disabled = !showInsuranceFields
+      })
+    }
+
+    statusSelect.addEventListener("change", syncInsuranceFields)
+    syncInsuranceFields()
+    card.dataset.assetInsuranceReady = "true"
+  })
+}
+
+const setupFinanceQueueBulkSelection = () => {
+  document.querySelectorAll("[data-finance-bulk-form]").forEach((form) => {
+    if (form.dataset.financeBulkReady === "true") return
+
+    const selectAllCheckbox = form.querySelector("[data-finance-select-all]")
+    const rowCheckboxes = Array.from(form.querySelectorAll("[data-finance-row-checkbox]"))
+    const selectedCount = form.querySelector("[data-finance-selected-count]")
+    if (rowCheckboxes.length === 0) return
+
+    const syncSelectionState = () => {
+      const checkedCount = rowCheckboxes.filter((checkbox) => checkbox.checked).length
+
+      if (selectedCount) selectedCount.textContent = checkedCount.toString()
+      if (!selectAllCheckbox) return
+
+      selectAllCheckbox.checked = checkedCount === rowCheckboxes.length
+      selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < rowCheckboxes.length
+    }
+
+    selectAllCheckbox?.addEventListener("change", () => {
+      rowCheckboxes.forEach((checkbox) => {
+        checkbox.checked = selectAllCheckbox.checked
+      })
+      syncSelectionState()
+    })
+
+    rowCheckboxes.forEach((checkbox) => {
+      checkbox.addEventListener("change", syncSelectionState)
+    })
+
+    syncSelectionState()
+    form.dataset.financeBulkReady = "true"
+  })
+}
+
 document.addEventListener("turbo:load", setupVendorRegistrationSelections)
 document.addEventListener("turbo:load", setupVendorDocumentToggle)
 document.addEventListener("turbo:load", setupMsmeToggle)
@@ -931,3 +1140,6 @@ document.addEventListener("turbo:load", setupQuotationProposalForm)
 document.addEventListener("turbo:load", setupVendorApprovalSelections)
 document.addEventListener("turbo:load", setupQuotationApprovalSelections)
 document.addEventListener("turbo:load", setupVendorQuotationCalculations)
+document.addEventListener("turbo:load", setupAssetProductCodeAutofill)
+document.addEventListener("turbo:load", setupAssetInsuranceFields)
+document.addEventListener("turbo:load", setupFinanceQueueBulkSelection)

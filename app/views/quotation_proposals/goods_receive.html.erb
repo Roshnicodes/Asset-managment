@@ -73,7 +73,7 @@
   <div class="app-page-header app-subsection-header-tight">
     <div>
       <h3 style="margin-bottom: 0.25rem;">Item-Wise Goods Receive</h3>
-      <p class="app-section-note mb-0">Aap item ko multiple rounds me receive kar sakte hain. `Receive Now Qty` me jitni quantity abhi mili hai utni add karein. Row tab tak editable rahegi jab tak total ordered quantity complete receive na ho jaye.</p>
+      <p class="app-section-note mb-0">You can receive items in multiple rounds. Enter only the quantity received in this round in `Receive Now Qty`. The row remains editable until the full ordered quantity is received.</p>
     </div>
   </div>
 
@@ -102,7 +102,7 @@
             <tr data-goods-receive-row data-vendor-item-id="<%= vendor_item.id %>">
               <td><%= index + 1 %></td>
               <td>
-                <strong><%= vendor_item.item_name %></strong>
+                <strong><%= quotation_item_display_name(vendor_item.item_name) %></strong>
                 <% if vendor_item.quotation_proposal_item.remark.present? %>
                   <div class="small text-muted mt-1"><%= vendor_item.quotation_proposal_item.remark %></div>
                 <% end %>
@@ -117,11 +117,11 @@
               <td>
                 <div class="gr-toggle-group">
                   <label>
-                    <%= radio_button_tag "goods_receive_items[#{vendor_item.id}][goods_received]", "yes", !vendor_item.fully_received?, class: "gr-toggle-input", data: { goods_receive_toggle: true }, disabled: vendor_item.fully_received? %>
+                    <%= radio_button_tag "goods_receive_items[#{vendor_item.id}][goods_received]", "yes", false, class: "gr-toggle-input", data: { goods_receive_toggle: true }, disabled: vendor_item.fully_received? %>
                     <span class="gr-toggle-pill">Yes</span>
                   </label>
                   <label>
-                    <%= radio_button_tag "goods_receive_items[#{vendor_item.id}][goods_received]", "no", vendor_item.fully_received? ? false : vendor_item.received_quantity.to_d.zero?, class: "gr-toggle-input", data: { goods_receive_toggle: true }, disabled: vendor_item.fully_received? %>
+                    <%= radio_button_tag "goods_receive_items[#{vendor_item.id}][goods_received]", "no", !vendor_item.fully_received?, class: "gr-toggle-input", data: { goods_receive_toggle: true }, disabled: vendor_item.fully_received? %>
                     <span class="gr-toggle-pill">No</span>
                   </label>
                 </div>
@@ -141,11 +141,11 @@
               <td>
                 <div class="gr-toggle-group">
                   <label>
-                    <%= radio_button_tag "goods_receive_items[#{vendor_item.id}][fixed_asset]", "yes", vendor_item.fixed_asset == true, disabled: vendor_item.fully_received?, class: "gr-toggle-input", data: { fixed_asset_toggle: true } %>
+                    <%= radio_button_tag "goods_receive_items[#{vendor_item.id}][fixed_asset]", "yes", vendor_item.fixed_asset == true, disabled: true, class: "gr-toggle-input", data: { fixed_asset_toggle: true } %>
                     <span class="gr-toggle-pill">Yes</span>
                   </label>
                   <label>
-                    <%= radio_button_tag "goods_receive_items[#{vendor_item.id}][fixed_asset]", "no", vendor_item.fixed_asset == false, disabled: vendor_item.fully_received?, class: "gr-toggle-input", data: { fixed_asset_toggle: true } %>
+                    <%= radio_button_tag "goods_receive_items[#{vendor_item.id}][fixed_asset]", "no", vendor_item.fixed_asset == false, disabled: true, class: "gr-toggle-input", data: { fixed_asset_toggle: true } %>
                     <span class="gr-toggle-pill">No</span>
                   </label>
                 </div>
@@ -180,7 +180,7 @@
   <div class="app-page-header app-subsection-header-tight">
     <div>
       <h3 style="margin-bottom: 0.25rem;">Vendor Invoice Upload Requests</h3>
-      <p class="app-section-note mb-0">Har goods receive submission par vendor ko alag invoice upload link jata hai. Yahan uski dated history aur uploaded invoice documents dikhengi.</p>
+      <p class="app-section-note mb-0">Each goods receive submission creates a separate invoice upload link for the vendor. The dated history and uploaded invoice documents appear here.</p>
     </div>
   </div>
 
@@ -190,191 +190,209 @@
         <%= render "invoice_request_card", invoice_request: invoice_request %>
       <% end %>
     <% else %>
-      <div class="text-muted" id="invoice-request-empty">Abhi tak koi invoice upload request create nahi hui hai.</div>
+      <div class="text-muted" id="invoice-request-empty">No invoice upload request has been created yet.</div>
     <% end %>
   </div>
 </div>
 
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    var flashBox = document.getElementById("goods-receive-flash");
-    var invoiceList = document.getElementById("invoice-request-list");
+  (function () {
+    function initGoodsReceivePage() {
+      var form = document.querySelector("[data-goods-receive-form]");
+      if (!form) return;
 
-    function showFlash(message, type) {
-      if (!flashBox) return;
-      flashBox.textContent = message;
-      flashBox.style.display = "block";
-      flashBox.style.border = type === "error" ? "1px solid #f0c2c2" : "1px solid #cfe3d7";
-      flashBox.style.background = type === "error" ? "#fff5f5" : "#eefaf2";
-      flashBox.style.color = type === "error" ? "#8f2d2d" : "#1f5f53";
-    }
+      var flashBox = document.getElementById("goods-receive-flash");
+      var invoiceList = document.getElementById("invoice-request-list");
 
-    function formatQuantity(value) {
-      var numeric = Number(value || 0);
-      return Number.isInteger(numeric) ? String(numeric) : numeric.toFixed(2).replace(/\.00$/, "");
-    }
-
-    function prependInvoiceRequestCard(invoiceRequest) {
-      if (!invoiceList || !invoiceRequest) return;
-      var emptyState = document.getElementById("invoice-request-empty");
-      if (emptyState) emptyState.remove();
-
-      var wrapper = document.createElement("div");
-      wrapper.style.border = "1px solid #d8e6de";
-      wrapper.style.borderRadius = "16px";
-      wrapper.style.padding = "1rem 1.05rem";
-      wrapper.style.background = "#fcfefd";
-      wrapper.innerHTML =
-        "<div class='d-flex justify-content-between gap-3 flex-wrap align-items-start'>" +
-          "<div>" +
-            "<div style='font-weight: 700;'>Latest Invoice Request</div>" +
-            "<div class='small text-muted mt-1'>Requested: " + (invoiceRequest.requested_at || "-") + "</div>" +
-          "</div>" +
-          "<span class='badge border bg-warning bg-opacity-10 text-warning'>" + invoiceRequest.status + "</span>" +
-        "</div>" +
-        "<div class='mt-3'>" +
-          "<div class='small text-muted' style='font-weight: 700;'>Received Items</div>" +
-          "<div class='mt-1'>" + (invoiceRequest.items_label || "-") + "</div>" +
-        "</div>" +
-        "<div class='mt-3 small text-muted'>Invoice upload abhi pending hai.</div>";
-      invoiceList.prepend(wrapper);
-    }
-
-    document.querySelectorAll("[data-goods-receive-row]").forEach(function (row) {
-      var goodsInputs = row.querySelectorAll("[data-goods-receive-toggle]");
-      var fixedInputs = row.querySelectorAll("[data-fixed-asset-toggle]");
-      var quantityInput = row.querySelector("[data-receive-now-quantity]");
-
-      function syncFixedAssetState() {
-        var goodsYes = row.querySelector("[data-goods-receive-toggle][value='yes']");
-        var enabled = goodsYes && goodsYes.checked;
-        var rowCompleted = goodsYes && goodsYes.disabled;
-        var pendingQuantity = quantityInput ? Number(quantityInput.dataset.pendingQuantity || "0") : 0;
-
-        if (quantityInput) {
-          quantityInput.disabled = !enabled || rowCompleted;
-          if (!enabled || rowCompleted) {
-            quantityInput.value = "";
-          }
-          if (enabled && pendingQuantity > 0) {
-            quantityInput.max = pendingQuantity;
-          }
-        }
-
-        fixedInputs.forEach(function (input) {
-          input.disabled = !enabled || rowCompleted;
-          if (!enabled) {
-            input.checked = false;
-          }
-        });
+      function showFlash(message, type) {
+        if (!flashBox) return;
+        flashBox.textContent = message;
+        flashBox.style.display = "block";
+        flashBox.style.border = type === "error" ? "1px solid #f0c2c2" : "1px solid #cfe3d7";
+        flashBox.style.background = type === "error" ? "#fff5f5" : "#eefaf2";
+        flashBox.style.color = type === "error" ? "#8f2d2d" : "#1f5f53";
       }
 
-      goodsInputs.forEach(function (input) {
-        input.addEventListener("change", syncFixedAssetState);
+      function formatQuantity(value) {
+        var numeric = Number(value || 0);
+        return Number.isInteger(numeric) ? String(numeric) : numeric.toFixed(2).replace(/\.00$/, "");
+      }
+
+      function prependInvoiceRequestCard(invoiceRequest) {
+        if (!invoiceList || !invoiceRequest) return;
+        var emptyState = document.getElementById("invoice-request-empty");
+        if (emptyState) emptyState.remove();
+
+        var wrapper = document.createElement("div");
+        wrapper.style.border = "1px solid #d8e6de";
+        wrapper.style.borderRadius = "16px";
+        wrapper.style.padding = "1rem 1.05rem";
+        wrapper.style.background = "#fcfefd";
+        wrapper.innerHTML =
+          "<div class='d-flex justify-content-between gap-3 flex-wrap align-items-start'>" +
+            "<div>" +
+              "<div style='font-weight: 700;'>Latest Invoice Request</div>" +
+              "<div class='small text-muted mt-1'>Requested: " + (invoiceRequest.requested_at || "-") + "</div>" +
+            "</div>" +
+            "<span class='badge border bg-warning bg-opacity-10 text-warning'>" + invoiceRequest.status + "</span>" +
+          "</div>" +
+          "<div class='mt-3'>" +
+            "<div class='small text-muted' style='font-weight: 700;'>Received Items</div>" +
+            "<div class='mt-1'>" + (invoiceRequest.items_label || "-") + "</div>" +
+          "</div>" +
+          "<div class='mt-3 small text-muted'>Invoice upload is still pending.</div>";
+        invoiceList.prepend(wrapper);
+      }
+
+      document.querySelectorAll("[data-goods-receive-row]").forEach(function (row) {
+        var goodsInputs = row.querySelectorAll("[data-goods-receive-toggle]");
+        var fixedInputs = row.querySelectorAll("[data-fixed-asset-toggle]");
+        var quantityInput = row.querySelector("[data-receive-now-quantity]");
+
+        function syncFixedAssetState() {
+          var goodsYes = row.querySelector("[data-goods-receive-toggle][value='yes']");
+          var enabled = goodsYes && goodsYes.checked;
+          var rowCompleted = goodsYes && goodsYes.disabled;
+          var pendingQuantity = quantityInput ? Number(quantityInput.dataset.pendingQuantity || "0") : 0;
+
+          if (quantityInput) {
+            quantityInput.disabled = !enabled || rowCompleted;
+            if (!enabled || rowCompleted) {
+              quantityInput.value = "";
+            }
+            if (enabled && pendingQuantity > 0) {
+              quantityInput.max = pendingQuantity;
+            }
+          }
+
+          fixedInputs.forEach(function (input) {
+            input.disabled = !enabled || rowCompleted;
+            if (!enabled) {
+              input.checked = false;
+            }
+          });
+        }
+
+        if (row.dataset.goodsReceiveBound !== "true") {
+          goodsInputs.forEach(function (input) {
+            input.addEventListener("change", syncFixedAssetState);
+          });
+          row.dataset.goodsReceiveBound = "true";
+        }
+
+        syncFixedAssetState();
       });
 
-      syncFixedAssetState();
-    });
+      if (form.dataset.goodsReceiveBound === "true") return;
+      form.dataset.goodsReceiveBound = "true";
 
-    var form = document.querySelector("[data-goods-receive-form]");
-    if (!form) return;
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
 
-    form.addEventListener("submit", function (event) {
-      event.preventDefault();
-
-      fetch(form.action, {
-        method: "PATCH",
-        headers: {
-          "Accept": "application/json",
-          "X-CSRF-Token": document.querySelector("meta[name='csrf-token']").content
-        },
-        body: new FormData(form)
-      })
-        .then(function (response) {
-          return response.json().then(function (data) {
-            return { ok: response.ok, data: data };
-          });
+        fetch(form.action, {
+          method: "PATCH",
+          headers: {
+            "Accept": "application/json",
+            "X-CSRF-Token": document.querySelector("meta[name='csrf-token']").content
+          },
+          body: new FormData(form)
         })
-        .then(function (result) {
-          if (!result.ok) {
-            showFlash(result.data.error || "Unable to submit goods receive details.", "error");
-            return;
-          }
-
-          (result.data.items || []).forEach(function (item) {
-            var row = document.querySelector("[data-vendor-item-id='" + item.id + "']");
-            if (!row) return;
-
-            var receivedEl = row.querySelector("[data-received-quantity]");
-            var pendingEl = row.querySelector("[data-pending-quantity]");
-            var quantityInput = row.querySelector("[data-receive-now-quantity]");
-            var goodsYes = row.querySelector("[data-goods-receive-toggle][value='yes']");
-            var goodsNo = row.querySelector("[data-goods-receive-toggle][value='no']");
-            var fixedInputs = row.querySelectorAll("[data-fixed-asset-toggle]");
-            var statusBadge = row.querySelector("[data-status-badge]");
-            var lastReceive = row.querySelector("[data-last-receive]");
-
-            if (receivedEl) receivedEl.textContent = formatQuantity(item.received_quantity);
-            if (pendingEl) pendingEl.textContent = formatQuantity(item.pending_quantity);
-
-            if (quantityInput) {
-              quantityInput.dataset.pendingQuantity = item.pending_quantity;
-              quantityInput.value = "";
-              quantityInput.max = item.pending_quantity;
-              quantityInput.placeholder = item.fully_received ? "Completed" : "0";
-              quantityInput.disabled = item.fully_received ? true : false;
+          .then(function (response) {
+            return response.json().then(function (data) {
+              return { ok: response.ok, data: data };
+            });
+          })
+          .then(function (result) {
+            if (!result.ok) {
+              showFlash(result.data.error || "Unable to submit goods receive details.", "error");
+              return;
             }
 
-            if (goodsYes) {
-              goodsYes.disabled = item.fully_received;
-              goodsYes.checked = !item.fully_received;
-            }
-            if (goodsNo) {
-              goodsNo.disabled = item.fully_received;
-              goodsNo.checked = item.fully_received ? false : false;
-            }
+            (result.data.items || []).forEach(function (item) {
+              var row = document.querySelector("[data-vendor-item-id='" + item.id + "']");
+              if (!row) return;
 
-            fixedInputs.forEach(function (input) {
-              input.disabled = item.fully_received ? true : false;
-              if (item.fully_received) {
-                input.checked = item.fixed_asset === true ? input.value === "yes" : item.fixed_asset === false ? input.value === "no" : false;
+              var receivedEl = row.querySelector("[data-received-quantity]");
+              var pendingEl = row.querySelector("[data-pending-quantity]");
+              var quantityInput = row.querySelector("[data-receive-now-quantity]");
+              var goodsYes = row.querySelector("[data-goods-receive-toggle][value='yes']");
+              var goodsNo = row.querySelector("[data-goods-receive-toggle][value='no']");
+              var fixedInputs = row.querySelectorAll("[data-fixed-asset-toggle]");
+              var statusBadge = row.querySelector("[data-status-badge]");
+              var lastReceive = row.querySelector("[data-last-receive]");
+
+              if (receivedEl) receivedEl.textContent = formatQuantity(item.received_quantity);
+              if (pendingEl) pendingEl.textContent = formatQuantity(item.pending_quantity);
+
+              if (quantityInput) {
+                quantityInput.dataset.pendingQuantity = item.pending_quantity;
+                quantityInput.value = "";
+                quantityInput.max = item.pending_quantity;
+                quantityInput.placeholder = item.fully_received ? "Completed" : "0";
+                quantityInput.disabled = item.fully_received ? true : false;
               }
+
+              if (goodsYes) {
+                goodsYes.disabled = item.fully_received;
+                goodsYes.checked = false;
+              }
+              if (goodsNo) {
+                goodsNo.disabled = item.fully_received;
+                goodsNo.checked = !item.fully_received;
+              }
+
+              fixedInputs.forEach(function (input) {
+                input.disabled = item.fully_received ? true : false;
+                if (item.fully_received) {
+                  input.checked = item.fixed_asset === true ? input.value === "yes" : item.fixed_asset === false ? input.value === "no" : false;
+                }
+              });
+
+              if (statusBadge) {
+                if (item.fully_received) {
+                  statusBadge.className = "badge border bg-success bg-opacity-10 text-success";
+                  statusBadge.textContent = "Fully Received";
+                } else if (Number(item.received_quantity) > 0) {
+                  statusBadge.className = "badge border bg-warning bg-opacity-10 text-warning";
+                  statusBadge.textContent = "Partially Received";
+                } else {
+                  statusBadge.className = "badge border bg-light text-dark";
+                  statusBadge.textContent = "Pending";
+                }
+              }
+
+              if (lastReceive) {
+                if (item.last_goods_received_at) {
+                  lastReceive.style.display = "block";
+                  lastReceive.textContent = "Last receive: " + item.last_goods_received_at;
+                }
+              }
+
+              row.querySelectorAll("[data-goods-receive-toggle]").forEach(function (input) {
+                input.dispatchEvent(new Event("change"));
+              });
             });
 
-            if (statusBadge) {
-              if (item.fully_received) {
-                statusBadge.className = "badge border bg-success bg-opacity-10 text-success";
-                statusBadge.textContent = "Fully Received";
-              } else if (Number(item.received_quantity) > 0) {
-                statusBadge.className = "badge border bg-warning bg-opacity-10 text-warning";
-                statusBadge.textContent = "Partially Received";
-              } else {
-                statusBadge.className = "badge border bg-light text-dark";
-                statusBadge.textContent = "Pending";
-              }
+            if (result.data.invoice_request) {
+              prependInvoiceRequestCard(result.data.invoice_request);
             }
 
-            if (lastReceive) {
-              if (item.last_goods_received_at) {
-                lastReceive.style.display = "block";
-                lastReceive.textContent = "Last receive: " + item.last_goods_received_at;
-              }
-            }
-
-            row.querySelectorAll("[data-goods-receive-toggle]").forEach(function (input) {
-              input.dispatchEvent(new Event("change"));
-            });
+            showFlash(result.data.notice || "Goods receive details updated.", "success");
+          })
+          .catch(function () {
+            showFlash("Unable to submit goods receive details.", "error");
           });
+      });
+    }
 
-          if (result.data.invoice_request) {
-            prependInvoiceRequestCard(result.data.invoice_request);
-          }
+    if (window.initializeGoodsReceivePage) {
+      document.removeEventListener("DOMContentLoaded", window.initializeGoodsReceivePage);
+      document.removeEventListener("turbo:load", window.initializeGoodsReceivePage);
+    }
 
-          showFlash(result.data.notice || "Goods receive details updated.", "success");
-        })
-        .catch(function () {
-          showFlash("Unable to submit goods receive details.", "error");
-        });
-    });
-  });
+    window.initializeGoodsReceivePage = initGoodsReceivePage;
+    document.addEventListener("DOMContentLoaded", initGoodsReceivePage);
+    document.addEventListener("turbo:load", initGoodsReceivePage);
+    initGoodsReceivePage();
+  })();
 </script>

@@ -21,7 +21,7 @@ Rails.application.routes.draw do
     collection do
       get :list
       get :payment_advice
-      patch "payment_advice/:invoice_request_id", action: :update_payment_advice, as: :update_payment_advice
+      patch :update_payment_advice, path: "payment_advice"
       post :send_for_approval
     end
     member do
@@ -93,7 +93,13 @@ Rails.application.routes.draw do
   resources :fcos
   resources :tos
   resources :themes
+  resources :vendor_selection_criteria, except: :show
   resources :products
+  resources :asset_insurances, only: [:index] do
+    collection do
+      patch :update_all
+    end
+  end
   resources :assets do
     member do
       get :remove

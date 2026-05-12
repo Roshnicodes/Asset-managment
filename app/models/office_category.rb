@@ -39,7 +39,31 @@ class OfficeCategory < ApplicationRecord
     name.presence || [office_category_master_name.presence || office_level.presence, location_summary.presence || state&.name].compact.join(" - ")
   end
 
+  def asset_code_segment
+    category_label = office_category_master_name.to_s.strip.presence || office_level.to_s.strip.presence
+    location_label = asset_location_name
+
+    [category_label, location_label].compact.join("-")
+  end
+
   private
+
+  def asset_location_name
+    block&.name.presence ||
+      district&.name.presence ||
+      state&.name.presence ||
+      stripped_name_without_category.presence ||
+      name.to_s.strip.presence ||
+      "Office"
+  end
+
+  def stripped_name_without_category
+    raw_name = name.to_s.strip
+    category_label = office_category_master_name.to_s.strip
+    return raw_name if raw_name.blank? || category_label.blank?
+
+    raw_name.sub(/\A#{Regexp.escape(category_label)}\s*[-\/]?\s*/i, "").strip
+  end
 
   def sync_location_hierarchy
     if block.present?

@@ -17,6 +17,7 @@ class ApprovalRequest < ApplicationRecord
     :status,
     :actioned_at,
     :remark,
+    :approval_request,
     keyword_init: true
   ) do
     def action_label
@@ -44,10 +45,7 @@ class ApprovalRequest < ApplicationRecord
     end
 
     def effective_status_label
-      return "Returned" if effective_status == "returned"
-      return "Rejected" if effective_status == "rejected"
-
-      effective_status.capitalize
+      WorkflowLevelNaming.approval_status_label_for(self, approval_request: approval_request)
     end
 
     def show_status_in_trail?
@@ -88,6 +86,7 @@ class ApprovalRequest < ApplicationRecord
       return
     end
 
+    return if approval_steps_snapshot_present?
     return unless approval_channel.present?
 
     creator_email = approvable.try(:user).try(:email).to_s.strip.downcase
@@ -144,15 +143,16 @@ class ApprovalRequest < ApplicationRecord
   end
 
   def trail_steps
-    return approval_steps if approvable.is_a?(QuotationProposal)
+    stored_steps = approval_steps.to_a
+    return stored_steps if approvable.is_a?(QuotationProposal)
+    return stored_steps if stored_steps.any?
 
-    synced_steps = approval_steps.index_by(&:level)
     channel_steps = approval_channel&.flow_steps.to_a
     return approval_steps if channel_steps.empty?
 
     channel_steps.map.with_index do |channel_step, index|
       level = channel_step.step_number || index + 1
-      synced_steps[level] || TrailStep.new(
+      TrailStep.new(
         level: level,
         employee_master: channel_step.to_responsible_user,
         from_user: channel_step.try(:from_user),
@@ -160,7 +160,8 @@ class ApprovalRequest < ApplicationRecord
         current_action: channel_step.current_action,
         status: inferred_trail_status_for(level),
         actioned_at: nil,
-        remark: nil
+        remark: nil,
+        approval_request: self
       )
     end
   end
@@ -502,6 +503,10 @@ class ApprovalRequest < ApplicationRecord
 
   def syncable_step?(step)
     step.status.in?(%w[waiting pending]) && step.actioned_at.blank?
+  end
+
+  def approval_steps_snapshot_present?
+    approval_steps.to_a.any?
   end
 
   def step_needs_update?(step, target_attributes)

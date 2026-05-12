@@ -62,6 +62,11 @@ class QuotationVendorQrsController < ApplicationController
       return
     end
 
+    unless direct_maker_access_allowed? || params[:asa_terms_accepted].to_s == "1"
+      redirect_to quotation_vendor_qr_path(params[:token], verified: 1), alert: "Please accept the General Terms and Conditions before submitting the form."
+      return
+    end
+
     if @quotation_proposal_vendor.update(vendor_response_params)
       if @quotation_proposal.missing_max_rates?
         @quotation_vendor_dispatch.update!(
@@ -79,7 +84,7 @@ class QuotationVendorQrsController < ApplicationController
             quotation_vendor_qr_path(params[:token], verified: 1)
           end
 
-        redirect_to redirect_target, alert: "Max rate abhi pending hai. Response save ho gaya hai, lekin final submit nahi hua. Maker ko notification bhej di gayi hai."
+        redirect_to redirect_target, alert: "The max rate is still pending. Your response was saved, but it was not finally submitted. The maker has been notified."
         return
       end
 

@@ -29,4 +29,30 @@ class ApplicationHelperTest < ActionView::TestCase
     assert_match %r{/pgpl\.jpeg\z}, navbar_logo_source
     assert_equal "PGPL Logo", navbar_logo_alt
   end
+
+  test "catalog item labels include product and product type codes" do
+    theme = Theme.create!(name: "Solar")
+    product_code = "PRD-#{SecureRandom.hex(3).upcase}"
+    product_type_code = "TYPE-#{SecureRandom.hex(3).upcase}"
+    product = Product.create!(name: "Pump", product_code: product_code, theme: theme)
+    product_type = ProductVariety.create!(name: "Heavy Duty", product_type_code: product_type_code, product: product)
+
+    assert_equal "#{product_code} | Pump", catalog_item_option_label(product)
+    assert_equal "#{product_type_code} | Heavy Duty (Pump)", catalog_item_option_label(product_type)
+  end
+
+  test "quotation item display name resolves matching product or product type codes" do
+    theme = Theme.create!(name: "Irrigation")
+    product_code = "PRD-#{SecureRandom.hex(3).upcase}"
+    product_type_code = "TYPE-#{SecureRandom.hex(3).upcase}"
+    product = Product.create!(name: "Motor", product_code: product_code, theme: theme)
+    ProductVariety.create!(name: "Premium", product_type_code: product_type_code, product: product)
+
+    assert_equal "#{product_code} | Motor", quotation_item_display_name("Motor")
+    assert_equal "#{product_type_code} | Premium (Motor)", quotation_item_display_name("Premium")
+    assert_equal product_type_code, quotation_item_product_type_code("Premium")
+    assert_nil quotation_item_product_type_code("Motor")
+    assert_equal "Custom Item", quotation_item_display_name("Custom Item")
+    assert_nil quotation_item_product_type_code("Custom Item")
+  end
 end

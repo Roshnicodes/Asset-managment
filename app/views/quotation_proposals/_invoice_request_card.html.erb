@@ -64,7 +64,7 @@
     <div class="quotation-proposal-show__tag-list">
       <% invoice_request.snapshot_items.each do |item| %>
         <span class="badge border bg-light text-dark quotation-proposal-show__tag">
-          <%= item[:item_name] %>: <%= number_with_precision(item[:received_quantity], precision: 2, strip_insignificant_zeros: true) %> <%= item[:unit_name].presence || "" %>
+          <%= quotation_item_display_name(item[:item_name]) %>: <%= number_with_precision(item[:received_quantity], precision: 2, strip_insignificant_zeros: true) %> <%= item[:unit_name].presence || "" %>
         </span>
       <% end %>
     </div>
@@ -107,24 +107,30 @@
 
       <% if invoice_request.payment_advised? %>
         <section class="quotation-proposal-show__invoice-section">
-          <div class="quotation-proposal-show__invoice-section-title">Payment Advice</div>
+          <div class="quotation-proposal-show__invoice-section-title">Finance Payment Update</div>
           <div class="quotation-proposal-show__invoice-advice-grid">
             <div class="quotation-proposal-show__invoice-metric">
-              <span class="quotation-proposal-show__invoice-metric-label">UTR No</span>
-              <strong><%= invoice_request.utr_no.presence || "-" %></strong>
+              <span class="quotation-proposal-show__invoice-metric-label">Transaction Type</span>
+              <strong><%= invoice_request.payment_transaction_type.presence || "-" %></strong>
             </div>
             <div class="quotation-proposal-show__invoice-metric">
-              <span class="quotation-proposal-show__invoice-metric-label">UTR Date</span>
-              <strong><%= invoice_request.utr_date&.strftime("%d-%m-%Y") || "-" %></strong>
+              <span class="quotation-proposal-show__invoice-metric-label">Transaction No</span>
+              <strong><%= invoice_request.payment_transaction_no.presence || "-" %></strong>
             </div>
             <div class="quotation-proposal-show__invoice-metric">
-              <span class="quotation-proposal-show__invoice-metric-label">Bank</span>
-              <strong><%= invoice_request.asa_bank_name.presence || "-" %></strong>
+              <span class="quotation-proposal-show__invoice-metric-label">Transaction Date</span>
+              <strong><%= invoice_request.payment_transaction_date&.strftime("%d-%m-%Y") || "-" %></strong>
             </div>
-            <div class="quotation-proposal-show__invoice-metric">
-              <span class="quotation-proposal-show__invoice-metric-label">ASA Account No</span>
-              <strong><%= invoice_request.asa_account_no.presence || "-" %></strong>
-            </div>
+            <% if invoice_request.legacy_payment_advice_details? %>
+              <div class="quotation-proposal-show__invoice-metric">
+                <span class="quotation-proposal-show__invoice-metric-label">Legacy Bank</span>
+                <strong><%= invoice_request.asa_bank_name.presence || "-" %></strong>
+              </div>
+              <div class="quotation-proposal-show__invoice-metric">
+                <span class="quotation-proposal-show__invoice-metric-label">Legacy Account No</span>
+                <strong><%= invoice_request.asa_account_no.presence || "-" %></strong>
+              </div>
+            <% end %>
           </div>
           <div class="small text-muted mt-2">
             Submitted by: <strong><%= invoice_request.payment_advice_updated_by&.name.presence || "-" %></strong>
@@ -203,7 +209,7 @@
                 <tr>
                   <th>Asset</th>
                   <th>Asset Code</th>
-                  <th>Unique Product Code</th>
+                  <th>Item No</th>
                   <th>Product</th>
                 </tr>
               </thead>

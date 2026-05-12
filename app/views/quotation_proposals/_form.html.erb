@@ -1,13 +1,14 @@
 <%= form_with(model: quotation_proposal, html: { class: "app-rfp-form", data: { quotation_validation_form: true }, novalidate: true }) do |form| %>
   <% approval_request = quotation_proposal.approval_request %>
   <% field_errors = ->(field_name) { quotation_proposal.errors.full_messages_for(field_name) } %>
+  <% selected_criterion_ids = Array(@selected_vendor_selection_criterion_ids).map(&:to_i) %>
 
   <% if approval_request&.employee_return_pending? %>
     <div class="app-form-card" style="margin-bottom: 1.5rem;">
       <div class="app-page-header app-subsection-header-tight">
         <div>
           <h3 style="margin-bottom: 0.35rem;">Returned To Employee</h3>
-          <p class="app-section-note mb-0">Remark dekhkar quotation update karo. Save karte hi same approval chain phir se start ho jayegi.</p>
+          <p class="app-section-note mb-0">Review the return remark, update the quotation, and save to restart the same approval chain.</p>
         </div>
       </div>
 
@@ -93,7 +94,7 @@
     <div class="app-page-header app-subsection-header">
       <div>
         <h3>Select Vendors</h3>
-        <p class="app-section-note mb-0" data-vendor-selection-note>Theme select karne ke baad sirf same stakeholder ke matching vendors yahan show honge.</p>
+        <p class="app-section-note mb-0" data-vendor-selection-note>After you select a theme, only vendors matching the same stakeholder appear here.</p>
       </div>
     </div>
 
@@ -142,7 +143,7 @@
     <div class="app-page-header app-subsection-header">
       <div>
         <h3>Proposal Items</h3>
-        <p class="app-section-note mb-0">Har required item add karo. Clear item-wise details bharne ke baad neeche se aur rows add kar sakti ho.</p>
+        <p class="app-section-note mb-0">Add each required item with clear item-wise details. You can add more rows below.</p>
       </div>
     </div>
 
@@ -168,9 +169,56 @@
 
     <div class="app-page-header app-subsection-header app-subsection-header-spacious">
       <div>
+        <h3>Vendor Selection Criteria</h3>
+        <p class="app-section-note mb-0">
+          Choose the criteria that the committee should use for vendor comparison. If no criteria are selected, the existing manual score flow remains available.
+        </p>
+      </div>
+    </div>
+
+    <div class="app-rfp-section-panel app-rfp-criteria-panel" data-quotation-criteria-section>
+      <div class="app-rfp-criteria-toolbar">
+        <div class="app-rfp-criteria-toolbar-copy">
+          <p class="app-rfp-criteria-summary" data-quotation-criteria-summary></p>
+          <p class="app-rfp-criteria-selected-preview" data-quotation-criteria-selected-preview></p>
+        </div>
+
+        <div class="app-rfp-criteria-toolbar-actions">
+          <label class="app-rfp-criteria-search">
+            <input type="search" class="form-control" placeholder="Search criteria" data-quotation-criteria-search>
+          </label>
+          <button type="button" class="app-secondary-btn app-secondary-btn-soft app-rfp-criteria-toggle" data-quotation-criteria-toggle>
+            Show Criteria
+          </button>
+        </div>
+      </div>
+
+      <p class="app-rfp-criteria-empty is-hidden" data-quotation-criteria-empty>
+        Select a theme to view vendor selection criteria.
+      </p>
+
+      <div class="app-rfp-criteria-grid-wrap" data-quotation-criteria-list-wrap>
+        <div class="app-rfp-criteria-grid">
+          <% @vendor_selection_criteria.each do |criterion| %>
+            <label class="app-rfp-criteria-option" data-quotation-criteria-option data-theme-id="<%= criterion.theme_id %>">
+              <%= check_box_tag "quotation_proposal[vendor_selection_criterion_ids][]",
+                                criterion.id,
+                                selected_criterion_ids.include?(criterion.id),
+                                data: { quotation_criteria_checkbox: true } %>
+              <span>
+                <strong><%= criterion.criteria %></strong>
+              </span>
+            </label>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <div class="app-page-header app-subsection-header app-subsection-header-spacious">
+      <div>
         <h3>Approval Committee</h3>
         <p class="app-section-note mb-0">
-          Zarurat ho to `Add Committee Member` se aur bhi members add kar sakti ho.
+          Add more members with `Add Committee Member` if needed.
         </p>
       </div>
     </div>

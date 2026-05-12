@@ -17,10 +17,10 @@ class ProductVarietiesControllerTest < ActionDispatch::IntegrationTest
 
   test "should create product_variety" do
     assert_difference("ProductVariety.count") do
-      post product_varieties_url, params: { product_variety: { name: @product_variety.name, product_id: @product_variety.product_id } }
+      post product_varieties_url, params: { product_variety: { name: @product_variety.name, product_type_code: "TYPE-NEW", product_id: @product_variety.product_id } }
     end
 
-    assert_redirected_to product_variety_url(ProductVariety.last)
+    assert_redirected_to product_varieties_url
   end
 
   test "should show product_variety" do
@@ -34,8 +34,8 @@ class ProductVarietiesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "should update product_variety" do
-    patch product_variety_url(@product_variety), params: { product_variety: { name: @product_variety.name, product_id: @product_variety.product_id } }
-    assert_redirected_to product_variety_url(@product_variety)
+    patch product_variety_url(@product_variety), params: { product_variety: { name: @product_variety.name, product_type_code: @product_variety.product_type_code, product_id: @product_variety.product_id } }
+    assert_redirected_to product_varieties_url
   end
 
   test "should destroy product_variety" do

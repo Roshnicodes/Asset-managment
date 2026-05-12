@@ -1,101 +1,121 @@
 <div class="app-page-shell">
   <div class="app-page-header">
     <div>
-      <h1 style="margin-bottom: 0.35rem;">Payment Advice Queue</h1>
-      <p class="app-section-note mb-0">Yahan wahi accepted invoice requests dikh rahi hain jinke PDO/RFP details save ho chuke hain aur payment advice abhi pending hai.</p>
+      <h1 style="margin-bottom: 0.35rem;">Finance Payment Queue</h1>
     </div>
   </div>
 
   <div class="app-card mt-4" style="padding: 1.35rem 1.45rem;">
     <% if @payment_advice_requests.any? %>
-      <div class="d-grid gap-3">
-        <% @payment_advice_requests.each do |invoice_request| %>
-          <% proposal_vendor = invoice_request.quotation_proposal_vendor %>
-          <% quotation_proposal = proposal_vendor.quotation_proposal %>
-          <div style="border: 1px solid #d8e6de; border-radius: 16px; padding: 1rem 1.05rem; background: #fcfefd;">
-            <div class="d-flex justify-content-between gap-3 flex-wrap align-items-start">
-              <div>
-                <div style="font-weight: 700;">Invoice Request <%= invoice_request.id %></div>
-                <div class="small text-muted mt-1">Quotation: <%= quotation_proposal.subject %></div>
-                <div class="small text-muted mt-1">Vendor: <%= proposal_vendor.vendor_registration.display_name %></div>
-              </div>
-              <span class="badge border bg-warning bg-opacity-10 text-warning">Payment Advice Pending</span>
-            </div>
-
-            <div class="row g-3 mt-1">
-              <div class="col-md-4">
-                <div class="app-detail-item h-100">
-                  <div class="app-detail-label">PDO No</div>
-                  <div class="app-detail-value"><%= invoice_request.pdo_no %></div>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="app-detail-item h-100">
-                  <div class="app-detail-label">RFP No</div>
-                  <div class="app-detail-value"><%= invoice_request.rfp_no %></div>
-                </div>
-              </div>
-              <div class="col-md-4">
-                <div class="app-detail-item h-100">
-                  <div class="app-detail-label">RFP Create Date</div>
-                  <div class="app-detail-value"><%= invoice_request.rfp_created_on&.strftime("%d-%m-%Y") || "-" %></div>
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-3">
-              <div class="small text-muted" style="font-weight: 700;">Uploaded Invoice Files</div>
-              <div class="mt-2 d-flex gap-2 flex-wrap">
-                <% invoice_request.vendor_invoices.each_with_index do |document, index| %>
-                  <%= link_to rails_blob_path(document, disposition: "attachment"), class: "app-secondary-btn", style: "display: inline-flex; align-items: center; gap: .35rem;" do %>
-                    <span>Invoice <%= index + 1 %></span>
-                    <span style="opacity: .75;"><%= document.filename.to_s %></span>
-                  <% end %>
-                <% end %>
-              </div>
-            </div>
-
-            <div class="mt-3">
-              <div class="small text-muted" style="font-weight: 700;">Received Items</div>
-              <div class="mt-2 d-flex gap-2 flex-wrap">
-                <% invoice_request.snapshot_items.each do |item| %>
-                  <span class="badge border bg-light text-dark">
-                    <%= item[:item_name] %>: <%= number_with_precision(item[:received_quantity], precision: 2, strip_insignificant_zeros: true) %> <%= item[:unit_name].presence || "" %>
-                  </span>
-                <% end %>
-              </div>
-            </div>
-
-            <div class="mt-3" style="border-top: 1px solid #e2ece6; padding-top: 1rem;">
-              <%= form_with url: update_payment_advice_quotation_proposals_path(invoice_request_id: invoice_request.id), method: :patch, local: true do %>
-                <div class="row g-3">
-                  <div class="col-md-3">
-                    <label class="form-label" style="font-weight: 700;">UTR No</label>
-                    <%= text_field_tag :utr_no, invoice_request.utr_no, class: "form-control", required: true %>
-                  </div>
-                  <div class="col-md-3">
-                    <label class="form-label" style="font-weight: 700;">UTR Date</label>
-                    <%= date_field_tag :utr_date, invoice_request.utr_date, class: "form-control", required: true %>
-                  </div>
-                  <div class="col-md-3">
-                    <label class="form-label" style="font-weight: 700;">ASA Bank</label>
-                    <%= text_field_tag :asa_bank_name, invoice_request.asa_bank_name, class: "form-control", required: true %>
-                  </div>
-                  <div class="col-md-3">
-                    <label class="form-label" style="font-weight: 700;">ASA Account No</label>
-                    <%= text_field_tag :asa_account_no, invoice_request.asa_account_no, class: "form-control", required: true %>
-                  </div>
-                </div>
-                <div class="d-flex justify-content-end mt-3">
-                  <%= submit_tag "Submit Payment Advice", class: "app-form-submit" %>
-                </div>
+      <%= form_with url: update_payment_advice_quotation_proposals_path, method: :patch, local: true, data: { finance_bulk_form: true } do %>
+        <div class="table-responsive">
+          <table class="table align-middle mb-0">
+            <thead>
+              <tr>
+                <th style="width: 60px;">
+                  <%= check_box_tag :select_all_finance_rows, "1", false, class: "form-check-input", data: { finance_select_all: true } %>
+                </th>
+                <th>Invoice</th>
+                <th>Quotation</th>
+                <th>Vendor</th>
+                <th>PDO No</th>
+                <th>RFP No</th>
+                <th>RFP Date</th>
+                <th>Received Items</th>
+                <th>Invoice Files</th>
+                <th>Moved To Finance</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @payment_advice_requests.each do |invoice_request| %>
+                <% proposal_vendor = invoice_request.quotation_proposal_vendor %>
+                <% quotation_proposal = proposal_vendor.quotation_proposal %>
+                <% vendor = proposal_vendor.vendor_registration %>
+                <tr>
+                  <td>
+                    <%= check_box_tag "invoice_request_ids[]", invoice_request.id, false, class: "form-check-input", data: { finance_row_checkbox: true } %>
+                  </td>
+                  <td>
+                    <strong>Request <%= invoice_request.id %></strong>
+                    <% if invoice_request.assets_created? %>
+                      <div class="small text-info mt-1"><%= pluralize(invoice_request.assets.count, "asset") %> linked</div>
+                    <% end %>
+                  </td>
+                  <td><%= quotation_proposal.subject %></td>
+                  <td>
+                    <div><strong><%= vendor.display_name %></strong></div>
+                    <div class="small text-muted"><%= vendor.mobile_no.presence || "-" %></div>
+                  </td>
+                  <td><%= invoice_request.pdo_no %></td>
+                  <td><%= invoice_request.rfp_no %></td>
+                  <td><%= invoice_request.rfp_created_on&.strftime("%d-%m-%Y") || "-" %></td>
+                  <td>
+                    <div class="d-flex gap-1 flex-wrap">
+                      <% invoice_request.snapshot_items.each do |item| %>
+                        <span class="badge border bg-light text-dark">
+                          <%= quotation_item_display_name(item[:item_name]) %>: <%= number_with_precision(item[:received_quantity], precision: 2, strip_insignificant_zeros: true) %>
+                        </span>
+                      <% end %>
+                    </div>
+                  </td>
+                  <td>
+                    <% if invoice_request.vendor_invoices.attached? %>
+                      <div class="d-flex gap-1 flex-wrap">
+                        <% invoice_request.vendor_invoices.each_with_index do |document, index| %>
+                          <%= link_to "Invoice #{index + 1}", rails_blob_path(document, disposition: "attachment"), class: "app-secondary-btn", style: "padding: .35rem .55rem; font-size: .78rem;" %>
+                        <% end %>
+                      </div>
+                    <% else %>
+                      <span class="small text-muted">No files</span>
+                    <% end %>
+                  </td>
+                  <td>
+                    <div><%= invoice_request.payment_reference_marked_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+                    <div class="small text-muted"><%= invoice_request.payment_reference_marked_by&.name.presence || "System" %></div>
+                  </td>
+                </tr>
               <% end %>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="mt-4" style="border-top: 1px solid #e2ece6; padding-top: 1rem;">
+          <div class="d-flex justify-content-between gap-3 flex-wrap align-items-start mb-3">
+            <div>
+              <div style="font-weight: 700; color: #154734;">Common Transaction Details</div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+              <span class="badge border bg-info bg-opacity-10 text-info">Selected: <span data-finance-selected-count>0</span></span>
+              <span class="badge border bg-warning bg-opacity-10 text-warning">Vendor message API pending</span>
             </div>
           </div>
-        <% end %>
-      </div>
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label" style="font-weight: 700;">Transaction Type</label>
+              <%= select_tag :transaction_type,
+                    options_for_select(QuotationProposalVendorInvoiceRequest::TRANSACTION_TYPES),
+                    prompt: "Select transaction type",
+                    class: "form-select",
+                    required: true %>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" style="font-weight: 700;">Transaction No</label>
+              <%= text_field_tag :transaction_no, nil, class: "form-control", placeholder: "Enter transaction reference number", required: true %>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" style="font-weight: 700;">Transaction Date</label>
+              <%= date_field_tag :transaction_date, nil, class: "form-control", required: true %>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end mt-3">
+            <%= submit_tag "Save Selected Finance Payment", class: "app-form-submit" %>
+          </div>
+        </div>
+      <% end %>
     <% else %>
-      <div class="text-muted">Abhi koi finance-queued invoice request pending nahi hai.</div>
+      <div class="text-muted">No invoice has been moved to the finance queue yet.</div>
     <% end %>
   </div>
 </div>

@@ -7,7 +7,7 @@
   payment_terms_value = vendor_remark_lines.find { |line| line.downcase.start_with?("payment terms and condition:") }&.split(":", 2)&.last.to_s.strip
   completion_value = vendor_remark_lines.find { |line| line.downcase.start_with?("date of completion:") }&.split(":", 2)&.last.to_s.strip
   warranty_value = vendor_remark_lines.find { |line| line.downcase.start_with?("warranty period:") }&.split(":", 2)&.last.to_s.strip
-  earnest_money_value = vendor_remark_lines.find { |line| line.downcase.start_with?("earnest money deposit:") }&.split(":", 2)&.last.to_s.strip
+  earnest_money_value = vendor_remark_lines.find { |line| line.downcase.start_with?("ernest money deposit:") || line.downcase.start_with?("earnest money deposit:") }&.split(":", 2)&.last.to_s.strip
 %>
 
 <style>
@@ -703,7 +703,7 @@
     });
   </script>
 
-  <%= form_with model: @quotation_proposal_vendor, url: quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token, direct_access: ("1" if direct_access_mode), verified: ("1" if direct_access_mode)), method: :patch, local: true, data: { vendor_quote_calc: true } do |form| %>
+  <%= form_with model: @quotation_proposal_vendor, url: quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token, direct_access: ("1" if direct_access_mode), verified: ("1" if direct_access_mode)), method: :patch, local: true, html: { id: "quotation_vendor_response_form" }, data: { vendor_quote_calc: true } do |form| %>
     <div class="vendor-quote-workspace">
       <div class="vendor-quote-shell">
         <%= render "document_branding", vendor_name: (@vendor_registration.firm_name.presence || @vendor_registration.display_name), stakeholder_category: @stakeholder_category %>
@@ -760,7 +760,7 @@
           <div class="app-page-header app-subsection-header-tight vendor-quote-section-head">
             <div>
               <h3>Opening Message</h3>
-              <p class="app-section-note mb-0">Subject ke baad aur quoted items ke upar ye content print view me dikhai dega.</p>
+              <p class="app-section-note mb-0">This content appears after the subject and before the quoted items in the print view.</p>
             </div>
           </div>
           <div class="vendor-quote-inset">
@@ -772,7 +772,7 @@
           <div class="app-page-header app-subsection-header-tight vendor-quote-section-head">
             <div>
               <h3>Quoted Items</h3>
-              <p class="app-section-note mb-0">Har item ka rate, GST aur remark fill karke response submit karein. Mobile par each item apne compact response card me stack ho jayega.</p>
+              <p class="app-section-note mb-0">Fill in the rate, GST, and remark for each item before submitting your response. On mobile, each item is shown in a compact stacked card.</p>
             </div>
           </div>
 
@@ -798,7 +798,7 @@
                     <%= form.fields_for :vendor_items, vendor_item do |item_form| %>
                       <tr data-vendor-quote-row>
                         <td data-label="S.No."><%= index + 1 %><%= item_form.hidden_field :id %></td>
-                        <td data-label="Item Name"><%= vendor_item.quotation_proposal_item.item_name %></td>
+                        <td data-label="Item Name"><%= quotation_item_display_name(vendor_item.quotation_proposal_item.item_name) %></td>
                         <td data-label="Unit"><%= vendor_item.quotation_proposal_item.unit.name %></td>
                         <td data-label="Quantity" data-quote-quantity><%= number_with_precision(vendor_item.quotation_proposal_item.quantity, precision: 2, strip_insignificant_zeros: true) %></td>
                         <td data-label="Proposal Remark"><%= vendor_item.quotation_proposal_item.remark.presence || "-" %></td>
@@ -837,7 +837,7 @@
           <div class="app-page-header app-subsection-header-tight vendor-quote-section-head">
             <div>
               <h3>Terms & Conditions</h3>
-              <p class="app-section-note mb-0">Ye internal vendor terms print form me bhi dikhengi.</p>
+              <p class="app-section-note mb-0">These internal vendor terms also appear in the print form.</p>
             </div>
           </div>
           <input type="hidden" name="quotation_proposal_vendor[vendor_remark]" value="<%= @quotation_proposal_vendor.vendor_remark %>" data-vendor-remark-target>
@@ -856,10 +856,21 @@
                 <input type="text" value="<%= warranty_value %>" data-vendor-remark-part="warranty">
               </div>
               <div class="app-form-field">
-                <label>Earnest Money deposit</label>
+                <label>Ernest Money deposit</label>
                 <input type="text" value="<%= earnest_money_value %>" data-vendor-remark-part="earnest_money">
               </div>
             </div>
+
+            <% unless direct_access_mode %>
+              <div style="margin-top: 1rem;">
+                <%= render "shared/asa_general_terms",
+                      form_id: "quotation_vendor_response_form",
+                      checkbox_name: :asa_terms_accepted,
+                      checkbox_id: "quotation_vendor_terms_accepted",
+                      checked: params[:asa_terms_accepted].to_s == "1",
+                      checkbox_label: "I have read and agree to the General Terms and Conditions." %>
+              </div>
+            <% end %>
           </div>
         </div>
 
@@ -867,7 +878,7 @@
           <div class="app-page-header app-subsection-header-tight vendor-quote-section-head">
             <div>
               <h3>Upload Any Documents (Optional)</h3>
-              <p class="app-section-note mb-0">Supporting PDF ya image files yahan attach kar sakte hain.</p>
+              <p class="app-section-note mb-0">Attach supporting PDF or image files here.</p>
             </div>
           </div>
           <div class="vendor-quote-inset">
@@ -885,12 +896,8 @@
 
         <div class="app-detail-card vendor-quote-card vendor-quote-submit-card">
           <div class="vendor-quote-actionbar">
-            <div class="vendor-quote-actioncopy">
-              <h3 class="vendor-quote-actiontitle">Ready to submit your response?</h3>
-              <p class="vendor-quote-actiontext">Rates, GST, vendor terms, and attachments review karne ke baad boxed action panel se final response save karein.</p>
-            </div>
             <div class="vendor-quote-actionbuttons">
-              <%= form.submit(@quotation_proposal_vendor.response_submitted? ? "Update Response" : "Submit Response", class: "app-form-submit") %>
+              <%= form.submit(@quotation_proposal_vendor.response_submitted? ? "Update Response" : "Submit Response", class: "app-form-submit", disabled: !direct_access_mode, data: (direct_access_mode ? {} : { vendor_terms_submit_button: true })) %>
               <% if @quotation_proposal_vendor.response_submitted? %>
                 <%= link_to "Print", print_quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token, direct_access: ("1" if direct_access_mode)), class: "app-secondary-btn", target: "_blank", rel: "noopener" %>
               <% end %>
@@ -901,6 +908,10 @@
         <%= render "document_footer", vendor_registration: @vendor_registration %>
       </div>
     </div>
+
+    <% unless direct_access_mode %>
+      <%= render "shared/vendor_terms_gate_script" %>
+    <% end %>
   <% end %>
 <% else %>
   <div class="vendor-quote-otp-shell">
@@ -964,7 +975,7 @@
         "Payment Terms and condition: " + ((inputs.paymentTerms && inputs.paymentTerms.value) || ""),
         "Date of completion: " + ((inputs.completion && inputs.completion.value) || ""),
         "Warranty period: " + ((inputs.warranty && inputs.warranty.value) || ""),
-        "Earnest Money deposit: " + ((inputs.earnestMoney && inputs.earnestMoney.value) || "")
+        "Ernest Money deposit: " + ((inputs.earnestMoney && inputs.earnestMoney.value) || "")
       ].join("\n");
     }
 

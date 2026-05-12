@@ -52,17 +52,9 @@ class VendorRegistrationsController < ApplicationController
       else
         VendorRegistration.none.select(:id)
       end
-      configured_ids = if current_employee_master.present?
-        VendorRegistration.joins(approval_request: { approval_channel: :approval_channel_steps })
-          .where(approval_channel_steps: { to_responsible_user_id: current_employee_master.id })
-          .select(:id)
-      else
-        VendorRegistration.none.select(:id)
-      end
 
       @vendor_registrations = base_scope.where(id: own_ids)
         .or(base_scope.where(id: involved_ids))
-        .or(base_scope.where(id: configured_ids))
         .distinct
         .order(created_at: :desc)
     end

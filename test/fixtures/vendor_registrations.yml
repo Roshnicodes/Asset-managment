@@ -2,7 +2,7 @@
 
 one:
   registration_type: one
-  company_name: MyString
+  firm_name: MyString
   firm: one
   vendor_name: MyString
   firm_type: Proprietor
@@ -25,7 +25,7 @@ one:
 
 two:
   registration_type: two
-  company_name: MyString
+  firm_name: MyString
   firm: two
   vendor_name: MyString
   firm_type: Proprietor

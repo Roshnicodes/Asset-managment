@@ -62,9 +62,15 @@ class PurchaseOrderVendorQrsController < ApplicationController
 
     decision = params[:purchase_order_decision].to_s
     remark = params[:purchase_order_remark].to_s.strip
+    terms_accepted = params[:purchase_order_terms_accepted].to_s == "1"
 
     if decision.blank?
       redirect_to purchase_order_vendor_qr_path(params[:token], verified: 1), alert: "Please choose Accept, Return, or Reject."
+      return
+    end
+
+    unless terms_accepted
+      redirect_to purchase_order_vendor_qr_path(params[:token], verified: 1), alert: "Please accept the General Terms and Conditions before submitting the form."
       return
     end
 
@@ -129,7 +135,7 @@ class PurchaseOrderVendorQrsController < ApplicationController
     @po_payment_terms = vendor_remark_lines.find { |line| line.downcase.start_with?("payment terms and condition:") }&.split(":", 2)&.last.to_s.strip
     @po_completion_terms = vendor_remark_lines.find { |line| line.downcase.start_with?("date of completion:") }&.split(":", 2)&.last.to_s.strip
     @po_warranty_terms = vendor_remark_lines.find { |line| line.downcase.start_with?("warranty period:") }&.split(":", 2)&.last.to_s.strip
-    @po_earnest_money_terms = vendor_remark_lines.find { |line| line.downcase.start_with?("earnest money deposit:") }&.split(":", 2)&.last.to_s.strip
+    @po_earnest_money_terms = vendor_remark_lines.find { |line| line.downcase.start_with?("ernest money deposit:") || line.downcase.start_with?("earnest money deposit:") }&.split(":", 2)&.last.to_s.strip
     current_year = Date.current.year
     next_year_short = (current_year + 1).to_s.last(2)
     @purchase_order_year_label = "#{current_year}-#{next_year_short}"

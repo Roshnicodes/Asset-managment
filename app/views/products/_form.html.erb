@@ -17,6 +17,11 @@
       </div>
 
       <div class="app-form-field">
+        <%= f.label :product_code, "Product Code" %>
+        <%= f.text_field :product_code, class: "form-control", placeholder: "Enter product code" %>
+      </div>
+
+      <div class="app-form-field">
         <%= f.label :description, "Description" %>
         <%= f.text_area :description, class: "form-control", rows: 3 %>
       </div>

@@ -2,10 +2,12 @@
 
 one:
   name: MyString
+  product_code: PROD-001
   description: MyText
   theme: one
 
 two:
   name: MyString
+  product_code: PROD-002
   description: MyText
   theme: two

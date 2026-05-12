@@ -23,34 +23,38 @@
   </div>
 </div>
 
-<div class="app-detail-card">
+<div class="app-detail-card" data-asset-product-code-map="<%= json_escape(@asset_product_code_map.to_json) %>">
   <div class="app-page-header app-subsection-header-tight">
     <div>
       <h3 style="margin-bottom: 0.25rem;">Asset Creation Workspace</h3>
-      <p class="app-section-note mb-0">Uploaded invoice ke fixed-asset items unit-wise rows me break kiye gaye hain. Har row ke liye unique product code dalo, save par asset code auto-generate ho jayega aur record Asset module me chala jayega.</p>
+      <p class="app-section-note mb-0">Uploaded invoice fixed-asset items are split into unit-wise rows. Item no defaults from the selected product code, serial number auto-generates like `1, 2, 3...` on save, and the asset code includes the financial year.</p>
     </div>
   </div>
 
   <% if @asset_rows.blank? %>
-    <div class="text-muted">Is invoice request me koi fixed asset item available nahi hai.</div>
+    <div class="text-muted">No fixed asset item is available for this invoice request.</div>
   <% else %>
     <%= form_with url: create_invoice_request_assets_quotation_proposal_path(@quotation_proposal, invoice_request_id: @invoice_request.id), method: :post, local: true do %>
       <div class="app-table-wrap" style="overflow-x: auto;">
-        <table class="table app-table" style="min-width: 1100px;">
+        <table class="table app-table" style="min-width: 1240px;">
           <thead>
             <tr>
               <th>S.No.</th>
               <th>Asset Row</th>
               <th>Item Name</th>
               <th>Unit</th>
-              <th>Product</th>
-              <th>Unique Product Code</th>
+              <th>Stakeholder</th>
+              <th>First Location</th>
+              <th>Second Location</th>
+              <th>Product Type Code</th>
+              <th>Item No</th>
+              <th>Asset Code Date</th>
               <th>Generated Asset Code</th>
             </tr>
           </thead>
           <tbody>
             <% @asset_rows.each_with_index do |row, index| %>
-              <tr>
+              <tr data-asset-product-code-row="true">
                 <td><%= index + 1 %></td>
                 <td>
                   <strong><%= row[:row_label] %></strong>
@@ -60,22 +64,55 @@
                 <td><%= row[:asset_name] %></td>
                 <td><%= row[:unit_name].presence || "-" %></td>
                 <td>
-                  <%= select_tag "asset_rows[#{index}][product_id]",
-                        options_from_collection_for_select(@asset_products, :id, :name, row[:suggested_product_id]),
-                        prompt: "Select product",
+                  <%= select_tag "asset_rows[#{index}][stakeholder_category_id]",
+                        options_from_collection_for_select(@asset_stakeholders, :id, :name, row[:stakeholder_category_id]),
+                        prompt: "Select stakeholder",
                         class: "form-control",
+                        style: "min-width: 220px;" %>
+                </td>
+                <td>
+                  <%= select_tag "asset_rows[#{index}][primary_office_category_id]",
+                        grouped_options_for_select(@asset_office_category_grouped_options, row[:primary_office_category_id]),
+                        prompt: "Select first location",
+                        class: "form-control",
+                        style: "min-width: 220px;" %>
+                </td>
+                <td>
+                  <%= select_tag "asset_rows[#{index}][secondary_office_category_id]",
+                        grouped_options_for_select(@asset_office_category_grouped_options, row[:secondary_office_category_id]),
+                        prompt: "Select second location",
+                        class: "form-control",
+                        style: "min-width: 220px;" %>
+                </td>
+                <td>
+                  <%= select_tag "asset_rows[#{index}][product_id]",
+                        options_for_select(@asset_products.map { |product| [asset_product_code_label(product), product.id] }, row[:suggested_product_id]),
+                        prompt: "Select product type code",
+                        class: "form-control",
+                        data: { asset_product_select: true },
                         style: "min-width: 220px;" %>
                 </td>
                 <td>
                   <%= text_field_tag "asset_rows[#{index}][unique_product_code]",
                         row[:unique_product_code],
                         class: "form-control",
-                        placeholder: "Enter unique product code",
+                        placeholder: "Auto from product code",
+                        data: {
+                          asset_item_code: true,
+                          autofilled_code: row[:unique_product_code].to_s
+                        },
                         required: true,
                         style: "min-width: 220px;" %>
                 </td>
                 <td>
-                  <span class="badge border bg-light text-dark">Auto generate on submit</span>
+                  <%= date_field_tag "asset_rows[#{index}][asset_code_date]",
+                        row[:asset_code_date],
+                        class: "form-control",
+                        required: true,
+                        style: "min-width: 180px;" %>
+                </td>
+                <td>
+                  <span class="badge border bg-light text-dark">Auto from selected fields</span>
                 </td>
               </tr>
             <% end %>

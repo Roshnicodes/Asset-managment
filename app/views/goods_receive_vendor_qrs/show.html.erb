@@ -22,7 +22,7 @@
     end
 
   upload_heading = @invoice_request.returned? ? "Re-upload Invoice" : "Upload Invoice"
-  upload_note = @invoice_request.returned? ? "Maker ne invoice return kiya hai. Corrected invoice dubara upload karein." : "Invoice PDF ya image upload karein. Multiple files attach kar sakte hain."
+  upload_note = @invoice_request.returned? ? "The invoice was returned by the maker. Upload the corrected invoice again." : "Upload invoice PDF or image files. You can attach multiple files."
 %>
 
 <style>
@@ -731,7 +731,7 @@
         <div class="gr-hero-copy">
           <div class="gr-eyebrow">Goods Receive Portal</div>
           <h1 class="gr-title">Invoice Upload</h1>
-          <p class="gr-subtitle">Neeche dikh rahe received goods ke against invoice upload karein. Ye information maker aur committee members ko clearly dikh jayegi.</p>
+          <p class="gr-subtitle">Upload invoices against the received goods shown below. This information is visible to the maker and committee members.</p>
         </div>
 
         <aside class="gr-status-panel" aria-label="Request status">
@@ -778,7 +778,7 @@
         <div class="gr-section-head">
           <div>
             <h2 class="gr-section-title">Received Goods Summary</h2>
-            <p class="gr-section-note">Sirf is round me receive hue items yahan show ho rahe hain.</p>
+            <p class="gr-section-note">Only the items received in this round are shown here.</p>
           </div>
           <span class="gr-status-pill gr-status--<%= status_key %>"><%= status_label %></span>
         </div>
@@ -800,7 +800,7 @@
                 <% @invoice_request.snapshot_items.each_with_index do |item, index| %>
                   <tr>
                     <td data-label="S.No."><%= index + 1 %></td>
-                    <td data-label="Item Name"><strong><%= item[:item_name] %></strong></td>
+                    <td data-label="Item Name"><strong><%= quotation_item_display_name(item[:item_name]) %></strong></td>
                     <td data-label="Received Qty"><%= number_with_precision(item[:received_quantity], precision: 2, strip_insignificant_zeros: true) %></td>
                     <td data-label="Unit"><%= item[:unit_name].presence || "-" %></td>
                     <td data-label="Ordered Qty"><%= number_with_precision(item[:ordered_quantity], precision: 2, strip_insignificant_zeros: true) %></td>
@@ -820,7 +820,7 @@
           <div class="gr-section-head">
             <div>
               <h2 class="gr-section-title">Maker Review</h2>
-              <p class="gr-section-note">Maker ka remark aur review details.</p>
+              <p class="gr-section-note">Maker review remark and action details.</p>
             </div>
             <span class="gr-status-pill gr-status--<%= @invoice_request.returned? ? "returned" : status_key %>"><%= @invoice_request.returned? ? "Action Needed" : status_label %></span>
           </div>
@@ -840,7 +840,7 @@
           <div class="gr-section-head">
             <div>
               <h2 class="gr-section-title">Uploaded Invoices</h2>
-              <p class="gr-section-note">Uploaded invoice files yahan se download kiye ja sakte hain.</p>
+              <p class="gr-section-note">Download the uploaded invoice files from here.</p>
             </div>
           </div>
 
@@ -874,10 +874,10 @@
             <span class="gr-status-pill gr-status--pending">Mobile: <%= @vendor_registration.mobile_no.presence || "-" %></span>
           </div>
 
-          <%= form_with url: goods_receive_vendor_qr_path(@invoice_request.request_token, verified: 1), method: :patch, local: true, multipart: true, html: { class: "gr-upload-form" } do |form| %>
+          <%= form_with url: goods_receive_vendor_qr_path(@invoice_request.request_token, verified: 1), method: :patch, local: true, multipart: true, html: { id: "goods_receive_invoice_form", class: "gr-upload-form" } do |form| %>
             <div class="gr-upload-box">
               <label class="gr-form-label">Upload Invoice Documents</label>
-              <p class="gr-form-help">PDF, JPG, JPEG, PNG ya invoice image files select karein.</p>
+              <p class="gr-form-help">Select PDF, JPG, JPEG, PNG, or other invoice image files.</p>
               <%= form.file_field :vendor_invoices, multiple: true, accept: ".pdf,image/*", name: "invoice_request[vendor_invoices][]", class: "form-control", required: true %>
             </div>
 
@@ -886,12 +886,25 @@
               <%= form.text_area :vendor_remark, name: "invoice_request[vendor_remark]", rows: 4, class: "form-control", placeholder: "Add any invoice or delivery related note here." %>
             </div>
 
+            <div class="gr-upload-box">
+              <%= render "shared/asa_general_terms",
+                    form_id: "goods_receive_invoice_form",
+                    checkbox_name: :asa_terms_accepted,
+                    checkbox_id: "goods_receive_terms_accepted",
+                    checked: params[:asa_terms_accepted].to_s == "1",
+                    checkbox_label: "I have read and agree to the General Terms and Conditions." %>
+            </div>
+
             <div class="gr-form-actions">
-              <%= form.submit "Submit Invoice", class: "app-form-submit gr-submit" %>
+              <%= form.submit "Submit Invoice", class: "app-form-submit gr-submit", disabled: true, data: { vendor_terms_submit_button: true } %>
             </div>
           <% end %>
         </div>
       </section>
+    <% end %>
+
+    <% if @invoice_request.awaiting_vendor_upload? %>
+      <%= render "shared/vendor_terms_gate_script" %>
     <% end %>
   </div>
 <% else %>

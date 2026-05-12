@@ -50,8 +50,9 @@
     <% end %>
 
     <li><%= app_nav_link("Thematic Type", themes_path, icon: :theme, identifier: "vendor_themes") %></li>
+    <li><%= app_nav_link("Vendor Selection Criteria", url_for(controller: "vendor_selection_criteria", action: :new), icon: :document, identifier: "vendor_selection_criteria") %></li>
     <li><%= app_nav_link("Product Entry", products_path, icon: :product, identifier: "products") %></li>
-    <li><%= app_nav_link("Product Variety Entry", product_varieties_path, icon: :layers, identifier: "product_varieties") %></li>
+    <li><%= app_nav_link("Product Type Entry", product_varieties_path, icon: :layers, identifier: "product_varieties") %></li>
     <li><%= app_nav_link("Units", units_path, icon: :unit, identifier: "units") %></li>
     <li><%= app_nav_link("Documents", document_masters_path, icon: :document, identifier: "documents") %></li>
     <li><%= app_nav_link("Approval Channels", approval_channels_path, icon: :approval, identifier: "approval_channels") %></li>
@@ -68,7 +69,7 @@
         <% end %>
       </li>
     <% end %>
-    <% if can_view_menu?("quotation_proposal_main") || can_view_menu?("quotation_proposal_form") || can_view_menu?("quotation_proposal_list") %>
+    <% if can_view_menu?("quotation_proposal_main") || can_view_menu?("quotation_proposal_form") || can_view_menu?("quotation_proposal_list") || can_view_menu?("payment_advice_queue") %>
       <li>
         <%= app_dropdown_toggle("Quotation Proposal", "quotationProposalMenu", icon: :document, identifier: "quotation_proposal_main") %>
         <div class="collapse submenu h-auto" id="quotationProposalMenu">
@@ -78,6 +79,8 @@
             <% end %>
             <% if can_view_menu?("quotation_proposal_list") || can_view_menu?("quotation_proposal_form") %>
               <li><%= link_to "Quotation Proposal List", list_quotation_proposals_path, class: "nav-link" %></li>
+            <% end %>
+            <% if can_view_menu?("payment_advice_queue") %>
               <li><%= link_to "Payment Advice Queue", payment_advice_quotation_proposals_path, class: "nav-link" %></li>
             <% end %>
           </ul>
@@ -103,6 +106,7 @@
       </li>
     <% end %>
     <li><%= app_nav_link("Assets", assets_path, icon: :asset, identifier: "assets") %></li>
+    <li><%= app_nav_link("Asset Insurance", asset_insurances_path, icon: :insurance, identifier: "assets") %></li>
     <li><%= app_nav_link("Allocation", allocations_path, icon: :allocation, identifier: "allocation") %></li>
     <%= button_to destroy_user_session_path, method: :delete, class: "dropdown-item d-flex align-items-center gap-2 py-2 px-3 text-danger border-0 bg-transparent w-100 text-start" do %>
       <%= app_icon(:logout, classes: "icon-sm") %>

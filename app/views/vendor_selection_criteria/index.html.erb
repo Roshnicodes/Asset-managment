@@ -1,0 +1,31 @@
+<div class="app-toolbar">
+  <div>
+    <h1>Vendor Selection Criteria</h1>
+    <p class="app-section-note">Manage theme-wise vendor selection criteria from one place.</p>
+  </div>
+  <%= link_to "Add Vendor Selection Criteria", url_for(controller: "vendor_selection_criteria", action: :new), class: "app-primary-btn" %>
+</div>
+
+<div class="app-table-wrap">
+  <table class="table app-table">
+    <thead>
+      <tr>
+        <th>Thematic Type</th>
+        <th>Criteria</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @vendor_selection_criteria.each do |vendor_selection_criterion| %>
+        <tr>
+          <td><%= vendor_selection_criterion.theme.name %></td>
+          <td style="white-space: pre-wrap;"><%= vendor_selection_criterion.criteria %></td>
+          <td class="app-row-actions">
+            <%= link_to "Edit", url_for(controller: "vendor_selection_criteria", action: :edit, id: vendor_selection_criterion.id) %> |
+            <%= button_to "Delete", url_for(controller: "vendor_selection_criteria", action: :destroy, id: vendor_selection_criterion.id), method: :delete, data: { turbo_confirm: "Delete this vendor selection criteria?" }, class: "app-action-button app-delete-button" %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

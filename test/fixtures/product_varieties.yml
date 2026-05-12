@@ -2,8 +2,10 @@
 
 one:
   name: MyString
+  product_type_code: TYPE-001
   product: one
 
 two:
   name: MyString
+  product_type_code: TYPE-002
   product: two

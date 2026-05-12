@@ -23,13 +23,18 @@
       </div>
 
       <div class="app-form-field">
-        <%= form.label :name, "Product Variety" %>
+        <%= form.label :product_type_code, "Product Type Code" %>
+        <%= form.text_field :product_type_code, class: "form-control", placeholder: "Enter product type code" %>
+      </div>
+
+      <div class="app-form-field">
+        <%= form.label :name, "Product Type" %>
         <%= form.text_field :name, class: "form-control" %>
       </div>
     </div>
 
     <div class="app-form-actions">
-      <%= form.submit "Save Product Variety", class: "app-form-submit" %>
+      <%= form.submit "Save Product Type", class: "app-form-submit" %>
     </div>
   </div>
 <% end %>
