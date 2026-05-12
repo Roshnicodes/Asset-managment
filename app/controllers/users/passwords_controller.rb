@@ -14,7 +14,14 @@ class Users::PasswordsController < Devise::PasswordsController
         render :new, status: :unprocessable_entity
       end
     else
-      super
+      begin
+        super
+      rescue StandardError => e
+        Rails.logger.error("Password reset delivery failed: #{e.class} - #{e.message}")
+        self.resource = resource_class.new(resource_params)
+        flash.now[:alert] = "Unable to send password reset instructions right now. Please try again later or contact support."
+        render :new, status: :service_unavailable
+      end
     end
   end
 

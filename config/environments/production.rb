@@ -25,7 +25,7 @@ Rails.application.configure do
 
   # Eager load code on boot for better performance and memory savings (ignored by Rake tasks).
   config.eager_load = true
-
+  
   # Full error reports are disabled.
   config.consider_all_requests_local = false
 
@@ -77,7 +77,7 @@ Rails.application.configure do
   # Set host to be used by links generated in mailer templates.
   config.action_mailer.default_url_options = mailer_url_options
 
-  # Specify outgoing SMTP server. Remember to add smtp/* credentials via bin/rails credentials:edit.
+  # Configure outgoing email delivery in production.
   if smtp_address.present?
     config.action_mailer.delivery_method = :smtp
     config.action_mailer.perform_deliveries = true
@@ -91,6 +91,10 @@ Rails.application.configure do
       authentication: smtp_authentication.to_sym,
       enable_starttls_auto: smtp_enable_starttls_auto.nil? ? true : ActiveModel::Type::Boolean.new.cast(smtp_enable_starttls_auto)
     }.compact
+  else
+    config.action_mailer.delivery_method = :smtp
+    config.action_mailer.perform_deliveries = false
+    config.action_mailer.raise_delivery_errors = false
   end
 
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
