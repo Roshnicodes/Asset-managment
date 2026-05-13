@@ -93,18 +93,30 @@ class QuotationVendorSmsGateway
     "#{base_url}/q/#{token}"
   end
 
+  def self.vendor_link_for_config(token, config:)
+    "#{base_url(config: config)}/q/#{token}"
+  end
+
   def self.purchase_order_link_for(token)
     "#{base_url}/p/#{token}"
+  end
+
+  def self.purchase_order_link_for_config(token, config:)
+    "#{base_url(config: config)}/p/#{token}"
   end
 
   def self.goods_receive_invoice_link_for(token)
     "#{base_url}/gr/#{token}"
   end
 
+  def self.goods_receive_invoice_link_for_config(token, config:)
+    "#{base_url(config: config)}/gr/#{token}"
+  end
+
   def self.vendor_link_message(dispatch, config:)
     vendor_name = sms_vendor_name(dispatch, config: config)
     quotation_reference = quotation_reference_for(dispatch)
-    link = vendor_link_for(dispatch.quotation_proposal_vendor.qr_token)
+    link = vendor_link_for_config(dispatch.quotation_proposal_vendor.qr_token, config: config)
 
     if config[:profile] == :asa
       "Dear #{vendor_name}, We kindly request you to accept the Quotation Proposal: #{quotation_reference}. Please submit the quotation through link: #{link}. - ACTION FOR SOCIAL ADVANCEMENT"
@@ -132,7 +144,7 @@ class QuotationVendorSmsGateway
   def self.purchase_order_link_message(dispatch, proposal_vendor, config:)
     vendor_name = sms_vendor_name(dispatch, config: config)
     purchase_order_reference = purchase_order_reference_for(dispatch, proposal_vendor)
-    link = purchase_order_link_for(proposal_vendor.po_token)
+    link = purchase_order_link_for_config(proposal_vendor.po_token, config: config)
 
     if config[:profile] == :asa
       "Dear #{vendor_name}, We kindly request you to accept the purchase order: #{purchase_order_reference}.through link: #{link}. - Action for social advancement (ASA)"
@@ -144,7 +156,7 @@ class QuotationVendorSmsGateway
   def self.goods_receive_invoice_link_message(dispatch, invoice_request, config:)
     vendor_name = sms_vendor_name(dispatch, config: config)
     purchase_order_reference = purchase_order_reference_for(dispatch, invoice_request.quotation_proposal_vendor)
-    link = goods_receive_invoice_link_for(invoice_request.request_token)
+    link = goods_receive_invoice_link_for_config(invoice_request.request_token, config: config)
 
     if config[:profile] == :asa
       "Dear #{vendor_name}, We kindly request you to upload the invoice for the purchase order: #{purchase_order_reference}.through link: #{link}. - Action For Social Advancement(ASA)"
@@ -156,7 +168,7 @@ class QuotationVendorSmsGateway
   def self.goods_receive_invoice_return_link_message(dispatch, invoice_request, config:)
     vendor_name = sms_vendor_name(dispatch, config: config)
     purchase_order_reference = purchase_order_reference_for(dispatch, invoice_request.quotation_proposal_vendor)
-    link = goods_receive_invoice_link_for(invoice_request.request_token)
+    link = goods_receive_invoice_link_for_config(invoice_request.request_token, config: config)
 
     if config[:profile] == :asa
       "Dear #{vendor_name}, Your invoice has been rejected. Please upload a revised invoice for PO: #{purchase_order_reference} using the link below:#{link}.-Action For Social Advancement (ASA)"
@@ -307,8 +319,8 @@ class QuotationVendorSmsGateway
       (error_message.include?("sender-id") || error_message.include?("sender id"))
   end
 
-  def self.base_url
-    configured_base_url.presence || DEVELOPMENT_BASE_URL
+  def self.base_url(config: nil)
+    configured_base_url(config: config).presence || DEVELOPMENT_BASE_URL
   end
 
   def self.quotation_reference_for(dispatch)
@@ -365,8 +377,8 @@ class QuotationVendorSmsGateway
     }
   end
 
-  def self.configured_base_url
-    env_base_url = ENV["APP_BASE_URL"].to_s.strip
+  def self.configured_base_url(config: nil)
+    env_base_url = profile_base_url(config).presence || ENV["APP_BASE_URL"].to_s.strip
     return env_base_url.chomp("/") if env_base_url.present?
 
     default_options = Rails.application.routes.default_url_options
@@ -376,6 +388,17 @@ class QuotationVendorSmsGateway
     protocol = default_options[:protocol].presence || "http"
     port = default_options[:port].presence
     [ "#{protocol}://#{host}", port ].compact.join(":").chomp("/")
+  end
+
+  def self.profile_base_url(config)
+    case config&.fetch(:profile, nil)
+    when :asa
+      ENV["ASA_APP_BASE_URL"].to_s.strip
+    when :default, :asa_legacy_fallback
+      ENV["SMS_APP_BASE_URL"].to_s.strip
+    else
+      ""
+    end
   end
 
   def self.sms_config_for(dispatch)

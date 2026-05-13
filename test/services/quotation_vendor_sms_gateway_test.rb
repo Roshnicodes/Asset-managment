@@ -35,6 +35,23 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     end
   end
 
+  test "vendor sms links can use stakeholder specific approved base urls" do
+    with_env(
+      "APP_BASE_URL" => "https://global.example.org",
+      "ASA_APP_BASE_URL" => "https://asa-approved.example.org",
+      "SMS_APP_BASE_URL" => "https://papl-approved.example.org"
+    ) do
+      assert_equal(
+        "https://asa-approved.example.org/q/quote-token",
+        QuotationVendorSmsGateway.vendor_link_for_config("quote-token", config: { profile: :asa })
+      )
+      assert_equal(
+        "https://papl-approved.example.org/q/quote-token",
+        QuotationVendorSmsGateway.vendor_link_for_config("quote-token", config: { profile: :default })
+      )
+    end
+  end
+
   test "send_vendor_link uses approved dlt template, header, and content" do
     captured_uri = nil
     response = Net::HTTPOK.new("1.1", "200", "OK")
