@@ -381,7 +381,13 @@ class QuotationVendorSmsGateway
     env_base_url = profile_base_url(config).presence || ENV["APP_BASE_URL"].to_s.strip
     return env_base_url.chomp("/") if env_base_url.present?
 
-    default_options = Rails.application.routes.default_url_options
+    default_options = normalized_url_options(Rails.application.routes.default_url_options)
+    default_options = normalized_url_options(Rails.application.config.action_mailer.default_url_options) if default_options[:host].blank?
+
+    if default_options[:host].blank? && defined?(ActionMailer::Base)
+      default_options = normalized_url_options(ActionMailer::Base.default_url_options)
+    end
+
     host = default_options[:host].to_s.strip
     return if host.blank?
 
@@ -399,6 +405,12 @@ class QuotationVendorSmsGateway
     else
       ""
     end
+  end
+
+  def self.normalized_url_options(options)
+    options.to_h.symbolize_keys
+  rescue NoMethodError
+    {}
   end
 
   def self.sms_config_for(dispatch)

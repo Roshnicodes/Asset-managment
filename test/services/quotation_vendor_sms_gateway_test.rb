@@ -709,4 +709,30 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     default_options.clear
     default_options.merge!(previous_options)
   end
+
+  test "vendor links fall back to mailer host when route host is not configured" do
+    original_app_base_url = ENV.delete("APP_BASE_URL")
+    original_routes_default_url_options = Rails.application.routes.default_url_options
+    original_mailer_default_url_options = Rails.application.config.action_mailer.default_url_options
+
+    Rails.application.routes.default_url_options = {}
+    Rails.application.config.action_mailer.default_url_options = {
+      host: "apurti.ploughmanagro.com",
+      protocol: "https"
+    }
+
+    assert_equal "https://apurti.ploughmanagro.com", QuotationVendorSmsGateway.configured_base_url
+    assert_equal "https://apurti.ploughmanagro.com/q/secure-token", QuotationVendorSmsGateway.vendor_link_for("secure-token")
+    assert_equal "https://apurti.ploughmanagro.com/p/secure-token", QuotationVendorSmsGateway.purchase_order_link_for("secure-token")
+    assert_equal "https://apurti.ploughmanagro.com/gr/secure-token", QuotationVendorSmsGateway.goods_receive_invoice_link_for("secure-token")
+  ensure
+    if original_app_base_url.present?
+      ENV["APP_BASE_URL"] = original_app_base_url
+    else
+      ENV.delete("APP_BASE_URL")
+    end
+
+    Rails.application.routes.default_url_options = original_routes_default_url_options
+    Rails.application.config.action_mailer.default_url_options = original_mailer_default_url_options
+  end
 end
