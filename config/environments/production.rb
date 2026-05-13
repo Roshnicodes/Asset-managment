@@ -76,6 +76,7 @@ Rails.application.configure do
 
   # Set host to be used by links generated in mailer templates.
   config.action_mailer.default_url_options = mailer_url_options
+  Rails.application.routes.default_url_options.merge!(mailer_url_options)
 
   # Configure outgoing email delivery in production.
   if smtp_address.present?

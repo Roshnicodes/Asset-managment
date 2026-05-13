@@ -13,6 +13,28 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     keyword_init: true
   )
 
+  test "base_url prefers APP_BASE_URL and strips trailing slash" do
+    with_env("APP_BASE_URL" => "https://asa360.asaindia.org/") do
+      assert_equal "https://asa360.asaindia.org", QuotationVendorSmsGateway.base_url
+    end
+  end
+
+  test "base_url uses route default url options when APP_BASE_URL is blank" do
+    with_env("APP_BASE_URL" => nil) do
+      with_route_default_url_options(host: "asa360.asaindia.org", protocol: "https") do
+        assert_equal "https://asa360.asaindia.org", QuotationVendorSmsGateway.base_url
+      end
+    end
+  end
+
+  test "all vendor sms links use the configured base_url" do
+    QuotationVendorSmsGateway.stub(:base_url, "https://asa360.asaindia.org") do
+      assert_equal "https://asa360.asaindia.org/q/quote-token", QuotationVendorSmsGateway.vendor_link_for("quote-token")
+      assert_equal "https://asa360.asaindia.org/p/po-token", QuotationVendorSmsGateway.purchase_order_link_for("po-token")
+      assert_equal "https://asa360.asaindia.org/gr/invoice-token", QuotationVendorSmsGateway.goods_receive_invoice_link_for("invoice-token")
+    end
+  end
+
   test "send_vendor_link uses approved dlt template, header, and content" do
     captured_uri = nil
     response = Net::HTTPOK.new("1.1", "200", "OK")
@@ -641,5 +663,33 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     end
 
     assert_equal 1, request_count
+  end
+
+  private
+
+  def with_env(values)
+    previous_values = values.transform_values { |_value| nil }
+    values.each_key { |key| previous_values[key] = ENV[key] }
+    values.each do |key, value|
+      value.nil? ? ENV.delete(key) : ENV[key] = value
+    end
+
+    yield
+  ensure
+    previous_values.each do |key, value|
+      value.nil? ? ENV.delete(key) : ENV[key] = value
+    end
+  end
+
+  def with_route_default_url_options(options)
+    default_options = Rails.application.routes.default_url_options
+    previous_options = default_options.dup
+    default_options.clear
+    default_options.merge!(options)
+
+    yield
+  ensure
+    default_options.clear
+    default_options.merge!(previous_options)
   end
 end

@@ -18,7 +18,7 @@ class QuotationVendorSmsGateway
   DEFAULT_INVOICE_LINK_TEMPLATE_ID = "1707177648937573645".freeze
   DEFAULT_INVOICE_RETURN_LINK_TEMPLATE_ID = "1707177650435445886".freeze
   DEFAULT_INVOICE_OTP_TEMPLATE_ID = "1707177675366996869".freeze
-  DEFAULT_BASE_URL = "http://127.0.0.1:3000".freeze
+  DEVELOPMENT_BASE_URL = "http://127.0.0.1:3000".freeze
   ASA_LINK_TEMPLATE_ID = "1707177512006405172".freeze
   ASA_OTP_TEMPLATE_ID = "1707177528687356932".freeze
   ASA_PURCHASE_ORDER_LINK_TEMPLATE_ID = "1707177632997145777".freeze
@@ -308,7 +308,7 @@ class QuotationVendorSmsGateway
   end
 
   def self.base_url
-    configured_base_url.presence || DEFAULT_BASE_URL
+    configured_base_url.presence || DEVELOPMENT_BASE_URL
   end
 
   def self.quotation_reference_for(dispatch)
