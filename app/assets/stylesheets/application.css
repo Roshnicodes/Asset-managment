@@ -3544,7 +3544,7 @@ body.auth-page-body {
   min-height: 100vh;
   width: 100%;
   padding: 2rem 1rem;
-  background: #f8fafc;
+  background: #ffffff;
 }
 
 .auth-split-card {
@@ -3563,9 +3563,10 @@ body.auth-page-body {
   max-width: 560px;
   padding: 3rem;
   border-radius: 32px;
-  background: rgba(8, 17, 13, 0.92);
-  color: #fff;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, 0.14);
+  border: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .auth-image-side {
@@ -3933,9 +3934,51 @@ body.auth-page-body {
 .auth-form input.form-control:-webkit-autofill:active {
   -webkit-text-fill-color: #0f172a !important;
   caret-color: #0f172a;
-  box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.06) inset !important;
-  -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.06) inset !important;
+  box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
   transition: background-color 9999s ease-out 0s;
+}
+
+.password-visibility-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-visibility-wrapper .password-visibility-input {
+  padding-right: 3.25rem !important;
+}
+
+.password-visibility-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.8rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #0f172a;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.password-visibility-toggle:hover,
+.password-visibility-toggle:focus {
+  background: rgba(15, 23, 42, 0.08);
+  outline: none;
+}
+
+.password-visibility-toggle svg {
+  width: 1.2rem;
+  height: 1.2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .btn-auth-submit {
@@ -3962,7 +4005,7 @@ body.auth-page-body {
 .auth-footer {
   margin-top: 2.5rem;
   font-size: 1rem;
-  color: rgba(255, 255, 255, 0.86);
+  color: #475569;
 }
 
 .auth-footer a {

@@ -1130,6 +1130,57 @@ const setupFinanceQueueBulkSelection = () => {
   })
 }
 
+const passwordVisibilityIcon = (visible) => {
+  if (visible) {
+    return `
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M3 3l18 18" />
+        <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+        <path d="M9.9 4.2A9.8 9.8 0 0 1 12 4c5 0 8.5 4.4 9.7 6.3a3.2 3.2 0 0 1 0 3.4 17 17 0 0 1-2 2.6" />
+        <path d="M6.2 6.2a17 17 0 0 0-3.9 4.1 3.2 3.2 0 0 0 0 3.4C3.5 15.6 7 20 12 20a9.7 9.7 0 0 0 4.5-1.2" />
+      </svg>
+    `
+  }
+
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M2.3 10.3a3.2 3.2 0 0 0 0 3.4C3.5 15.6 7 20 12 20s8.5-4.4 9.7-6.3a3.2 3.2 0 0 0 0-3.4C20.5 8.4 17 4 12 4s-8.5 4.4-9.7 6.3Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  `
+}
+
+const setupPasswordVisibility = () => {
+  document.querySelectorAll("input[type='password']").forEach((input) => {
+    if (input.dataset.passwordVisibilityReady === "true") return
+
+    const wrapper = document.createElement("div")
+    wrapper.className = "password-visibility-wrapper"
+    input.parentNode.insertBefore(wrapper, input)
+    wrapper.appendChild(input)
+
+    input.classList.add("password-visibility-input")
+    input.dataset.passwordVisibilityReady = "true"
+
+    const toggle = document.createElement("button")
+    toggle.type = "button"
+    toggle.className = "password-visibility-toggle"
+    toggle.setAttribute("aria-label", "Show password")
+    toggle.setAttribute("title", "Show password")
+    toggle.innerHTML = passwordVisibilityIcon(false)
+
+    toggle.addEventListener("click", () => {
+      const visible = input.type === "text"
+      input.type = visible ? "password" : "text"
+      toggle.setAttribute("aria-label", visible ? "Show password" : "Hide password")
+      toggle.setAttribute("title", visible ? "Show password" : "Hide password")
+      toggle.innerHTML = passwordVisibilityIcon(!visible)
+    })
+
+    wrapper.appendChild(toggle)
+  })
+}
+
 document.addEventListener("turbo:load", setupVendorRegistrationSelections)
 document.addEventListener("turbo:load", setupVendorDocumentToggle)
 document.addEventListener("turbo:load", setupMsmeToggle)
@@ -1143,3 +1194,4 @@ document.addEventListener("turbo:load", setupVendorQuotationCalculations)
 document.addEventListener("turbo:load", setupAssetProductCodeAutofill)
 document.addEventListener("turbo:load", setupAssetInsuranceFields)
 document.addEventListener("turbo:load", setupFinanceQueueBulkSelection)
+document.addEventListener("turbo:load", setupPasswordVisibility)

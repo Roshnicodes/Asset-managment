@@ -1,6 +1,6 @@
 class Users::PasswordsController < Devise::PasswordsController
   def create
-    if Rails.env.development?
+    if direct_password_reset_enabled?
       lookup_email = resource_params[:email].to_s.strip.downcase
       user = User.find_by("LOWER(TRIM(email)) = ?", lookup_email)
 
@@ -40,5 +40,9 @@ class Users::PasswordsController < Devise::PasswordsController
 
   def after_resetting_password_path_for(resource)
     root_path # Redirect to dashboard after successful reset
+  end
+
+  def direct_password_reset_enabled?
+    Rails.env.development? || ActiveModel::Type::Boolean.new.cast(ENV["DIRECT_PASSWORD_RESET"])
   end
 end
