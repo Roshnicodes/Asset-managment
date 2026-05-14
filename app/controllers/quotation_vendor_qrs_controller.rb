@@ -129,6 +129,8 @@ class QuotationVendorQrsController < ApplicationController
   private
 
   def approved_link_ids(encoded_reference)
+    return [params[:v], params[:qp]] if params[:v].present? && params[:qp].present?
+
     match = encoded_reference.to_s.match(/\Av:(\d+),qp:(\d+)\z/)
     return [nil, nil] unless match
 

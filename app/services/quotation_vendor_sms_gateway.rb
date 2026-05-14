@@ -102,7 +102,7 @@ class QuotationVendorSmsGateway
     quotation_proposal_id = quotation_proposal_id_for_link(dispatch)
     return vendor_link_for_config(dispatch.quotation_proposal_vendor.qr_token, config: config) if proposal_vendor_id.blank? || quotation_proposal_id.blank?
 
-    "#{base_url(config: config)}/xyz/v:#{proposal_vendor_id},qp:#{quotation_proposal_id}"
+    "#{base_url(config: config)}/xyz?v=#{proposal_vendor_id}&qp=#{quotation_proposal_id}"
   end
 
   def self.purchase_order_link_for(token)
@@ -111,6 +111,10 @@ class QuotationVendorSmsGateway
 
   def self.purchase_order_link_for_config(token, config:)
     "#{base_url(config: config)}/p/#{token}"
+  end
+
+  def self.purchase_order_sms_link_for_config(token, config:)
+    "#{base_url(config: config)}/p?t=#{token}"
   end
 
   def self.goods_receive_invoice_link_for(token)
@@ -122,7 +126,7 @@ class QuotationVendorSmsGateway
   end
 
   def self.goods_receive_invoice_sms_link_for_config(token, config:)
-    purchase_order_link_for_config(token, config: config)
+    purchase_order_sms_link_for_config(token, config: config)
   end
 
   def self.vendor_link_message(dispatch, config:)
@@ -161,7 +165,7 @@ class QuotationVendorSmsGateway
   def self.purchase_order_link_message(dispatch, proposal_vendor, config:)
     vendor_name = sms_vendor_name(dispatch, config: config)
     purchase_order_reference = purchase_order_reference_for(dispatch, proposal_vendor)
-    link = purchase_order_link_for_config(proposal_vendor.po_token, config: config)
+    link = purchase_order_sms_link_for_config(proposal_vendor.po_token, config: config)
 
     if config[:profile] == :asa
       "Dear #{vendor_name}, We kindly request you to accept the purchase order: #{purchase_order_reference}.through link: #{link}. - Action for social advancement (ASA)"

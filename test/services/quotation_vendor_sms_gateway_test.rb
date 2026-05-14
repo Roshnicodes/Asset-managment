@@ -148,7 +148,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     assert_equal "9876543210", params["mobiles"]
     assert_equal "PLOAPL", params["sender"]
     assert_equal "1707177641694704075", params["DLT_TE_ID"]
-    assert_equal "Dear SUNIL CHOUBEY, We kindly request you to accept the purchase order: PLOAPL/PO/123/#{expected_year_label}.through link: https://asa360.asaindia.org/p/qO7wmv7tqEEV. - Ploughman Agro Private Limited", params["message"]
+    assert_equal "Dear SUNIL CHOUBEY, We kindly request you to accept the purchase order: PLOAPL/PO/123/#{expected_year_label}.through link: https://asa360.asaindia.org/p?t=qO7wmv7tqEEV. - Ploughman Agro Private Limited", params["message"]
   end
 
   test "send_vendor_otp uses dedicated purchase order dlt template and content" do
@@ -211,7 +211,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     assert_equal "9876543210", params["mobiles"]
     assert_equal "PLOAPL", params["sender"]
     assert_equal "1707177648937573645", params["DLT_TE_ID"]
-    assert_equal "Dear SUNIL CHOUBEY, We kindly request you to upload the invoice for the purchase order: PGPL/PO/102/#{expected_year_label}.through link: https://asa360.asaindia.org/p/qO7wmv7tqEEV. - Ploughman Agro Private Limited (PAPL)", params["message"]
+    assert_equal "Dear SUNIL CHOUBEY, We kindly request you to upload the invoice for the purchase order: PGPL/PO/102/#{expected_year_label}.through link: https://asa360.asaindia.org/p?t=qO7wmv7tqEEV. - Ploughman Agro Private Limited (PAPL)", params["message"]
   end
 
   test "send_goods_receive_invoice_return_link uses PAPL rejected invoice template for PGPL stakeholders" do
@@ -251,7 +251,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     assert_equal "9876543210", params["mobiles"]
     assert_equal "PLOAPL", params["sender"]
     assert_equal "1707177650435445886", params["DLT_TE_ID"]
-    assert_equal "Dear Sunil Choubey, Your invoice has been rejected. Please upload a revised invoice for PO: PGPL/PO/102/#{expected_year_label} using the link below: https://asa360.asaindia.org/p/qO7wmv7tqEEV. - Ploughman Agro Private Limited (PAPL)", params["message"]
+    assert_equal "Dear Sunil Choubey, Your invoice has been rejected. Please upload a revised invoice for PO: PGPL/PO/102/#{expected_year_label} using the link below: https://asa360.asaindia.org/p?t=qO7wmv7tqEEV. - Ploughman Agro Private Limited (PAPL)", params["message"]
   end
 
   test "send_vendor_otp uses PAPL invoice otp template and content" do
@@ -393,7 +393,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     assert_equal "3230666f72736131353261", params["authkey"]
     assert_equal "ACTFSA", params["sender"]
     assert_equal "1707177632997145777", params["DLT_TE_ID"]
-    assert_equal "Dear GTEC SOLUTION, We kindly request you to accept the purchase order: ASA/PO/123/#{expected_year_label}.through link: https://asa360.asaindia.org/p/qO7wmv7tqEEV. - Action for social advancement (ASA)", params["message"]
+    assert_equal "Dear GTEC SOLUTION, We kindly request you to accept the purchase order: ASA/PO/123/#{expected_year_label}.through link: https://asa360.asaindia.org/p?t=qO7wmv7tqEEV. - Action for social advancement (ASA)", params["message"]
   end
 
   test "send_vendor_otp uses ASA purchase order template and content for ASA stakeholders" do
@@ -460,7 +460,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     assert_equal "3230666f72736131353261", params["authkey"]
     assert_equal "ACTFSA", params["sender"]
     assert_equal "1707177674942135728", params["DLT_TE_ID"]
-    assert_equal "Dear SUNIL CHOUBEY, We kindly request you to upload the invoice for the purchase order: ASA/PO/102/#{expected_year_label}.through link: https://asa360.asaindia.org/p/qO7wmv7tqEEV. - Action For Social Advancement(ASA)", params["message"]
+    assert_equal "Dear SUNIL CHOUBEY, We kindly request you to upload the invoice for the purchase order: ASA/PO/102/#{expected_year_label}.through link: https://asa360.asaindia.org/p?t=qO7wmv7tqEEV. - Action For Social Advancement(ASA)", params["message"]
   end
 
   test "send_goods_receive_invoice_return_link uses ASA rejected invoice template and content for ASA stakeholders" do
@@ -501,7 +501,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     assert_equal "3230666f72736131353261", params["authkey"]
     assert_equal "ACTFSA", params["sender"]
     assert_equal "1707177674947419559", params["DLT_TE_ID"]
-    assert_equal "Dear SUNIL CHOUBEY, Your invoice has been rejected. Please upload a revised invoice for PO: ASA/PO/102/#{expected_year_label} using the link below:https://asa360.asaindia.org/p/qO7wmv7tqEEV.-Action For Social Advancement (ASA)", params["message"]
+    assert_equal "Dear SUNIL CHOUBEY, Your invoice has been rejected. Please upload a revised invoice for PO: ASA/PO/102/#{expected_year_label} using the link below:https://asa360.asaindia.org/p?t=qO7wmv7tqEEV.-Action For Social Advancement (ASA)", params["message"]
   end
 
   test "send_vendor_otp uses ASA invoice otp template and content for ASA stakeholders" do
@@ -559,7 +559,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     assert_equal "1707177512006405172", params["DLT_TE_ID"]
     assert_equal "json", params["response"]
     assert_nil params["unicode"]
-    assert_equal "Dear GTEC SOLUTION, We kindly request you to accept the Quotation Proposal: 123. Please submit the quotation through link: https://asa360.asaindia.org/xyz/v:13,qp:123. - ACTION FOR SOCIAL ADVANCEMENT", params["message"]
+    assert_equal "Dear GTEC SOLUTION, We kindly request you to accept the Quotation Proposal: 123. Please submit the quotation through link: https://asa360.asaindia.org/xyz?v=13&qp=123. - ACTION FOR SOCIAL ADVANCEMENT", params["message"]
   end
 
   test "send_vendor_link falls back to token link when ASA approved link ids are unavailable" do

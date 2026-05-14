@@ -1,7 +1,15 @@
 require "test_helper"
 
 class QuotationVendorQrsControllerTest < ActionDispatch::IntegrationTest
-  test "routes approved ASA DLT quotation link format" do
+  test "routes approved ASA DLT quotation query link format" do
+    assert_routing(
+      "/xyz",
+      controller: "quotation_vendor_qrs",
+      action: "approved_link"
+    )
+  end
+
+  test "routes legacy approved ASA DLT quotation path link format" do
     assert_routing(
       "/xyz/v:13,qp:321",
       controller: "quotation_vendor_qrs",
