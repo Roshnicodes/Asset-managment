@@ -97,6 +97,14 @@ class QuotationVendorSmsGateway
     "#{base_url(config: config)}/q/#{token}"
   end
 
+  def self.asa_vendor_link_for_config(dispatch, config:)
+    proposal_vendor_id = dispatch.quotation_proposal_vendor.try(:id).presence
+    quotation_proposal_id = quotation_proposal_id_for_link(dispatch)
+    return vendor_link_for_config(dispatch.quotation_proposal_vendor.qr_token, config: config) if proposal_vendor_id.blank? || quotation_proposal_id.blank?
+
+    "#{base_url(config: config)}/xyz/v:#{proposal_vendor_id},qp:#{quotation_proposal_id}"
+  end
+
   def self.purchase_order_link_for(token)
     "#{base_url}/p/#{token}"
   end
@@ -113,10 +121,19 @@ class QuotationVendorSmsGateway
     "#{base_url(config: config)}/gr/#{token}"
   end
 
+  def self.goods_receive_invoice_sms_link_for_config(token, config:)
+    purchase_order_link_for_config(token, config: config)
+  end
+
   def self.vendor_link_message(dispatch, config:)
     vendor_name = sms_vendor_name(dispatch, config: config)
     quotation_reference = quotation_reference_for(dispatch)
-    link = vendor_link_for_config(dispatch.quotation_proposal_vendor.qr_token, config: config)
+    link =
+      if config[:profile] == :asa
+        asa_vendor_link_for_config(dispatch, config: config)
+      else
+        vendor_link_for_config(dispatch.quotation_proposal_vendor.qr_token, config: config)
+      end
 
     if config[:profile] == :asa
       "Dear #{vendor_name}, We kindly request you to accept the Quotation Proposal: #{quotation_reference}. Please submit the quotation through link: #{link}. - ACTION FOR SOCIAL ADVANCEMENT"
@@ -156,7 +173,7 @@ class QuotationVendorSmsGateway
   def self.goods_receive_invoice_link_message(dispatch, invoice_request, config:)
     vendor_name = sms_vendor_name(dispatch, config: config)
     purchase_order_reference = purchase_order_reference_for(dispatch, invoice_request.quotation_proposal_vendor)
-    link = goods_receive_invoice_link_for_config(invoice_request.request_token, config: config)
+    link = goods_receive_invoice_sms_link_for_config(invoice_request.request_token, config: config)
 
     if config[:profile] == :asa
       "Dear #{vendor_name}, We kindly request you to upload the invoice for the purchase order: #{purchase_order_reference}.through link: #{link}. - Action For Social Advancement(ASA)"
@@ -168,7 +185,7 @@ class QuotationVendorSmsGateway
   def self.goods_receive_invoice_return_link_message(dispatch, invoice_request, config:)
     vendor_name = sms_vendor_name(dispatch, config: config)
     purchase_order_reference = purchase_order_reference_for(dispatch, invoice_request.quotation_proposal_vendor)
-    link = goods_receive_invoice_link_for_config(invoice_request.request_token, config: config)
+    link = goods_receive_invoice_sms_link_for_config(invoice_request.request_token, config: config)
 
     if config[:profile] == :asa
       "Dear #{vendor_name}, Your invoice has been rejected. Please upload a revised invoice for PO: #{purchase_order_reference} using the link below:#{link}.-Action For Social Advancement (ASA)"
@@ -192,6 +209,7 @@ class QuotationVendorSmsGateway
   end
 
   def self.send_sms(mobile_no:, message:, template_id:, config:)
+    clear_last_error_message
     delivery_result =
       begin
         perform_sms_request(
@@ -246,10 +264,21 @@ class QuotationVendorSmsGateway
         end
     end
 
+    set_last_error_message(delivery_result[:error_message]) unless delivery_result[:success]
     delivery_result[:success]
   end
 
   def self.perform_sms_request(mobile_no:, message:, template_id:, config:)
+    if (validation_error = sms_url_validation_error(message, config))
+      Rails.logger.error("QuotationVendorSmsGateway URL validation failed: #{validation_error}")
+      return {
+        success: false,
+        payload: nil,
+        error_code: "SMS_URL_CONFIGURATION_ERROR",
+        error_message: validation_error
+      }
+    end
+
     sender = config[:sender]
     unicode = config[:unicode].to_s.strip == "1" ? "1" : unicode_flag_for(message).presence
     uri = URI(config[:api_endpoint])
@@ -268,7 +297,7 @@ class QuotationVendorSmsGateway
     uri.query = URI.encode_www_form(query_params)
 
     Rails.logger.info(
-      "QuotationVendorSmsGateway request profile=#{config[:profile]} mobile=#{normalize_mobile_no(mobile_no)} sender=#{sender} template_id=#{template_id} route=#{config[:route]} country=#{config[:country]}"
+      "QuotationVendorSmsGateway request profile=#{config[:profile]} mobile=#{normalize_mobile_no(mobile_no)} sender=#{sender} template_id=#{template_id} route=#{config[:route]} country=#{config[:country]} urls=#{sms_message_urls(message).join(",")}"
     )
     response = Net::HTTP.get_response(uri)
     Rails.logger.info("QuotationVendorSmsGateway response=#{response.code} body=#{response.body}")
@@ -302,6 +331,67 @@ class QuotationVendorSmsGateway
     payload["Status"] == "Success" && payload["Code"] == "000"
   end
 
+  def self.last_error_message
+    Thread.current[:quotation_vendor_sms_gateway_last_error_message]
+  end
+
+  def self.clear_last_error_message
+    Thread.current[:quotation_vendor_sms_gateway_last_error_message] = nil
+  end
+
+  def self.set_last_error_message(message)
+    Thread.current[:quotation_vendor_sms_gateway_last_error_message] = message.to_s.presence
+  end
+
+  def self.sms_message_urls(message)
+    URI.extract(message.to_s, ["http", "https"])
+  end
+
+  def self.sms_url_validation_error(message, config)
+    urls = sms_message_urls(message)
+    return if urls.blank?
+
+    parsed_urls = urls.filter_map do |url|
+      URI.parse(url)
+    rescue URI::InvalidURIError
+      nil
+    end
+
+    invalid_url = parsed_urls.find { |url| placeholder_sms_host?(url.host) }
+    if invalid_url.present?
+      return "SMS link is using #{invalid_url.host}. Configure ASA_APP_BASE_URL/SMS_APP_BASE_URL/APP_BASE_URL with the approved production host before sending link SMS."
+    end
+
+    allowed_hosts = allowed_sms_url_hosts(config)
+    return if allowed_hosts.blank?
+
+    invalid_host = parsed_urls.map { |url| url.host.to_s.downcase }.find { |host| host.present? && !allowed_hosts.include?(host) }
+    return if invalid_host.blank?
+
+    "SMS link host #{invalid_host} is not in the approved SMS URL hosts (#{allowed_hosts.join(", ")}). Update ASA_APP_BASE_URL/SMS_APP_BASE_URL or the DLT CTA whitelist."
+  end
+
+  def self.placeholder_sms_host?(host)
+    normalized_host = host.to_s.downcase
+    normalized_host.blank? ||
+      normalized_host == "example.com" ||
+      normalized_host == "localhost" ||
+      normalized_host == "127.0.0.1" ||
+      normalized_host == "0.0.0.0"
+  end
+
+  def self.allowed_sms_url_hosts(config)
+    env_value =
+      case config[:profile]
+      when :asa
+        ENV["ASA_SMS_ALLOWED_URL_HOSTS"].presence || ENV["SMS_ALLOWED_URL_HOSTS"]
+      else
+        ENV["SMS_ALLOWED_URL_HOSTS"]
+      end
+
+    env_value.to_s.split(",").map { |host| host.strip.downcase }.reject(&:blank?)
+  end
+
   def self.retry_with_legacy_sender?(delivery_result, config)
     return false unless config[:profile] == :asa
 
@@ -331,6 +421,13 @@ class QuotationVendorSmsGateway
     return quotation_proposal.id if quotation_proposal.respond_to?(:id) && quotation_proposal.id.present?
 
     dispatch.quotation_proposal_id
+  end
+
+  def self.quotation_proposal_id_for_link(dispatch)
+    quotation_proposal = dispatch.try(:quotation_proposal)
+    return quotation_proposal.id if quotation_proposal.respond_to?(:id) && quotation_proposal.id.present?
+
+    dispatch.try(:quotation_proposal_id)
   end
 
   def self.purchase_order_reference_for(dispatch, proposal_vendor)

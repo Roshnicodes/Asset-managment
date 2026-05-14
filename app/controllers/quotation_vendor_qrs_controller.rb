@@ -1,7 +1,20 @@
 class QuotationVendorQrsController < ApplicationController
   skip_before_action :authenticate_user!
-  before_action :load_vendor_access
+  before_action :load_vendor_access, except: :approved_link
   layout "public_qr"
+
+  def approved_link
+    proposal_vendor_id, quotation_proposal_id = approved_link_ids(params[:encoded_reference])
+    proposal_vendor = QuotationProposalVendor.find_by(id: proposal_vendor_id, quotation_proposal_id: quotation_proposal_id)
+
+    unless proposal_vendor&.qr_token.present?
+      flash.now[:alert] = "This vendor quotation link is invalid or no longer available."
+      render :invalid_link, status: :not_found
+      return
+    end
+
+    redirect_to quotation_vendor_qr_path(proposal_vendor.qr_token)
+  end
 
   def show
     return unless ensure_vendor_response_open!
@@ -114,6 +127,13 @@ class QuotationVendorQrsController < ApplicationController
   end
 
   private
+
+  def approved_link_ids(encoded_reference)
+    match = encoded_reference.to_s.match(/\Av:(\d+),qp:(\d+)\z/)
+    return [nil, nil] unless match
+
+    [match[1], match[2]]
+  end
 
   def load_vendor_access
     token = params[:token].to_s.strip

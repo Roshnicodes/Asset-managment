@@ -459,8 +459,12 @@ class QuotationProposal < ApplicationRecord
   def vendor_dispatch_failure_message(dispatch)
     vendor_name = dispatch.vendor_name.to_s.strip.presence || "the selected vendor"
     mobile_no = dispatch.mobile_no.to_s.strip.presence || "the registered mobile number"
+    sms_error = QuotationVendorSmsGateway.last_error_message
 
-    "SMS could not be sent to #{vendor_name} on #{mobile_no}. Please verify the SMS setup and try again."
+    [
+      "SMS could not be sent to #{vendor_name} on #{mobile_no}. Please verify the SMS setup and try again.",
+      sms_error
+    ].compact.join(" ")
   end
 
   def resolve_quotation_approval_channel_for_request!

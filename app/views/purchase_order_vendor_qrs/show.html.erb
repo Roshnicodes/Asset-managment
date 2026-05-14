@@ -605,7 +605,7 @@
           </div>
         </div>
 
-        <%= form_with url: verify_purchase_order_vendor_qr_otp_path(@quotation_proposal_vendor.po_token), method: :post, local: true do |form| %>
+        <%= form_with url: verify_purchase_order_vendor_qr_otp_path(@quotation_proposal_vendor.po_token), method: :post, local: true, data: { turbo: false } do |form| %>
           <div class="app-form-field po-otp-field">
             <%= form.label :otp_code, "Enter OTP" %>
             <%= form.text_field :otp_code, maxlength: 6, required: true, class: "form-control po-otp-input", inputmode: "numeric", autocomplete: "one-time-code", placeholder: "------" %>
@@ -616,7 +616,7 @@
         <% end %>
 
         <div class="po-otp-resend-wrap">
-          <%= button_to "Send New OTP", send_purchase_order_vendor_qr_otp_path(@quotation_proposal_vendor.po_token), method: :post, class: "app-secondary-btn po-otp-resend" %>
+          <%= button_to "Send New OTP", send_purchase_order_vendor_qr_otp_path(@quotation_proposal_vendor.po_token), method: :post, class: "app-secondary-btn po-otp-resend", data: { turbo: false } %>
         </div>
       </div>
     </section>

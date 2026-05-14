@@ -280,7 +280,7 @@ class QuotationProposalsController < ApplicationController
     sent = QuotationVendorSmsGateway.send_purchase_order_link(dispatch, @selected_proposal_vendor)
 
     unless sent
-      redirect_to purchase_order_quotation_proposal_path(@quotation_proposal, authorized_by_id: @authorized_by&.id), alert: "Purchase order SMS could not be delivered. Please verify the SMS setup and try again."
+      redirect_to purchase_order_quotation_proposal_path(@quotation_proposal, authorized_by_id: @authorized_by&.id), alert: sms_delivery_failure_alert("Purchase order SMS could not be delivered. Please verify the SMS setup and try again.")
       return
     end
 
@@ -406,7 +406,7 @@ class QuotationProposalsController < ApplicationController
         NotificationDispatcher.notify_goods_receive_invoice_requested(@quotation_proposal, @goods_receive_vendor, invoice_request)
         invoice_request_notice = " Invoice upload link has been sent to the vendor mobile number."
       else
-        invoice_request_notice = " Goods receive saved, but invoice upload SMS could not be delivered."
+        invoice_request_notice = " Goods receive saved, but #{sms_delivery_failure_alert("invoice upload SMS could not be delivered.")}"
       end
     end
 
@@ -529,7 +529,7 @@ class QuotationProposalsController < ApplicationController
       sms_sent = QuotationVendorSmsGateway.send_goods_receive_invoice_return_link(dispatch, @invoice_request)
       NotificationDispatcher.notify_goods_receive_invoice_returned(@quotation_proposal, @invoice_request.quotation_proposal_vendor, @invoice_request)
 
-      redirect_to quotation_proposal_path(@quotation_proposal), notice: "Vendor invoice returned successfully.#{sms_sent ? " Re-upload link has been sent to vendor." : " SMS could not be delivered to vendor."}"
+      redirect_to quotation_proposal_path(@quotation_proposal), notice: "Vendor invoice returned successfully.#{sms_sent ? " Re-upload link has been sent to vendor." : " #{sms_delivery_failure_alert("SMS could not be delivered to vendor.")}"}"
     else
       redirect_to quotation_proposal_path(@quotation_proposal), alert: "Please choose a valid invoice review action."
     end
@@ -1413,6 +1413,11 @@ class QuotationProposalsController < ApplicationController
     end
 
     step_scope.any? { |step| employee_matches_current_login?(step.employee_master) }
+  end
+
+  def sms_delivery_failure_alert(default_message)
+    sms_error = QuotationVendorSmsGateway.last_error_message
+    [default_message, sms_error].compact.join(" ")
   end
 
 end

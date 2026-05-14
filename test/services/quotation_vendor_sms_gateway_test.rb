@@ -211,7 +211,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     assert_equal "9876543210", params["mobiles"]
     assert_equal "PLOAPL", params["sender"]
     assert_equal "1707177648937573645", params["DLT_TE_ID"]
-    assert_equal "Dear SUNIL CHOUBEY, We kindly request you to upload the invoice for the purchase order: PGPL/PO/102/#{expected_year_label}.through link: https://asa360.asaindia.org/gr/qO7wmv7tqEEV. - Ploughman Agro Private Limited (PAPL)", params["message"]
+    assert_equal "Dear SUNIL CHOUBEY, We kindly request you to upload the invoice for the purchase order: PGPL/PO/102/#{expected_year_label}.through link: https://asa360.asaindia.org/p/qO7wmv7tqEEV. - Ploughman Agro Private Limited (PAPL)", params["message"]
   end
 
   test "send_goods_receive_invoice_return_link uses PAPL rejected invoice template for PGPL stakeholders" do
@@ -251,7 +251,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     assert_equal "9876543210", params["mobiles"]
     assert_equal "PLOAPL", params["sender"]
     assert_equal "1707177650435445886", params["DLT_TE_ID"]
-    assert_equal "Dear Sunil Choubey, Your invoice has been rejected. Please upload a revised invoice for PO: PGPL/PO/102/#{expected_year_label} using the link below: https://asa360.asaindia.org/gr/qO7wmv7tqEEV. - Ploughman Agro Private Limited (PAPL)", params["message"]
+    assert_equal "Dear Sunil Choubey, Your invoice has been rejected. Please upload a revised invoice for PO: PGPL/PO/102/#{expected_year_label} using the link below: https://asa360.asaindia.org/p/qO7wmv7tqEEV. - Ploughman Agro Private Limited (PAPL)", params["message"]
   end
 
   test "send_vendor_otp uses PAPL invoice otp template and content" do
@@ -460,7 +460,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     assert_equal "3230666f72736131353261", params["authkey"]
     assert_equal "ACTFSA", params["sender"]
     assert_equal "1707177674942135728", params["DLT_TE_ID"]
-    assert_equal "Dear SUNIL CHOUBEY, We kindly request you to upload the invoice for the purchase order: ASA/PO/102/#{expected_year_label}.through link: https://asa360.asaindia.org/gr/qO7wmv7tqEEV. - Action For Social Advancement(ASA)", params["message"]
+    assert_equal "Dear SUNIL CHOUBEY, We kindly request you to upload the invoice for the purchase order: ASA/PO/102/#{expected_year_label}.through link: https://asa360.asaindia.org/p/qO7wmv7tqEEV. - Action For Social Advancement(ASA)", params["message"]
   end
 
   test "send_goods_receive_invoice_return_link uses ASA rejected invoice template and content for ASA stakeholders" do
@@ -501,7 +501,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     assert_equal "3230666f72736131353261", params["authkey"]
     assert_equal "ACTFSA", params["sender"]
     assert_equal "1707177674947419559", params["DLT_TE_ID"]
-    assert_equal "Dear SUNIL CHOUBEY, Your invoice has been rejected. Please upload a revised invoice for PO: ASA/PO/102/#{expected_year_label} using the link below:https://asa360.asaindia.org/gr/qO7wmv7tqEEV.-Action For Social Advancement (ASA)", params["message"]
+    assert_equal "Dear SUNIL CHOUBEY, Your invoice has been rejected. Please upload a revised invoice for PO: ASA/PO/102/#{expected_year_label} using the link below:https://asa360.asaindia.org/p/qO7wmv7tqEEV.-Action For Social Advancement (ASA)", params["message"]
   end
 
   test "send_vendor_otp uses ASA invoice otp template and content for ASA stakeholders" do
@@ -543,7 +543,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
       mobile_no: "9876543210",
       stakeholder_category: OpenStruct.new(name: "ASA"),
       quotation_proposal_id: 123,
-      quotation_proposal_vendor: OpenStruct.new(qr_token: "secure-token")
+      quotation_proposal_vendor: OpenStruct.new(id: 13, qr_token: "secure-token")
     )
 
     QuotationVendorSmsGateway.stub(:base_url, "https://asa360.asaindia.org") do
@@ -559,6 +559,33 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     assert_equal "1707177512006405172", params["DLT_TE_ID"]
     assert_equal "json", params["response"]
     assert_nil params["unicode"]
+    assert_equal "Dear GTEC SOLUTION, We kindly request you to accept the Quotation Proposal: 123. Please submit the quotation through link: https://asa360.asaindia.org/xyz/v:13,qp:123. - ACTION FOR SOCIAL ADVANCEMENT", params["message"]
+  end
+
+  test "send_vendor_link falls back to token link when ASA approved link ids are unavailable" do
+    captured_uri = nil
+    response = Net::HTTPOK.new("1.1", "200", "OK")
+
+    def response.body
+      '{"Status":"Success","Code":"000","Description":"Sent"}'
+    end
+
+    dispatch = AsaDispatchStub.new(
+      vendor_name: "GTec Solution",
+      mobile_no: "9876543210",
+      stakeholder_category: OpenStruct.new(name: "ASA"),
+      quotation_proposal_id: 123,
+      quotation_proposal_vendor: OpenStruct.new(qr_token: "secure-token")
+    )
+
+    QuotationVendorSmsGateway.stub(:base_url, "https://asa360.asaindia.org") do
+      Net::HTTP.stub(:get_response, ->(uri) { captured_uri = uri; response }) do
+        assert QuotationVendorSmsGateway.send_vendor_link(dispatch)
+      end
+    end
+
+    params = URI.decode_www_form(captured_uri.query).to_h
+
     assert_equal "Dear GTEC SOLUTION, We kindly request you to accept the Quotation Proposal: 123. Please submit the quotation through link: https://asa360.asaindia.org/q/secure-token. - ACTION FOR SOCIAL ADVANCEMENT", params["message"]
   end
 
@@ -680,6 +707,42 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     end
 
     assert_equal 1, request_count
+  end
+
+  test "send_sms fails before gateway call when message URL uses placeholder host" do
+    request_count = 0
+    message = "Dear Vendor, link: https://example.com/p/token"
+
+    Net::HTTP.stub(:get_response, ->(_uri) { request_count += 1; flunk "gateway should not be called" }) do
+      assert_not QuotationVendorSmsGateway.send_sms(
+        mobile_no: "9876543210",
+        message: message,
+        template_id: "template-id",
+        config: QuotationVendorSmsGateway.asa_sms_config
+      )
+    end
+
+    assert_equal 0, request_count
+    assert_match "SMS link is using example.com", QuotationVendorSmsGateway.last_error_message
+  end
+
+  test "send_sms fails before gateway call when URL host is not allowed" do
+    request_count = 0
+    message = "Dear Vendor, link: https://asa360.asaindia.org/p/token"
+
+    with_env("ASA_SMS_ALLOWED_URL_HOSTS" => "apurti.ploughmanagro.com") do
+      Net::HTTP.stub(:get_response, ->(_uri) { request_count += 1; flunk "gateway should not be called" }) do
+        assert_not QuotationVendorSmsGateway.send_sms(
+          mobile_no: "9876543210",
+          message: message,
+          template_id: "template-id",
+          config: QuotationVendorSmsGateway.asa_sms_config
+        )
+      end
+    end
+
+    assert_equal 0, request_count
+    assert_match "SMS link host asa360.asaindia.org is not in the approved SMS URL hosts", QuotationVendorSmsGateway.last_error_message
   end
 
   private

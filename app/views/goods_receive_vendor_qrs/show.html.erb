@@ -935,7 +935,7 @@
           </div>
         </div>
 
-        <%= form_with url: verify_goods_receive_vendor_qr_otp_path(@invoice_request.request_token), method: :post, local: true do |form| %>
+        <%= form_with url: verify_goods_receive_vendor_qr_otp_path(@invoice_request.request_token), method: :post, local: true, data: { turbo: false } do |form| %>
           <div class="gr-form-field">
             <%= form.label :otp_code, "Enter OTP", class: "gr-form-label" %>
             <%= form.text_field :otp_code, maxlength: 6, required: true, class: "form-control gr-otp-input", inputmode: "numeric", autocomplete: "one-time-code", placeholder: "------" %>
@@ -947,7 +947,7 @@
         <% end %>
 
         <div class="gr-secondary-action">
-          <%= button_to "Send New OTP", send_goods_receive_vendor_qr_otp_path(@invoice_request.request_token), method: :post, class: "app-secondary-btn" %>
+          <%= button_to "Send New OTP", send_goods_receive_vendor_qr_otp_path(@invoice_request.request_token), method: :post, class: "app-secondary-btn", data: { turbo: false } %>
         </div>
       </div>
     </section>

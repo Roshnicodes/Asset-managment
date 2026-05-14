@@ -122,6 +122,11 @@ class PurchaseOrderVendorQrsController < ApplicationController
       .find_by(po_token: token)
 
     unless @quotation_proposal_vendor
+      if QuotationProposalVendorInvoiceRequest.exists?(request_token: token)
+        redirect_to goods_receive_vendor_qr_path(token)
+        return
+      end
+
       flash.now[:alert] = "This purchase order link is invalid or no longer available."
       render :invalid_link, status: :not_found
       return
