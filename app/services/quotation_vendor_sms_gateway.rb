@@ -97,10 +97,14 @@ class QuotationVendorSmsGateway
     "#{base_url(config: config)}/q/#{token}"
   end
 
+  def self.vendor_sms_link_for_config(token, config:)
+    "#{base_url(config: config)}/q?t=#{token}"
+  end
+
   def self.asa_vendor_link_for_config(dispatch, config:)
     proposal_vendor_id = dispatch.quotation_proposal_vendor.try(:id).presence
     quotation_proposal_id = quotation_proposal_id_for_link(dispatch)
-    return vendor_link_for_config(dispatch.quotation_proposal_vendor.qr_token, config: config) if proposal_vendor_id.blank? || quotation_proposal_id.blank?
+    return vendor_sms_link_for_config(dispatch.quotation_proposal_vendor.qr_token, config: config) if proposal_vendor_id.blank? || quotation_proposal_id.blank?
 
     "#{base_url(config: config)}/xyz?v=#{proposal_vendor_id}&qp=#{quotation_proposal_id}"
   end
@@ -136,7 +140,7 @@ class QuotationVendorSmsGateway
       if config[:profile] == :asa
         asa_vendor_link_for_config(dispatch, config: config)
       else
-        vendor_link_for_config(dispatch.quotation_proposal_vendor.qr_token, config: config)
+        vendor_sms_link_for_config(dispatch.quotation_proposal_vendor.qr_token, config: config)
       end
 
     if config[:profile] == :asa

@@ -138,7 +138,8 @@ class QuotationVendorQrsController < ApplicationController
   end
 
   def load_vendor_access
-    token = params[:token].to_s.strip
+    token = params[:token].presence || params[:t]
+    token = token.to_s.strip
     @quotation_proposal_vendor = QuotationProposalVendor
       .includes(
         quotation_proposal: [{ theme: :stakeholder_category }, { quotation_proposal_items: :unit }],

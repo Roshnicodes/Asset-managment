@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
   get "favicon.ico", to: redirect("/favicon.svg")
+  get "q", to: "quotation_vendor_qrs#show"
   get "q/:token", to: "quotation_vendor_qrs#show", as: :short_quotation_vendor_qr
   get "xyz", to: "quotation_vendor_qrs#approved_link"
   get "xyz/:encoded_reference", to: "quotation_vendor_qrs#approved_link", as: :approved_quotation_vendor_qr

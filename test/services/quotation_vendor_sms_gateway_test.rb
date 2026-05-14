@@ -82,7 +82,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     assert_nil params["unicode"]
     assert_nil params["senderid"]
     assert_nil params["header"]
-    assert_equal "Dear G.TECH, PLOUGHMAN AGRO PRIVATE LIMITED requests you to review and accept the quotation proposal 123. Please submit the quotation using the following link: https://asa360.asaindia.org/q/secure-token.", params["message"]
+    assert_equal "Dear G.TECH, PLOUGHMAN AGRO PRIVATE LIMITED requests you to review and accept the quotation proposal 123. Please submit the quotation using the following link: https://asa360.asaindia.org/q?t=secure-token.", params["message"]
   end
 
   test "send_vendor_otp uses approved dlt template, header, and content" do
@@ -586,7 +586,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
 
     params = URI.decode_www_form(captured_uri.query).to_h
 
-    assert_equal "Dear GTEC SOLUTION, We kindly request you to accept the Quotation Proposal: 123. Please submit the quotation through link: https://asa360.asaindia.org/q/secure-token. - ACTION FOR SOCIAL ADVANCEMENT", params["message"]
+    assert_equal "Dear GTEC SOLUTION, We kindly request you to accept the Quotation Proposal: 123. Please submit the quotation through link: https://asa360.asaindia.org/q?t=secure-token. - ACTION FOR SOCIAL ADVANCEMENT", params["message"]
   end
 
   test "send_vendor_link prefers quotation stakeholder when resolving sms profile" do
