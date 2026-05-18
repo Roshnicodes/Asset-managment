@@ -36,6 +36,43 @@ class AssetInsurancesControllerTest < ActionDispatch::IntegrationTest
     assert_equal Date.new(2027, 5, 13), @asset.insurance_expiry_date
   end
 
+  test "should apply one insurance detail set to selected assets" do
+    second_asset = assets(:two)
+
+    patch update_all_asset_insurances_url, params: {
+      bulk_insurance_update: "1",
+      asset_ids: [@asset.id, second_asset.id].join(","),
+      selected_asset_ids: [@asset.id.to_s, second_asset.id.to_s],
+      insured: "true",
+      insurance_company_name: "Batch Insurance",
+      insurance_policy_number: "BATCH-100",
+      insurance_date: "2026-05-13",
+      insurance_expiry_date: "2027-05-13"
+    }
+
+    assert_redirected_to asset_insurances_url(asset_ids: [@asset.id, second_asset.id].join(","))
+
+    [@asset, second_asset].each do |asset|
+      asset.reload
+      assert_equal true, asset.insured
+      assert_equal "Batch Insurance", asset.insurance_company_name
+      assert_equal "BATCH-100", asset.insurance_policy_number
+      assert_equal Date.new(2026, 5, 13), asset.insurance_date
+      assert_equal Date.new(2027, 5, 13), asset.insurance_expiry_date
+    end
+  end
+
+  test "bulk update should require selected assets" do
+    patch update_all_asset_insurances_url, params: {
+      bulk_insurance_update: "1",
+      asset_ids: @asset.id.to_s,
+      insured: "false"
+    }
+
+    assert_redirected_to asset_insurances_url(asset_ids: @asset.id.to_s)
+    assert_equal "Please select at least one asset.", flash[:alert]
+  end
+
   test "should clear insurance details when asset is not insured" do
     @asset.update_columns(
       insured: true,

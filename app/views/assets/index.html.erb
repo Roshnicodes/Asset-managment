@@ -54,7 +54,7 @@
       <% else %>
         <%= form_with url: create_invoice_request_assets_quotation_proposal_path(@asset_invoice_request.quotation_proposal_vendor.quotation_proposal, invoice_request_id: @asset_invoice_request.id), method: :post, local: true do %>
           <div class="app-table-wrap assets-workspace-table" data-table-search="false">
-            <table class="table app-table assets-table">
+            <table class="table app-table assets-table assets-workspace-entry-table">
               <thead>
                 <tr>
                   <th>S.No.</th>
@@ -147,7 +147,7 @@
     </div>
 
     <div class="app-table-wrap assets-list-table" data-search-placeholder="Search created assets...">
-      <table class="table app-table assets-table">
+      <table class="table app-table assets-table assets-records-table">
         <thead>
           <tr>
             <th>Asset Code</th>

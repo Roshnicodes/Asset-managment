@@ -10,6 +10,16 @@ class AssetInsurancesController < ApplicationController
     @assets = insurance_asset_scope.serial_number_ascending
     @workspace_assets = build_workspace_assets_for_update
 
+    if using_bulk_insurance_update? && selected_asset_ids.blank?
+      redirect_to asset_insurances_path(asset_ids: @asset_ids_filter.presence), alert: "Please select at least one asset."
+      return
+    end
+
+    if using_bulk_insurance_update? && bulk_insurance_params[:insured].blank?
+      redirect_to asset_insurances_path(asset_ids: @asset_ids_filter.presence), alert: "Please choose an insurance status."
+      return
+    end
+
     Asset.transaction do
       @workspace_assets.each(&:save!)
     end
@@ -34,6 +44,15 @@ class AssetInsurancesController < ApplicationController
   end
 
   def build_workspace_assets_for_update
+    if using_bulk_insurance_update?
+      assets = insurance_asset_scope.where(id: selected_asset_ids).to_a
+      assets.each do |asset|
+        asset.assign_attributes(asset_insurance_attributes(bulk_insurance_params))
+      end
+
+      return ordered_assets(assets, selected_asset_ids)
+    end
+
     submitted_rows = asset_insurance_rows
     submitted_ids = submitted_rows.keys.map(&:to_i)
     assets = insurance_asset_scope.where(id: submitted_ids).to_a
@@ -67,8 +86,35 @@ class AssetInsurancesController < ApplicationController
     params.fetch(:assets, {}).to_unsafe_h
   end
 
+  def using_bulk_insurance_update?
+    params[:bulk_insurance_update].present?
+  end
+
+  def selected_asset_ids
+    @selected_asset_ids ||= Array(params[:selected_asset_ids]).filter_map do |value|
+      Integer(value, exception: false)
+    end.uniq
+  end
+
+  def bulk_insurance_params
+    @bulk_insurance_params ||= params.permit(
+      :insured,
+      :insurance_date,
+      :insurance_company_name,
+      :insurance_policy_number,
+      :insurance_expiry_date
+    )
+  end
+
   def asset_insurance_attributes(raw_attributes)
-    permitted_attributes = ActionController::Parameters.new(raw_attributes).permit(
+    attribute_params =
+      if raw_attributes.is_a?(ActionController::Parameters)
+        raw_attributes
+      else
+        ActionController::Parameters.new(raw_attributes)
+      end
+
+    permitted_attributes = attribute_params.permit(
       :insured,
       :insurance_date,
       :insurance_company_name,

@@ -28,114 +28,127 @@
     <% if @workspace_assets.blank? %>
       <div class="assets-inline-note">No asset is waiting in the insurance workspace right now. Use the list below to open any asset and update insurance details later.</div>
     <% else %>
-      <%= form_with url: update_all_asset_insurances_path, method: :patch, local: true do %>
+      <%= form_with url: update_all_asset_insurances_path, method: :patch, local: true, data: { finance_bulk_form: true, asset_insurance_card: true } do %>
         <%= hidden_field_tag :asset_ids, @asset_ids_filter if @asset_ids_filter.present? %>
+        <%= hidden_field_tag :bulk_insurance_update, "1" %>
 
-        <div class="asset-insurance-grid">
-          <% @workspace_assets.each do |asset| %>
-            <section class="asset-insurance-card" data-asset-insurance-card="true" id="asset-insurance-<%= asset.id %>">
-              <div class="asset-insurance-card__header">
-                <div>
-                  <h4 class="asset-insurance-card__title"><%= asset.name.presence || asset.product.name %></h4>
-                  <p class="asset-insurance-card__subtitle"><%= asset.asset_code.presence || "Asset ##{asset.id}" %></p>
-                </div>
-                <span class="<%= asset.insurance_status_css_class %>"><%= asset.insurance_status_label %></span>
-              </div>
-
-              <div class="app-detail-grid asset-insurance-card__meta">
-                <div class="app-detail-item">
-                  <div class="app-detail-label">Product</div>
-                  <div class="app-detail-value"><%= asset.product.name %></div>
-                </div>
-                <div class="app-detail-item">
-                  <div class="app-detail-label">Item No</div>
-                  <div class="app-detail-value"><%= asset.unique_product_code.presence || "-" %></div>
-                </div>
-                <div class="app-detail-item">
-                  <div class="app-detail-label">Serial Number</div>
-                  <div class="app-detail-value"><%= asset.serial_number.presence || "-" %></div>
-                </div>
-                <div class="app-detail-item">
-                  <div class="app-detail-label">Rate</div>
-                  <div class="app-detail-value">
-                    <%= asset.quotation_proposal_vendor_item&.quoted_rate.present? ? number_with_precision(asset.quotation_proposal_vendor_item.quoted_rate, precision: 2) : "-" %>
-                  </div>
-                </div>
-              </div>
-
-              <% if asset.errors.any? %>
-                <div class="app-form-errors asset-insurance-card__errors">
-                  <h2><%= pluralize(asset.errors.count, "error") %> found</h2>
-                  <ul>
-                    <% asset.errors.each do |error| %>
-                      <li><%= error.full_message %></li>
+        <div class="app-table-wrap assets-list-table">
+          <table class="table app-table assets-table assets-insurance-workspace-table">
+            <thead>
+              <tr>
+                <th style="width: 56px;">
+                  <%= check_box_tag :select_all_asset_insurance_rows, "1", false, class: "form-check-input", data: { finance_select_all: true } %>
+                </th>
+                <th>Asset Code</th>
+                <th>Asset Name</th>
+                <th>Product</th>
+                <th>Item No</th>
+                <th>Serial Number</th>
+                <th>Rate</th>
+                <th>Current Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% selected_asset_ids = Array(params[:selected_asset_ids]).map(&:to_s) %>
+              <% @workspace_assets.each do |asset| %>
+                <tr id="asset-insurance-<%= asset.id %>">
+                  <td>
+                    <%= check_box_tag "selected_asset_ids[]", asset.id, selected_asset_ids.include?(asset.id.to_s), class: "form-check-input", data: { finance_row_checkbox: true } %>
+                  </td>
+                  <td><%= asset.asset_code.presence || "Asset ##{asset.id}" %></td>
+                  <td>
+                    <strong><%= asset.name.presence || asset.product.name %></strong>
+                    <% if asset.errors.any? %>
+                      <div class="app-form-errors asset-insurance-card__errors mt-2">
+                        <h2><%= pluralize(asset.errors.count, "error") %> found</h2>
+                        <ul>
+                          <% asset.errors.each do |error| %>
+                            <li><%= error.full_message %></li>
+                          <% end %>
+                        </ul>
+                      </div>
                     <% end %>
-                  </ul>
-                </div>
+                  </td>
+                  <td><%= asset.product.name %></td>
+                  <td><%= asset.unique_product_code.presence || "-" %></td>
+                  <td><%= asset.serial_number.presence || "-" %></td>
+                  <td><%= asset.quotation_proposal_vendor_item&.quoted_rate.present? ? number_with_precision(asset.quotation_proposal_vendor_item.quoted_rate, precision: 2) : "-" %></td>
+                  <td><span class="<%= asset.insurance_status_css_class %>"><%= asset.insurance_status_label %></span></td>
+                </tr>
               <% end %>
+            </tbody>
+          </table>
+        </div>
 
-              <div class="app-form-grid two-col">
-                <div class="app-form-field">
-                  <label for="asset_insured_<%= asset.id %>">Insurance Available?</label>
-                  <%= select_tag "assets[#{asset.id}][insured]",
-                        options_for_select([["Select status", ""], ["No", "false"], ["Yes", "true"]], asset.insured.nil? ? "" : asset.insured.to_s),
-                        id: "asset_insured_#{asset.id}",
-                        class: "form-control",
-                        data: { insurance_status_select: true } %>
-                </div>
+        <div class="asset-insurance-bulk-panel">
+          <div class="d-flex justify-content-between gap-3 flex-wrap align-items-start mb-3">
+            <div>
+              <div class="asset-insurance-bulk-panel__title">Common Insurance Details</div>
+            </div>
+            <span class="badge border bg-info bg-opacity-10 text-info">Selected: <span data-finance-selected-count>0</span></span>
+          </div>
 
-                <div class="app-form-field">
-                  <label>Coverage Decision</label>
-                  <div class="asset-insurance-card__help">
-                    Select `No` if this asset should stay without insurance. Select `Yes` to unlock the policy details fields.
-                  </div>
-                </div>
+          <div class="app-form-grid two-col">
+            <div class="app-form-field">
+              <label for="insured">Insurance Available?</label>
+              <%= select_tag :insured,
+                    options_for_select([["Select status", ""], ["No", "false"], ["Yes", "true"]], params[:insured]),
+                    id: "insured",
+                    class: "form-control",
+                    data: { insurance_status_select: true },
+                    required: true %>
+            </div>
+
+            <div class="app-form-field">
+              <label>Coverage Decision</label>
+              <div class="asset-insurance-card__help">
+                Select assets above, choose `Yes` to apply one policy detail set to all selected assets, or choose `No` to clear their policy details.
               </div>
+            </div>
+          </div>
 
-              <% show_insurance_fields = asset.insured? %>
-              <div class="app-form-grid four-col asset-insurance-extra-fields <%= "is-hidden" unless show_insurance_fields %>"
-                   data-insurance-extra-fields="true"
-                   <%= "hidden" unless show_insurance_fields %>>
-                <div class="app-form-field">
-                  <label for="asset_insurance_company_name_<%= asset.id %>">Insurance Company Name</label>
-                  <%= text_field_tag "assets[#{asset.id}][insurance_company_name]",
-                        asset.insurance_company_name,
-                        id: "asset_insurance_company_name_#{asset.id}",
-                        class: "form-control",
-                        placeholder: "Enter company name" %>
-                </div>
+          <% show_insurance_fields = params[:insured].to_s == "true" %>
+          <div class="app-form-grid four-col asset-insurance-extra-fields <%= "is-hidden" unless show_insurance_fields %>"
+               data-insurance-extra-fields="true"
+               <%= "hidden" unless show_insurance_fields %>>
+            <div class="app-form-field">
+              <label for="insurance_company_name">Insurance Company Name</label>
+              <%= text_field_tag :insurance_company_name,
+                    params[:insurance_company_name],
+                    id: "insurance_company_name",
+                    class: "form-control",
+                    placeholder: "Enter company name" %>
+            </div>
 
-                <div class="app-form-field">
-                  <label for="asset_insurance_policy_number_<%= asset.id %>">Policy Number</label>
-                  <%= text_field_tag "assets[#{asset.id}][insurance_policy_number]",
-                        asset.insurance_policy_number,
-                        id: "asset_insurance_policy_number_#{asset.id}",
-                        class: "form-control",
-                        placeholder: "Enter policy number" %>
-                </div>
+            <div class="app-form-field">
+              <label for="insurance_policy_number">Policy Number</label>
+              <%= text_field_tag :insurance_policy_number,
+                    params[:insurance_policy_number],
+                    id: "insurance_policy_number",
+                    class: "form-control",
+                    placeholder: "Enter policy number" %>
+            </div>
 
-                <div class="app-form-field">
-                  <label for="asset_insurance_date_<%= asset.id %>">Insurance Date</label>
-                  <%= date_field_tag "assets[#{asset.id}][insurance_date]",
-                        asset.insurance_date,
-                        id: "asset_insurance_date_#{asset.id}",
-                        class: "form-control" %>
-                </div>
+            <div class="app-form-field">
+              <label for="insurance_date">Insurance Date</label>
+              <%= date_field_tag :insurance_date,
+                    params[:insurance_date],
+                    id: "insurance_date",
+                    class: "form-control" %>
+            </div>
 
-                <div class="app-form-field">
-                  <label for="asset_insurance_expiry_date_<%= asset.id %>">Insurance Expiry Date</label>
-                  <%= date_field_tag "assets[#{asset.id}][insurance_expiry_date]",
-                        asset.insurance_expiry_date,
-                        id: "asset_insurance_expiry_date_#{asset.id}",
-                        class: "form-control" %>
-                </div>
-              </div>
-            </section>
-          <% end %>
+            <div class="app-form-field">
+              <label for="insurance_expiry_date">Insurance Expiry Date</label>
+              <%= date_field_tag :insurance_expiry_date,
+                    params[:insurance_expiry_date],
+                    id: "insurance_expiry_date",
+                    class: "form-control" %>
+            </div>
+          </div>
         </div>
 
         <div class="assets-submit-row">
-          <%= submit_tag "Save Insurance Details", class: "app-form-submit" %>
+          <%= submit_tag "Save Selected Insurance Details", class: "app-form-submit" %>
         </div>
       <% end %>
     <% end %>
@@ -150,7 +163,7 @@
     </div>
 
     <div class="app-table-wrap assets-list-table" data-search-placeholder="Search insurance records...">
-      <table class="table app-table assets-table">
+      <table class="table app-table assets-table assets-insurance-overview-table">
         <thead>
           <tr>
             <th>Asset Code</th>
