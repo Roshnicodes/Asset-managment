@@ -1,11 +1,56 @@
-<div class="assets-page" style="display: flex; flex-direction: column; gap: 0.7rem; width: 100%; min-width: 0;">
-  <div class="app-toolbar assets-toolbar" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; min-width: 0; margin-bottom: 0;">
+<style>
+  .app-content > .assets-page {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch !important;
+    gap: 0.7rem !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .app-content > .assets-page > *,
+  .app-content > .assets-page > .app-toolbar,
+  .app-content > .assets-page > .app-detail-card {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .app-content > .assets-page .assets-toolbar {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 1rem !important;
+  }
+
+  .app-content > .assets-page .assets-list-card,
+  .app-content > .assets-page .assets-list-table {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .app-content > .assets-page .assets-list-table {
+    overflow-x: auto !important;
+  }
+
+  .app-content > .assets-page .assets-records-table {
+    min-width: 1320px !important;
+    table-layout: fixed !important;
+  }
+</style>
+
+<div class="assets-page">
+  <div class="app-toolbar assets-toolbar">
     <div class="assets-toolbar-copy">
       <h1 class="assets-page-title">Asset Records</h1>
     </div>
 
-    <div class="assets-toolbar-controls" style="display: flex; align-items: center; justify-content: flex-end; gap: 0.6rem; flex: 1 1 auto; min-width: 0;">
-      <div class="assets-toolbar-search" data-table-search-slot="assets-records" style="flex: 0 1 320px; min-width: 220px;">
+    <div class="assets-toolbar-controls">
+      <div class="assets-toolbar-search" data-table-search-slot="assets-records">
         <div class="app-table-search">
           <input type="search" class="app-table-search-input" placeholder="Search created assets..." data-table-search-input="assets-records">
         </div>
@@ -141,7 +186,7 @@
     </div>
   <% end %>
 
-  <div class="app-detail-card assets-list-card" style="width: 100%; min-width: 0;">
+  <div class="app-detail-card assets-list-card">
     <div class="app-table-wrap assets-list-table" data-search-placeholder="Search created assets..." data-search-slot="assets-records">
       <table class="table app-table assets-table assets-records-table">
         <thead>

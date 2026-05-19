@@ -244,6 +244,7 @@ body.auth-page-body {
 }
 
 .app-main {
+  width: 100%;
   min-width: 0;
   max-width: 100%;
 }
@@ -1572,15 +1573,41 @@ body.auth-page-body {
 }
 
 .assets-page {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
   gap: 0.7rem;
   width: 100%;
   min-width: 0;
 }
 
+.app-content > .assets-page {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: stretch;
+}
+
+.assets-page > * {
+  min-width: 0;
+}
+
+.assets-page > .app-toolbar,
+.assets-page > .app-detail-card,
+.assets-page > .app-page-header,
+.assets-page > .app-detail-actions-spread {
+  grid-column: 1 / -1;
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
 .assets-toolbar {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   margin-bottom: 0;
   width: 100%;
   min-width: 0;
@@ -1648,7 +1675,10 @@ body.auth-page-body {
 
 .assets-workspace-card,
 .assets-list-card {
+  display: block;
+  align-self: stretch;
   width: 100%;
+  max-width: 100%;
   min-width: 0;
   padding: 0.9rem;
 }
@@ -1697,6 +1727,8 @@ body.auth-page-body {
 
 .assets-workspace-table,
 .assets-list-table {
+  width: 100%;
+  max-width: 100%;
   margin-top: 0.75rem;
   overflow-x: auto;
   background: #fff;
@@ -1712,6 +1744,10 @@ body.auth-page-body {
   overscroll-behavior: contain;
 }
 
+.assets-list-table .app-table-search {
+  display: none;
+}
+
 .assets-list-table thead th {
   position: sticky;
   top: 0;
@@ -1723,7 +1759,7 @@ body.auth-page-body {
 }
 
 .assets-table {
-  min-width: 1120px;
+  min-width: 1320px;
   table-layout: fixed;
   font-size: 0.92rem;
 }
