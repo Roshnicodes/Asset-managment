@@ -3,3 +3,4 @@ log/
 vendor/bundle/
 storage/
 public/assets
+tmp/cache
