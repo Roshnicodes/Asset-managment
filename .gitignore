@@ -4,3 +4,4 @@ vendor/bundle/
 storage/
 public/assets
 tmp/cache
+tmp/cache

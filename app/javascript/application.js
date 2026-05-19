@@ -157,29 +157,6 @@ const setupTableSearch = () => {
   })
 }
 
-const normalizeAssetsPage = () => {
-  const assetsPage = document.querySelector(".assets-page")
-  const assetsTable = document.querySelector(".assets-records-table")
-  if (!assetsPage || !assetsTable) return
-
-  assetsPage.classList.add("assets-page--normalized")
-
-  assetsPage.querySelectorAll("h1, h2, h3").forEach((heading) => {
-    const text = heading.textContent.trim().replace(/\s+/g, " ")
-    if (text === "Assets") {
-      const wrapper = heading.closest(".app-page-header, .assets-toolbar-copy, .assets-section-head, .app-toolbar") || heading
-      wrapper.style.display = "none"
-    }
-  })
-
-  assetsPage.querySelectorAll("p").forEach((paragraph) => {
-    const text = paragraph.textContent.trim().toLowerCase()
-    if (text.includes("maintain asset master records")) {
-      paragraph.style.display = "none"
-    }
-  })
-}
-
 const setupTableSorting = () => {
   document.querySelectorAll("table[data-sortable-table='true']").forEach((table) => {
     if (table.dataset.sortReady === "true") return
@@ -1221,7 +1198,6 @@ const setupPasswordVisibility = () => {
 document.addEventListener("turbo:load", setupVendorRegistrationSelections)
 document.addEventListener("turbo:load", setupVendorDocumentToggle)
 document.addEventListener("turbo:load", setupMsmeToggle)
-document.addEventListener("turbo:load", normalizeAssetsPage)
 document.addEventListener("turbo:load", setupTableSearch)
 document.addEventListener("turbo:load", setupTableSorting)
 document.addEventListener("turbo:load", setupApprovalChannelSteps)
