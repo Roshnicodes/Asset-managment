@@ -121,14 +121,23 @@ const setupTableSearch = () => {
     const tbody = tableWrap.querySelector("tbody")
     if (!table || !tbody) return
 
-    const searchBar = document.createElement("div")
     const placeholder = tableWrap.dataset.searchPlaceholder || "Search in this table..."
-    searchBar.className = "app-table-search"
-    searchBar.innerHTML = `
-      <input type="search" class="app-table-search-input" placeholder="${placeholder}">
-    `
+    const searchSlotName = tableWrap.dataset.searchSlot
+    const searchSlot = searchSlotName
+      ? document.querySelector(`[data-table-search-slot="${searchSlotName}"]`)
+      : null
+    const existingInput = searchSlot?.querySelector(".app-table-search-input")
+    const searchBar = existingInput?.closest(".app-table-search") || document.createElement("div")
+
+    if (!existingInput) {
+      searchBar.className = "app-table-search"
+      searchBar.innerHTML = `
+        <input type="search" class="app-table-search-input" placeholder="${placeholder}">
+      `
+    }
 
     const input = searchBar.querySelector("input")
+    input.setAttribute("placeholder", placeholder)
     input.addEventListener("input", () => {
       const query = input.value.trim().toLowerCase()
 
@@ -138,13 +147,8 @@ const setupTableSearch = () => {
       })
     })
 
-    const searchSlotName = tableWrap.dataset.searchSlot
-    const searchSlot = searchSlotName
-      ? document.querySelector(`[data-table-search-slot="${searchSlotName}"]`)
-      : null
-
     if (searchSlot) {
-      searchSlot.replaceChildren(searchBar)
+      if (!searchSlot.contains(searchBar)) searchSlot.replaceChildren(searchBar)
     } else {
       tableWrap.parentNode.insertBefore(searchBar, tableWrap)
     }
