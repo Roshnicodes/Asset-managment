@@ -69,6 +69,21 @@
         <% end %>
       </li>
     <% end %>
+    <% if can_view_menu?("vendor_registration_main") || can_view_menu?("vendor_registration") || can_view_menu?("vendor_registration_list") %>
+      <li>
+        <%= app_dropdown_toggle("Vendor Registration Form", "vendorRegistrationMenu", icon: :vendor, identifier: "vendor_registration_main") %>
+        <div class="collapse submenu h-auto" id="vendorRegistrationMenu">
+          <ul class="nav flex-column">
+            <% if can_view_menu?("vendor_registration") %>
+              <li><%= link_to "Vendor Registration", vendor_registrations_path, class: "nav-link" %></li>
+            <% end %>
+            <% if can_view_menu?("vendor_registration_list") || can_view_menu?("vendor_registration") %>
+              <li><%= link_to "Vendor Registration List", list_vendor_registrations_path, class: "nav-link" %></li>
+            <% end %>
+          </ul>
+        </div>
+      </li>
+    <% end %>
     <% if can_view_menu?("quotation_proposal_main") || can_view_menu?("quotation_proposal_form") || can_view_menu?("quotation_proposal_list") || can_view_menu?("payment_advice_queue") %>
       <li>
         <%= app_dropdown_toggle("Quotation Proposal", "quotationProposalMenu", icon: :document, identifier: "quotation_proposal_main") %>
@@ -90,21 +105,6 @@
     <li><%= app_nav_link("Firm Types", firms_path, icon: :firm, identifier: "firms") %></li>
     <li><%= app_nav_link("Employee Master", employee_masters_path, icon: :people, identifier: "employee_master") %></li>
     <li><%= app_nav_link("Banks", vendor_bank_masters_path, icon: :bank, identifier: "banks") %></li>
-    <% if can_view_menu?("vendor_registration_main") || can_view_menu?("vendor_registration") || can_view_menu?("vendor_registration_list") %>
-      <li>
-        <%= app_dropdown_toggle("Vendor Registration Form", "vendorRegistrationMenu", icon: :vendor, identifier: "vendor_registration_main") %>
-        <div class="collapse submenu h-auto" id="vendorRegistrationMenu">
-          <ul class="nav flex-column">
-            <% if can_view_menu?("vendor_registration") %>
-              <li><%= link_to "Vendor Registration", vendor_registrations_path, class: "nav-link" %></li>
-            <% end %>
-            <% if can_view_menu?("vendor_registration_list") || can_view_menu?("vendor_registration") %>
-              <li><%= link_to "Vendor Registration List", list_vendor_registrations_path, class: "nav-link" %></li>
-            <% end %>
-          </ul>
-        </div>
-      </li>
-    <% end %>
     <li><%= app_nav_link("Assets", assets_path, icon: :asset, identifier: "assets") %></li>
     <li><%= app_nav_link("Asset Insurance", asset_insurances_path, icon: :insurance, identifier: "assets") %></li>
     <li><%= app_nav_link("Allocation", allocations_path, icon: :allocation, identifier: "allocation") %></li>
