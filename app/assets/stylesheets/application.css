@@ -1533,14 +1533,18 @@ body.auth-page-body {
 }
 
 .assets-page {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
+  width: 100%;
   min-width: 0;
 }
 
 .assets-toolbar {
   align-items: flex-end;
   margin-bottom: 0;
+  width: 100%;
+  min-width: 0;
 }
 
 .assets-toolbar-copy {
@@ -1585,6 +1589,7 @@ body.auth-page-body {
 
 .assets-workspace-card,
 .assets-list-card {
+  width: 100%;
   min-width: 0;
   padding: 1.6rem;
 }
@@ -4860,6 +4865,30 @@ body.auth-page-body {
 .asset-insurance-bulk-panel__title {
   font-weight: 800;
   color: var(--brand-deep);
+}
+
+.asset-insurance-page .form-check-input {
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 2px solid #0b4a4f;
+  background-color: #fff;
+  box-shadow: 0 0 0 2px rgba(11, 74, 79, 0.08);
+  cursor: pointer;
+}
+
+.asset-insurance-page .form-check-input:hover {
+  border-color: #06383c;
+  box-shadow: 0 0 0 3px rgba(11, 74, 79, 0.14);
+}
+
+.asset-insurance-page .form-check-input:focus {
+  border-color: #0b4a4f;
+  box-shadow: 0 0 0 0.22rem rgba(11, 74, 79, 0.18);
+}
+
+.asset-insurance-page .form-check-input:checked {
+  border-color: #0b4a4f;
+  background-color: #0b4a4f;
 }
 
 .asset-insurance-card__help {
