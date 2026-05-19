@@ -56,6 +56,7 @@
 
   .doc-branding-left {
     justify-content: flex-start;
+    order: 1;
   }
 
   .doc-branding-center {
@@ -63,10 +64,12 @@
     text-align: center;
     padding: 0 1rem;
     min-width: 240px;
+    order: 2;
   }
 
   .doc-branding-right {
     justify-content: flex-end;
+    order: 3;
   }
 
   .doc-branding-vendor-wrap {
@@ -130,6 +133,18 @@
       padding: 0;
     }
 
+    .doc-branding-left {
+      order: 1;
+    }
+
+    .doc-branding-center {
+      order: 2;
+    }
+
+    .doc-branding-right {
+      order: 3;
+    }
+
     .doc-branding-vendor-wrap {
       width: 100%;
       padding: 0.85rem 1rem;
@@ -147,7 +162,7 @@
 <div class="doc-branding-shell">
   <div class="doc-branding-header">
     <div class="doc-branding-left">
-      <%= image_tag "rci-logo.png", alt: "RCI Logo" %>
+      <%= image_tag "asset-logo.png", alt: "ASA Logo" %>
     </div>
     <div class="doc-branding-center">
       <% if vendor_name.present? %>
@@ -158,7 +173,7 @@
       <% end %>
     </div>
     <div class="doc-branding-right">
-      <%= image_tag stakeholder_logo_source(stakeholder_category, fallback: "asset-logo.png"), alt: stakeholder_logo_alt(stakeholder_category, fallback: "Stakeholder Logo") %>
+      <%= image_tag "rci-logo.png", alt: "RCI Logo" %>
     </div>
   </div>
 </div>

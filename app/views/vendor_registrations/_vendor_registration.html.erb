@@ -16,8 +16,8 @@
   <% seen_document_blob_ids << document.file.blob_id %>
 <% end %>
 
-<div id="<%= dom_id vendor_registration %>" class="app-detail-card">
-  <div class="app-detail-grid">
+<div id="<%= dom_id vendor_registration %>" class="app-detail-card vendor-detail-card">
+  <div class="app-detail-grid vendor-detail-grid">
     <div class="app-detail-item">
       <div class="app-detail-label">Stakeholder</div>
       <div class="app-detail-value"><%= vendor_registration.stakeholder_category&.name || "-" %></div>
@@ -68,7 +68,7 @@
       <div class="app-detail-value"><%= vendor_registration.mobile_no %></div>
     </div>
 
-    <div class="app-detail-item" style="grid-column: 1 / -1;">
+    <div class="app-detail-item app-detail-item-full">
       <div class="app-detail-label">Address</div>
       <div class="app-detail-value"><%= vendor_registration.address.presence || "-" %></div>
     </div>
@@ -177,11 +177,11 @@
       </div>
     </div>
 
-    <div class="app-detail-item" style="grid-column: 1 / -1;">
+    <div class="app-detail-item app-detail-item-full vendor-approval-trail">
       <div class="app-detail-label">Approval Trail</div>
       <div class="app-detail-value">
         <% if approval_request %>
-          <div class="d-flex flex-wrap gap-2 mt-2">
+          <div class="vendor-approval-trail-grid">
             <% approval_request.trail_steps.each do |step| %>
               <% step_class = case step.effective_status
                  when 'approved' then 'border-success bg-success bg-opacity-10 text-success'
@@ -190,7 +190,7 @@
                  when 'pending' then 'border-info bg-info bg-opacity-10 text-info'
                  else 'border-secondary bg-light text-muted opacity-50'
                  end %>
-              <div class="badge border <%= step_class %> px-3 py-2 text-start d-flex flex-column gap-1" style="font-style: normal; font-weight: normal; font-size: 0.85rem; line-height: 1.2;">
+              <div class="badge border <%= step_class %> px-3 py-2 text-start d-flex flex-column gap-1 vendor-approval-step" style="font-style: normal; font-weight: normal;">
                 <span class="fw-bold border-bottom pb-1 mb-1">Step <%= step.level %>: <%= step.employee_master.name %></span>
                 <span>
                   <%= step.current_action_label %>
@@ -210,14 +210,14 @@
       </div>
     </div>
 
-    <div class="app-detail-item" style="grid-column: 1 / -1;">
+    <div class="vendor-detail-section vendor-bank-section">
       <div class="app-detail-label">Bank Details</div>
       <div class="app-detail-value">
         <% if vendor_registration.vendor_bank_masters.any? %>
-          <div class="app-detail-grid" style="margin-top: 0.75rem;">
+          <div class="vendor-bank-list">
             <% vendor_registration.vendor_bank_masters.each do |bank| %>
-              <div class="app-detail-card" style="margin: 0;">
-                <div class="app-detail-grid">
+              <div class="vendor-bank-card">
+                <div class="vendor-bank-grid">
                   <div class="app-detail-item">
                     <div class="app-detail-label">Bank Name</div>
                     <div class="app-detail-value"><%= bank.bank_name.presence || "-" %></div>
@@ -244,18 +244,18 @@
                       <% if bank.cancelled_cheque.attached? %>
                         <% cheque = bank.cancelled_cheque %>
                         <% if cheque.blob.content_type.to_s.start_with?("image/") %>
-                          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                          <div class="vendor-document-preview">
                             <a href="<%= rails_blob_path(cheque, disposition: "inline") %>" target="_blank" rel="noopener">
-                              <%= image_tag cheque, alt: "Cancelled cheque", style: "max-width: 100%; width: 320px; border-radius: 12px; border: 1px solid #d8e8dc; cursor: pointer;" %>
+                              <%= image_tag cheque, alt: "Cancelled cheque", class: "vendor-document-thumb" %>
                             </a>
                             <div>
                               <%= link_to cheque.filename.to_s, rails_blob_path(cheque, disposition: "inline"), target: "_blank", rel: "noopener" %>
                             </div>
                           </div>
                         <% elsif cheque.blob.content_type == "application/pdf" %>
-                          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                          <div class="vendor-document-preview">
                             <a href="<%= rails_blob_path(cheque, disposition: "inline") %>" target="_blank" rel="noopener">
-                              <iframe src="<%= rails_blob_path(cheque, disposition: "inline") %>" style="width: 100%; max-width: 420px; height: 320px; border: 1px solid #d8e8dc; border-radius: 12px; pointer-events: none;"></iframe>
+                              <iframe src="<%= rails_blob_path(cheque, disposition: "inline") %>" class="vendor-document-frame"></iframe>
                             </a>
                             <div>
                               <%= link_to cheque.filename.to_s, rails_blob_path(cheque, disposition: "inline"), target: "_blank", rel: "noopener" %>
@@ -279,29 +279,29 @@
       </div>
     </div>
 
-    <div class="app-detail-item" style="grid-column: 1 / -1;">
+    <div class="vendor-detail-section vendor-documents-section">
       <div class="app-detail-label">Uploaded Documents</div>
       <div class="app-detail-value">
         <% if document_rows.any? %>
-          <div class="app-detail-grid" style="margin-top: 0.75rem;">
+          <div class="vendor-document-grid">
             <% document_rows.each do |document_name, attachment| %>
               <% next unless attachment.present? %>
               <div class="app-detail-item">
                 <div class="app-detail-label"><%= document_name %></div>
                 <div class="app-detail-value">
                   <% if attachment.blob.content_type.to_s.start_with?("image/") %>
-                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <div class="vendor-document-preview">
                       <a href="<%= rails_blob_path(attachment, disposition: "inline") %>" target="_blank" rel="noopener">
-                        <%= image_tag attachment, alt: document_name, style: "max-width: 100%; width: 320px; border-radius: 12px; border: 1px solid #d8e8dc; cursor: pointer;" %>
+                        <%= image_tag attachment, alt: document_name, class: "vendor-document-thumb" %>
                       </a>
                       <div>
                         <%= link_to attachment.filename.to_s, rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener" %>
                       </div>
                     </div>
                   <% elsif attachment.blob.content_type == "application/pdf" %>
-                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <div class="vendor-document-preview">
                       <a href="<%= rails_blob_path(attachment, disposition: "inline") %>" target="_blank" rel="noopener">
-                        <iframe src="<%= rails_blob_path(attachment, disposition: "inline") %>" style="width: 100%; max-width: 420px; height: 320px; border: 1px solid #d8e8dc; border-radius: 12px; pointer-events: none;"></iframe>
+                        <iframe src="<%= rails_blob_path(attachment, disposition: "inline") %>" class="vendor-document-frame"></iframe>
                       </a>
                       <div>
                         <%= link_to attachment.filename.to_s, rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener" %>

@@ -138,7 +138,17 @@ const setupTableSearch = () => {
       })
     })
 
-    tableWrap.parentNode.insertBefore(searchBar, tableWrap)
+    const searchSlotName = tableWrap.dataset.searchSlot
+    const searchSlot = searchSlotName
+      ? document.querySelector(`[data-table-search-slot="${searchSlotName}"]`)
+      : null
+
+    if (searchSlot) {
+      searchSlot.replaceChildren(searchBar)
+    } else {
+      tableWrap.parentNode.insertBefore(searchBar, tableWrap)
+    }
+
     tableWrap.dataset.searchReady = "true"
   })
 }

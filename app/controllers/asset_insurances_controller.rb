@@ -5,6 +5,10 @@ class AssetInsurancesController < ApplicationController
     load_insurance_page_data
   end
 
+  def overview
+    @assets = insurance_asset_scope.serial_number_ascending
+  end
+
   def update_all
     @asset_ids_filter = normalized_asset_ids.join(",")
     @assets = insurance_asset_scope.serial_number_ascending

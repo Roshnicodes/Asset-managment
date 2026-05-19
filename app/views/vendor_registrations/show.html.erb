@@ -2,7 +2,7 @@
 <% current_step = approval_request&.current_step %>
 <% approver_view = approval_request.present? && current_step&.employee_master_id == current_employee_master&.id && approval_request.status == "pending" %>
 <% owner_or_admin = current_user == @vendor_registration.user || admin_user? %>
-<div class="app-page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+<div class="app-page-header vendor-show-header">
   <div>
     <h2 style="margin: 0; font-size: 1.8rem; color: #1a3a2a;">Vendor Registration Details</h2>
     <p style="margin: 0.5rem 0 0 0; color: #6b8e7f; font-size: 0.95rem;"><%= @vendor_registration.vendor_name %></p>

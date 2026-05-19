@@ -1,11 +1,12 @@
 <div class="assets-page">
   <div class="app-toolbar assets-toolbar">
     <div class="assets-toolbar-copy">
-      <h1 class="assets-page-title">Assets</h1>
-      <p class="app-section-note assets-page-note">Maintain asset master records with linked products and unique identification details.</p>
+      <h1 class="assets-page-title">Asset Records</h1>
     </div>
 
     <div class="assets-toolbar-controls">
+      <div class="assets-toolbar-search" data-table-search-slot="assets-records"></div>
+
       <%= form_with url: assets_path, method: :get, local: true, html: { class: "assets-filter-form" } do %>
         <%= hidden_field_tag :invoice_request_id, params[:invoice_request_id] if params[:invoice_request_id].present? %>
         <%= select_tag :rate_filter,
@@ -17,8 +18,6 @@
               class: "form-control assets-filter-select" %>
         <%= submit_tag "Apply", class: "app-secondary-btn assets-filter-submit" %>
       <% end %>
-
-      <%= link_to "Add Asset", new_asset_path, class: "app-primary-btn" %>
     </div>
   </div>
 
@@ -139,14 +138,7 @@
   <% end %>
 
   <div class="app-detail-card assets-list-card">
-    <div class="assets-section-head">
-      <div>
-        <h3 class="assets-section-title">Asset Records</h3>
-        <p class="app-section-note assets-section-note">Review created assets, rates, and item numbers from one place.</p>
-      </div>
-    </div>
-
-    <div class="app-table-wrap assets-list-table" data-search-placeholder="Search created assets...">
+    <div class="app-table-wrap assets-list-table" data-search-placeholder="Search created assets..." data-search-slot="assets-records">
       <table class="table app-table assets-table assets-records-table">
         <thead>
           <tr>

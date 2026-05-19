@@ -1,0 +1,16 @@
+<div class="assets-page asset-insurance-page">
+  <div class="app-toolbar assets-toolbar">
+    <div class="assets-toolbar-copy">
+      <h1 class="assets-page-title">Insurance Overview</h1>
+    </div>
+
+    <div class="assets-toolbar-controls">
+      <div class="assets-toolbar-search" data-table-search-slot="insurance-overview"></div>
+      <%= link_to "Back to Insurance Workspace", asset_insurances_path, class: "app-secondary-btn" %>
+    </div>
+  </div>
+
+  <div class="app-detail-card assets-list-card">
+    <%= render "overview_table", assets: @assets %>
+  </div>
+</div>

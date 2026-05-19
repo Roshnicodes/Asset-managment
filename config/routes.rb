@@ -101,6 +101,7 @@ Rails.application.routes.draw do
   resources :products
   resources :asset_insurances, only: [:index] do
     collection do
+      get :overview
       patch :update_all
     end
   end
