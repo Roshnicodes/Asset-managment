@@ -32,6 +32,19 @@
     min-height: 0 !important;
   }
 
+  .employee-master-workspace .app-page-section-pager,
+  .employee-master-workspace > .app-form-pager {
+    display: none !important;
+  }
+
+  .employee-master-workspace > .app-form-card {
+    display: block !important;
+  }
+
+  .employee-master-workspace > .app-card {
+    display: flex !important;
+  }
+
   .employee-master-table-page {
     display: flex !important;
     flex-direction: column !important;
@@ -53,6 +66,41 @@
     white-space: nowrap;
   }
 </style>
+
+<script>
+  (() => {
+    const restoreEmployeeMasterTable = () => {
+      const workspace = document.querySelector(".employee-master-workspace")
+      if (!workspace) return
+
+      workspace.removeAttribute("data-ui-page-pager")
+      workspace.classList.remove("app-page-paged")
+      workspace.dataset.uiPagePagerReady = "true"
+
+      workspace.querySelectorAll(":scope > .app-form-card, :scope > .app-card").forEach((section) => {
+        section.hidden = false
+        section.style.removeProperty("display")
+        section.style.removeProperty("overflow-y")
+      })
+
+      workspace.querySelectorAll(":scope > .app-page-section-pager, :scope > .app-form-pager").forEach((pager) => {
+        pager.remove()
+      })
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      restoreEmployeeMasterTable()
+      requestAnimationFrame(restoreEmployeeMasterTable)
+      setTimeout(restoreEmployeeMasterTable, 250)
+    })
+
+    document.addEventListener("turbo:load", () => {
+      restoreEmployeeMasterTable()
+      requestAnimationFrame(restoreEmployeeMasterTable)
+      setTimeout(restoreEmployeeMasterTable, 250)
+    })
+  })()
+</script>
 
 <div class="employee-master-workspace">
   <div class="app-form-card app-form-card-wide">
