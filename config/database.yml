@@ -1,20 +1,56 @@
 default: &default
   adapter: postgresql
   encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
   username: postgres
-  password: 123456
+  password: postgres
   host: <%= ENV.fetch("DB_HOST", "127.0.0.1") %>
   port: <%= ENV.fetch("DB_PORT", 5432) %>
   pool: 5
+  host: localhost
 
 development:
-  <<: *default
-  database: assest_development
+  primary:
+    <<: *default
+    database: asset_management_development
+
+  cache:
+    <<: *default
+    database: asset_management_development_cache
+    migrations_paths: db/cache_migrate
+
+  queue:
+    <<: *default
+    database: asset_management_development_queue
+    migrations_paths: db/queue_migrate
+
+  cable:
+    <<: *default
+    database: asset_management_development_cable
+    migrations_paths: db/cable_migrate
 
 test:
   <<: *default
-  database: assest_test
+  database: asset_management_test
 
 production:
-  <<: *default
-  database: assest_production
+  primary:
+    <<: *default
+    database: asset_management_production
+    username: postgres
+    password: postgres
+
+  cache:
+    <<: *default
+    database: asset_management_production_cache
+    migrations_paths: db/cache_migrate
+
+  queue:
+    <<: *default
+    database: asset_management_production_queue
+    migrations_paths: db/queue_migrate
+
+  cable:
+    <<: *default
+    database: asset_management_production_cable
+    migrations_paths: db/cable_migrate

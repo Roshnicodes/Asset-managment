@@ -25,10 +25,11 @@ Rails.application.configure do
 
   # Eager load code on boot for better performance and memory savings (ignored by Rake tasks).
   config.eager_load = true
-  
+
   # Full error reports are disabled.
   config.consider_all_requests_local = false
-
+  config.log_level = :debug 
+  config.logger = ActiveSupport::Logger.new(STDOUT)
   # Turn on fragment caching in view templates.
   config.action_controller.perform_caching = true
 
@@ -78,7 +79,10 @@ Rails.application.configure do
   config.action_mailer.default_url_options = mailer_url_options
   Rails.application.routes.default_url_options.merge!(mailer_url_options)
 
-  # Configure outgoing email delivery in production.
+  # Configure outgoing email delivery in production
+   config.force_ssl = false
+  # Specify outgoing SMTP server. Remember to add smtp/* credentials via bin/rails credentials:edit.
+
   if smtp_address.present?
     config.action_mailer.delivery_method = :smtp
     config.action_mailer.perform_deliveries = true
@@ -92,10 +96,6 @@ Rails.application.configure do
       authentication: smtp_authentication.to_sym,
       enable_starttls_auto: smtp_enable_starttls_auto.nil? ? true : ActiveModel::Type::Boolean.new.cast(smtp_enable_starttls_auto)
     }.compact
-  else
-    config.action_mailer.delivery_method = :smtp
-    config.action_mailer.perform_deliveries = false
-    config.action_mailer.raise_delivery_errors = false
   end
 
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
@@ -104,6 +104,8 @@ Rails.application.configure do
 
   # Do not dump schema after migrations.
   config.active_record.dump_schema_after_migration = false
+  config.hosts << "apurti.ploughmanagro.com"
+  config.hosts << "168.144.88.192"
 
   # Only use :id for inspections in production.
   config.active_record.attributes_for_inspect = [ :id ]
@@ -117,3 +119,4 @@ Rails.application.configure do
   # Skip DNS rebinding protection for the default health check endpoint.
   # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
 end
+

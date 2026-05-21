@@ -1,11 +1,7 @@
 <style>
   .sticky-top { position: sticky; top: 0; z-index: 100; }
   .app-table thead th { background: #f8fcf9 !important; border-bottom: 2px solid #eef3ef !important; }
-  .app-table-wrap { height: calc(100vh - 300px); max-height: none; overflow-y: auto; overflow-x: auto; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-  .quotation-inline-pager { display:flex; align-items:center; justify-content:space-between; gap:.8rem; flex-wrap:wrap; margin-top:.8rem; padding:.85rem 1rem; border:1px solid #dce7dd; border-radius:14px; background:#fff; }
-  .quotation-inline-pager button { min-width:96px; min-height:40px; border:1px solid #dce7dd; border-radius:10px; background:#fff; color:#0b4a4f; font-weight:800; }
-  .quotation-inline-pager button:last-child { background:#0f5f52; color:#fff; border-color:#0f5f52; }
-  .quotation-inline-pager button:disabled { opacity:.5; cursor:not-allowed; }
+  .app-table-wrap { max-height: 75vh; overflow-y: auto; overflow-x: auto; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
 </style>
 
 <% sendable_quotation_proposals = @quotation_proposals.select { |quotation_proposal| quotation_proposal.approval_request.blank? } %>
@@ -26,7 +22,7 @@
   </div>
 </div>
 
-<div class="app-table-wrap" data-inline-table-pager="true" data-page-size="10">
+<div class="app-table-wrap">
   <table class="table app-table">
     <thead class="sticky-top">
       <tr>
@@ -144,42 +140,3 @@
     </tbody>
   </table>
 </div>
-
-<script>
-  (function () {
-    function setupQuotationInlinePager() {
-      document.querySelectorAll("[data-inline-table-pager='true']").forEach(function (wrap) {
-        if (wrap.dataset.inlinePagerReady === "true") return;
-        var tbody = wrap.querySelector("tbody");
-        if (!tbody) return;
-        var rows = Array.from(tbody.querySelectorAll("tr"));
-        var pageSize = parseInt(wrap.dataset.pageSize || "10", 10);
-        if (rows.length <= pageSize) return;
-        var page = 0;
-        var pager = document.createElement("div");
-        pager.className = "quotation-inline-pager";
-        pager.innerHTML = '<strong data-inline-page-info></strong><div><button type="button" data-inline-prev>Previous</button> <button type="button" data-inline-next>Next</button></div>';
-        wrap.insertAdjacentElement("afterend", pager);
-        var info = pager.querySelector("[data-inline-page-info]");
-        var prev = pager.querySelector("[data-inline-prev]");
-        var next = pager.querySelector("[data-inline-next]");
-        function render() {
-          var totalPages = Math.ceil(rows.length / pageSize);
-          rows.forEach(function (row, index) {
-            row.style.display = index >= page * pageSize && index < (page + 1) * pageSize ? "" : "none";
-          });
-          info.textContent = "Page " + (page + 1) + " of " + totalPages + " - Showing " + Math.min(rows.length, pageSize) + " records per page";
-          prev.disabled = page === 0;
-          next.disabled = page >= totalPages - 1;
-        }
-        prev.addEventListener("click", function () { page -= 1; render(); });
-        next.addEventListener("click", function () { page += 1; render(); });
-        render();
-        wrap.dataset.inlinePagerReady = "true";
-      });
-    }
-    document.addEventListener("DOMContentLoaded", setupQuotationInlinePager);
-    document.addEventListener("turbo:load", setupQuotationInlinePager);
-    setupQuotationInlinePager();
-  })();
-</script>
