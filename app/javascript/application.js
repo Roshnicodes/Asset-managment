@@ -351,6 +351,7 @@ const setupFormPagination = () => {
 const setupPageSectionPagination = () => {
   document.querySelectorAll("[data-ui-page-pager='true']").forEach((container) => {
     if (container.dataset.uiPagePagerReady === "true") return
+    if (container.classList.contains("employee-master-workspace")) return
 
     const sections = Array.from(container.children).filter((child) => {
       if (!(child instanceof HTMLElement)) return false
