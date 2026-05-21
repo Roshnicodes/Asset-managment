@@ -14,10 +14,10 @@
   .employee-master-workspace {
     display: flex !important;
     flex-direction: column !important;
-    height: calc(100vh - 210px) !important;
-    max-height: calc(100vh - 210px) !important;
+    height: auto !important;
+    max-height: none !important;
     min-height: 0 !important;
-    overflow: hidden !important;
+    overflow: visible !important;
   }
 
   .employee-master-workspace.app-page-paged > :not(.app-page-header):not(.app-detail-actions):not(.app-form-pager) {
@@ -39,9 +39,20 @@
 
   .employee-master-workspace > .app-form-card {
     display: block !important;
+    visibility: visible !important;
   }
 
   .employee-master-workspace > .app-card {
+    display: flex !important;
+    visibility: visible !important;
+  }
+
+  .employee-master-workspace > .app-form-card[hidden],
+  .employee-master-workspace > .app-card[hidden] {
+    display: block !important;
+  }
+
+  .employee-master-workspace > .employee-master-table-page[hidden] {
     display: flex !important;
   }
 
