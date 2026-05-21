@@ -38,9 +38,9 @@ class Asset < ApplicationRecord
   scope :serial_number_ascending, lambda {
     order(
       Arel.sql(
-        "CASE WHEN serial_number ~ '^[0-9]+$' THEN 0 ELSE 1 END ASC, " \
-        "CASE WHEN serial_number ~ '^[0-9]+$' THEN CAST(serial_number AS BIGINT) END ASC NULLS LAST, " \
-        "serial_number ASC NULLS LAST, created_at ASC, id ASC"
+        "CASE WHEN assets.serial_number ~ '^[0-9]+$' THEN 0 ELSE 1 END ASC, " \
+        "CASE WHEN assets.serial_number ~ '^[0-9]+$' THEN CAST(assets.serial_number AS BIGINT) END ASC NULLS LAST, " \
+        "assets.serial_number ASC NULLS LAST, assets.created_at ASC, assets.id ASC"
       )
     )
   }

@@ -27,8 +27,21 @@
   }
 
   .employee-master-workspace .app-table-wrap {
-    height: 100% !important;
+    flex: 1 1 auto !important;
     max-height: none !important;
+    min-height: 0 !important;
+  }
+
+  .employee-master-table-page {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    padding: 1rem !important;
+    overflow: hidden !important;
+  }
+
+  .employee-master-table-page .app-table-search {
+    flex: 0 0 auto;
   }
 
   .employee-master-table-wrap thead th {
@@ -72,65 +85,68 @@
     </p>
   </div>
 
-  <div class="app-table-wrap employee-master-table-wrap">
-    <table class="table app-table">
-      <thead>
-        <tr>
-          <th>Stakeholder</th>
-          <th>User Type</th>
-          <th>User Name</th>
-          <th>Designation</th>
-          <th>Email ID</th>
-          <th>Mobile No</th>
-          <th>State</th>
-          <th>District</th>
-          <th>Block</th>
-          <th>Gram Panchayat</th>
-          <th>Village</th>
-          <th>Parent Office</th>
-          <th>Office</th>
-          <th>Location</th>
-          <th>Full Address</th>
-          <th>Pincode</th>
-          <th>Login Status</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% @employee_masters.each do |employee_master| %>
+  <div class="app-card employee-master-table-page">
+    <div data-table-search-slot="employee-master-records"></div>
+    <div class="app-table-wrap employee-master-table-wrap" data-search-placeholder="Search employees..." data-search-slot="employee-master-records">
+      <table class="table app-table">
+        <thead>
           <tr>
-            <td><%= employee_master.stakeholder_category.name %></td>
-            <td><%= employee_master.user_type %></td>
-            <td><%= employee_master.name %></td>
-            <td><%= employee_master.designation %></td>
-            <td><%= employee_master.email_id %></td>
-            <td><%= employee_master.mobile_no %></td>
-            <td><%= employee_master.state&.name %></td>
-            <td><%= employee_master.district&.name %></td>
-            <td><%= employee_master.block&.name %></td>
-            <td><%= employee_master.gram_panchayat %></td>
-            <td><%= employee_master.village %></td>
-            <td><%= employee_master.parent_office %></td>
-            <td><%= employee_master.office %></td>
-            <td><%= employee_master.location %></td>
-            <td><%= employee_master.full_address %></td>
-            <td><%= employee_master.pincode %></td>
-            <td><%= employee_master.login_ready? ? "Ready" : "Not Ready" %></td>
-            <td class="app-row-actions">
-              <%= link_to "Edit", edit_employee_master_path(employee_master) %> |
-              <% if employee_master.email_id.present? %>
-                <%= button_to "Reset Login Password",
-                      reset_login_password_employee_master_path(employee_master),
-                      method: :post,
-                      data: { turbo_confirm: "Reset login password to Welcome@123 for this employee?" },
-                      class: "app-action-button",
-                      form_class: "d-inline-block" %> |
-              <% end %>
-              <%= button_to "Delete", employee_master_path(employee_master), method: :delete, data: { turbo_confirm: "Delete this employee?" }, class: "app-action-button app-delete-button" %>
-            </td>
+            <th>Stakeholder</th>
+            <th>User Type</th>
+            <th>User Name</th>
+            <th>Designation</th>
+            <th>Email ID</th>
+            <th>Mobile No</th>
+            <th>State</th>
+            <th>District</th>
+            <th>Block</th>
+            <th>Gram Panchayat</th>
+            <th>Village</th>
+            <th>Parent Office</th>
+            <th>Office</th>
+            <th>Location</th>
+            <th>Full Address</th>
+            <th>Pincode</th>
+            <th>Login Status</th>
+            <th>Action</th>
           </tr>
-        <% end %>
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          <% @employee_masters.each do |employee_master| %>
+            <tr>
+              <td><%= employee_master.stakeholder_category.name %></td>
+              <td><%= employee_master.user_type %></td>
+              <td><%= employee_master.name %></td>
+              <td><%= employee_master.designation %></td>
+              <td><%= employee_master.email_id %></td>
+              <td><%= employee_master.mobile_no %></td>
+              <td><%= employee_master.state&.name %></td>
+              <td><%= employee_master.district&.name %></td>
+              <td><%= employee_master.block&.name %></td>
+              <td><%= employee_master.gram_panchayat %></td>
+              <td><%= employee_master.village %></td>
+              <td><%= employee_master.parent_office %></td>
+              <td><%= employee_master.office %></td>
+              <td><%= employee_master.location %></td>
+              <td><%= employee_master.full_address %></td>
+              <td><%= employee_master.pincode %></td>
+              <td><%= employee_master.login_ready? ? "Ready" : "Not Ready" %></td>
+              <td class="app-row-actions">
+                <%= link_to "Edit", edit_employee_master_path(employee_master) %> |
+                <% if employee_master.email_id.present? %>
+                  <%= button_to "Reset Login Password",
+                        reset_login_password_employee_master_path(employee_master),
+                        method: :post,
+                        data: { turbo_confirm: "Reset login password to Welcome@123 for this employee?" },
+                        class: "app-action-button",
+                        form_class: "d-inline-block" %> |
+                <% end %>
+                <%= button_to "Delete", employee_master_path(employee_master), method: :delete, data: { turbo_confirm: "Delete this employee?" }, class: "app-action-button app-delete-button" %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
