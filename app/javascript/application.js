@@ -143,8 +143,13 @@ const setupTableSearch = () => {
 
       tbody.querySelectorAll("tr").forEach((row) => {
         const text = row.innerText.toLowerCase()
-        row.style.display = text.includes(query) ? "" : "none"
+        row.dataset.searchHidden = text.includes(query) ? "false" : "true"
+        if (tableWrap.dataset.paginationReady !== "true") {
+          row.style.display = row.dataset.searchHidden === "true" ? "none" : ""
+        }
       })
+
+      tableWrap.dispatchEvent(new CustomEvent("app:table-filtered"))
     })
 
     if (searchSlot) {
@@ -154,6 +159,244 @@ const setupTableSearch = () => {
     }
 
     tableWrap.dataset.searchReady = "true"
+  })
+}
+
+const setupTablePagination = () => {
+  document.querySelectorAll(".app-table-wrap").forEach((tableWrap) => {
+    if (tableWrap.dataset.paginationReady === "true") return
+    if (tableWrap.dataset.tablePagination === "false") return
+
+    const table = tableWrap.querySelector("table")
+    const tbody = tableWrap.querySelector("tbody")
+    if (!table || !tbody) return
+    if (tableWrap.querySelector("input[required], select[required], textarea[required]")) return
+
+    const rows = Array.from(tbody.querySelectorAll("tr"))
+    const pageSize = Number(tableWrap.dataset.pageSize || 10)
+    if (rows.length <= pageSize) return
+
+    let currentPage = 1
+    const controls = document.createElement("div")
+    controls.className = "app-table-pagination"
+    controls.innerHTML = `
+      <div class="app-table-pagination-info" data-pagination-info></div>
+      <div class="app-table-pagination-actions">
+        <button type="button" class="app-pagination-btn" data-pagination-prev>Previous</button>
+        <span class="app-pagination-pages" data-pagination-pages></span>
+        <button type="button" class="app-pagination-btn" data-pagination-next>Next</button>
+      </div>
+    `
+
+    const info = controls.querySelector("[data-pagination-info]")
+    const pagesNode = controls.querySelector("[data-pagination-pages]")
+    const prevButton = controls.querySelector("[data-pagination-prev]")
+    const nextButton = controls.querySelector("[data-pagination-next]")
+
+    tableWrap.insertAdjacentElement("afterend", controls)
+
+    const visibleRows = () => rows.filter((row) => row.dataset.searchHidden !== "true")
+
+    const render = () => {
+      const filteredRows = visibleRows()
+      const totalPages = Math.max(1, Math.ceil(filteredRows.length / pageSize))
+      currentPage = Math.min(currentPage, totalPages)
+
+      const start = (currentPage - 1) * pageSize
+      const end = start + pageSize
+      const visibleSet = new Set(filteredRows.slice(start, end))
+
+      rows.forEach((row) => {
+        row.style.display = visibleSet.has(row) ? "" : "none"
+      })
+
+      if (info) {
+        if (filteredRows.length === 0) {
+          info.textContent = "No records found"
+        } else {
+          info.textContent = `Showing ${start + 1}-${Math.min(end, filteredRows.length)} of ${filteredRows.length}`
+        }
+      }
+
+      if (pagesNode) pagesNode.textContent = `Page ${currentPage} of ${totalPages}`
+      if (prevButton) prevButton.disabled = currentPage <= 1
+      if (nextButton) nextButton.disabled = currentPage >= totalPages
+    }
+
+    prevButton?.addEventListener("click", () => {
+      currentPage -= 1
+      render()
+    })
+
+    nextButton?.addEventListener("click", () => {
+      currentPage += 1
+      render()
+    })
+
+    tableWrap.addEventListener("app:table-filtered", () => {
+      currentPage = 1
+      render()
+    })
+
+    render()
+    tableWrap.dataset.paginationReady = "true"
+  })
+}
+
+const setupFormPagination = () => {
+  document.querySelectorAll("[data-ui-form-pager='true']").forEach((form) => {
+    if (form.dataset.uiFormPagerReady === "true") return
+
+    const card = Array.from(form.querySelectorAll(".app-form-card")).find((candidate) =>
+      candidate.querySelector(":scope > .app-form-section, :scope > .app-page-header.app-subsection-header")
+    )
+    if (!card) return
+    if (card.classList.contains("app-static-paged-form")) return
+
+    const sections = Array.from(card.querySelectorAll(":scope > .app-form-section, :scope > .app-page-header.app-subsection-header"))
+    if (sections.length <= 1) return
+
+    const leadingNodes = []
+    let firstNode = card.firstChild
+    while (firstNode && firstNode !== sections[0]) {
+      const nextNode = firstNode.nextSibling
+      leadingNodes.push(firstNode)
+      firstNode = nextNode
+    }
+
+    const stepGroups = sections.map((section, index) => {
+      const group = document.createElement("div")
+      group.className = "app-form-page"
+      group.dataset.formPageIndex = String(index)
+
+      section.parentNode.insertBefore(group, section)
+      if (index === 0) {
+        leadingNodes.forEach((node) => group.appendChild(node))
+      }
+      group.appendChild(section)
+
+      let next = group.nextSibling
+      while (next && !(next.nodeType === Node.ELEMENT_NODE && (next.classList.contains("app-form-section") || (next.classList.contains("app-page-header") && next.classList.contains("app-subsection-header"))))) {
+        const node = next
+        next = next.nextSibling
+        group.appendChild(node)
+      }
+
+      return group
+    })
+
+    let currentStep = 0
+    const nav = document.createElement("div")
+    nav.className = "app-form-pager"
+    nav.innerHTML = `
+      <div class="app-form-pager-status" data-form-pager-status></div>
+      <div class="app-form-pager-actions">
+        <button type="button" class="app-secondary-btn app-form-pager-btn" data-form-pager-prev>Previous</button>
+        <button type="button" class="app-secondary-btn app-form-pager-btn" data-form-pager-next>Next</button>
+      </div>
+    `
+
+    const status = nav.querySelector("[data-form-pager-status]")
+    const prevButton = nav.querySelector("[data-form-pager-prev]")
+    const nextButton = nav.querySelector("[data-form-pager-next]")
+    card.appendChild(nav)
+    card.classList.add("app-form-card-paged")
+
+    const submitActions = card.querySelector(".app-form-actions")
+    if (submitActions) submitActions.classList.add("app-form-actions-sticky")
+
+    const showStep = (stepIndex, scrollToTop = true) => {
+      currentStep = Math.max(0, Math.min(stepIndex, stepGroups.length - 1))
+
+      stepGroups.forEach((group, index) => {
+        group.hidden = index !== currentStep
+        group.classList.toggle("is-active", index === currentStep)
+      })
+
+      if (status) status.textContent = `Step ${currentStep + 1} of ${stepGroups.length}`
+      if (prevButton) prevButton.disabled = currentStep === 0
+      if (nextButton) nextButton.hidden = currentStep === stepGroups.length - 1
+      if (submitActions) submitActions.hidden = currentStep !== stepGroups.length - 1
+
+      if (scrollToTop) {
+        card.scrollTo({ top: 0, behavior: "smooth" })
+      }
+    }
+
+    const stepForElement = (element) => {
+      const group = element?.closest(".app-form-page")
+      if (!group) return -1
+      return stepGroups.indexOf(group)
+    }
+
+    prevButton?.addEventListener("click", () => showStep(currentStep - 1))
+    nextButton?.addEventListener("click", () => showStep(currentStep + 1))
+
+    form.addEventListener("submit", () => {
+      const invalidInput = form.querySelector("input:invalid, select:invalid, textarea:invalid")
+      const invalidStep = stepForElement(invalidInput)
+      if (invalidStep >= 0) showStep(invalidStep)
+    }, true)
+
+    form.addEventListener("invalid", (event) => {
+      const invalidStep = stepForElement(event.target)
+      if (invalidStep >= 0) showStep(invalidStep)
+    }, true)
+
+    showStep(0, false)
+    form.dataset.uiFormPagerReady = "true"
+  })
+}
+
+const setupPageSectionPagination = () => {
+  document.querySelectorAll("[data-ui-page-pager='true']").forEach((container) => {
+    if (container.dataset.uiPagePagerReady === "true") return
+
+    const sections = Array.from(container.children).filter((child) => {
+      if (!(child instanceof HTMLElement)) return false
+      if (child.matches(".app-page-header, .app-detail-actions, .app-form-pager")) return false
+      return child.matches(".app-detail-card, .app-form-card, .app-card, .app-table-wrap, details")
+    })
+
+    if (sections.length <= 2) return
+
+    let currentPage = 0
+    const nav = document.createElement("div")
+    nav.className = "app-form-pager app-page-section-pager"
+    nav.innerHTML = `
+      <div class="app-form-pager-status" data-page-pager-status></div>
+      <div class="app-form-pager-actions">
+        <button type="button" class="app-secondary-btn app-form-pager-btn" data-page-pager-prev>Previous</button>
+        <button type="button" class="app-secondary-btn app-form-pager-btn" data-page-pager-next>Next</button>
+      </div>
+    `
+
+    const status = nav.querySelector("[data-page-pager-status]")
+    const prevButton = nav.querySelector("[data-page-pager-prev]")
+    const nextButton = nav.querySelector("[data-page-pager-next]")
+    container.appendChild(nav)
+    container.classList.add("app-page-paged")
+
+    const showPage = (pageIndex) => {
+      currentPage = Math.max(0, Math.min(pageIndex, sections.length - 1))
+
+      sections.forEach((section, index) => {
+        section.hidden = index !== currentPage
+        section.style.minHeight = index === currentPage ? "0" : ""
+        section.style.overflowY = index === currentPage ? "auto" : ""
+      })
+
+      if (status) status.textContent = `Page ${currentPage + 1} of ${sections.length}`
+      if (prevButton) prevButton.disabled = currentPage === 0
+      if (nextButton) nextButton.disabled = currentPage === sections.length - 1
+      container.scrollTo({ top: 0, behavior: "smooth" })
+    }
+
+    prevButton?.addEventListener("click", () => showPage(currentPage - 1))
+    nextButton?.addEventListener("click", () => showPage(currentPage + 1))
+
+    showPage(0)
+    container.dataset.uiPagePagerReady = "true"
   })
 }
 
@@ -1195,17 +1438,34 @@ const setupPasswordVisibility = () => {
   })
 }
 
-document.addEventListener("turbo:load", setupVendorRegistrationSelections)
-document.addEventListener("turbo:load", setupVendorDocumentToggle)
-document.addEventListener("turbo:load", setupMsmeToggle)
-document.addEventListener("turbo:load", setupTableSearch)
-document.addEventListener("turbo:load", setupTableSorting)
-document.addEventListener("turbo:load", setupApprovalChannelSteps)
-document.addEventListener("turbo:load", setupQuotationProposalForm)
-document.addEventListener("turbo:load", setupVendorApprovalSelections)
-document.addEventListener("turbo:load", setupQuotationApprovalSelections)
-document.addEventListener("turbo:load", setupVendorQuotationCalculations)
-document.addEventListener("turbo:load", setupAssetProductCodeAutofill)
-document.addEventListener("turbo:load", setupAssetInsuranceFields)
-document.addEventListener("turbo:load", setupFinanceQueueBulkSelection)
-document.addEventListener("turbo:load", setupPasswordVisibility)
+const runAppInitializers = () => {
+  setupVendorRegistrationSelections()
+  setupVendorDocumentToggle()
+  setupMsmeToggle()
+  setupTableSearch()
+  setupTablePagination()
+  setupTableSorting()
+  setupApprovalChannelSteps()
+  setupQuotationProposalForm()
+  setupVendorApprovalSelections()
+  setupQuotationApprovalSelections()
+  setupVendorQuotationCalculations()
+  setupAssetProductCodeAutofill()
+  setupAssetInsuranceFields()
+  setupFinanceQueueBulkSelection()
+  setupPasswordVisibility()
+  setupFormPagination()
+  setupPageSectionPagination()
+}
+
+const scheduleAppInitializers = () => {
+  window.requestAnimationFrame(() => {
+    runAppInitializers()
+  })
+}
+
+document.addEventListener("turbo:load", scheduleAppInitializers)
+document.addEventListener("DOMContentLoaded", scheduleAppInitializers)
+if (document.readyState !== "loading") {
+  scheduleAppInitializers()
+}

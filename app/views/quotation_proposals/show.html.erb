@@ -39,7 +39,34 @@
                    end
 %>
 
-<div class="quotation-proposal-show">
+<style>
+  .quotation-proposal-show[data-ui-page-pager="true"] {
+    display: flex !important;
+    flex-direction: column !important;
+    height: calc(100vh - 150px) !important;
+    max-height: calc(100vh - 150px) !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .quotation-proposal-show[data-ui-page-pager="true"]:not(.app-page-paged) {
+    overflow-y: auto !important;
+  }
+
+  .quotation-proposal-show[data-ui-page-pager="true"] > .app-page-header,
+  .quotation-proposal-show[data-ui-page-pager="true"] > .app-detail-actions,
+  .quotation-proposal-show[data-ui-page-pager="true"] > .app-form-pager {
+    flex: 0 0 auto !important;
+  }
+
+  .quotation-proposal-show[data-ui-page-pager="true"].app-page-paged > :not(.app-page-header):not(.app-detail-actions):not(.app-form-pager) {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+  }
+</style>
+
+<div class="quotation-proposal-show" data-ui-page-pager="true">
   <div class="app-page-header app-page-header-top quotation-proposal-show__hero">
     <div>
       <h2 class="app-page-title quotation-proposal-show__title">Quotation Proposal Details</h2>

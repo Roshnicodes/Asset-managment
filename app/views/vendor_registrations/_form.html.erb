@@ -1,7 +1,34 @@
-<%= form_with(model: vendor_registration, html: { data: { vendor_validation_form: true }, novalidate: true }) do |form| %>
+<style>
+  .app-static-paged-form { display: flex !important; flex: 0 1 auto !important; flex-direction: column !important; height: auto !important; max-height: calc(100vh - 190px) !important; min-height: 0 !important; overflow: hidden !important; }
+  .app-static-page-toggle { position: absolute !important; opacity: 0 !important; pointer-events: none !important; }
+  .app-static-page { display: none !important; flex: 0 1 auto !important; min-height: 0 !important; max-height: calc(100vh - 300px) !important; overflow-y: auto !important; padding-right: .35rem !important; }
+  .app-static-pager-nav { flex: 0 0 auto !important; margin-top: .7rem !important; padding-top: .7rem !important; border-top: 1px solid #e2ece6 !important; background: rgba(255,255,255,.98) !important; }
+  .app-static-pager-row { display: none !important; align-items: center !important; justify-content: space-between !important; gap: .8rem !important; flex-wrap: wrap !important; }
+  .app-static-pager-status { color: var(--brand-deep) !important; font-weight: 800 !important; }
+  .app-static-pager-actions { display: inline-flex !important; align-items: center !important; gap: .65rem !important; flex-wrap: wrap !important; margin-left: auto !important; }
+  .app-static-pager-button { display: inline-flex !important; align-items: center !important; justify-content: center !important; min-width: 96px !important; min-height: 42px !important; padding: .65rem 1rem !important; border: 1px solid var(--border-soft) !important; border-radius: 10px !important; background: #fff !important; color: var(--brand-deep) !important; font-weight: 800 !important; cursor: pointer !important; }
+  .app-static-pager-button-primary { border-color: #0f5f52 !important; background: #0f5f52 !important; color: #fff !important; }
+  .app-static-paged-form .app-form-section { margin: .55rem 0 .65rem !important; }
+  .app-static-paged-form .app-form-grid { gap: .7rem !important; }
+  .app-static-paged-form .app-checkbox-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: .55rem !important; }
+  .app-static-paged-form .app-checkbox-card { min-height: 42px !important; padding: .58rem .72rem !important; border-radius: 10px !important; }
+  .app-static-paged-form textarea { min-height: 74px !important; }
+  .vendor-page-4 .app-form-field { gap: .25rem !important; }
+  #vendor-step-1:checked ~ .vendor-page-1, #vendor-step-2:checked ~ .vendor-page-2, #vendor-step-3:checked ~ .vendor-page-3, #vendor-step-4:checked ~ .vendor-page-4, #vendor-step-5:checked ~ .vendor-page-5, #vendor-step-6:checked ~ .vendor-page-6 { display: flex !important; flex-direction: column !important; }
+  #vendor-step-1:checked ~ .app-static-pager-nav .vendor-nav-1, #vendor-step-2:checked ~ .app-static-pager-nav .vendor-nav-2, #vendor-step-3:checked ~ .app-static-pager-nav .vendor-nav-3, #vendor-step-4:checked ~ .app-static-pager-nav .vendor-nav-4, #vendor-step-5:checked ~ .app-static-pager-nav .vendor-nav-5, #vendor-step-6:checked ~ .app-static-pager-nav .vendor-nav-6 { display: flex !important; }
+</style>
+
+<%= form_with(model: vendor_registration, html: { data: { vendor_validation_form: true, ui_form_pager: true }, novalidate: true }) do |form| %>
   <% approval_request = vendor_registration.approval_request %>
   <% field_errors = ->(field_name) { vendor_registration.errors.full_messages_for(field_name) } %>
-  <div class="app-form-card app-form-card-wide">
+  <div class="app-form-card app-form-card-wide app-static-paged-form">
+    <input type="radio" name="vendor_registration_form_step" id="vendor-step-1" class="app-static-page-toggle" checked>
+    <input type="radio" name="vendor_registration_form_step" id="vendor-step-2" class="app-static-page-toggle">
+    <input type="radio" name="vendor_registration_form_step" id="vendor-step-3" class="app-static-page-toggle">
+    <input type="radio" name="vendor_registration_form_step" id="vendor-step-4" class="app-static-page-toggle">
+    <input type="radio" name="vendor_registration_form_step" id="vendor-step-5" class="app-static-page-toggle">
+    <input type="radio" name="vendor_registration_form_step" id="vendor-step-6" class="app-static-page-toggle">
+    <div class="app-static-page vendor-page-1">
     <% if approval_request&.employee_return_pending? %>
       <div class="app-detail-card" style="margin-bottom: 1.5rem; border: 1px solid #f3d9b1; background: linear-gradient(135deg, #fffaf0, #fffdf7);">
         <div class="app-page-header" style="margin-bottom: 0.75rem;">
@@ -86,6 +113,9 @@
       </div>
     </div>
 
+    </div>
+
+    <div class="app-static-page vendor-page-2">
     <div class="app-form-section">
       <div class="app-form-section-title">Contact and Location</div>
       <p class="app-form-section-note">Business contact details and LG mapping.</p>
@@ -237,6 +267,9 @@
       </div>
     </div>
 
+    </div>
+
+    <div class="app-static-page vendor-page-3">
     <div class="app-form-section">
       <div class="app-form-section-title">Business Status</div>
       <p class="app-form-section-note">MSME and company activity details.</p>
@@ -263,6 +296,9 @@
       </div>
     </div>
 
+    </div>
+
+    <div class="app-static-page vendor-page-4">
     <div class="app-form-section">
       <div class="app-form-section-title">Theme and Product Selection</div>
       <p class="app-form-section-note">Select the theme first, then choose the related products and product varieties.</p>
@@ -342,6 +378,9 @@
       </div>
     </div>
 
+    </div>
+
+    <div class="app-static-page vendor-page-5">
     <div class="app-form-section">
       <div class="app-form-section-title">Bank Details</div>
       <p class="app-form-section-note">Add bank details and upload the checkbook or cancelled cheque here.</p>
@@ -355,6 +394,9 @@
       <%= render "vendor_bank_master_fields", form: bank_form %>
     <% end %>
 
+    </div>
+
+    <div class="app-static-page vendor-page-6">
     <div class="app-form-section">
       <div class="app-form-section-title">Document Uploads</div>
       <p class="app-form-section-note">Uploads appear here based on the configured document master.</p>
@@ -431,6 +473,50 @@
 
     <div class="app-form-actions">
       <%= form.submit "Submit Registration", class: "app-form-submit" %>
+    </div>
+    </div>
+
+    <div class="app-static-pager-nav">
+      <div class="app-static-pager-row vendor-nav-1">
+        <span class="app-static-pager-status">Step 1 of 6 - Basic Information</span>
+        <div class="app-static-pager-actions">
+          <label for="vendor-step-2" class="app-static-pager-button app-static-pager-button-primary">Next</label>
+        </div>
+      </div>
+      <div class="app-static-pager-row vendor-nav-2">
+        <span class="app-static-pager-status">Step 2 of 6 - Contact and Location</span>
+        <div class="app-static-pager-actions">
+          <label for="vendor-step-1" class="app-static-pager-button">Previous</label>
+          <label for="vendor-step-3" class="app-static-pager-button app-static-pager-button-primary">Next</label>
+        </div>
+      </div>
+      <div class="app-static-pager-row vendor-nav-3">
+        <span class="app-static-pager-status">Step 3 of 6 - Business Status</span>
+        <div class="app-static-pager-actions">
+          <label for="vendor-step-2" class="app-static-pager-button">Previous</label>
+          <label for="vendor-step-4" class="app-static-pager-button app-static-pager-button-primary">Next</label>
+        </div>
+      </div>
+      <div class="app-static-pager-row vendor-nav-4">
+        <span class="app-static-pager-status">Step 4 of 6 - Theme and Product Selection</span>
+        <div class="app-static-pager-actions">
+          <label for="vendor-step-3" class="app-static-pager-button">Previous</label>
+          <label for="vendor-step-5" class="app-static-pager-button app-static-pager-button-primary">Next</label>
+        </div>
+      </div>
+      <div class="app-static-pager-row vendor-nav-5">
+        <span class="app-static-pager-status">Step 5 of 6 - Bank Details</span>
+        <div class="app-static-pager-actions">
+          <label for="vendor-step-4" class="app-static-pager-button">Previous</label>
+          <label for="vendor-step-6" class="app-static-pager-button app-static-pager-button-primary">Next</label>
+        </div>
+      </div>
+      <div class="app-static-pager-row vendor-nav-6">
+        <span class="app-static-pager-status">Step 6 of 6 - Document Uploads</span>
+        <div class="app-static-pager-actions">
+          <label for="vendor-step-5" class="app-static-pager-button">Previous</label>
+        </div>
+      </div>
     </div>
   </div>
 <% end %>

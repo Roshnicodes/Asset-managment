@@ -8,8 +8,8 @@
   <div class="app-card mt-4" style="padding: 1.35rem 1.45rem;">
     <% if @payment_advice_requests.any? %>
       <%= form_with url: update_payment_advice_quotation_proposals_path, method: :patch, local: true, data: { finance_bulk_form: true } do %>
-        <div class="table-responsive">
-          <table class="table align-middle mb-0">
+        <div class="app-table-wrap" data-search-placeholder="Search finance queue...">
+          <table class="table app-table align-middle mb-0">
             <thead>
               <tr>
                 <th style="width: 60px;">

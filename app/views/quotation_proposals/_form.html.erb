@@ -1,4 +1,18 @@
-<%= form_with(model: quotation_proposal, html: { class: "app-rfp-form", data: { quotation_validation_form: true }, novalidate: true }) do |form| %>
+<style>
+  .app-static-paged-form { display: flex !important; flex-direction: column !important; height: 100% !important; max-height: none !important; min-height: 420px !important; overflow: hidden !important; }
+  .app-static-page-toggle { position: absolute !important; opacity: 0 !important; pointer-events: none !important; }
+  .app-static-page { display: none !important; flex: 1 1 auto !important; min-height: 0 !important; overflow-y: auto !important; padding-right: .35rem !important; }
+  .app-static-pager-nav { flex: 0 0 auto !important; margin-top: 1rem !important; padding-top: 1rem !important; border-top: 1px solid #e2ece6 !important; background: rgba(255,255,255,.98) !important; }
+  .app-static-pager-row { display: none !important; align-items: center !important; justify-content: space-between !important; gap: .8rem !important; flex-wrap: wrap !important; }
+  .app-static-pager-status { color: var(--brand-deep) !important; font-weight: 800 !important; }
+  .app-static-pager-actions { display: inline-flex !important; align-items: center !important; gap: .65rem !important; flex-wrap: wrap !important; margin-left: auto !important; }
+  .app-static-pager-button { display: inline-flex !important; align-items: center !important; justify-content: center !important; min-width: 96px !important; min-height: 42px !important; padding: .65rem 1rem !important; border: 1px solid var(--border-soft) !important; border-radius: 10px !important; background: #fff !important; color: var(--brand-deep) !important; font-weight: 800 !important; cursor: pointer !important; }
+  .app-static-pager-button-primary { border-color: #0f5f52 !important; background: #0f5f52 !important; color: #fff !important; }
+  #quotation-step-1:checked ~ .quotation-page-1, #quotation-step-2:checked ~ .quotation-page-2, #quotation-step-3:checked ~ .quotation-page-3, #quotation-step-4:checked ~ .quotation-page-4, #quotation-step-5:checked ~ .quotation-page-5 { display: flex !important; flex-direction: column !important; }
+  #quotation-step-1:checked ~ .app-static-pager-nav .quotation-nav-1, #quotation-step-2:checked ~ .app-static-pager-nav .quotation-nav-2, #quotation-step-3:checked ~ .app-static-pager-nav .quotation-nav-3, #quotation-step-4:checked ~ .app-static-pager-nav .quotation-nav-4, #quotation-step-5:checked ~ .app-static-pager-nav .quotation-nav-5 { display: flex !important; }
+</style>
+
+<%= form_with(model: quotation_proposal, html: { class: "app-rfp-form", data: { quotation_validation_form: true, ui_form_pager: true }, novalidate: true }) do |form| %>
   <% approval_request = quotation_proposal.approval_request %>
   <% field_errors = ->(field_name) { quotation_proposal.errors.full_messages_for(field_name) } %>
   <% selected_criterion_ids = Array(@selected_vendor_selection_criterion_ids).map(&:to_i) %>
@@ -26,7 +40,13 @@
     </div>
   <% end %>
 
-  <div class="app-form-card app-form-card-wide app-rfp-card">
+  <div class="app-form-card app-form-card-wide app-rfp-card app-static-paged-form">
+    <input type="radio" name="quotation_proposal_form_step" id="quotation-step-1" class="app-static-page-toggle" checked>
+    <input type="radio" name="quotation_proposal_form_step" id="quotation-step-2" class="app-static-page-toggle">
+    <input type="radio" name="quotation_proposal_form_step" id="quotation-step-3" class="app-static-page-toggle">
+    <input type="radio" name="quotation_proposal_form_step" id="quotation-step-4" class="app-static-page-toggle">
+    <input type="radio" name="quotation_proposal_form_step" id="quotation-step-5" class="app-static-page-toggle">
+    <div class="app-static-page quotation-page-1">
     <% if quotation_proposal.errors.any? %>
       <div class="app-form-errors">
         <h2><%= pluralize(quotation_proposal.errors.count, "error") %> found</h2>
@@ -91,6 +111,9 @@
       </div>
     </div>
 
+    </div>
+
+    <div class="app-static-page quotation-page-2">
     <div class="app-page-header app-subsection-header">
       <div>
         <h3>Select Vendors</h3>
@@ -140,6 +163,9 @@
       <% end %>
     </div>
 
+    </div>
+
+    <div class="app-static-page quotation-page-3">
     <div class="app-page-header app-subsection-header">
       <div>
         <h3>Proposal Items</h3>
@@ -167,6 +193,9 @@
       <div class="app-form-error app-form-error-client" data-quotation-items-error="true"></div>
     </div>
 
+    </div>
+
+    <div class="app-static-page quotation-page-4">
     <div class="app-page-header app-subsection-header app-subsection-header-spacious">
       <div>
         <h3>Vendor Selection Criteria</h3>
@@ -214,6 +243,9 @@
       </div>
     </div>
 
+    </div>
+
+    <div class="app-static-page quotation-page-5">
     <div class="app-page-header app-subsection-header app-subsection-header-spacious">
       <div>
         <h3>Approval Committee</h3>
@@ -243,6 +275,43 @@
 
     <div class="app-form-actions">
       <%= form.submit "Save Request for Proposal", class: "app-form-submit" %>
+    </div>
+    </div>
+
+    <div class="app-static-pager-nav">
+      <div class="app-static-pager-row quotation-nav-1">
+        <span class="app-static-pager-status">Step 1 of 5 - Quotation Details</span>
+        <div class="app-static-pager-actions">
+          <label for="quotation-step-2" class="app-static-pager-button app-static-pager-button-primary">Next</label>
+        </div>
+      </div>
+      <div class="app-static-pager-row quotation-nav-2">
+        <span class="app-static-pager-status">Step 2 of 5 - Select Vendors</span>
+        <div class="app-static-pager-actions">
+          <label for="quotation-step-1" class="app-static-pager-button">Previous</label>
+          <label for="quotation-step-3" class="app-static-pager-button app-static-pager-button-primary">Next</label>
+        </div>
+      </div>
+      <div class="app-static-pager-row quotation-nav-3">
+        <span class="app-static-pager-status">Step 3 of 5 - Proposal Items</span>
+        <div class="app-static-pager-actions">
+          <label for="quotation-step-2" class="app-static-pager-button">Previous</label>
+          <label for="quotation-step-4" class="app-static-pager-button app-static-pager-button-primary">Next</label>
+        </div>
+      </div>
+      <div class="app-static-pager-row quotation-nav-4">
+        <span class="app-static-pager-status">Step 4 of 5 - Selection Criteria</span>
+        <div class="app-static-pager-actions">
+          <label for="quotation-step-3" class="app-static-pager-button">Previous</label>
+          <label for="quotation-step-5" class="app-static-pager-button app-static-pager-button-primary">Next</label>
+        </div>
+      </div>
+      <div class="app-static-pager-row quotation-nav-5">
+        <span class="app-static-pager-status">Step 5 of 5 - Approval Committee</span>
+        <div class="app-static-pager-actions">
+          <label for="quotation-step-4" class="app-static-pager-button">Previous</label>
+        </div>
+      </div>
     </div>
   </div>
 <% end %>

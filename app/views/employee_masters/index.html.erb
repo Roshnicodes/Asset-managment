@@ -10,94 +10,127 @@
   </div>
 </div>
 
-<div class="app-form-card app-form-card-wide" style="margin-bottom: 1rem;">
-  <%= form_with url: import_employee_masters_path, multipart: true, local: true do |form| %>
-    <div class="app-form-grid two-col">
-      <div class="app-form-field">
-        <%= form.label :file, "Upload Excel / CSV" %>
-        <%= form.file_field :file, accept: ".csv,.xls,.xlsx" %>
+<style>
+  .employee-master-workspace {
+    display: flex !important;
+    flex-direction: column !important;
+    height: calc(100vh - 210px) !important;
+    max-height: calc(100vh - 210px) !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .employee-master-workspace.app-page-paged > :not(.app-page-header):not(.app-detail-actions):not(.app-form-pager) {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+  }
+
+  .employee-master-workspace .app-table-wrap {
+    height: 100% !important;
+    max-height: none !important;
+  }
+
+  .employee-master-table-wrap thead th {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: #f8fcf9 !important;
+    box-shadow: inset 0 -1px 0 #dce7dd;
+    white-space: nowrap;
+  }
+</style>
+
+<div class="employee-master-workspace" data-ui-page-pager="true">
+  <div class="app-form-card app-form-card-wide">
+    <%= form_with url: import_employee_masters_path, multipart: true, local: true do |form| %>
+      <div class="app-form-grid two-col">
+        <div class="app-form-field">
+          <%= form.label :file, "Upload Excel / CSV" %>
+          <%= form.file_field :file, accept: ".csv,.xls,.xlsx" %>
+        </div>
+
+        <div class="app-form-field">
+          <label>Sample Columns</label>
+          <input type="text" value="stakeholder, user_type, user_name, designation, email_id, mobile_no, state, district, block, gram_panchayat, village, parent_office, office, employee_location, full_address, pincode" readonly>
+        </div>
       </div>
 
-      <div class="app-form-field">
-        <label>Sample Columns</label>
-        <input type="text" value="stakeholder, user_type, user_name, designation, email_id, mobile_no, state, district, block, gram_panchayat, village, parent_office, office, employee_location, full_address, pincode" readonly>
+      <div class="app-form-actions">
+        <%= form.submit "Upload File", class: "app-form-submit" %>
       </div>
-    </div>
-
-    <div class="app-form-actions">
-      <%= form.submit "Upload File", class: "app-form-submit" %>
-    </div>
-  <% end %>
-</div>
-
-<div class="app-form-card app-form-card-wide" style="margin-bottom: 1rem;">
-  <div class="app-page-header">
-    <h3>Approval Login Flow</h3>
+    <% end %>
   </div>
-  <p class="app-section-note" style="margin-bottom: 0;">
-    When an employee has an email ID, the system automatically creates a login for that email.
-    Default first-time password is <strong>Welcome@123</strong>. If sign in fails, use <strong>Reset Login Password</strong> from the row action to re-apply the default password.
-  </p>
-</div>
 
-<div class="app-table-wrap">
-  <table class="table app-table">
-    <thead>
-      <tr>
-        <th>Stakeholder</th>
-        <th>User Type</th>
-        <th>User Name</th>
-        <th>Designation</th>
-        <th>Email ID</th>
-        <th>Mobile No</th>
-        <th>State</th>
-        <th>District</th>
-        <th>Block</th>
-        <th>Gram Panchayat</th>
-        <th>Village</th>
-        <th>Parent Office</th>
-        <th>Office</th>
-        <th>Location</th>
-        <th>Full Address</th>
-        <th>Pincode</th>
-        <th>Login Status</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @employee_masters.each do |employee_master| %>
+  <div class="app-form-card app-form-card-wide">
+    <div class="app-page-header">
+      <h3>Approval Login Flow</h3>
+    </div>
+    <p class="app-section-note" style="margin-bottom: 0;">
+      When an employee has an email ID, the system automatically creates a login for that email.
+      Default first-time password is <strong>Welcome@123</strong>. If sign in fails, use <strong>Reset Login Password</strong> from the row action to re-apply the default password.
+    </p>
+  </div>
+
+  <div class="app-table-wrap employee-master-table-wrap">
+    <table class="table app-table">
+      <thead>
         <tr>
-          <td><%= employee_master.stakeholder_category.name %></td>
-          <td><%= employee_master.user_type %></td>
-          <td><%= employee_master.name %></td>
-          <td><%= employee_master.designation %></td>
-          <td><%= employee_master.email_id %></td>
-          <td><%= employee_master.mobile_no %></td>
-          <td><%= employee_master.state&.name %></td>
-          <td><%= employee_master.district&.name %></td>
-          <td><%= employee_master.block&.name %></td>
-          <td><%= employee_master.gram_panchayat %></td>
-          <td><%= employee_master.village %></td>
-          <td><%= employee_master.parent_office %></td>
-          <td><%= employee_master.office %></td>
-          <td><%= employee_master.location %></td>
-          <td><%= employee_master.full_address %></td>
-          <td><%= employee_master.pincode %></td>
-          <td><%= employee_master.login_ready? ? "Ready" : "Not Ready" %></td>
-          <td class="app-row-actions">
-            <%= link_to "Edit", edit_employee_master_path(employee_master) %> |
-            <% if employee_master.email_id.present? %>
-              <%= button_to "Reset Login Password",
-                    reset_login_password_employee_master_path(employee_master),
-                    method: :post,
-                    data: { turbo_confirm: "Reset login password to Welcome@123 for this employee?" },
-                    class: "app-action-button",
-                    form_class: "d-inline-block" %> |
-            <% end %>
-            <%= button_to "Delete", employee_master_path(employee_master), method: :delete, data: { turbo_confirm: "Delete this employee?" }, class: "app-action-button app-delete-button" %>
-          </td>
+          <th>Stakeholder</th>
+          <th>User Type</th>
+          <th>User Name</th>
+          <th>Designation</th>
+          <th>Email ID</th>
+          <th>Mobile No</th>
+          <th>State</th>
+          <th>District</th>
+          <th>Block</th>
+          <th>Gram Panchayat</th>
+          <th>Village</th>
+          <th>Parent Office</th>
+          <th>Office</th>
+          <th>Location</th>
+          <th>Full Address</th>
+          <th>Pincode</th>
+          <th>Login Status</th>
+          <th>Action</th>
         </tr>
-      <% end %>
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        <% @employee_masters.each do |employee_master| %>
+          <tr>
+            <td><%= employee_master.stakeholder_category.name %></td>
+            <td><%= employee_master.user_type %></td>
+            <td><%= employee_master.name %></td>
+            <td><%= employee_master.designation %></td>
+            <td><%= employee_master.email_id %></td>
+            <td><%= employee_master.mobile_no %></td>
+            <td><%= employee_master.state&.name %></td>
+            <td><%= employee_master.district&.name %></td>
+            <td><%= employee_master.block&.name %></td>
+            <td><%= employee_master.gram_panchayat %></td>
+            <td><%= employee_master.village %></td>
+            <td><%= employee_master.parent_office %></td>
+            <td><%= employee_master.office %></td>
+            <td><%= employee_master.location %></td>
+            <td><%= employee_master.full_address %></td>
+            <td><%= employee_master.pincode %></td>
+            <td><%= employee_master.login_ready? ? "Ready" : "Not Ready" %></td>
+            <td class="app-row-actions">
+              <%= link_to "Edit", edit_employee_master_path(employee_master) %> |
+              <% if employee_master.email_id.present? %>
+                <%= button_to "Reset Login Password",
+                      reset_login_password_employee_master_path(employee_master),
+                      method: :post,
+                      data: { turbo_confirm: "Reset login password to Welcome@123 for this employee?" },
+                      class: "app-action-button",
+                      form_class: "d-inline-block" %> |
+              <% end %>
+              <%= button_to "Delete", employee_master_path(employee_master), method: :delete, data: { turbo_confirm: "Delete this employee?" }, class: "app-action-button app-delete-button" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
 </div>
