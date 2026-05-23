@@ -20,6 +20,7 @@ class ApplicationHelperTest < ActionView::TestCase
 
     @current_employee_master = EmployeeMaster.new(
       name: "User 2",
+      employee_code: "USR002",
       email_id: "user2@example.com",
       user_type: "User",
       stakeholder_category: stakeholder

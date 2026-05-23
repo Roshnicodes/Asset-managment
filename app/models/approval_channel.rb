@@ -37,7 +37,7 @@ class ApprovalChannel < ApplicationRecord
   validates :form_name, :approval_type, presence: true
   validate :theme_must_be_present_for_vendor_registration
   validate :at_least_one_approval_step_selected
-  validate :approval_step_users_must_have_login_email
+  validate :approval_step_users_must_have_login_details
   validate :approval_steps_must_be_unique_and_ordered
   validate :unique_channel_scope_for_form_theme_and_stakeholder
 
@@ -75,11 +75,11 @@ class ApprovalChannel < ApplicationRecord
     errors.add(:base, "Add at least one approval step.")
   end
 
-  def approval_step_users_must_have_login_email
-    missing_email_approvers = configured_approvers.select { |employee| employee.email_id.blank? }
-    return if missing_email_approvers.empty?
+  def approval_step_users_must_have_login_details
+    missing_login_approvers = configured_approvers.select { |employee| employee.employee_code.blank? || employee.email_id.blank? }
+    return if missing_login_approvers.empty?
 
-    errors.add(:base, "#{missing_email_approvers.map(&:name).join(', ')} must have email ID for approval login.")
+    errors.add(:base, "#{missing_login_approvers.map(&:name).join(', ')} must have employee code and email ID for approval login.")
   end
 
   def approval_steps_must_be_unique_and_ordered

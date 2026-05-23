@@ -161,6 +161,7 @@ class ApprovalStepTest < ActiveSupport::TestCase
   def build_employee(name, email, stakeholder)
     EmployeeMaster.new(
       name: name,
+      employee_code: "EMP-#{email.split('@').first.parameterize.upcase}",
       email_id: email,
       user_type: "User",
       stakeholder_category: stakeholder

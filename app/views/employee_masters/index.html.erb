@@ -1,7 +1,6 @@
 <div class="app-toolbar">
   <div>
     <h1>Employee Master</h1>
-    <p class="app-section-note">Manual entry and Excel / CSV upload are both available. Employee email ID automatically becomes approval login ID.</p>
   </div>
   <div class="app-toolbar-actions">
     <%= link_to "Export Excel", export_employee_masters_path, class: "app-secondary-btn" %>
@@ -14,10 +13,19 @@
   .employee-master-workspace {
     display: flex !important;
     flex-direction: column !important;
-    height: auto !important;
-    max-height: none !important;
+    height: calc(100vh - 140px) !important;
+    max-height: calc(100vh - 140px) !important;
     min-height: 0 !important;
-    overflow: visible !important;
+    gap: 0.5rem !important;
+    overflow: hidden !important;
+  }
+
+  .app-toolbar:has(+ style + .employee-master-workspace) {
+    margin-bottom: 0.5rem !important;
+  }
+
+  .app-toolbar:has(+ style + .employee-master-workspace) h1 {
+    margin-bottom: 0 !important;
   }
 
   .employee-master-workspace.app-page-paged > :not(.app-page-header):not(.app-detail-actions):not(.app-form-pager) {
@@ -60,12 +68,50 @@
     display: flex !important;
     flex-direction: column !important;
     min-height: 0 !important;
-    padding: 1rem !important;
+    padding: 0.75rem !important;
     overflow: hidden !important;
+  }
+
+  .employee-master-upload-card {
+    padding: 0.4rem 0.6rem !important;
+  }
+
+  .employee-master-upload-card .app-form-grid {
+    align-items: end !important;
+    gap: 0.5rem !important;
+    grid-template-columns: minmax(220px, 360px) auto !important;
+  }
+
+  .employee-master-upload-card .app-form-field {
+    margin-bottom: 0 !important;
+  }
+
+  .employee-master-upload-card .app-form-field label {
+    margin-bottom: 0.25rem !important;
+    font-size: 0.78rem !important;
+  }
+
+  .employee-master-upload-card .app-form-actions {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+    justify-content: flex-start !important;
+  }
+
+  .employee-master-upload-card input[type="file"] {
+    min-height: 34px !important;
+    padding: 0.35rem 0.5rem !important;
+    font-size: 0.82rem !important;
+  }
+
+  .employee-master-upload-card .app-form-submit {
+    min-height: 34px !important;
+    padding: 0.35rem 0.8rem !important;
+    font-size: 0.82rem !important;
   }
 
   .employee-master-table-page .app-table-search {
     flex: 0 0 auto;
+    margin-bottom: 0.5rem !important;
   }
 
   .employee-master-table-wrap thead th {
@@ -114,7 +160,7 @@
 </script>
 
 <div class="employee-master-workspace">
-  <div class="app-form-card app-form-card-wide">
+  <div class="app-form-card app-form-card-wide employee-master-upload-card">
     <%= form_with url: import_employee_masters_path, multipart: true, local: true do |form| %>
       <div class="app-form-grid two-col">
         <div class="app-form-field">
@@ -122,26 +168,11 @@
           <%= form.file_field :file, accept: ".csv,.xls,.xlsx" %>
         </div>
 
-        <div class="app-form-field">
-          <label>Sample Columns</label>
-          <input type="text" value="stakeholder, user_type, user_name, designation, email_id, mobile_no, state, district, block, gram_panchayat, village, parent_office, office, employee_location, full_address, pincode" readonly>
+        <div class="app-form-actions">
+          <%= form.submit "Upload File", class: "app-form-submit" %>
         </div>
       </div>
-
-      <div class="app-form-actions">
-        <%= form.submit "Upload File", class: "app-form-submit" %>
-      </div>
     <% end %>
-  </div>
-
-  <div class="app-form-card app-form-card-wide">
-    <div class="app-page-header">
-      <h3>Approval Login Flow</h3>
-    </div>
-    <p class="app-section-note" style="margin-bottom: 0;">
-      When an employee has an email ID, the system automatically creates a login for that email.
-      Default first-time password is <strong>Welcome@123</strong>. If sign in fails, use <strong>Reset Login Password</strong> from the row action to re-apply the default password.
-    </p>
   </div>
 
   <div class="app-card employee-master-table-page">
@@ -152,6 +183,7 @@
           <tr>
             <th>Stakeholder</th>
             <th>User Type</th>
+            <th>Employee Code</th>
             <th>User Name</th>
             <th>Designation</th>
             <th>Email ID</th>
@@ -175,6 +207,7 @@
             <tr>
               <td><%= employee_master.stakeholder_category.name %></td>
               <td><%= employee_master.user_type %></td>
+              <td><%= employee_master.employee_code %></td>
               <td><%= employee_master.name %></td>
               <td><%= employee_master.designation %></td>
               <td><%= employee_master.email_id %></td>
@@ -192,7 +225,7 @@
               <td><%= employee_master.login_ready? ? "Ready" : "Not Ready" %></td>
               <td class="app-row-actions">
                 <%= link_to "Edit", edit_employee_master_path(employee_master) %> |
-                <% if employee_master.email_id.present? %>
+                <% if employee_master.email_id.present? && employee_master.employee_code.present? %>
                   <%= button_to "Reset Login Password",
                         reset_login_password_employee_master_path(employee_master),
                         method: :post,

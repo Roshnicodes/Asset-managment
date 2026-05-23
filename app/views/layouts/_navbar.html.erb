@@ -27,8 +27,8 @@
                   <%= image_tag "user-avatar.png", class: "rounded-circle border", width: 44, height: 44 %>
                 </div>
                 <div class="lh-sm">
-                  <div class="fw-bold text-dark"><%= current_user.email.split('@').first.capitalize %></div>
-                  <div class="text-muted small"><%= current_user.email %></div>
+                  <div class="fw-bold text-dark"><%= current_employee_master&.name || current_user.email.split('@').first.capitalize %></div>
+                  <div class="text-muted small"><%= current_employee_master&.employee_code || current_user.email %></div>
                 </div>
               </div>
             </li>

@@ -29,7 +29,7 @@ class EmployeeMastersController < ApplicationController
     @employee_master = EmployeeMaster.new(employee_master_params)
 
     if @employee_master.save
-      redirect_to employee_masters_path, notice: "Employee master created successfully. Login access is ready for this employee."
+      redirect_to employee_masters_path, notice: "Employee master created successfully. Employee-code login access is ready."
     else
       load_location_collections
       render :new, status: :unprocessable_entity
@@ -38,7 +38,7 @@ class EmployeeMastersController < ApplicationController
 
   def update
     if @employee_master.update(employee_master_params)
-      redirect_to employee_masters_path, notice: "Employee master updated successfully. Login access has been synced."
+      redirect_to employee_masters_path, notice: "Employee master updated successfully. Employee-code login access has been synced."
     else
       load_location_collections
       render :edit, status: :unprocessable_entity
@@ -51,8 +51,8 @@ class EmployeeMastersController < ApplicationController
   end
 
   def reset_login_password
-    if @employee_master.email_id.blank?
-      redirect_to employee_masters_path, alert: "This employee does not have an email ID for login reset."
+    if @employee_master.email_id.blank? || @employee_master.employee_code.blank?
+      redirect_to employee_masters_path, alert: "This employee needs both an employee code and email ID for login reset."
       return
     end
 
@@ -63,7 +63,7 @@ class EmployeeMastersController < ApplicationController
       password_confirmation: default_password
     )
 
-    redirect_to employee_masters_path, notice: "Login password reset to #{default_password} for #{@employee_master.email_id}."
+    redirect_to employee_masters_path, notice: "Login password reset to #{default_password} for #{@employee_master.employee_code}."
   rescue StandardError => error
     redirect_to employee_masters_path, alert: "Login password reset failed: #{error.message}"
   end
@@ -75,17 +75,17 @@ class EmployeeMastersController < ApplicationController
     end
 
     imported_count = import_rows(params[:file])
-    redirect_to employee_masters_path, notice: "#{imported_count} employees imported successfully. Login access was created for employees with email IDs."
+    redirect_to employee_masters_path, notice: "#{imported_count} employees imported successfully. Login access was created for employees with employee codes and email IDs."
   rescue StandardError => error
     redirect_to employee_masters_path, alert: "Import failed: #{error.message}"
   end
 
   def sync_logins
-    synced_count = EmployeeMaster.where.not(email_id: [nil, ""]).find_each.count do |employee|
+    synced_count = EmployeeMaster.where.not(email_id: [nil, ""], employee_code: [nil, ""]).find_each.count do |employee|
       EmployeeLoginProvisioner.provision_for!(employee)
     end
 
-    redirect_to employee_masters_path, notice: "#{synced_count} employee logins are ready now."
+    redirect_to employee_masters_path, notice: "#{synced_count} employee-code logins are ready now."
   rescue StandardError => error
     redirect_to employee_masters_path, alert: "Login sync failed: #{error.message}"
   end
@@ -99,6 +99,7 @@ class EmployeeMastersController < ApplicationController
   def employee_master_params
     params.require(:employee_master).permit(
       :stakeholder_category_id, :user_type, :name, :designation, :email_id, :password, :password_confirmation,
+      :employee_code,
       :mobile_no, :state_id, :district_id, :block_id, :gram_panchayat, :village, :parent_office, :office,
       :location, :full_address, :pincode
     )
@@ -116,12 +117,13 @@ class EmployeeMastersController < ApplicationController
       state = State.find_by(name: row["state"].to_s.strip)
       district = District.find_by(name: row["district"].to_s.strip)
       block = Block.find_by(name: row["block"].to_s.strip)
+      employee_code = row["employee_code"].presence || row["employee_id"].presence
       lookup_email = row["email_id"].presence || row["employee_email_id"].presence
 
-      employee = if lookup_email.present?
-        EmployeeMaster.find_or_initialize_by(email_id: lookup_email.to_s.strip)
-      elsif row["employee_id"].present?
-        EmployeeMaster.find_or_initialize_by(employee_code: row["employee_id"].to_s.strip)
+      employee = if employee_code.present?
+        EmployeeMaster.find_or_initialize_by(employee_code: employee_code.to_s.strip.upcase)
+      elsif lookup_email.present?
+        EmployeeMaster.find_or_initialize_by(email_id: lookup_email.to_s.strip.downcase)
       else
         EmployeeMaster.find_or_initialize_by(name: row["user_name"].presence || row["employee_name"].to_s.strip)
       end
@@ -129,6 +131,7 @@ class EmployeeMastersController < ApplicationController
       employee.assign_attributes(
         stakeholder_category: stakeholder,
         user_type: row["user_type"].presence || "User",
+        employee_code: employee_code,
         name: row["user_name"].presence || row["employee_name"],
         designation: row["designation"],
         location: row["employee_location"] || row["location"],
@@ -155,7 +158,7 @@ class EmployeeMastersController < ApplicationController
     headers = [
       "stakeholder",
       "user_type",
-      "employee_id",
+      "employee_code",
       "user_name",
       "designation",
       "employee_email_id",
@@ -229,7 +232,7 @@ class EmployeeMastersController < ApplicationController
     case value
     when "stakeholder" then "stakeholder"
     when "user type", "user_type" then "user_type"
-    when "employee id", "employee_id", "emp id", "emp_id" then "employee_id"
+    when "employee code", "employee_code", "employee id", "employee_id", "emp id", "emp_id" then "employee_code"
     when "user name", "user_name" then "user_name"
     when "employee name", "employee_name", "emp name", "emp_name" then "employee_name"
     when "designation" then "designation"

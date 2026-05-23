@@ -23,6 +23,12 @@
       </div>
 
       <div class="app-form-field">
+        <%= form.label :employee_code, "Employee Code" %>
+        <%= form.text_field :employee_code, autocomplete: "username" %>
+        <small class="app-field-hint">This code will be used for employee login.</small>
+      </div>
+
+      <div class="app-form-field">
         <%= form.label :name, "User Name" %>
         <%= form.text_field :name %>
       </div>
@@ -35,7 +41,7 @@
       <div class="app-form-field">
         <%= form.label :email_id, "Email ID" %>
         <%= form.email_field :email_id %>
-        <small class="app-field-hint">This email will be used as the employee approval login.</small>
+        <small class="app-field-hint">Email stays linked to the account, but login uses employee code.</small>
       </div>
 
       <div class="app-form-field">

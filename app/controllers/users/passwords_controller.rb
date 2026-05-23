@@ -1,16 +1,19 @@
 class Users::PasswordsController < Devise::PasswordsController
   def create
     if direct_password_reset_enabled?
-      lookup_email = resource_params[:email].to_s.strip.downcase
-      user = User.find_by("LOWER(TRIM(email)) = ?", lookup_email)
+      employee_code = resource_params[:email].to_s.strip
+      employee = EmployeeMaster.find_by("LOWER(TRIM(employee_code)) = ?", employee_code.downcase)
+      user = if employee&.email_id.present?
+        User.find_by("LOWER(TRIM(email)) = ?", employee.email_id.to_s.strip.downcase)
+      end
 
       if user.present?
         raw_token = set_reset_password_token_for(user)
         redirect_to edit_user_password_path(reset_password_token: raw_token), notice: "Reset link opened. Set a new password now."
       else
         self.resource = resource_class.new
-        resource.email = lookup_email
-        resource.errors.add(:email, "was not found")
+        resource.email = employee_code
+        resource.errors.add(:email, "employee code was not found")
         render :new, status: :unprocessable_entity
       end
     else

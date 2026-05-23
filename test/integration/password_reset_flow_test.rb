@@ -8,7 +8,15 @@ class PasswordResetFlowTest < ActionDispatch::IntegrationTest
     ActionMailer::Base.deliveries.clear
   end
 
-  test "sending reset instructions works with mixed-case email input" do
+  test "sending reset instructions works with mixed-case employee code input" do
+    stakeholder_category = StakeholderCategory.create!(name: "Reset Team")
+    EmployeeMaster.create!(
+      name: "Reset User",
+      employee_code: "RST001",
+      email_id: "reset.user@example.com",
+      user_type: "User",
+      stakeholder_category: stakeholder_category
+    )
     user = User.create!(
       email: "reset.user@example.com",
       password: "password123",
@@ -16,7 +24,7 @@ class PasswordResetFlowTest < ActionDispatch::IntegrationTest
     )
 
     assert_emails 1 do
-      post user_password_path, params: { user: { email: "  RESET.User@Example.com  " } }
+      post user_password_path, params: { user: { email: "  rst001  " } }
     end
 
     assert_redirected_to new_user_session_path

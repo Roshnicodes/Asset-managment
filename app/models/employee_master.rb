@@ -10,8 +10,10 @@ class EmployeeMaster < ApplicationRecord
 
   USER_TYPES = ["User", "Admin"].freeze
 
-  validates :name, :email_id, :user_type, presence: true
-  validates :employee_code, uniqueness: true, allow_blank: true
+  before_validation :normalize_login_fields
+
+  validates :name, :email_id, :user_type, :employee_code, presence: true
+  validates :employee_code, uniqueness: { case_sensitive: false }
   validates :email_id, uniqueness: true
   validates :user_type, inclusion: { in: USER_TYPES }
   validate :passwords_must_match
@@ -21,10 +23,15 @@ class EmployeeMaster < ApplicationRecord
   after_commit :provision_login_access, on: %i[create update]
 
   def login_ready?
-    User.exists?(email: email_id.to_s.strip.downcase)
+    employee_code.present? && User.exists?(email: email_id.to_s.strip.downcase)
   end
 
   private
+
+  def normalize_login_fields
+    self.employee_code = employee_code.to_s.strip.upcase.presence
+    self.email_id = email_id.to_s.strip.downcase.presence
+  end
 
   def provision_login_access
     ::EmployeeLoginProvisioner.provision_for!(self, password: password, password_confirmation: password_confirmation)

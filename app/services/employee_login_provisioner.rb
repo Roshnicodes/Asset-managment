@@ -2,7 +2,7 @@ class EmployeeLoginProvisioner
   DEFAULT_PASSWORD = "Welcome@123".freeze
 
   def self.provision_for!(employee_master, password: nil, password_confirmation: nil)
-    return nil if employee_master.email_id.blank?
+    return nil if employee_master.email_id.blank? || employee_master.employee_code.blank?
 
     user = User.find_or_initialize_by(email: employee_master.email_id.strip.downcase)
     chosen_password = password.presence || DEFAULT_PASSWORD
