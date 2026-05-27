@@ -5555,3 +5555,407 @@ body.auth-page-body {
   display: flex;
   flex-direction: column;
 }
+
+/* Mobile responsiveness layer: layout-only overrides, no application behavior changes. */
+@media (max-width: 991px) {
+  body {
+    font-size: 0.98rem;
+  }
+
+  .app-navbar {
+    position: sticky;
+    padding: 0.55rem 0.75rem !important;
+  }
+
+  .app-brand img,
+  .app-logo-img {
+    max-width: min(52vw, 180px);
+    max-height: 54px;
+  }
+
+  .app-navbar .ms-auto {
+    min-width: 0;
+  }
+
+  .app-notification-link {
+    width: 38px;
+    height: 38px;
+  }
+
+  .app-navbar-avatar-wrapper .app-avatar-img,
+  .app-navbar-avatar-wrapper img {
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .app-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    padding: 0.65rem;
+    max-width: 100%;
+  }
+
+  .app-sidebar {
+    position: relative;
+    top: auto;
+    width: 100%;
+    max-height: 34vh;
+    padding: 0.65rem;
+    border-radius: 18px;
+    overflow-y: auto;
+  }
+
+  .app-sidebar .nav-link {
+    margin-bottom: 0.25rem;
+    padding: 0.62rem 0.7rem;
+    border-radius: 14px;
+    font-size: 0.92rem;
+  }
+
+  .app-sidebar .submenu {
+    margin-left: 0.35rem;
+    padding-left: 0.45rem;
+  }
+
+  .app-menu-icon {
+    width: 19px;
+    height: 19px;
+  }
+
+  .app-main,
+  .app-content {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .app-content {
+    height: auto;
+    min-height: calc(100vh - 132px);
+    max-height: none;
+    padding: 0.75rem;
+    border-radius: 18px;
+    overflow: visible;
+    display: block;
+  }
+
+  .app-content > form[data-ui-form-pager],
+  .app-content > .quotation-proposal-show,
+  .app-content > .app-page-shell,
+  .app-content > .quotation-proposal-show.app-page-paged,
+  .app-content > .app-toolbar + .app-table-wrap {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .app-toolbar,
+  .app-page-header,
+  .app-admin-panel-header,
+  .app-hero-card,
+  .app-detail-actions {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .app-toolbar h1,
+  .app-page-header h1,
+  .app-page-header h2,
+  .app-page-title {
+    font-size: 1.35rem;
+    line-height: 1.18;
+  }
+
+  .app-toolbar-actions,
+  .app-detail-actions,
+  .app-form-actions,
+  .app-table-pagination,
+  .app-table-pagination-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .app-toolbar-actions,
+  .app-detail-actions,
+  .app-form-actions {
+    flex-wrap: wrap;
+  }
+
+  .app-primary-btn,
+  .app-secondary-btn,
+  .app-danger-btn,
+  .app-form-submit,
+  .app-action-button,
+  .btn-auth-submit,
+  .app-pagination-btn,
+  .app-form-pager-btn {
+    min-height: 42px;
+  }
+
+  .app-toolbar-actions > *,
+  .app-detail-actions > *,
+  .app-form-actions > *,
+  .app-table-pagination-actions > * {
+    flex: 1 1 160px;
+  }
+
+  .app-form-card,
+  .app-card,
+  .app-admin-panel,
+  .app-detail-card {
+    max-width: 100%;
+    padding: 0.85rem;
+    border-radius: 16px;
+  }
+
+  .app-form-card-paged,
+  .app-page-paged,
+  form[data-ui-form-pager],
+  .app-static-paged-form {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .app-form-grid,
+  .app-form-grid.two-col,
+  .app-form-grid.three-col,
+  .app-form-grid.four-col,
+  .app-form-grid.five-col,
+  .app-detail-grid,
+  .vendor-detail-grid,
+  .vendor-bank-grid,
+  .vendor-document-grid {
+    display: grid;
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem;
+  }
+
+  .app-form-field,
+  .app-form-field-full,
+  .vendor-detail-section {
+    grid-column: 1 / -1 !important;
+    min-width: 0;
+  }
+
+  .app-form-card input,
+  .app-form-card select,
+  .app-form-card textarea,
+  .form-control,
+  .form-select {
+    max-width: 100%;
+    font-size: 16px;
+  }
+
+  .app-table-search {
+    justify-content: stretch;
+    margin-bottom: 0.6rem;
+  }
+
+  .app-table-search-input {
+    max-width: none;
+    min-height: 42px;
+  }
+
+  .app-table-wrap {
+    border-radius: 14px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app-table {
+    min-width: 760px;
+    font-size: 0.88rem;
+  }
+
+  .app-table thead th,
+  .app-table tbody td {
+    padding: 0.62rem 0.7rem;
+  }
+
+  .app-row-actions,
+  .app-row-actions * {
+    overflow-wrap: normal;
+  }
+
+  .app-action-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .assets-page,
+  .quotation-proposal-show,
+  .employee-master-workspace {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .assets-list-table,
+  .quotation-proposal-show .app-table,
+  .employee-master-table-wrap .app-table {
+    min-width: 980px;
+  }
+
+  .profile-header-banner {
+    height: 150px;
+  }
+}
+
+@media (max-width: 640px) {
+  body {
+    font-size: 0.94rem;
+  }
+
+  .app-shell {
+    padding: 0.45rem;
+  }
+
+  .app-content {
+    min-height: calc(100vh - 108px);
+    padding: 0.55rem;
+    border-radius: 14px;
+    border-left: 0;
+    border-right: 0;
+  }
+
+  .app-brand img,
+  .app-logo-img {
+    max-width: 44vw;
+    max-height: 46px;
+  }
+
+  .app-notification-link {
+    width: 34px;
+    height: 34px;
+  }
+
+  .app-sidebar {
+    max-height: 30vh;
+    padding: 0.5rem;
+    border-radius: 14px;
+  }
+
+  .app-sidebar .nav-link {
+    padding: 0.55rem 0.6rem;
+    font-size: 0.86rem;
+  }
+
+  .app-link-wrap,
+  .app-link-label {
+    gap: 0.55rem;
+  }
+
+  .app-toolbar,
+  .app-page-header {
+    margin-bottom: 0.65rem;
+  }
+
+  .app-toolbar h1,
+  .app-page-header h1,
+  .app-page-header h2,
+  .app-page-title {
+    font-size: 1.2rem;
+  }
+
+  .app-section-note,
+  .app-page-subtitle,
+  .app-hero-text {
+    font-size: 0.88rem;
+  }
+
+  .app-form-card,
+  .app-card,
+  .app-admin-panel,
+  .app-detail-card {
+    padding: 0.7rem;
+    border-radius: 14px;
+  }
+
+  .app-primary-btn,
+  .app-secondary-btn,
+  .app-danger-btn,
+  .app-form-submit,
+  .btn-auth-submit,
+  .app-pagination-btn,
+  .app-form-pager-btn {
+    width: 100%;
+  }
+
+  .app-table {
+    min-width: 680px;
+  }
+
+  .assets-list-table,
+  .quotation-proposal-show .app-table,
+  .employee-master-table-wrap .app-table {
+    min-width: 900px;
+  }
+
+  .app-table-pagination {
+    padding: 0.65rem;
+  }
+
+  .app-table-pagination-info,
+  .app-pagination-pages {
+    width: 100%;
+    text-align: center;
+  }
+
+  .auth-wrapper {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .auth-split-card,
+  .auth-card {
+    width: 100%;
+    min-height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .auth-form-side,
+  .auth-card {
+    min-width: 0;
+    padding: 1.4rem 1rem !important;
+  }
+
+  .auth-title {
+    font-size: 1.55rem;
+    line-height: 1.15;
+  }
+
+  .auth-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .profile-avatar-large {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@media (max-width: 420px) {
+  .app-content {
+    padding: 0.45rem;
+  }
+
+  .app-table {
+    min-width: 620px;
+  }
+
+  .assets-list-table,
+  .quotation-proposal-show .app-table,
+  .employee-master-table-wrap .app-table {
+    min-width: 840px;
+  }
+
+  .app-action-icon {
+    width: 32px;
+    height: 32px;
+  }
+}

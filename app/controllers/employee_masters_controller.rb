@@ -46,8 +46,13 @@ class EmployeeMastersController < ApplicationController
   end
 
   def destroy
-    @employee_master.destroy!
-    redirect_to employee_masters_path, notice: "Employee master deleted successfully.", status: :see_other
+    if @employee_master.destroy
+      redirect_to employee_masters_path, notice: "Employee master deleted successfully.", status: :see_other
+    else
+      redirect_to employee_masters_path, alert: employee_delete_blocked_message, status: :see_other
+    end
+  rescue ActiveRecord::InvalidForeignKey
+    redirect_to employee_masters_path, alert: employee_delete_blocked_message, status: :see_other
   end
 
   def reset_login_password
@@ -94,6 +99,10 @@ class EmployeeMastersController < ApplicationController
 
   def set_employee_master
     @employee_master = EmployeeMaster.find(params[:id])
+  end
+
+  def employee_delete_blocked_message
+    "#{@employee_master.name} is used in approval flow or transaction records. Remove/replace this employee from those records before deleting."
   end
 
   def employee_master_params

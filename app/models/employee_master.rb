@@ -7,6 +7,22 @@ class EmployeeMaster < ApplicationRecord
   belongs_to :state, optional: true
   belongs_to :district, optional: true
   belongs_to :block, optional: true
+  has_many :approval_steps, dependent: :restrict_with_error
+  has_many :approval_steps_as_from_user,
+           class_name: "ApprovalStep",
+           foreign_key: :from_user_id,
+           dependent: :restrict_with_error,
+           inverse_of: :from_user
+  has_many :approval_channel_steps_as_from_user,
+           class_name: "ApprovalChannelStep",
+           foreign_key: :from_user_id,
+           dependent: :restrict_with_error,
+           inverse_of: :from_user
+  has_many :approval_channel_steps_as_responsible_user,
+           class_name: "ApprovalChannelStep",
+           foreign_key: :to_responsible_user_id,
+           dependent: :restrict_with_error,
+           inverse_of: :to_responsible_user
 
   USER_TYPES = ["User", "Admin"].freeze
 

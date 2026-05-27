@@ -122,6 +122,34 @@
     box-shadow: inset 0 -1px 0 #dce7dd;
     white-space: nowrap;
   }
+
+  .employee-master-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+  }
+
+  .employee-master-actions form {
+    display: inline-flex !important;
+    margin: 0 !important;
+  }
+
+  .employee-master-actions .app-action-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  .employee-master-actions .text-info {
+    background: rgba(13, 202, 240, 0.12);
+    color: #087990 !important;
+  }
+
+  .employee-master-actions .text-info:hover {
+    background: #087990;
+    color: #fff !important;
+  }
 </style>
 
 <script>
@@ -224,16 +252,32 @@
               <td><%= employee_master.pincode %></td>
               <td><%= employee_master.login_ready? ? "Ready" : "Not Ready" %></td>
               <td class="app-row-actions">
-                <%= link_to "Edit", edit_employee_master_path(employee_master) %> |
-                <% if employee_master.email_id.present? && employee_master.employee_code.present? %>
-                  <%= button_to "Reset Login Password",
-                        reset_login_password_employee_master_path(employee_master),
-                        method: :post,
-                        data: { turbo_confirm: "Reset login password to Welcome@123 for this employee?" },
-                        class: "app-action-button",
-                        form_class: "d-inline-block" %> |
-                <% end %>
-                <%= button_to "Delete", employee_master_path(employee_master), method: :delete, data: { turbo_confirm: "Delete this employee?" }, class: "app-action-button app-delete-button" %>
+                <div class="employee-master-actions">
+                  <%= link_to edit_employee_master_path(employee_master), class: "app-action-icon text-warning", title: "Edit", aria: { label: "Edit employee" } do %>
+                    <%= app_icon(:pencil, size: 16) %>
+                  <% end %>
+
+                  <% if employee_master.email_id.present? && employee_master.employee_code.present? %>
+                    <%= button_to reset_login_password_employee_master_path(employee_master),
+                          method: :post,
+                          data: { turbo_confirm: "Reset login password to Welcome@123 for this employee?" },
+                          class: "app-action-icon text-info",
+                          title: "Reset Login Password",
+                          aria: { label: "Reset login password" },
+                          form_class: "d-inline-block" do %>
+                      <%= app_icon(:key, size: 16) %>
+                    <% end %>
+                  <% end %>
+
+                  <%= button_to employee_master_path(employee_master),
+                        method: :delete,
+                        data: { turbo_confirm: "Delete this employee?" },
+                        class: "app-action-icon text-danger",
+                        title: "Delete",
+                        aria: { label: "Delete employee" } do %>
+                    <%= app_icon(:trash, size: 16) %>
+                  <% end %>
+                </div>
               </td>
             </tr>
           <% end %>
