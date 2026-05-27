@@ -260,7 +260,7 @@
                   <% if employee_master.email_id.present? && employee_master.employee_code.present? %>
                     <%= button_to reset_login_password_employee_master_path(employee_master),
                           method: :post,
-                          data: { turbo_confirm: "Reset login password to Welcome@123 for this employee?" },
+                          data: { turbo_confirm: "Reset login password to #{EmployeeLoginProvisioner::DEFAULT_PASSWORD} for this employee?" },
                           class: "app-action-icon text-info",
                           title: "Reset Login Password",
                           aria: { label: "Reset login password" },

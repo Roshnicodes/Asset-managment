@@ -1,5 +1,5 @@
 class EmployeeLoginProvisioner
-  DEFAULT_PASSWORD = "Welcome@123".freeze
+  DEFAULT_PASSWORD = "Welcome@1".freeze
 
   def self.provision_for!(employee_master, password: nil, password_confirmation: nil)
     return nil if employee_master.email_id.blank? || employee_master.employee_code.blank?

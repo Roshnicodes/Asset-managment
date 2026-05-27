@@ -1,5 +1,7 @@
 class EmployeeMastersController < ApplicationController
   require "csv"
+  require "open3"
+  require "tmpdir"
   before_action :set_employee_master, only: %i[edit update destroy reset_login_password]
 
   def index
@@ -79,8 +81,8 @@ class EmployeeMastersController < ApplicationController
       return
     end
 
-    imported_count = import_rows(params[:file])
-    redirect_to employee_masters_path, notice: "#{imported_count} employees imported successfully. Login access was created for employees with employee codes and email IDs."
+    result = import_rows(params[:file])
+    redirect_to employee_masters_path, notice: import_success_message(result)
   rescue StandardError => error
     redirect_to employee_masters_path, alert: "Import failed: #{error.message}"
   end
@@ -116,9 +118,16 @@ class EmployeeMastersController < ApplicationController
 
   def import_rows(file)
     extension = File.extname(file.original_filename).downcase
-    rows = extension == ".csv" ? csv_rows(file) : spreadsheet_rows(file)
+    unless [".csv", ".xls", ".xlsx"].include?(extension)
+      raise "Please upload a CSV, XLS, or XLSX file."
+    end
+
+    rows = extension == ".csv" ? csv_rows(file) : spreadsheet_rows(file, extension)
+
+    return import_password_rows(rows) if password_update_sheet?(rows)
 
     imported_count = 0
+    password_count = 0
     rows.each do |row|
       next if row.values.all?(&:blank?)
 
@@ -130,7 +139,7 @@ class EmployeeMastersController < ApplicationController
       lookup_email = row["email_id"].presence || row["employee_email_id"].presence
 
       employee = if employee_code.present?
-        EmployeeMaster.find_or_initialize_by(employee_code: employee_code.to_s.strip.upcase)
+        find_employee_by_import_code(employee_code) || EmployeeMaster.new(employee_code: employee_code.to_s.strip.upcase)
       elsif lookup_email.present?
         EmployeeMaster.find_or_initialize_by(email_id: lookup_email.to_s.strip.downcase)
       else
@@ -156,11 +165,64 @@ class EmployeeMastersController < ApplicationController
         full_address: row["full_address"],
         pincode: row["pincode"]
       )
+      password = clean_import_password(row["password"])
+      password_confirmation = clean_import_password(row["password_confirmation"]).presence || password
+      if password.present?
+        validate_import_password_pair!(password, password_confirmation, employee_code.presence || lookup_email.presence || employee.name)
+        employee.password = password
+        employee.password_confirmation = password_confirmation
+        password_count += 1
+      end
+
       employee.save!
       imported_count += 1
     end
 
-    imported_count
+    { mode: :employee_import, imported_count: imported_count, password_count: password_count, skipped_count: 0 }
+  end
+
+  def import_password_rows(rows)
+    updated_count = 0
+    skipped_rows = []
+
+    rows.each_with_index do |row, index|
+      next if row.values.all?(&:blank?)
+
+      employee_code = row["employee_code"].presence || row["employee_id"].presence
+      password = clean_import_password(row["password"])
+      password_confirmation = clean_import_password(row["password_confirmation"]).presence || password
+
+      if employee_code.blank? || password.blank?
+        skipped_rows << "row #{index + 2}"
+        next
+      end
+
+      unless import_password_valid?(password, password_confirmation)
+        skipped_rows << "#{employee_code.to_s.strip} password"
+        next
+      end
+
+      employee = find_employee_by_import_code(employee_code)
+      if employee.blank? || employee.email_id.blank?
+        skipped_rows << employee_code.to_s.strip
+        next
+      end
+
+      EmployeeLoginProvisioner.provision_for!(
+        employee,
+        password: password,
+        password_confirmation: password_confirmation
+      )
+      updated_count += 1
+    end
+
+    {
+      mode: :password_update,
+      imported_count: 0,
+      password_count: updated_count,
+      skipped_count: skipped_rows.size,
+      skipped_examples: skipped_rows.first(10)
+    }
   end
 
   def generate_csv(employee_masters)
@@ -219,9 +281,11 @@ class EmployeeMastersController < ApplicationController
     end
   end
 
-  def spreadsheet_rows(file)
+  def spreadsheet_rows(file, extension)
+    return xls_rows(file) if extension == ".xls"
+
     require "roo"
-    sheet = Roo::Spreadsheet.open(file.path)
+    sheet = Roo::Spreadsheet.open(file.path, extension: extension.delete_prefix(".").to_sym)
     header = sheet.row(1).map { |value| normalize_header(value) }
 
     (2..sheet.last_row).map do |index|
@@ -231,8 +295,38 @@ class EmployeeMastersController < ApplicationController
     raise "Excel upload requires the 'roo' gem. Run bundle install, or upload a CSV file."
   end
 
+  def xls_rows(file)
+    office_binary = %w[soffice libreoffice].find { |binary| system("which", binary, out: File::NULL, err: File::NULL) }
+    raise "XLS upload requires LibreOffice. Please upload CSV or XLSX instead." if office_binary.blank?
+
+    Dir.mktmpdir("employee-master-xls") do |dir|
+      profile_dir = File.join(dir, "lo-profile")
+      stdout, stderr, status = Open3.capture3(
+        office_binary,
+        "--headless",
+        "-env:UserInstallation=file://#{profile_dir}",
+        "--convert-to",
+        "csv",
+        "--outdir",
+        dir,
+        file.path
+      )
+
+      unless status.success?
+        raise "XLS conversion failed: #{stderr.presence || stdout.presence || 'LibreOffice could not convert the file.'}"
+      end
+
+      converted_path = Dir.glob(File.join(dir, "*.csv")).first
+      raise "XLS conversion failed: CSV output was not created." if converted_path.blank?
+
+      CSV.parse(File.read(converted_path), headers: true).map do |row|
+        normalize_row_keys(row.to_h)
+      end
+    end
+  end
+
   def normalize_row_keys(row)
-    row.transform_keys { |key| normalize_header(key) }
+    row.transform_keys { |key| normalize_header(key) }.reject { |key, _value| key.blank? }
   end
 
   def normalize_header(header)
@@ -241,7 +335,10 @@ class EmployeeMastersController < ApplicationController
     case value
     when "stakeholder" then "stakeholder"
     when "user type", "user_type" then "user_type"
-    when "employee code", "employee_code", "employee id", "employee_id", "emp id", "emp_id" then "employee_code"
+    when "employee code", "employee_code", "employee id", "employee_id", "emp code", "emp_code", "emp id", "emp_id" then "employee_code"
+    when "password", "passsword", "passowrd", "passwrod" then "password"
+    when "confirm password", "confirm_password", "confirmed password", "password confirmation", "password_confirmation",
+         "confrim password", "confirm passsword", "confirm passwowrd", "confirm passwrod" then "password_confirmation"
     when "user name", "user_name" then "user_name"
     when "employee name", "employee_name", "emp name", "emp_name" then "employee_name"
     when "designation" then "designation"
@@ -259,6 +356,57 @@ class EmployeeMastersController < ApplicationController
     when "pincode", "pin code", "pin" then "pincode"
     else value.tr(" ", "_")
     end
+  end
+
+  def password_update_sheet?(rows)
+    keys = rows.flat_map(&:keys).compact.uniq
+    keys.include?("employee_code") &&
+      keys.include?("password") &&
+      (keys - %w[employee_code employee_id password password_confirmation]).empty?
+  end
+
+  def find_employee_by_import_code(employee_code)
+    normalized_code = normalize_import_employee_code(employee_code)
+    return if normalized_code.blank?
+
+    EmployeeMaster.find_by("UPPER(TRIM(employee_code)) = ?", normalized_code) ||
+      EmployeeMaster.where.not(employee_code: [nil, ""]).find do |employee|
+        normalize_import_employee_code(employee.employee_code) == normalized_code
+      end
+  end
+
+  def normalize_import_employee_code(employee_code)
+    employee_code.to_s.strip.upcase.sub(/\A0+(?=\d)/, "")
+  end
+
+  def clean_import_password(password)
+    password.to_s.strip.sub(/\A['‘’]+/, "")
+  end
+
+  def import_password_valid?(password, password_confirmation)
+    password == password_confirmation && Devise.password_length.cover?(password.length)
+  end
+
+  def validate_import_password_pair!(password, password_confirmation, label)
+    return if import_password_valid?(password, password_confirmation)
+
+    raise "Invalid password for #{label}: password and confirmation must match and be #{Devise.password_length.min}-#{Devise.password_length.max} characters."
+  end
+
+  def import_success_message(result)
+    if result[:mode] == :password_update
+      message = "#{result[:password_count]} employee passwords updated successfully."
+      if result[:skipped_count].positive?
+        message += " #{result[:skipped_count]} rows skipped"
+        message += " (#{result[:skipped_examples].join(', ')})" if result[:skipped_examples].present?
+        message += "."
+      end
+      return message
+    end
+
+    message = "#{result[:imported_count]} employees imported successfully. Login access was created for employees with employee codes and email IDs."
+    message += " #{result[:password_count]} passwords synced from the sheet." if result[:password_count].positive?
+    message
   end
 
   def load_location_collections

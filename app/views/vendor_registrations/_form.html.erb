@@ -639,6 +639,31 @@
       }
     }
 
+    function revealInvalidField(input) {
+      if (!input) return;
+
+      var page = input.closest(".app-static-page");
+      if (page) {
+        var pageClasses = Array.from(page.classList);
+        var pageClass = pageClasses.find(function (className) {
+          return className.indexOf("vendor-page-") === 0;
+        });
+        var stepNumber = pageClass ? pageClass.replace("vendor-page-", "") : "";
+        var stepToggle = stepNumber ? document.getElementById("vendor-step-" + stepNumber) : null;
+        if (stepToggle) {
+          stepToggle.checked = true;
+        }
+      }
+
+      setTimeout(function () {
+        var target = input.closest(".app-form-field") || input;
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+        if (typeof input.focus === "function" && input.offsetParent !== null) {
+          input.focus({ preventScroll: true });
+        }
+      }, 0);
+    }
+
     document.querySelectorAll("[data-uppercase-input='true']").forEach(function (input) {
       input.addEventListener("input", function () {
         this.value = this.value.toUpperCase();
@@ -702,6 +727,8 @@
         var firstInvalidField = null;
 
         formEl.querySelectorAll("input[pattern], input[required], input[type='email'], select[required], textarea[required]").forEach(function (input) {
+          if (input.disabled) return;
+
           setFieldError(input);
           if (!firstInvalidField && !input.checkValidity()) {
             firstInvalidField = input;
@@ -717,7 +744,7 @@
 
         if (firstInvalidField) {
           event.preventDefault();
-          firstInvalidField.focus();
+          revealInvalidField(firstInvalidField);
         }
       });
     });
