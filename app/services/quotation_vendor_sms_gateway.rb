@@ -470,7 +470,7 @@ class QuotationVendorSmsGateway
   end
 
   def self.base_url(config: nil)
-    configured_base_url(config: config).presence || (local_runtime_environment? ? DEVELOPMENT_BASE_URL : DEFAULT_VENDOR_REGISTRATION_BASE_URL)
+    configured_base_url(config: config).presence || DEVELOPMENT_BASE_URL
   end
 
   def self.quotation_reference_for(dispatch)
@@ -547,7 +547,6 @@ class QuotationVendorSmsGateway
 
     host = default_options[:host].to_s.strip
     return if host.blank?
-    return if !local_runtime_environment? && host.casecmp("example.com").zero?
 
     protocol = default_options[:protocol].presence || "http"
     port = default_options[:port].presence
@@ -575,7 +574,8 @@ class QuotationVendorSmsGateway
 
   def self.vendor_registration_profile_base_url
     if local_runtime_environment?
-      ENV["LOCAL_VENDOR_REGISTRATION_APP_BASE_URL"].presence ||
+      ENV["VENDOR_REGISTRATION_APP_BASE_URL"].presence ||
+        ENV["APP_BASE_URL"].presence ||
         DEVELOPMENT_BASE_URL
     else
       ENV["VENDOR_REGISTRATION_APP_BASE_URL"].presence ||
