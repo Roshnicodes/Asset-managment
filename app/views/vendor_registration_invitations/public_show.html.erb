@@ -1,0 +1,47 @@
+<% if @vendor_registration.present? %>
+  <div class="app-page-header">
+    <h2>Vendor Registration Form</h2>
+  </div>
+
+  <%= render "vendor_registrations/form",
+        vendor_registration: @vendor_registration,
+        form_url: register_vendor_registration_invitation_path(@invitation.token),
+        form_method: :post,
+        lock_mobile_no: true,
+        disable_turbo: true %>
+<% else %>
+  <div class="app-detail-card">
+    <div class="app-page-header">
+      <div>
+        <h2>Vendor Registration OTP</h2>
+        <p class="app-section-note mb-0">Enter the OTP sent to your mobile number to open the registration form.</p>
+      </div>
+    </div>
+
+    <div class="app-detail-grid">
+      <div class="app-detail-item">
+        <div class="app-detail-label">Mobile No</div>
+        <div class="app-detail-value"><%= @invitation.mobile_no %></div>
+      </div>
+      <div class="app-detail-item">
+        <div class="app-detail-label">Last OTP Sent At</div>
+        <div class="app-detail-value"><%= @invitation.otp_sent_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+      </div>
+    </div>
+
+    <%= form_with url: verify_vendor_registration_invitation_otp_path(@invitation.token), method: :post, local: true, data: { turbo: false }, html: { style: "margin-top: 1rem;" } do |form| %>
+      <div class="app-form-field">
+        <%= form.label :otp_code, "Enter OTP" %>
+        <%= form.text_field :otp_code, maxlength: 6, required: true, class: "form-control", inputmode: "numeric", autocomplete: "one-time-code", placeholder: "------" %>
+      </div>
+
+      <div class="app-form-actions">
+        <%= form.submit "Verify OTP", class: "app-form-submit" %>
+      </div>
+    <% end %>
+
+    <div style="margin-top: 1rem;">
+      <%= button_to "Send New OTP", send_vendor_registration_invitation_otp_path(@invitation.token), method: :post, class: "app-secondary-btn", data: { turbo: false } %>
+    </div>
+  </div>
+<% end %>

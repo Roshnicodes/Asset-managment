@@ -18,6 +18,9 @@ class QuotationVendorSmsGateway
   DEFAULT_INVOICE_LINK_TEMPLATE_ID = "1707177648937573645".freeze
   DEFAULT_INVOICE_RETURN_LINK_TEMPLATE_ID = "1707177650435445886".freeze
   DEFAULT_INVOICE_OTP_TEMPLATE_ID = "1707177675366996869".freeze
+  DEFAULT_VENDOR_REGISTRATION_LINK_TEMPLATE_ID = "1707177944223861381".freeze
+  DEFAULT_VENDOR_REGISTRATION_OTP_TEMPLATE_ID = "1707177944234142889".freeze
+  DEFAULT_VENDOR_REGISTRATION_BASE_URL = "http://apurti.ploughmanagro.com".freeze
   DEVELOPMENT_BASE_URL = "http://127.0.0.1:3000".freeze
   ASA_LINK_TEMPLATE_ID = "1707177512006405172".freeze
   ASA_OTP_TEMPLATE_ID = "1707177528687356932".freeze
@@ -89,8 +92,47 @@ class QuotationVendorSmsGateway
     )
   end
 
+  def self.send_vendor_registration_link(invitation)
+    config = vendor_registration_sms_config
+    send_sms(
+      mobile_no: invitation.mobile_no,
+      message: vendor_registration_link_message(invitation, config: config),
+      template_id: config[:vendor_registration_link_template_id],
+      config: config
+    )
+  end
+
+  def self.send_vendor_registration_otp(invitation)
+    config = vendor_registration_sms_config
+    send_sms(
+      mobile_no: invitation.mobile_no,
+      message: vendor_registration_otp_message(invitation, config: config),
+      template_id: config[:vendor_registration_otp_template_id],
+      config: config
+    )
+  end
+
   def self.vendor_link_for(token)
     "#{base_url}/q/#{token}"
+  end
+
+  def self.vendor_registration_link_for(token, config: nil)
+    "#{base_url(config: config)}/vr/#{token}"
+  end
+
+  def self.vendor_registration_start_link_for(config: nil)
+    configured_url = base_url(config: config)
+    return "#{configured_url}/vr" if local_runtime_environment?
+
+    host = URI.parse(configured_url).host
+    host = configured_url.sub(%r{\Ahttps?://}, "").split("/").first if host.blank?
+    "#{host}/vr"
+  rescue URI::InvalidURIError
+    base_url(config: config).sub(%r{\Ahttps?://}, "").chomp("/") + "/vr"
+  end
+
+  def self.vendor_registration_sms_link_for_config(token, config:)
+    "#{base_url(config: config)}/vr?t=#{token}"
   end
 
   def self.vendor_link_for_config(token, config:)
@@ -214,6 +256,14 @@ class QuotationVendorSmsGateway
     else
       "Dear #{vendor_name}, payment update for quotation #{quotation_reference} is ready. PDO No: #{invoice_request.pdo_no}, RFP No: #{invoice_request.rfp_no}, Transaction Type: #{transaction_type}, Transaction No: #{transaction_no}, Transaction Date: #{transaction_date}."
     end
+  end
+
+  def self.vendor_registration_link_message(invitation, config:)
+    "Dear Vendor, Please registration using the link below: #{vendor_registration_sms_link_for_config(invitation.token, config: config)} Ploughman Agro Private Limited (PAPL)"
+  end
+
+  def self.vendor_registration_otp_message(invitation, config:)
+    "Dear Vendor, #{invitation.otp_code} is your OTP to proceed with vendor registration. Please do not share this OTP with anyone. Ploughman Agro Private Limited (PAPL)"
   end
 
   def self.send_sms(mobile_no:, message:, template_id:, config:)
@@ -380,6 +430,8 @@ class QuotationVendorSmsGateway
   end
 
   def self.placeholder_sms_host?(host)
+    return false if local_runtime_environment?
+
     normalized_host = host.to_s.downcase
     normalized_host.blank? ||
       normalized_host == "example.com" ||
@@ -505,6 +557,8 @@ class QuotationVendorSmsGateway
     case config&.fetch(:profile, nil)
     when :asa
       ENV["ASA_APP_BASE_URL"].to_s.strip
+    when :vendor_registration
+      vendor_registration_profile_base_url
     when :default, :asa_legacy_fallback
       ENV["SMS_APP_BASE_URL"].to_s.strip
     else
@@ -518,6 +572,23 @@ class QuotationVendorSmsGateway
     {}
   end
 
+  def self.vendor_registration_profile_base_url
+    if local_runtime_environment?
+      ENV["VENDOR_REGISTRATION_APP_BASE_URL"].presence ||
+        ENV["APP_BASE_URL"].presence ||
+        DEVELOPMENT_BASE_URL
+    else
+      ENV["VENDOR_REGISTRATION_APP_BASE_URL"].presence ||
+        ENV["SMS_APP_BASE_URL"].presence ||
+        ENV["PAPL_APP_BASE_URL"].presence ||
+        DEFAULT_VENDOR_REGISTRATION_BASE_URL
+    end
+  end
+
+  def self.local_runtime_environment?
+    Rails.env.development? || Rails.env.test?
+  end
+
   def self.sms_config_for(dispatch)
     stakeholder_name = stakeholder_name_for(dispatch)
 
@@ -526,6 +597,14 @@ class QuotationVendorSmsGateway
     else
       default_sms_config
     end
+  end
+
+  def self.vendor_registration_sms_config
+    default_sms_config.merge(
+      profile: :default,
+      vendor_registration_link_template_id: ENV.fetch("SMS_VENDOR_REGISTRATION_LINK_DLT_TEMPLATE_ID", DEFAULT_VENDOR_REGISTRATION_LINK_TEMPLATE_ID),
+      vendor_registration_otp_template_id: ENV.fetch("SMS_VENDOR_REGISTRATION_OTP_DLT_TEMPLATE_ID", DEFAULT_VENDOR_REGISTRATION_OTP_TEMPLATE_ID)
+    )
   end
 
   def self.asa_sms_config
@@ -544,7 +623,9 @@ class QuotationVendorSmsGateway
       purchase_order_otp_template_id: ENV.fetch("ASA_SMS_PURCHASE_ORDER_OTP_DLT_TEMPLATE_ID", ASA_PURCHASE_ORDER_OTP_TEMPLATE_ID),
       invoice_link_template_id: ENV.fetch("ASA_SMS_INVOICE_LINK_DLT_TEMPLATE_ID", ASA_INVOICE_LINK_TEMPLATE_ID),
       invoice_return_link_template_id: ENV.fetch("ASA_SMS_INVOICE_RETURN_LINK_DLT_TEMPLATE_ID", ASA_INVOICE_RETURN_LINK_TEMPLATE_ID),
-      invoice_otp_template_id: ENV.fetch("ASA_SMS_INVOICE_OTP_DLT_TEMPLATE_ID", ASA_INVOICE_OTP_TEMPLATE_ID)
+      invoice_otp_template_id: ENV.fetch("ASA_SMS_INVOICE_OTP_DLT_TEMPLATE_ID", ASA_INVOICE_OTP_TEMPLATE_ID),
+      vendor_registration_link_template_id: ENV.fetch("ASA_SMS_VENDOR_REGISTRATION_LINK_DLT_TEMPLATE_ID", DEFAULT_VENDOR_REGISTRATION_LINK_TEMPLATE_ID),
+      vendor_registration_otp_template_id: ENV.fetch("ASA_SMS_VENDOR_REGISTRATION_OTP_DLT_TEMPLATE_ID", DEFAULT_VENDOR_REGISTRATION_OTP_TEMPLATE_ID)
     }
   end
 
@@ -564,7 +645,9 @@ class QuotationVendorSmsGateway
       purchase_order_otp_template_id: ENV.fetch("SMS_PURCHASE_ORDER_OTP_DLT_TEMPLATE_ID", DEFAULT_PURCHASE_ORDER_OTP_TEMPLATE_ID),
       invoice_link_template_id: ENV.fetch("SMS_INVOICE_LINK_DLT_TEMPLATE_ID", DEFAULT_INVOICE_LINK_TEMPLATE_ID),
       invoice_return_link_template_id: ENV.fetch("SMS_INVOICE_RETURN_LINK_DLT_TEMPLATE_ID", DEFAULT_INVOICE_RETURN_LINK_TEMPLATE_ID),
-      invoice_otp_template_id: ENV.fetch("SMS_INVOICE_OTP_DLT_TEMPLATE_ID", DEFAULT_INVOICE_OTP_TEMPLATE_ID)
+      invoice_otp_template_id: ENV.fetch("SMS_INVOICE_OTP_DLT_TEMPLATE_ID", DEFAULT_INVOICE_OTP_TEMPLATE_ID),
+      vendor_registration_link_template_id: ENV.fetch("SMS_VENDOR_REGISTRATION_LINK_DLT_TEMPLATE_ID", DEFAULT_VENDOR_REGISTRATION_LINK_TEMPLATE_ID),
+      vendor_registration_otp_template_id: ENV.fetch("SMS_VENDOR_REGISTRATION_OTP_DLT_TEMPLATE_ID", DEFAULT_VENDOR_REGISTRATION_OTP_TEMPLATE_ID)
     }
   end
 
@@ -592,6 +675,10 @@ class QuotationVendorSmsGateway
       default_sms_config[:invoice_return_link_template_id]
     elsif template_id.to_s == config[:invoice_otp_template_id].to_s
       default_sms_config[:invoice_otp_template_id]
+    elsif template_id.to_s == config[:vendor_registration_link_template_id].to_s
+      default_sms_config[:vendor_registration_link_template_id]
+    elsif template_id.to_s == config[:vendor_registration_otp_template_id].to_s
+      default_sms_config[:vendor_registration_otp_template_id]
     else
       default_sms_config[:quotation_otp_template_id]
     end
@@ -622,9 +709,9 @@ class QuotationVendorSmsGateway
 
   def self.stakeholder_name_for(dispatch)
     [
-      dispatch.quotation_proposal&.theme&.stakeholder_category&.name,
-      dispatch.stakeholder_category&.name,
-      dispatch.vendor_registration&.stakeholder_category&.name,
+      dispatch.try(:quotation_proposal)&.theme&.stakeholder_category&.name,
+      dispatch.try(:stakeholder_category)&.name,
+      dispatch.try(:vendor_registration)&.stakeholder_category&.name,
     ].compact.map { |value| value.to_s.strip }.find(&:present?).to_s.upcase
   end
 

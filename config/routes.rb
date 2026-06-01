@@ -7,6 +7,12 @@ Rails.application.routes.draw do
   get "p", to: "purchase_order_vendor_qrs#show"
   get "p/:token", to: "purchase_order_vendor_qrs#show", as: :short_purchase_order_vendor_qr
   get "gr/:token", to: "goods_receive_vendor_qrs#show", as: :short_goods_receive_vendor_qr
+  get "vr", to: "vendor_registration_invitations#public_start", as: :start_vendor_registration_invitation
+  post "vr", to: "vendor_registration_invitations#public_lookup", as: :lookup_vendor_registration_invitation
+  get "vr/:token", to: "vendor_registration_invitations#public_show", as: :public_vendor_registration_invitation
+  post "vr/:token/send-otp", to: "vendor_registration_invitations#send_otp", as: :send_vendor_registration_invitation_otp
+  post "vr/:token/verify-otp", to: "vendor_registration_invitations#verify_otp", as: :verify_vendor_registration_invitation_otp
+  post "vr/:token/register", to: "vendor_registration_invitations#register", as: :register_vendor_registration_invitation
   get "quotation-vendor-qr/:token", to: "quotation_vendor_qrs#show", as: :quotation_vendor_qr
   get "quotation-vendor-qr/:token/print", to: "quotation_vendor_qrs#print", as: :print_quotation_vendor_qr
   post "quotation-vendor-qr/:token/send-otp", to: "quotation_vendor_qrs#send_otp", as: :send_quotation_vendor_qr_otp
@@ -63,6 +69,11 @@ Rails.application.routes.draw do
     collection do
       get :list
       post :send_for_approval
+    end
+  end
+  resources :vendor_registration_invitations, only: %i[new create show] do
+    member do
+      post :resend
     end
   end
   resources :employee_masters do

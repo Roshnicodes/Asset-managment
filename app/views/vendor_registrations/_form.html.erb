@@ -18,7 +18,15 @@
   #vendor-step-1:checked ~ .app-static-pager-nav .vendor-nav-1, #vendor-step-2:checked ~ .app-static-pager-nav .vendor-nav-2, #vendor-step-3:checked ~ .app-static-pager-nav .vendor-nav-3, #vendor-step-4:checked ~ .app-static-pager-nav .vendor-nav-4, #vendor-step-5:checked ~ .app-static-pager-nav .vendor-nav-5, #vendor-step-6:checked ~ .app-static-pager-nav .vendor-nav-6 { display: flex !important; }
 </style>
 
-<%= form_with(model: vendor_registration, html: { data: { vendor_validation_form: true, ui_form_pager: true }, novalidate: true }) do |form| %>
+<% form_url = local_assigns[:form_url] %>
+<% form_method = local_assigns[:form_method] %>
+<% lock_mobile_no = local_assigns[:lock_mobile_no] == true %>
+<% form_data = { vendor_validation_form: true, ui_form_pager: true } %>
+<% form_data[:turbo] = false if local_assigns[:disable_turbo] == true %>
+<% form_options = { model: vendor_registration, local: true, data: form_data, html: { novalidate: true } } %>
+<% form_options[:url] = form_url if form_url.present? %>
+<% form_options[:method] = form_method if form_method.present? %>
+<%= form_with(**form_options) do |form| %>
   <% approval_request = vendor_registration.approval_request %>
   <% field_errors = ->(field_name) { vendor_registration.errors.full_messages_for(field_name) } %>
   <div class="app-form-card app-form-card-wide app-static-paged-form">
@@ -171,6 +179,7 @@
         <%= form.label :mobile_no, "Mobile No" %>
         <%= form.telephone_field :mobile_no,
               required: true,
+              readonly: lock_mobile_no,
               maxlength: 10,
               minlength: 10,
               pattern: "[6-9][0-9]{9}",
@@ -391,7 +400,7 @@
     <% end %>
 
     <%= form.fields_for :vendor_bank_masters do |bank_form| %>
-      <%= render "vendor_bank_master_fields", form: bank_form %>
+      <%= render "vendor_registrations/vendor_bank_master_fields", form: bank_form %>
     <% end %>
 
     </div>

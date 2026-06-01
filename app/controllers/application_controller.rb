@@ -17,6 +17,7 @@ class ApplicationController < ActionController::Base
   helper_method :approval_actor_for
   helper_method :employee_matches_current_login?
   helper_method :finance_queue_access?
+  helper_method :senior_manager_finance?
 
   def current_employee_master
     return @current_employee_master if defined?(@current_employee_master)
@@ -99,26 +100,13 @@ class ApplicationController < ActionController::Base
   def finance_queue_access?
     return true if admin_user?
 
-    employee = current_employee_master
-    return false unless employee
-
-    role_permissions = MenuPermission.where(
-      stakeholder_category_id: employee.stakeholder_category_id,
-      designation: employee.designation
-    )
-
-    explicit_permission = role_permissions.find_by(menu_identifier: "payment_advice_queue")
-    return explicit_permission.can_view? if explicit_permission.present?
-
-    role_permissions.find_by(menu_identifier: "quotation_proposal_list")&.can_view? &&
-      finance_designation?(employee.designation)
+    senior_manager_finance?
   end
 
   private
 
-  def finance_designation?(designation)
-    designation_text = designation.to_s.strip.downcase
-    designation_text.include?("finance") || designation_text.include?("account")
+  def senior_manager_finance?
+    current_employee_master&.designation.to_s.strip.casecmp("Senior Manager Finance").zero?
   end
 
   def configure_permitted_parameters

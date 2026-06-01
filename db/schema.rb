@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_23_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_30_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -633,6 +633,29 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_23_090000) do
     t.index ["vendor_registration_id"], name: "index_vendor_registration_documents_on_vendor_registration_id"
   end
 
+  create_table "vendor_registration_invitations", force: :cascade do |t|
+    t.datetime "access_expires_at"
+    t.datetime "created_at", null: false
+    t.string "mobile_no", null: false
+    t.datetime "opened_at"
+    t.string "otp_code"
+    t.datetime "otp_expires_at"
+    t.datetime "otp_sent_at"
+    t.datetime "otp_verified_at"
+    t.datetime "sent_at"
+    t.bigint "stakeholder_category_id"
+    t.string "status", default: "draft", null: false
+    t.string "token", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.bigint "vendor_registration_id"
+    t.index ["mobile_no"], name: "index_vendor_registration_invitations_on_mobile_no"
+    t.index ["stakeholder_category_id"], name: "idx_on_stakeholder_category_id_eb1673a822"
+    t.index ["token"], name: "index_vendor_registration_invitations_on_token", unique: true
+    t.index ["user_id"], name: "index_vendor_registration_invitations_on_user_id"
+    t.index ["vendor_registration_id"], name: "idx_on_vendor_registration_id_7326b11eaa"
+  end
+
   create_table "vendor_registration_product_varieties", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "product_variety_id", null: false
@@ -796,6 +819,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_23_090000) do
   add_foreign_key "vendor_bank_masters", "vendor_registrations"
   add_foreign_key "vendor_registration_documents", "document_masters"
   add_foreign_key "vendor_registration_documents", "vendor_registrations"
+  add_foreign_key "vendor_registration_invitations", "stakeholder_categories"
+  add_foreign_key "vendor_registration_invitations", "users"
+  add_foreign_key "vendor_registration_invitations", "vendor_registrations"
   add_foreign_key "vendor_registration_product_varieties", "product_varieties"
   add_foreign_key "vendor_registration_product_varieties", "vendor_registrations"
   add_foreign_key "vendor_registration_products", "products"

@@ -14,6 +14,7 @@
     </div>
     <div style="margin-left:auto; display:flex; gap:.5rem; align-items:center;">
       <%= link_to "Add Vendor Registration", new_vendor_registration_path, class: "app-primary-btn" %>
+      <%= link_to "Send Registration Link", new_vendor_registration_invitation_path, class: "app-secondary-btn" %>
       <%= form_tag send_for_approval_vendor_registrations_path, method: :post, id: "send-approval-form", style: "display: inline;" do %>
         <button type="submit" class="app-secondary-btn d-none" id="send_for_approval_button">Send for Approval</button>
       <% end %>

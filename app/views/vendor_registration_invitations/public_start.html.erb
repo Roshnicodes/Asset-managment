@@ -1,0 +1,19 @@
+<div class="app-detail-card">
+  <div class="app-page-header">
+    <div>
+      <h2>Vendor Registration</h2>
+      <p class="app-section-note mb-0">Enter the mobile number where you received the registration invite.</p>
+    </div>
+  </div>
+
+  <%= form_with url: lookup_vendor_registration_invitation_path, method: :post, local: true, data: { turbo: false }, html: { style: "margin-top: 1rem;" } do |form| %>
+    <div class="app-form-field">
+      <%= form.label :mobile_no, "Mobile No" %>
+      <%= form.telephone_field :mobile_no, required: true, maxlength: 10, minlength: 10, pattern: "[6-9][0-9]{9}", inputmode: "numeric", autocomplete: "tel", class: "form-control", data: { numeric_input: true } %>
+    </div>
+
+    <div class="app-form-actions">
+      <%= form.submit "Send OTP", class: "app-form-submit" %>
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,38 @@
+<div class="app-page-header">
+  <h2>Send Vendor Registration SMS Invite</h2>
+  <%= link_to "Back", vendor_registrations_path, class: "app-back-link" %>
+</div>
+
+<div class="app-form-card">
+  <% if @invitation.errors.any? %>
+    <div class="app-form-errors">
+      <h2>Please fix the following details:</h2>
+      <ul>
+        <% @invitation.errors.each do |error| %>
+          <li><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <%= form_with model: @invitation, local: true do |form| %>
+    <% if !admin_user? && @current_stakeholder_category.present? %>
+      <%= form.hidden_field :stakeholder_category_id, value: @current_stakeholder_category.id %>
+    <% else %>
+      <div class="app-form-field">
+        <%= form.label :stakeholder_category_id, "Stakeholder" %>
+        <%= form.collection_select :stakeholder_category_id, StakeholderCategory.order(:name), :id, :name, { prompt: "Select stakeholder" } %>
+      </div>
+    <% end %>
+
+    <div class="app-form-field">
+      <%= form.label :mobile_no, "Vendor Mobile No" %>
+      <%= form.telephone_field :mobile_no, required: true, maxlength: 10, minlength: 10, pattern: "[6-9][0-9]{9}", inputmode: "numeric", autocomplete: "tel", data: { numeric_input: true } %>
+      <p class="app-section-note">The vendor will receive the registration link on this mobile number and must verify OTP before submitting the form.</p>
+    </div>
+
+    <div class="app-form-actions">
+      <%= form.submit "Send SMS Invite", class: "app-form-submit" %>
+    </div>
+  <% end %>
+</div>

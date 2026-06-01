@@ -1,4 +1,6 @@
 class ApprovalRequestBuilder
+  DIRECT_VENDOR_REGISTRATION_APPROVER = "Senior Manager Finance".freeze
+
   def self.create_for!(record, form_name:)
     approval_channel = approval_channel_for(record, form_name: form_name)
     return nil unless approval_channel
@@ -62,6 +64,33 @@ class ApprovalRequestBuilder
       NotificationDispatcher.notify_approval_step(approval_request, notification_step)
     end
 
+    approval_request
+  end
+
+  def self.create_direct_finance_for_vendor_invitation!(record)
+    form_name = "Vendor Registration"
+    approval_channel = approval_channel_for(record, form_name: form_name) || fallback_approval_channel_for(form_name: form_name)
+    raise ActiveRecord::RecordNotFound, "No Vendor Registration approval channel found." unless approval_channel
+
+    finance_approver = direct_vendor_registration_approver!
+
+    approval_request = ApprovalRequest.create!(
+      approval_channel: approval_channel,
+      approvable: record,
+      form_name: form_name,
+      status: "pending",
+      current_level: 1
+    )
+
+    approval_step = approval_request.approval_steps.create!(
+      employee_master: finance_approver,
+      previous_action: "Vendor Registration Submitted",
+      current_action: "Finance Approval",
+      level: 1,
+      status: "pending"
+    )
+
+    NotificationDispatcher.notify_approval_step(approval_request, approval_step)
     approval_request
   end
 
@@ -145,5 +174,36 @@ class ApprovalRequestBuilder
     return 3 if theme_ids.include?(channel.theme_id)
 
     0
+  end
+
+  def self.fallback_approval_channel_for(form_name:)
+    ApprovalChannel
+      .includes(:approval_channel_steps)
+      .where(form_name: form_name)
+      .detect { |channel| channel.flow_steps.any? }
+  end
+
+  def self.direct_vendor_registration_approver!
+    role = DIRECT_VENDOR_REGISTRATION_APPROVER.downcase
+    candidates = EmployeeMaster.where(
+      "LOWER(designation) = :role OR LOWER(name) = :role OR LOWER(designation) LIKE :role_like OR LOWER(name) LIKE :role_like",
+      role: role,
+      role_like: "%#{role}%"
+    ).to_a
+
+    approver = candidates.min_by do |employee|
+      designation = employee.designation.to_s.strip.downcase
+      name = employee.name.to_s.strip.downcase
+
+      [
+        designation == role ? 0 : 1,
+        name == role ? 0 : 1,
+        employee.id
+      ]
+    end
+
+    raise ActiveRecord::RecordNotFound, "#{DIRECT_VENDOR_REGISTRATION_APPROVER} employee master not found." unless approver
+
+    approver
   end
 end
