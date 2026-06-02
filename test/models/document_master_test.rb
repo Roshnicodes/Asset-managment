@@ -1,16 +1,20 @@
 require "test_helper"
 
 class DocumentMasterTest < ActiveSupport::TestCase
-  test "cannot be destroyed when linked vendor registration documents exist" do
+  test "destroys linked vendor registration documents when destroyed" do
     document_master = document_masters(:one)
 
-    VendorRegistrationDocument.create!(
+    vendor_registration_document = VendorRegistrationDocument.create!(
       vendor_registration: vendor_registrations(:one),
       document_master: document_master
     )
 
-    assert_not document_master.destroy
-    assert_includes document_master.errors.full_messages.to_sentence.downcase, "vendor registration documents"
-    assert DocumentMaster.exists?(document_master.id)
+    assert_difference("DocumentMaster.count", -1) do
+      assert_difference("VendorRegistrationDocument.count", -1) do
+        assert document_master.destroy
+      end
+    end
+
+    assert_not VendorRegistrationDocument.exists?(vendor_registration_document.id)
   end
 end

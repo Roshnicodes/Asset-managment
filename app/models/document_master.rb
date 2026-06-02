@@ -1,7 +1,7 @@
 class DocumentMaster < ApplicationRecord
   belongs_to :stakeholder_category, optional: true
   belongs_to :firm, optional: true
-  has_many :vendor_registration_documents, dependent: :restrict_with_error, inverse_of: :document_master
+  has_many :vendor_registration_documents, dependent: :destroy, inverse_of: :document_master
 
   validates :name, presence: true
 
