@@ -824,7 +824,7 @@ const setupQuotationProposalForm = () => {
       if (selectionNote) {
         selectionNote.textContent = singleVendorMode()
           ? "Only one vendor can be selected for Below 10K quotations."
-          : "After you select a theme, only vendors matching the same stakeholder appear here."
+          : "After you select a theme, only vendors registered for that theme appear here."
       }
 
       if (selectedWrap) {
@@ -851,8 +851,6 @@ const setupQuotationProposalForm = () => {
 
     const syncVendors = () => {
       const selectedThemeId = themeSelect.value
-      const selectedThemeOption = themeSelect.options[themeSelect.selectedIndex]
-      const selectedStakeholderId = selectedThemeOption?.dataset?.stakeholderId || ""
       const query = (search?.value || "").trim().toLowerCase()
       const selectedCheckboxes = vendorOptions
         .map((option) => option.querySelector(".quotation-vendor-checkbox"))
@@ -861,17 +859,15 @@ const setupQuotationProposalForm = () => {
 
       vendorOptions.forEach((option) => {
         const themeIds = (option.dataset.themeIds || "").split(",").filter(Boolean)
-        const vendorStakeholderId = option.dataset.stakeholderId || ""
         const text = option.innerText.toLowerCase()
         const matchesTheme = selectedThemeId === "" || themeIds.includes(selectedThemeId)
-        const matchesStakeholder = selectedStakeholderId === "" || vendorStakeholderId === "" || vendorStakeholderId === selectedStakeholderId
         const matchesSearch = query === "" || text.includes(query)
         const checkbox = option.querySelector(".quotation-vendor-checkbox")
         const isSelected = !!checkbox?.checked
-        const shouldShow = matchesTheme && matchesStakeholder && matchesSearch && !isSelected
+        const shouldShow = matchesTheme && matchesSearch && !isSelected
 
         option.classList.toggle("is-hidden", !shouldShow)
-        if ((!matchesTheme || !matchesStakeholder) && checkbox) checkbox.checked = false
+        if (!matchesTheme && checkbox) checkbox.checked = false
         if (checkbox) {
           checkbox.disabled = !!(singleVendorMode() && lockedSelection && checkbox.value !== lockedSelection)
         }
@@ -884,17 +880,15 @@ const setupQuotationProposalForm = () => {
           if (!checkbox?.checked) return false
 
           const themeIds = (option.dataset.themeIds || "").split(",").filter(Boolean)
-          const vendorStakeholderId = option.dataset.stakeholderId || ""
           const text = option.innerText.toLowerCase()
           const matchesTheme = selectedThemeId === "" || themeIds.includes(selectedThemeId)
-          const matchesStakeholder = selectedStakeholderId === "" || vendorStakeholderId === "" || vendorStakeholderId === selectedStakeholderId
           const matchesSearch = query === "" || text.includes(query)
-          return matchesTheme && matchesStakeholder && matchesSearch
+          return matchesTheme && matchesSearch
         })
 
         emptyState.textContent = selectedMatchingOptions.length > 0
           ? "All matching vendors are selected."
-          : "No vendor matches the selected theme, stakeholder, or search."
+          : "No vendor matches the selected theme or search."
         emptyState.classList.toggle("is-hidden", visibleOptions.length > 0)
       }
       updateLabel()

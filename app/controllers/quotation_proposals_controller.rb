@@ -1047,9 +1047,16 @@ class QuotationProposalsController < ApplicationController
     @product_varieties = ProductVariety.includes(product: :theme).order(:name)
     @vendors = VendorRegistration
       .includes(:themes, :approval_request)
+      .left_joins(:themes)
       .joins(:approval_request)
       .where(approval_requests: { status: "approved" })
-    @vendors = @vendors.where(stakeholder_category_id: [stakeholder_id, nil]) if stakeholder_id.present?
+    if stakeholder_id.present?
+      @vendors = @vendors.where(
+        "vendor_registrations.stakeholder_category_id IN (:stakeholder_ids) OR vendor_registrations.stakeholder_category_id IS NULL OR themes.stakeholder_category_id = :stakeholder_id",
+        stakeholder_ids: [stakeholder_id],
+        stakeholder_id: stakeholder_id
+      )
+    end
     @vendors = @vendors.distinct
       .order(:vendor_name)
     @vendor_selection_criteria = VendorSelectionCriterion

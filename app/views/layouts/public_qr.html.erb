@@ -32,6 +32,20 @@
       padding: 2rem clamp(1rem, 2vw, 1.75rem) 3rem;
     }
 
+    .public-qr-brand {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+
+    .public-qr-brand-logo {
+      width: auto;
+      max-width: min(220px, 72vw);
+      max-height: 92px;
+      object-fit: contain;
+      display: block;
+    }
+
     .public-qr-flash-stack {
       display: grid;
       gap: 0.85rem;
@@ -57,6 +71,11 @@
 
 <body class="public-qr-page">
   <main class="public-qr-main">
+    <% public_stakeholder = @stakeholder_category || @invitation&.stakeholder_category %>
+    <div class="public-qr-brand">
+      <%= image_tag stakeholder_logo_source(public_stakeholder), alt: stakeholder_logo_alt(public_stakeholder), class: "public-qr-brand-logo" %>
+    </div>
+
     <div class="public-qr-flash-stack">
       <% if notice %>
         <div class="alert alert-success public-qr-flash"><%= notice %></div>

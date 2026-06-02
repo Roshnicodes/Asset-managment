@@ -61,7 +61,9 @@ class QuotationProposal < ApplicationRecord
     return true if proposal_stakeholder_id.blank?
 
     vendor_stakeholder_id = vendor_registration.stakeholder_category_id
-    vendor_stakeholder_id.blank? || vendor_stakeholder_id == proposal_stakeholder_id
+    return true if vendor_stakeholder_id.blank? || vendor_stakeholder_id == proposal_stakeholder_id
+
+    vendor_registration.themes.any? { |theme| theme.stakeholder_category_id == proposal_stakeholder_id }
   end
 
   def sync_selected_vendor_registration!(vendor_registration)

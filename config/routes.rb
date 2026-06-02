@@ -107,7 +107,7 @@ Rails.application.routes.draw do
   end
 
   unauthenticated do
-    root to: "vendor_registration_invitations#public_start"
+    root to: redirect("/users/sign_in")
   end
   resources :states
   resources :districts

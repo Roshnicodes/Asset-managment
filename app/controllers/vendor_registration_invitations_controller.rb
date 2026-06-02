@@ -141,6 +141,7 @@ class VendorRegistrationInvitationsController < ApplicationController
 
   def set_public_invitation
     @invitation = VendorRegistrationInvitation.find_by!(token: params[:token])
+    @stakeholder_category = @invitation.stakeholder_category
   rescue ActiveRecord::RecordNotFound
     render :invalid_link, status: :not_found
   end
