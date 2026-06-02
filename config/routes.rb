@@ -7,6 +7,9 @@ Rails.application.routes.draw do
   get "p", to: "purchase_order_vendor_qrs#show"
   get "p/:token", to: "purchase_order_vendor_qrs#show", as: :short_purchase_order_vendor_qr
   get "gr/:token", to: "goods_receive_vendor_qrs#show", as: :short_goods_receive_vendor_qr
+  get "r", to: redirect("/registrations/new"), as: :short_public_vendor_registration
+  get "registrations/new", to: "vendor_registrations#public_new", as: :public_new_vendor_registration
+  post "registrations", to: "vendor_registrations#public_create", as: :public_vendor_registrations
   get "vr", to: "vendor_registration_invitations#public_start", as: :start_vendor_registration_invitation
   post "vr", to: "vendor_registration_invitations#public_lookup", as: :lookup_vendor_registration_invitation
   get "vr/:token", to: "vendor_registration_invitations#public_show", as: :public_vendor_registration_invitation
@@ -101,7 +104,13 @@ Rails.application.routes.draw do
   resources :blocks
   get "users", to: redirect("/users/sign_in")
   devise_for :users, controllers: { passwords: 'users/passwords', registrations: 'users/registrations' }
-  root to: "dashboard#index"
+  authenticated :user do
+    root to: "dashboard#index", as: :authenticated_root
+  end
+
+  unauthenticated do
+    root to: "vendor_registration_invitations#public_start"
+  end
   resources :states
   resources :districts
   resources :pmus

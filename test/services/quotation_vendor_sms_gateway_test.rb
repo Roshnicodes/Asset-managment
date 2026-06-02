@@ -713,13 +713,15 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     request_count = 0
     message = "Dear Vendor, link: https://example.com/p/token"
 
-    Net::HTTP.stub(:get_response, ->(_uri) { request_count += 1; flunk "gateway should not be called" }) do
-      assert_not QuotationVendorSmsGateway.send_sms(
-        mobile_no: "9876543210",
-        message: message,
-        template_id: "template-id",
-        config: QuotationVendorSmsGateway.asa_sms_config
-      )
+    QuotationVendorSmsGateway.stub(:local_runtime_environment?, false) do
+      Net::HTTP.stub(:get_response, ->(_uri) { request_count += 1; flunk "gateway should not be called" }) do
+        assert_not QuotationVendorSmsGateway.send_sms(
+          mobile_no: "9876543210",
+          message: message,
+          template_id: "template-id",
+          config: QuotationVendorSmsGateway.asa_sms_config
+        )
+      end
     end
 
     assert_equal 0, request_count
@@ -743,6 +745,87 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
 
     assert_equal 0, request_count
     assert_match "SMS link host asa360.asaindia.org is not in the approved SMS URL hosts", QuotationVendorSmsGateway.last_error_message
+  end
+
+  test "vendor registration sms config uses live vendor registration base url" do
+    with_env(
+      "APP_BASE_URL" => "https://wrong.example.org",
+      "SMS_APP_BASE_URL" => "https://quotation.example.org",
+      "SMS_VENDOR_REGISTRATION_CTA_URL" => nil,
+      "VENDOR_REGISTRATION_APP_BASE_URL" => "http://apurti.ploughmanagro.com"
+    ) do
+      config = QuotationVendorSmsGateway.vendor_registration_sms_config
+
+      assert_equal :vendor_registration, config[:profile]
+      assert_equal(
+        "http://apurti.ploughmanagro.com/r?",
+        QuotationVendorSmsGateway.vendor_registration_sms_link_for_config("inviteToken1", config: config)
+      )
+    end
+  end
+
+  test "vendor registration sms link can use exact whitelisted CTA url override" do
+    with_env(
+      "VENDOR_REGISTRATION_APP_BASE_URL" => "http://apurti.ploughmanagro.com",
+      "SMS_VENDOR_REGISTRATION_CTA_URL" => "http://apurti.ploughmanagro.com/vendor_registrations/new/?"
+    ) do
+      config = QuotationVendorSmsGateway.vendor_registration_sms_config
+
+      assert_equal(
+        "http://apurti.ploughmanagro.com/vendor_registrations/new/?",
+        QuotationVendorSmsGateway.vendor_registration_sms_link_for_config("inviteToken1", config: config)
+      )
+    end
+  end
+
+  test "vendor registration sms link defaults to approved production CTA url" do
+    with_env(
+      "APP_BASE_URL" => nil,
+      "SMS_APP_BASE_URL" => nil,
+      "PAPL_APP_BASE_URL" => nil,
+      "VENDOR_REGISTRATION_APP_BASE_URL" => nil,
+      "SMS_VENDOR_REGISTRATION_CTA_URL" => nil
+    ) do
+      QuotationVendorSmsGateway.stub(:local_runtime_environment?, false) do
+        config = QuotationVendorSmsGateway.vendor_registration_sms_config
+
+        assert_equal(
+          "http://apurti.ploughmanagro.com/r?",
+          QuotationVendorSmsGateway.vendor_registration_sms_link_for_config("inviteToken1", config: config)
+        )
+      end
+    end
+  end
+
+  test "send_vendor_registration_link uses approved template header and content" do
+    captured_uri = nil
+    response = Net::HTTPOK.new("1.1", "200", "OK")
+
+    def response.body
+      '{"Status":"Success","Code":"000","Description":"Sent"}'
+    end
+
+    invitation = OpenStruct.new(
+      mobile_no: "9876543210",
+      token: "inviteToken1"
+    )
+
+    with_env(
+      "VENDOR_REGISTRATION_APP_BASE_URL" => "http://apurti.ploughmanagro.com",
+      "SMS_VENDOR_REGISTRATION_CTA_URL" => nil,
+      "SMS_ALLOWED_URL_HOSTS" => "apurti.ploughmanagro.com"
+    ) do
+      Net::HTTP.stub(:get_response, ->(uri) { captured_uri = uri; response }) do
+        assert QuotationVendorSmsGateway.send_vendor_registration_link(invitation)
+      end
+    end
+
+    params = URI.decode_www_form(captured_uri.query).to_h
+
+    assert_equal "9876543210", params["mobiles"]
+    assert_equal "PLOAPL", params["sender"]
+    assert_equal "1707177944223861381", params["DLT_TE_ID"]
+    assert_equal "Dear Vendor, Please registration using the link below: http://apurti.ploughmanagro.com/r? Ploughman Agro Private Limited (PAPL)", params["message"]
   end
 
   private

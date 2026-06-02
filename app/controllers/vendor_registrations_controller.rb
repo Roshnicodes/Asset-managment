@@ -1,4 +1,5 @@
 class VendorRegistrationsController < ApplicationController
+  skip_before_action :authenticate_user!, only: %i[public_new public_create]
   before_action :set_vendor_registration, only: %i[ show edit update destroy ]
   before_action :ensure_vendor_owner_or_admin_view_access!, only: %i[show]
   before_action :ensure_vendor_owner_access!, only: %i[edit update destroy]
@@ -105,6 +106,15 @@ class VendorRegistrationsController < ApplicationController
     @vendor_registration.vendor_bank_masters.build if @vendor_registration.vendor_bank_masters.empty?
   end
 
+  def public_new
+    @public_registration_form = true
+    @vendor_registration_form_url = public_vendor_registrations_path
+    @vendor_registration = VendorRegistration.new
+    load_form_collections
+    @vendor_registration.vendor_bank_masters.build if @vendor_registration.vendor_bank_masters.empty?
+    render :new
+  end
+
   # GET /vendor_registrations/1/edit
   def edit
     load_form_collections
@@ -132,6 +142,31 @@ class VendorRegistrationsController < ApplicationController
         format.json { render json: @vendor_registration.errors, status: :unprocessable_entity }
       end
     end
+  end
+
+  def public_create
+    @public_registration_form = true
+    @vendor_registration_form_url = public_vendor_registrations_path
+    permitted_params = vendor_registration_params
+    @vendor_registration = VendorRegistration.new(permitted_params.except(:document_uploads))
+    @vendor_registration.incoming_document_files = permitted_params[:document_uploads]
+    @vendor_registration.submitted_at ||= Time.current
+    @vendor_registration.submitted_ip ||= request.remote_ip
+
+    if @vendor_registration.save
+      ApprovalRequestBuilder.create_direct_finance_for_vendor_invitation!(@vendor_registration)
+      redirect_to public_new_vendor_registration_path, notice: "Vendor registration was successfully submitted."
+    else
+      load_form_collections
+      @vendor_registration.vendor_bank_masters.build if @vendor_registration.vendor_bank_masters.empty?
+      render :new, status: :unprocessable_entity
+    end
+  rescue ActiveRecord::RecordNotFound => error
+    load_form_collections
+    @vendor_registration ||= VendorRegistration.new(permitted_params.except(:document_uploads))
+    @vendor_registration.vendor_bank_masters.build if @vendor_registration.vendor_bank_masters.empty?
+    @vendor_registration.errors.add(:base, error.message)
+    render :new, status: :unprocessable_entity
   end
 
   # PATCH/PUT /vendor_registrations/1 or /vendor_registrations/1.json

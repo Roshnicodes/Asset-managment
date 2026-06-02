@@ -21,6 +21,7 @@ class QuotationVendorSmsGateway
   DEFAULT_VENDOR_REGISTRATION_LINK_TEMPLATE_ID = "1707177944223861381".freeze
   DEFAULT_VENDOR_REGISTRATION_OTP_TEMPLATE_ID = "1707177944234142889".freeze
   DEFAULT_VENDOR_REGISTRATION_BASE_URL = "http://apurti.ploughmanagro.com".freeze
+  DEFAULT_VENDOR_REGISTRATION_CTA_URL = "http://apurti.ploughmanagro.com/r?".freeze
   DEVELOPMENT_BASE_URL = "http://127.0.0.1:3000".freeze
   ASA_LINK_TEMPLATE_ID = "1707177512006405172".freeze
   ASA_OTP_TEMPLATE_ID = "1707177528687356932".freeze
@@ -132,7 +133,7 @@ class QuotationVendorSmsGateway
   end
 
   def self.vendor_registration_sms_link_for_config(token, config:)
-    "#{base_url(config: config)}/vr?t=#{token}"
+    ENV["SMS_VENDOR_REGISTRATION_CTA_URL"].presence || default_vendor_registration_cta_url(config: config)
   end
 
   def self.vendor_link_for_config(token, config:)
@@ -585,6 +586,12 @@ class QuotationVendorSmsGateway
     end
   end
 
+  def self.default_vendor_registration_cta_url(config:)
+    return DEFAULT_VENDOR_REGISTRATION_CTA_URL unless local_runtime_environment?
+
+    "#{base_url(config: config)}/r?"
+  end
+
   def self.local_runtime_environment?
     Rails.env.development? || Rails.env.test?
   end
@@ -601,7 +608,7 @@ class QuotationVendorSmsGateway
 
   def self.vendor_registration_sms_config
     default_sms_config.merge(
-      profile: :default,
+      profile: :vendor_registration,
       vendor_registration_link_template_id: ENV.fetch("SMS_VENDOR_REGISTRATION_LINK_DLT_TEMPLATE_ID", DEFAULT_VENDOR_REGISTRATION_LINK_TEMPLATE_ID),
       vendor_registration_otp_template_id: ENV.fetch("SMS_VENDOR_REGISTRATION_OTP_DLT_TEMPLATE_ID", DEFAULT_VENDOR_REGISTRATION_OTP_TEMPLATE_ID)
     )
