@@ -221,6 +221,6 @@ class VendorRegistrationInvitationsController < ApplicationController
   end
 
   def layout_for_action
-    %w[public_show send_otp verify_otp register].include?(action_name) ? "public_qr" : "application"
+    %w[public_start public_lookup public_show send_otp verify_otp register].include?(action_name) ? "public_qr" : "application"
   end
 end

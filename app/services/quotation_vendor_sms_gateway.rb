@@ -133,7 +133,7 @@ class QuotationVendorSmsGateway
   end
 
   def self.vendor_registration_sms_link_for_config(token, config:)
-    ENV["SMS_VENDOR_REGISTRATION_CTA_URL"].presence || default_vendor_registration_cta_url(config: config)
+    "#{base_url(config: config)}/vr?t=#{token}"
   end
 
   def self.vendor_link_for_config(token, config:)
@@ -471,7 +471,7 @@ class QuotationVendorSmsGateway
   end
 
   def self.base_url(config: nil)
-    configured_base_url(config: config).presence || DEVELOPMENT_BASE_URL
+    configured_base_url(config: config).presence || (local_runtime_environment? ? DEVELOPMENT_BASE_URL : DEFAULT_VENDOR_REGISTRATION_BASE_URL)
   end
 
   def self.quotation_reference_for(dispatch)
@@ -548,6 +548,7 @@ class QuotationVendorSmsGateway
 
     host = default_options[:host].to_s.strip
     return if host.blank?
+    return if !local_runtime_environment? && host.casecmp("example.com").zero?
 
     protocol = default_options[:protocol].presence || "http"
     port = default_options[:port].presence
@@ -608,7 +609,7 @@ class QuotationVendorSmsGateway
 
   def self.vendor_registration_sms_config
     default_sms_config.merge(
-      profile: :vendor_registration,
+      profile: :default,
       vendor_registration_link_template_id: ENV.fetch("SMS_VENDOR_REGISTRATION_LINK_DLT_TEMPLATE_ID", DEFAULT_VENDOR_REGISTRATION_LINK_TEMPLATE_ID),
       vendor_registration_otp_template_id: ENV.fetch("SMS_VENDOR_REGISTRATION_OTP_DLT_TEMPLATE_ID", DEFAULT_VENDOR_REGISTRATION_OTP_TEMPLATE_ID)
     )
