@@ -37,9 +37,10 @@ class VendorRegistrationInvitationsController < ApplicationController
   end
 
   def public_start
-    return if params[:t].blank?
+    token = vendor_registration_query_token
+    return if token.blank?
 
-    invitation = VendorRegistrationInvitation.find_by(token: params[:t])
+    invitation = VendorRegistrationInvitation.find_by(token: token)
     if invitation.present?
       redirect_to public_vendor_registration_invitation_path(invitation.token)
     else
@@ -155,6 +156,15 @@ class VendorRegistrationInvitationsController < ApplicationController
     digits = digits.delete_prefix("0") if digits.length == 11 && digits.start_with?("0")
     digits = digits.delete_prefix("91") if digits.length == 12 && digits.start_with?("91")
     digits
+  end
+
+  def vendor_registration_query_token
+    return params[:t] if params[:t].present?
+
+    query_string = request.query_string.to_s
+    return if query_string.blank? || query_string.include?("=") || query_string.include?("&")
+
+    query_string
   end
 
   def vendor_registration_params

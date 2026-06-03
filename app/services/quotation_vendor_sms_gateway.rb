@@ -134,7 +134,8 @@ class QuotationVendorSmsGateway
 
   def self.vendor_registration_sms_link_for_config(token, config:)
     cta_url = vendor_registration_sms_cta_base_url(config: config)
-    return "#{cta_url}t=#{token}" if cta_url.end_with?("?") || cta_url.end_with?("&")
+    return "#{cta_url}#{token}" if cta_url.end_with?("?")
+    return "#{cta_url}t=#{token}" if cta_url.end_with?("&")
 
     "#{cta_url}/#{token}"
   end

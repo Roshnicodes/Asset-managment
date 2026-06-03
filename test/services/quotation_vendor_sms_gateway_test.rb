@@ -818,7 +818,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
 
       assert_equal :vendor_registration, config[:profile]
       assert_equal(
-        "http://apurti.ploughmanagro.com/vr?t=inviteToken1",
+        "http://apurti.ploughmanagro.com/vr?inviteToken1",
         QuotationVendorSmsGateway.vendor_registration_sms_link_for_config("inviteToken1", config: config)
       )
     end
@@ -832,7 +832,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
       config = QuotationVendorSmsGateway.vendor_registration_sms_config
 
       assert_equal(
-        "http://apurti.ploughmanagro.com/vr?t=inviteToken1",
+        "http://apurti.ploughmanagro.com/vr?inviteToken1",
         QuotationVendorSmsGateway.vendor_registration_sms_link_for_config("inviteToken1", config: config)
       )
     end
@@ -850,7 +850,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
         config = QuotationVendorSmsGateway.vendor_registration_sms_config
 
         assert_equal(
-          "http://apurti.ploughmanagro.com/vr?t=inviteToken1",
+          "http://apurti.ploughmanagro.com/vr?inviteToken1",
           QuotationVendorSmsGateway.vendor_registration_sms_link_for_config("inviteToken1", config: config)
         )
       end
@@ -885,7 +885,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     assert_equal "9876543210", params["mobiles"]
     assert_equal "PLOAPL", params["sender"]
     assert_equal "1707177944223861381", params["DLT_TE_ID"]
-    assert_equal "Dear Vendor, Please registration using the link below: http://apurti.ploughmanagro.com/vr?t=inviteToken1 Ploughman Agro Private Limited (PAPL)", params["message"]
+    assert_equal "Dear Vendor, Please registration using the link below: http://apurti.ploughmanagro.com/vr?inviteToken1 Ploughman Agro Private Limited (PAPL)", params["message"]
   end
 
   private
