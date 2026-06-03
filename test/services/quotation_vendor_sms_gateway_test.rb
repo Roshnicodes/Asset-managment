@@ -803,7 +803,8 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
       )
     end
 
-    assert_match "SMS provider rejected the destination mobile number", QuotationVendorSmsGateway.last_error_message
+    assert_match "SMS provider rejected the destination reference", QuotationVendorSmsGateway.last_error_message
+    assert_match "SMS CTA URL is whitelisted", QuotationVendorSmsGateway.last_error_message
   end
 
   test "vendor registration sms config uses live vendor registration base url" do

@@ -133,7 +133,10 @@ class QuotationVendorSmsGateway
   end
 
   def self.vendor_registration_sms_link_for_config(token, config:)
-    "#{vendor_registration_sms_cta_base_url(config: config)}t=#{token}"
+    cta_url = vendor_registration_sms_cta_base_url(config: config)
+    return "#{cta_url}t=#{token}" if cta_url.end_with?("?") || cta_url.end_with?("&")
+
+    "#{cta_url}/#{token}"
   end
 
   def self.vendor_link_for_config(token, config:)
@@ -408,7 +411,7 @@ class QuotationVendorSmsGateway
     normalized_description = description.downcase
 
     if normalized_description.include?("invaliddestinationreference")
-      return "SMS provider rejected the destination mobile number (#{description.presence || code}). Please verify that the number is active and reachable, then retry."
+      return "SMS provider rejected the destination reference (#{description.presence || code}). Verify the mobile number and that the SMS CTA URL is whitelisted for this template/header."
     end
 
     description
@@ -623,7 +626,7 @@ class QuotationVendorSmsGateway
 
   def self.vendor_registration_sms_cta_base_url(config:)
     cta_url = ENV["SMS_VENDOR_REGISTRATION_CTA_URL"].presence || default_vendor_registration_cta_url(config: config)
-    cta_url.end_with?("?") || cta_url.end_with?("&") ? cta_url : "#{cta_url}?"
+    cta_url.end_with?("?") || cta_url.end_with?("&") ? cta_url : cta_url.chomp("/")
   end
 
   def self.local_runtime_environment?
