@@ -817,7 +817,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
 
       assert_equal :vendor_registration, config[:profile]
       assert_equal(
-        "http://apurti.ploughmanagro.com/r?",
+        "http://apurti.ploughmanagro.com/vr?t=inviteToken1",
         QuotationVendorSmsGateway.vendor_registration_sms_link_for_config("inviteToken1", config: config)
       )
     end
@@ -826,12 +826,12 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
   test "vendor registration sms link can use exact whitelisted CTA url override" do
     with_env(
       "VENDOR_REGISTRATION_APP_BASE_URL" => "http://apurti.ploughmanagro.com",
-      "SMS_VENDOR_REGISTRATION_CTA_URL" => "http://apurti.ploughmanagro.com/vendor_registrations/new/?"
+      "SMS_VENDOR_REGISTRATION_CTA_URL" => "http://apurti.ploughmanagro.com/vr?"
     ) do
       config = QuotationVendorSmsGateway.vendor_registration_sms_config
 
       assert_equal(
-        "http://apurti.ploughmanagro.com/vendor_registrations/new/?",
+        "http://apurti.ploughmanagro.com/vr?t=inviteToken1",
         QuotationVendorSmsGateway.vendor_registration_sms_link_for_config("inviteToken1", config: config)
       )
     end
@@ -849,7 +849,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
         config = QuotationVendorSmsGateway.vendor_registration_sms_config
 
         assert_equal(
-          "http://apurti.ploughmanagro.com/r?",
+          "http://apurti.ploughmanagro.com/vr?t=inviteToken1",
           QuotationVendorSmsGateway.vendor_registration_sms_link_for_config("inviteToken1", config: config)
         )
       end
@@ -884,7 +884,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     assert_equal "9876543210", params["mobiles"]
     assert_equal "PLOAPL", params["sender"]
     assert_equal "1707177944223861381", params["DLT_TE_ID"]
-    assert_equal "Dear Vendor, Please registration using the link below: http://apurti.ploughmanagro.com/r? Ploughman Agro Private Limited (PAPL)", params["message"]
+    assert_equal "Dear Vendor, Please registration using the link below: http://apurti.ploughmanagro.com/vr?t=inviteToken1 Ploughman Agro Private Limited (PAPL)", params["message"]
   end
 
   private
