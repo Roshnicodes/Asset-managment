@@ -77,6 +77,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
 
     assert_equal "9876543210", params["mobiles"]
     assert_equal "PLOAPL", params["sender"]
+    assert_equal "91", params["country"]
     assert_equal "1707177502703834106", params["DLT_TE_ID"]
     assert_equal "json", params["response"]
     assert_nil params["unicode"]
@@ -745,6 +746,64 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
 
     assert_equal 0, request_count
     assert_match "SMS link host asa360.asaindia.org is not in the approved SMS URL hosts", QuotationVendorSmsGateway.last_error_message
+  end
+
+  test "send_sms fails before gateway call when mobile number is invalid" do
+    request_count = 0
+
+    Net::HTTP.stub(:get_response, ->(_uri) { request_count += 1; flunk "gateway should not be called" }) do
+      assert_not QuotationVendorSmsGateway.send_sms(
+        mobile_no: "12345",
+        message: "Dear Vendor, test message",
+        template_id: "template-id",
+        config: QuotationVendorSmsGateway.default_sms_config
+      )
+    end
+
+    assert_equal 0, request_count
+    assert_match "SMS mobile number 12345 is invalid", QuotationVendorSmsGateway.last_error_message
+  end
+
+  test "send_sms normalizes india country code before gateway call" do
+    captured_uri = nil
+    response = Net::HTTPOK.new("1.1", "200", "OK")
+
+    def response.body
+      '{"Status":"Success","Code":"000","Description":"Sent"}'
+    end
+
+    Net::HTTP.stub(:get_response, ->(uri) { captured_uri = uri; response }) do
+      assert QuotationVendorSmsGateway.send_sms(
+        mobile_no: "+91 98765 43210",
+        message: "Dear Vendor, test message",
+        template_id: "template-id",
+        config: QuotationVendorSmsGateway.default_sms_config
+      )
+    end
+
+    params = URI.decode_www_form(captured_uri.query).to_h
+
+    assert_equal "9876543210", params["mobiles"]
+    assert_equal "91", params["country"]
+  end
+
+  test "provider invalid destination DLR is converted to readable support message" do
+    response = Net::HTTPOK.new("1.1", "200", "OK")
+
+    def response.body
+      '{"Status":"Failed","Code":"1025","Description":"EC_OR_invalidDestinationReference"}'
+    end
+
+    Net::HTTP.stub(:get_response, ->(_uri) { response }) do
+      assert_not QuotationVendorSmsGateway.send_sms(
+        mobile_no: "9876543210",
+        message: "Dear Vendor, test message",
+        template_id: "template-id",
+        config: QuotationVendorSmsGateway.default_sms_config
+      )
+    end
+
+    assert_match "SMS provider rejected the destination mobile number", QuotationVendorSmsGateway.last_error_message
   end
 
   test "vendor registration sms config uses live vendor registration base url" do

@@ -8,7 +8,7 @@ class QuotationVendorSmsGateway
   ASA_DEFAULT_AUTHKEY = "3230666f72736131353261".freeze
   DEFAULT_SENDER = "PLOAPL".freeze
   DEFAULT_ROUTE = "2".freeze
-  DEFAULT_COUNTRY = "0".freeze
+  DEFAULT_COUNTRY = "91".freeze
   DEFAULT_UNICODE = "".freeze
   DEFAULT_RESPONSE_FORMAT = "json".freeze
   DEFAULT_LINK_TEMPLATE_ID = "1707177502703834106".freeze
@@ -328,6 +328,18 @@ class QuotationVendorSmsGateway
   end
 
   def self.perform_sms_request(mobile_no:, message:, template_id:, config:)
+    normalized_mobile_no = normalize_mobile_no(mobile_no)
+    unless valid_indian_mobile_no?(normalized_mobile_no)
+      error_message = "SMS mobile number #{mobile_no.to_s.strip.presence || "(blank)"} is invalid. Enter a 10-digit Indian mobile number starting with 6, 7, 8, or 9."
+      Rails.logger.error("QuotationVendorSmsGateway mobile validation failed: #{error_message}")
+      return {
+        success: false,
+        payload: nil,
+        error_code: "SMS_INVALID_MOBILE_NUMBER",
+        error_message: error_message
+      }
+    end
+
     if (validation_error = sms_url_validation_error(message, config))
       Rails.logger.error("QuotationVendorSmsGateway URL validation failed: #{validation_error}")
       return {
@@ -343,7 +355,7 @@ class QuotationVendorSmsGateway
     uri = URI(config[:api_endpoint])
     query_params = {
       authkey: config[:authkey],
-      mobiles: normalize_mobile_no(mobile_no),
+      mobiles: normalized_mobile_no,
       message: message,
       sender: sender,
       route: config[:route],
@@ -356,7 +368,7 @@ class QuotationVendorSmsGateway
     uri.query = URI.encode_www_form(query_params)
 
     Rails.logger.info(
-      "QuotationVendorSmsGateway request profile=#{config[:profile]} mobile=#{normalize_mobile_no(mobile_no)} sender=#{sender} template_id=#{template_id} route=#{config[:route]} country=#{config[:country]} urls=#{sms_message_urls(message).join(",")}"
+      "QuotationVendorSmsGateway request profile=#{config[:profile]} mobile=#{normalized_mobile_no} sender=#{sender} template_id=#{template_id} route=#{config[:route]} country=#{config[:country]} urls=#{sms_message_urls(message).join(",")}"
     )
     response = Net::HTTP.get_response(uri)
     Rails.logger.info("QuotationVendorSmsGateway response=#{response.code} body=#{response.body}")
@@ -375,7 +387,7 @@ class QuotationVendorSmsGateway
       success: delivery_success?(payload),
       payload: payload,
       error_code: payload["Code"].to_s,
-      error_message: payload["Description"].to_s
+      error_message: delivery_error_message(payload)
     }
   end
 
@@ -388,6 +400,18 @@ class QuotationVendorSmsGateway
 
   def self.delivery_success?(payload)
     payload["Status"] == "Success" && payload["Code"] == "000"
+  end
+
+  def self.delivery_error_message(payload)
+    description = payload["Description"].to_s
+    code = payload["Code"].to_s
+    normalized_description = description.downcase
+
+    if normalized_description.include?("invaliddestinationreference")
+      return "SMS provider rejected the destination mobile number (#{description.presence || code}). Please verify that the number is active and reachable, then retry."
+    end
+
+    description
   end
 
   def self.last_error_message
@@ -517,6 +541,10 @@ class QuotationVendorSmsGateway
     digits = digits.delete_prefix("0") if digits.length == 11 && digits.start_with?("0")
     digits = digits.delete_prefix("91") if digits.length == 12 && digits.start_with?("91")
     digits
+  end
+
+  def self.valid_indian_mobile_no?(mobile_no)
+    mobile_no.to_s.match?(/\A[6-9]\d{9}\z/)
   end
 
   def self.unicode_flag_for(message)
