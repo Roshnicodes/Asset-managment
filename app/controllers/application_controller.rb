@@ -2,6 +2,7 @@ class ApplicationController < ActionController::Base
   include ApprovalRequestsHelper
   helper QrCodesHelper
   helper QuotationVendorQrsHelper
+  before_action :set_no_store_headers
   before_action :authenticate_user!, unless: :devise_controller?
   before_action :configure_permitted_parameters, if: :devise_controller?
   allow_browser versions: :modern
@@ -104,6 +105,12 @@ class ApplicationController < ActionController::Base
   end
 
   private
+
+  def set_no_store_headers
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+  end
 
   def senior_manager_finance?
     current_employee_master&.designation.to_s.strip.casecmp("Senior Manager Finance").zero?

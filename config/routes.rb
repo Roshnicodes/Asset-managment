@@ -101,7 +101,7 @@ Rails.application.routes.draw do
   resources :office_categories
   resources :blocks
   get "users", to: redirect("/users/sign_in")
-  devise_for :users, controllers: { passwords: 'users/passwords', registrations: 'users/registrations' }
+  devise_for :users, controllers: { passwords: 'users/passwords', registrations: 'users/registrations', sessions: 'users/sessions' }
   authenticated :user do
     root to: "dashboard#index", as: :authenticated_root
   end

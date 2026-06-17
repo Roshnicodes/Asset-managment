@@ -1459,6 +1459,13 @@ const scheduleAppInitializers = () => {
   })
 }
 
+window.addEventListener("pageshow", (event) => {
+  const navigationEntry = performance.getEntriesByType("navigation")[0]
+  const restoredFromHistory = event.persisted || navigationEntry?.type === "back_forward"
+
+  if (restoredFromHistory) window.location.reload()
+})
+
 document.addEventListener("turbo:load", scheduleAppInitializers)
 document.addEventListener("DOMContentLoaded", scheduleAppInitializers)
 if (document.readyState !== "loading") {

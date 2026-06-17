@@ -107,7 +107,7 @@
     <li><%= app_nav_link("Banks", vendor_bank_masters_path, icon: :bank, identifier: "banks") %></li>
     <li><%= app_nav_link("Assets", assets_path, icon: :asset, identifier: "assets") %></li>
     <li><%= app_nav_link("Asset Insurance", asset_insurances_path, icon: :insurance, identifier: "assets") %></li>
-    <%= button_to destroy_user_session_path, method: :delete, class: "dropdown-item d-flex align-items-center gap-2 py-2 px-3 text-danger border-0 bg-transparent w-100 text-start" do %>
+    <%= button_to destroy_user_session_path, method: :delete, form: { data: { turbo: false } }, class: "dropdown-item d-flex align-items-center gap-2 py-2 px-3 text-danger border-0 bg-transparent w-100 text-start" do %>
       <%= app_icon(:logout, classes: "icon-sm") %>
       <span>Logout Account</span>
     <% end %>
