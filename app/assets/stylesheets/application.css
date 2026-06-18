@@ -27,6 +27,12 @@
   --text-soft: #526359;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   font-family: var(--font-main);
@@ -122,12 +128,15 @@ body.auth-page-body {
 .app-shell {
   display: grid;
   grid-template-columns: clamp(230px, 16vw, 280px) minmax(0, 1fr);
-  align-items: start;
+  align-items: stretch;
   gap: 0.75rem;
   padding: 1rem;
   width: 100%;
+  height: calc(100vh - 6.5rem);
   max-width: 100vw;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .app-sidebar {
@@ -246,13 +255,15 @@ body.auth-page-body {
 
 .app-main {
   width: 100%;
+  height: 100%;
   min-width: 0;
+  min-height: 0;
   max-width: 100%;
 }
 
 .app-content {
-  height: calc(100vh - 120px);
-  min-height: 520px;
+  height: 100%;
+  min-height: 0;
   min-width: 0;
   max-width: 100%;
   overflow: auto;
@@ -312,6 +323,7 @@ body.auth-page-body {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  min-height: 0;
   overflow: auto;
   border: 1px solid var(--border-soft);
   border-radius: 22px;
@@ -394,6 +406,9 @@ body.auth-page-body {
 }
 
 .app-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   padding: 0.95rem 1rem;
   border-bottom: 1px solid var(--border-soft);
   background: #f4faf6;
@@ -5528,13 +5543,36 @@ body.auth-page-body {
   display: flex;
 }
 
-.app-content > .app-toolbar + .app-table-wrap,
-.app-content > .app-toolbar + .app-table-wrap + .quotation-inline-pager {
+.app-content > .app-table-search,
+.app-content > .app-table-pagination,
+.app-content > .quotation-inline-pager {
   flex: 0 0 auto;
 }
 
-.app-content > .app-toolbar + .app-table-wrap {
-  height: calc(100vh - 300px);
+.app-content:has(> .app-table-wrap),
+.app-content:has(> .app-table-search + .app-table-wrap),
+.app-content:has(> .app-form-card + .app-form-actions + .app-table-wrap),
+.app-content:has(> .app-form-card + .app-form-actions + .app-table-search + .app-table-wrap) {
+  overflow: auto;
+}
+
+.app-content > .app-table-wrap {
+  flex: 0 1 auto;
+  min-height: 0;
+  height: auto;
+  max-height: none;
+  overflow: auto;
+}
+
+.app-content > .app-toolbar + .app-table-wrap,
+.app-content > .app-table-search + .app-table-wrap {
+  height: auto;
+  max-height: none;
+}
+
+.app-content > .app-form-card + .app-form-actions + .app-table-search + .app-table-wrap,
+.app-content > .app-form-card + .app-form-actions + .app-table-wrap {
+  height: auto;
   max-height: none;
 }
 
@@ -5593,7 +5631,11 @@ body.auth-page-body {
     flex-direction: column;
     gap: 0.65rem;
     padding: 0.65rem;
+    height: auto;
+    min-height: 0;
+    max-height: none;
     max-width: 100%;
+    overflow: visible;
   }
 
   .app-sidebar {
@@ -5643,7 +5685,11 @@ body.auth-page-body {
   .app-content > .quotation-proposal-show,
   .app-content > .app-page-shell,
   .app-content > .quotation-proposal-show.app-page-paged,
-  .app-content > .app-toolbar + .app-table-wrap {
+  .app-content > .app-table-wrap,
+  .app-content > .app-toolbar + .app-table-wrap,
+  .app-content > .app-table-search + .app-table-wrap,
+  .app-content > .app-form-card + .app-form-actions + .app-table-search + .app-table-wrap,
+  .app-content > .app-form-card + .app-form-actions + .app-table-wrap {
     height: auto;
     min-height: 0;
     max-height: none;
@@ -5970,4 +6016,653 @@ body.auth-page-body {
 
 .app-bulk-select-all input[type="checkbox"] {
   margin: 0;
+}
+
+.app-list-controls {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  gap: 0.45rem;
+  margin-bottom: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 24px rgba(44, 69, 54, 0.04);
+  overflow: hidden;
+}
+
+.app-list-controls form,
+.app-list-control-upload,
+.app-list-control-action,
+.app-list-control-search,
+.app-list-control-search .app-table-search {
+  min-width: 0;
+}
+
+.app-list-controls form {
+  display: inline-flex !important;
+  align-items: center !important;
+  width: auto !important;
+  margin: 0 !important;
+}
+
+.app-list-control-upload {
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
+}
+
+.app-list-control-action {
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
+}
+
+.app-list-control-search {
+  display: inline-flex !important;
+  flex: 0 1 260px !important;
+  width: 260px !important;
+  margin-left: 0 !important;
+}
+
+.app-list-upload-inline {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.45rem;
+  min-width: 0;
+  width: auto !important;
+}
+
+.app-list-controls .app-form-field {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: 1 1 auto;
+  margin: 0;
+  min-width: 0;
+}
+
+.app-list-controls .app-form-field label {
+  flex: 0 0 auto;
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.app-list-controls input[type="file"],
+.app-list-controls .app-list-file-input {
+  flex: 0 0 170px !important;
+  width: 170px !important;
+  max-width: 170px !important;
+  min-height: 36px;
+  padding: 0.34rem 0.42rem;
+  font-size: 0.82rem;
+}
+
+.app-list-controls .app-form-submit,
+.app-list-controls .app-danger-btn,
+.app-list-controls .app-pagination-btn {
+  min-height: 36px;
+  padding: 0.38rem 0.68rem;
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+
+.app-list-controls .app-table-search {
+  justify-content: stretch;
+  margin: 0;
+}
+
+.app-list-controls .app-table-search-input {
+  max-width: none;
+  min-height: 36px;
+  padding: 0.42rem 0.65rem;
+  font-size: 0.88rem;
+}
+
+.app-row-actions .app-delete-button,
+.app-row-actions .app-action-button.app-delete-button {
+  display: inline;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #b43c31;
+  font-weight: 700;
+  line-height: inherit;
+  vertical-align: baseline;
+}
+
+.app-row-actions form {
+  margin: 0;
+}
+
+/* App-wide visual polish layer. UI-only overrides; no behavior or data changes. */
+:root {
+  --ui-navy: #12343b;
+  --ui-emerald: #1f7a5a;
+  --ui-teal: #0f6f78;
+  --ui-gold: #e5a936;
+  --ui-red: #c84b45;
+  --ui-ink: #17211b;
+  --ui-muted: #65756c;
+  --ui-line: #dbe7df;
+  --ui-panel: rgba(255, 255, 255, 0.94);
+  --ui-panel-solid: #ffffff;
+  --ui-page: #eef5f1;
+  --ui-shadow-sm: 0 8px 20px rgba(16, 58, 44, 0.07);
+  --ui-shadow-md: 0 18px 42px rgba(16, 58, 44, 0.1);
+  --ui-shadow-lg: 0 28px 70px rgba(14, 43, 51, 0.14);
+  --ui-radius-sm: 8px;
+  --ui-radius-md: 14px;
+  --ui-radius-lg: 20px;
+  --ui-speed: 180ms;
+}
+
+@keyframes ui-soft-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ui-row-enter {
+  from {
+    opacity: 0;
+    transform: translateX(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+html {
+  scrollbar-color: rgba(15, 111, 120, 0.45) rgba(219, 231, 223, 0.6);
+}
+
+body {
+  background:
+    linear-gradient(135deg, rgba(18, 52, 59, 0.06), transparent 34%),
+    linear-gradient(45deg, rgba(229, 169, 54, 0.08), transparent 28%),
+    var(--ui-page);
+  color: var(--ui-ink);
+}
+
+.app-navbar {
+  border-bottom: 1px solid rgba(219, 231, 223, 0.85);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 30px rgba(18, 52, 59, 0.08);
+}
+
+.app-shell {
+  gap: 1rem;
+}
+
+.app-sidebar,
+.app-content,
+.app-form-card,
+.app-card,
+.app-admin-panel,
+.app-detail-card,
+.app-table-wrap,
+.quotation-proposal-show {
+  border-color: rgba(219, 231, 223, 0.92);
+  background: var(--ui-panel);
+  box-shadow: var(--ui-shadow-sm);
+  backdrop-filter: blur(12px);
+}
+
+.app-content {
+  animation: ui-soft-enter 240ms ease-out;
+  border-radius: var(--ui-radius-lg);
+}
+
+.app-sidebar {
+  border-radius: var(--ui-radius-lg);
+  box-shadow: var(--ui-shadow-md);
+}
+
+.app-sidebar .nav-link {
+  border: 1px solid transparent;
+  border-radius: var(--ui-radius-md);
+  transition:
+    background-color var(--ui-speed) ease,
+    border-color var(--ui-speed) ease,
+    color var(--ui-speed) ease,
+    transform var(--ui-speed) ease,
+    box-shadow var(--ui-speed) ease;
+}
+
+.app-sidebar .nav-link:hover,
+.app-sidebar .nav-link:focus {
+  border-color: rgba(15, 111, 120, 0.16);
+  background: rgba(15, 111, 120, 0.09);
+  box-shadow: 0 8px 18px rgba(15, 111, 120, 0.08);
+  transform: translateX(3px);
+}
+
+.app-toolbar,
+.app-page-header,
+.app-admin-panel-header {
+  padding: 0.15rem 0.05rem 0.65rem;
+  border-bottom: 1px solid rgba(219, 231, 223, 0.78);
+}
+
+.app-toolbar h1,
+.app-page-header h1,
+.app-page-header h2,
+.app-page-title {
+  margin: 0;
+  color: var(--ui-navy);
+  letter-spacing: 0;
+}
+
+.app-section-note,
+.app-page-subtitle,
+.app-hero-text {
+  color: var(--ui-muted);
+}
+
+.app-form-card,
+.app-card,
+.app-admin-panel,
+.app-detail-card {
+  border-radius: var(--ui-radius-lg);
+  transition:
+    border-color var(--ui-speed) ease,
+    box-shadow var(--ui-speed) ease,
+    transform var(--ui-speed) ease;
+}
+
+.app-form-card:hover,
+.app-card:hover,
+.app-admin-panel:hover,
+.app-detail-card:hover {
+  border-color: rgba(15, 111, 120, 0.22);
+  box-shadow: var(--ui-shadow-md);
+}
+
+.app-primary-btn,
+.app-secondary-btn,
+.app-danger-btn,
+.app-form-submit,
+.btn-auth-submit,
+.app-pagination-btn,
+.app-form-pager-btn {
+  border-radius: var(--ui-radius-md);
+  box-shadow: 0 10px 22px rgba(18, 52, 59, 0.08);
+  transition:
+    background-color var(--ui-speed) ease,
+    border-color var(--ui-speed) ease,
+    color var(--ui-speed) ease,
+    box-shadow var(--ui-speed) ease,
+    transform var(--ui-speed) ease;
+}
+
+.app-primary-btn,
+.app-form-submit,
+.btn-auth-submit {
+  border: 1px solid rgba(18, 52, 59, 0.08);
+  background: linear-gradient(135deg, var(--ui-teal), var(--ui-emerald));
+}
+
+.app-primary-btn:hover,
+.app-form-submit:hover,
+.btn-auth-submit:hover,
+.app-pagination-btn:not(:disabled):hover,
+.app-form-pager-btn:not(:disabled):hover {
+  box-shadow: var(--ui-shadow-md);
+  transform: translateY(-1px);
+}
+
+.app-secondary-btn,
+.app-pagination-btn,
+.app-form-pager-btn {
+  border: 1px solid rgba(15, 111, 120, 0.18);
+  background: #fff;
+  color: var(--ui-teal);
+}
+
+.app-danger-btn,
+.app-delete-button {
+  color: #fff;
+  border-color: rgba(200, 75, 69, 0.2);
+  background: linear-gradient(135deg, var(--ui-red), #a93430);
+}
+
+.app-form-card label,
+.app-form-field label,
+.form-label {
+  color: var(--ui-navy);
+  font-weight: 700;
+}
+
+.app-form-card input,
+.app-form-card select,
+.app-form-card textarea,
+.form-control,
+.form-select {
+  border-radius: var(--ui-radius-md);
+  border-color: #cfded5;
+  background-color: rgba(255, 255, 255, 0.96);
+  transition:
+    border-color var(--ui-speed) ease,
+    box-shadow var(--ui-speed) ease,
+    background-color var(--ui-speed) ease;
+}
+
+.app-form-card input:focus,
+.app-form-card select:focus,
+.app-form-card textarea:focus,
+.form-control:focus,
+.form-select:focus,
+.app-table-search-input:focus {
+  border-color: rgba(15, 111, 120, 0.58);
+  box-shadow: 0 0 0 0.2rem rgba(15, 111, 120, 0.12);
+  background-color: #fff;
+}
+
+.app-table-wrap {
+  border-radius: var(--ui-radius-md);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.app-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.app-table thead th {
+  background: linear-gradient(180deg, #f7fbf8, #edf6f0);
+  color: var(--ui-navy);
+  font-size: 0.88rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.app-table tbody tr {
+  animation: ui-row-enter 180ms ease-out;
+  transition:
+    background-color var(--ui-speed) ease,
+    box-shadow var(--ui-speed) ease;
+}
+
+.app-table tbody tr:nth-child(even) {
+  background: rgba(246, 250, 247, 0.72);
+}
+
+.app-table tbody tr:hover {
+  background: rgba(15, 111, 120, 0.06);
+}
+
+.app-row-actions a,
+.app-action-button {
+  transition:
+    color var(--ui-speed) ease,
+    opacity var(--ui-speed) ease,
+    transform var(--ui-speed) ease;
+}
+
+.app-row-actions a:hover,
+.app-action-button:hover {
+  opacity: 0.86;
+}
+
+.app-table-pagination {
+  border-radius: var(--ui-radius-md);
+  background: var(--ui-panel-solid);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.alert {
+  border: 0;
+  border-radius: var(--ui-radius-md);
+  box-shadow: var(--ui-shadow-sm);
+}
+
+.alert-success {
+  background: #e9f7ee;
+  color: #1f6b45;
+}
+
+.alert-danger {
+  background: #fbeceb;
+  color: #9b312e;
+}
+
+@media (max-width: 991px) {
+  .app-shell {
+    gap: 0.75rem;
+  }
+
+  .app-sidebar,
+  .app-content,
+  .app-form-card,
+  .app-card,
+  .app-admin-panel,
+  .app-detail-card {
+    border-radius: var(--ui-radius-md);
+  }
+
+  .app-toolbar,
+  .app-page-header,
+  .app-admin-panel-header {
+    padding-bottom: 0.55rem;
+  }
+
+  .app-table-pagination {
+    gap: 0.55rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Contained page layout: keep every app screen inside the app scrollbar. */
+@media (min-width: 992px) {
+  html,
+  body:not(.auth-page-body) {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100vh;
+    max-height: 100dvh;
+    overflow: hidden !important;
+  }
+
+  body:not(.auth-page-body) {
+    display: block;
+    position: fixed;
+    inset: 0;
+  }
+
+  body:not(.auth-page-body) > .app-navbar {
+    position: fixed;
+    inset: 0 0 auto 0;
+    min-height: 72px;
+    z-index: 1050;
+  }
+
+  body:not(.auth-page-body) > .app-shell {
+    position: fixed;
+    inset: 74px 0 0 0;
+    display: grid;
+    height: auto;
+    width: 100%;
+    min-height: 0;
+    max-height: none;
+    padding: 0.85rem;
+    overflow: hidden;
+  }
+
+  body:not(.auth-page-body) > .app-shell::after {
+    content: none;
+  }
+
+  .app-sidebar {
+    position: relative;
+    top: auto;
+    height: 100%;
+    max-height: none;
+  }
+
+  .app-main {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .app-content {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .app-content > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .app-content > .app-toolbar,
+  .app-content > .app-page-header,
+  .app-content > .alert,
+  .app-content > .app-list-controls,
+  .app-content > .app-table-search,
+  .app-content > .app-table-pagination,
+  .app-content > .app-form-actions {
+    flex: 0 0 auto;
+  }
+
+  .app-content > .app-table-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow: auto;
+  }
+
+  .app-content > .app-form-card.app-form-card-wide {
+    flex: 0 0 auto;
+    margin-bottom: 0.65rem !important;
+    padding: 0.85rem;
+  }
+
+  .app-content > .app-form-card.app-form-card-wide .app-form-grid {
+    align-items: end;
+  }
+
+  .app-content > .app-list-controls {
+    flex: 0 0 auto;
+  }
+
+  .app-content > form,
+  .app-content > .app-form-card,
+  .app-content > .app-card,
+  .app-content > .app-page-shell,
+  .app-content > .assets-page,
+  .app-content > .asset-insurance-page,
+  .app-content > .employee-master-workspace,
+  .app-content > .quotation-proposal-show {
+    min-height: 0;
+    max-height: 100%;
+  }
+
+  .app-content > form,
+  .app-content > .app-page-shell,
+  .app-content > .assets-page,
+  .app-content > .asset-insurance-page,
+  .app-content > .employee-master-workspace,
+  .app-content > .quotation-proposal-show {
+    overflow: auto;
+  }
+
+  .app-form-card,
+  .app-card,
+  .app-detail-card,
+  .app-admin-panel,
+  .quotation-proposal-show {
+    max-width: 100%;
+  }
+
+  .app-content > .app-form-actions {
+    margin-bottom: 0.55rem !important;
+  }
+
+  .app-content > .app-table-pagination {
+    margin-top: 0.55rem;
+  }
+
+  .app-table {
+    table-layout: fixed;
+  }
+
+  .app-table thead th,
+  .app-table tbody td {
+    padding: 0.68rem 1rem;
+    line-height: 1.35;
+  }
+
+  .app-table tbody td {
+    max-width: 260px;
+    vertical-align: middle;
+  }
+
+  .app-table tbody td:not(.app-row-actions) {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .app-table tbody td.app-row-actions {
+    width: 120px;
+    white-space: normal;
+  }
+
+  .app-content:has(> .app-form-card.app-form-card-wide) .app-table-wrap {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 991px) {
+  .app-list-controls {
+    flex-wrap: wrap;
+    align-items: stretch;
+  }
+
+  .app-list-control-upload,
+  .app-list-control-action,
+  .app-list-control-search {
+    flex: 1 1 100%;
+  }
+
+  .app-list-upload-inline {
+    flex-wrap: wrap;
+  }
+
+  .app-list-controls .app-form-field {
+    flex-wrap: wrap;
+  }
 }

@@ -1,7 +1,7 @@
 class DistrictsController < ApplicationController
 
   def index
-    @districts = District.all
+    @districts, @pagination = paginate_scope(District.includes(:state).order(:code, :name))
   end
 
   def new

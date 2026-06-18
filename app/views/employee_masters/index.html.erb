@@ -114,6 +114,73 @@
     margin-bottom: 0.5rem !important;
   }
 
+  .employee-master-controls {
+    display: flex !important;
+    align-items: center !important;
+    flex: 0 0 auto !important;
+    flex-wrap: nowrap !important;
+    gap: 8px !important;
+    width: 100% !important;
+    min-height: 48px !important;
+    margin: 0 0 8px !important;
+    padding: 6px 8px !important;
+    overflow: hidden !important;
+  }
+
+  .employee-master-controls form,
+  .employee-master-controls .app-list-control-upload,
+  .employee-master-controls .app-list-control-action,
+  .employee-master-controls .app-list-upload-inline {
+    display: inline-flex !important;
+    align-items: center !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    margin: 0 !important;
+    min-width: 0 !important;
+  }
+
+  .employee-master-controls .app-list-upload-inline {
+    gap: 8px !important;
+  }
+
+  .employee-master-controls .app-list-file-input {
+    flex: 0 0 170px !important;
+    width: 170px !important;
+    max-width: 170px !important;
+    min-height: 36px !important;
+    padding: 5px 6px !important;
+    font-size: 13px !important;
+  }
+
+  .employee-master-controls .app-form-submit,
+  .employee-master-controls .app-danger-btn {
+    min-height: 36px !important;
+    padding: 6px 12px !important;
+    font-size: 14px !important;
+    white-space: nowrap !important;
+  }
+
+  .employee-master-controls .app-list-control-search {
+    display: inline-flex !important;
+    flex: 0 1 260px !important;
+    width: 260px !important;
+    min-width: 180px !important;
+    margin-left: 0 !important;
+  }
+
+  .employee-master-controls .app-table-search {
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .employee-master-controls .app-table-search-input {
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 36px !important;
+    padding: 6px 10px !important;
+    font-size: 14px !important;
+  }
+
   .employee-master-table-wrap thead th {
     position: sticky;
     top: 0;
@@ -188,29 +255,26 @@
 </script>
 
 <div class="employee-master-workspace">
-  <div class="app-form-card app-form-card-wide employee-master-upload-card">
-    <%= form_with url: import_employee_masters_path, multipart: true, local: true do |form| %>
-      <div class="app-form-grid two-col">
-        <div class="app-form-field">
-          <%= form.label :file, "Upload Excel / CSV" %>
-          <%= form.file_field :file, accept: ".csv,.xls,.xlsx" %>
+  <div class="app-list-controls employee-master-controls" style="display:flex!important;align-items:center!important;gap:8px!important;flex-wrap:nowrap!important;margin-bottom:8px!important;padding:8px 10px!important;overflow:hidden!important;">
+    <div class="app-list-control-upload" style="display:inline-flex!important;flex:0 0 auto!important;width:auto!important;">
+      <%= form_with url: import_employee_masters_path, multipart: true, local: true, html: { style: "display:inline-flex!important;align-items:center!important;width:auto!important;margin:0!important;" } do |form| %>
+        <div class="app-list-upload-inline" style="display:inline-flex!important;align-items:center!important;gap:8px!important;width:auto!important;">
+          <%= form.file_field :file, accept: ".csv,.xls,.xlsx", class: "app-list-file-input", style: "width:170px!important;max-width:170px!important;min-height:36px!important;font-size:13px!important;" %>
+          <%= form.submit "Upload File", class: "app-form-submit", style: "min-height:36px!important;padding:6px 12px!important;font-size:14px!important;white-space:nowrap!important;" %>
         </div>
-
-        <div class="app-form-actions">
-          <%= form.submit "Upload File", class: "app-form-submit" %>
-        </div>
-      </div>
-    <% end %>
-  </div>
-
-  <div class="app-card employee-master-table-page">
-    <div class="app-form-actions mb-2">
-      <%= form_with url: destroy_selected_employee_masters_path, method: :delete, local: true, id: "bulk-delete-employees", data: { bulk_delete_form: true } do %>
-        <%= submit_tag "Delete Selected", class: "app-danger-btn", data: { turbo_confirm: "Delete selected employees?" } %>
       <% end %>
     </div>
 
-    <div data-table-search-slot="employee-master-records"></div>
+    <div class="app-list-control-action" style="display:inline-flex!important;flex:0 0 auto!important;width:auto!important;">
+      <%= form_with url: destroy_selected_employee_masters_path, method: :delete, local: true, id: "bulk-delete-employees", data: { bulk_delete_form: true }, html: { style: "display:inline-flex!important;margin:0!important;" } do %>
+        <%= submit_tag "Delete Selected", class: "app-danger-btn", data: { turbo_confirm: "Delete selected employees?" }, style: "min-height:36px!important;padding:6px 12px!important;font-size:14px!important;white-space:nowrap!important;" %>
+      <% end %>
+    </div>
+
+    <div class="app-list-control-search" data-table-search-slot="employee-master-records" style="display:inline-flex!important;flex:0 1 260px!important;width:260px!important;margin-left:0!important;"></div>
+  </div>
+
+  <div class="app-card employee-master-table-page">
     <div class="app-table-wrap employee-master-table-wrap" data-search-placeholder="Search employees..." data-search-slot="employee-master-records">
       <table class="table app-table">
         <thead>

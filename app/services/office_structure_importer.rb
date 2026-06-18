@@ -147,26 +147,13 @@ class OfficeStructureImporter
     state, state_created = find_or_create_state(state_name, result)
     result.states_created += 1 if state_created
 
-    district, district_created = find_or_create_district(district_name, state, row_number, result)
-    return if district_name.present? && district.blank?
-
+    district, district_created = find_or_create_district(district_name, state)
     result.districts_created += 1 if district_created
 
-    block, block_created = find_or_create_block(block_name, district, row_number, result)
-    return if block_name.present? && block.blank?
-
+    block, block_created = find_or_create_block(block_name, district)
     result.blocks_created += 1 if block_created
 
     parent = find_parent(parent_name, stakeholder)
-    if parent_name.present? && parent.blank?
-      skip_row(result, row_number, "parent office '#{parent_name}' not found")
-      return
-    end
-
-    if state.blank? && district.blank? && block.blank? && parent.blank?
-      skip_row(result, row_number, "location or parent office missing")
-      return
-    end
 
     office = OfficeCategory.new(
       stakeholder_category: stakeholder,
@@ -177,6 +164,7 @@ class OfficeStructureImporter
       block: block,
       name: office_name.presence
     )
+    office.allow_blank_import_location = true
     office.valid?
 
     if existing_office?(office)
@@ -208,13 +196,9 @@ class OfficeStructureImporter
     [State.create!(name: name), true]
   end
 
-  def find_or_create_district(name, state, row_number, result)
+  def find_or_create_district(name, state)
     return [nil, false] if name.blank?
-
-    if state.blank?
-      skip_row(result, row_number, "state required when district is present")
-      return [nil, false]
-    end
+    return [nil, false] if state.blank?
 
     district = state.districts.find_by("LOWER(TRIM(name)) = ?", name.downcase)
     return [district, false] if district
@@ -222,13 +206,9 @@ class OfficeStructureImporter
     [state.districts.create!(name: name), true]
   end
 
-  def find_or_create_block(name, district, row_number, result)
+  def find_or_create_block(name, district)
     return [nil, false] if name.blank?
-
-    if district.blank?
-      skip_row(result, row_number, "district required when block is present")
-      return [nil, false]
-    end
+    return [nil, false] if district.blank?
 
     block = district.blocks.find_by("LOWER(TRIM(name)) = ?", name.downcase)
     return [block, false] if block

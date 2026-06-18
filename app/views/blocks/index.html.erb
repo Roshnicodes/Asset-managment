@@ -6,28 +6,26 @@
   <%= link_to "Add Block", new_block_path, class: "app-primary-btn" %>
 </div>
 
-<div class="app-form-card app-form-card-wide mb-3">
-  <%= form_with url: import_blocks_path, multipart: true, local: true do |form| %>
-    <div class="app-form-grid two-col">
-      <div class="app-form-field">
-        <%= form.label :file, "Upload LG Excel / CSV" %>
-        <%= form.file_field :file, accept: ".csv,.xls,.xlsx" %>
+<div class="app-list-controls" style="display:flex!important;align-items:center!important;gap:8px!important;flex-wrap:nowrap!important;margin-bottom:8px!important;padding:8px 10px!important;overflow:hidden!important;">
+  <div class="app-list-control-upload" style="display:inline-flex!important;flex:0 0 auto!important;width:auto!important;">
+    <%= form_with url: import_blocks_path, multipart: true, local: true, html: { style: "display:inline-flex!important;align-items:center!important;width:auto!important;margin:0!important;" } do |form| %>
+      <div class="app-list-upload-inline" style="display:inline-flex!important;align-items:center!important;gap:8px!important;width:auto!important;">
+        <%= form.file_field :file, accept: ".csv,.xls,.xlsx", class: "app-list-file-input", style: "width:170px!important;max-width:170px!important;min-height:36px!important;font-size:13px!important;" %>
+        <%= form.submit "Upload File", class: "app-form-submit", style: "min-height:36px!important;padding:6px 12px!important;font-size:14px!important;white-space:nowrap!important;" %>
       </div>
+    <% end %>
+  </div>
 
-      <div class="app-form-actions">
-        <%= form.submit "Upload File", class: "app-form-submit" %>
-      </div>
-    </div>
-  <% end %>
+  <div class="app-list-control-action" style="display:inline-flex!important;flex:0 0 auto!important;width:auto!important;">
+    <%= form_with url: destroy_selected_blocks_path, method: :delete, local: true, id: "bulk-delete-blocks", data: { bulk_delete_form: true }, html: { style: "display:inline-flex!important;margin:0!important;" } do %>
+      <%= submit_tag "Delete Selected", class: "app-danger-btn", data: { turbo_confirm: "Delete selected blocks?" }, style: "min-height:36px!important;padding:6px 12px!important;font-size:14px!important;white-space:nowrap!important;" %>
+    <% end %>
+  </div>
+
+  <div class="app-list-control-search" data-table-search-slot="blocks-records" style="display:inline-flex!important;flex:0 1 260px!important;width:260px!important;margin-left:0!important;"></div>
 </div>
 
-<div class="app-form-actions mb-2">
-  <%= form_with url: destroy_selected_blocks_path, method: :delete, local: true, id: "bulk-delete-blocks", data: { bulk_delete_form: true } do %>
-    <%= submit_tag "Delete Selected", class: "app-danger-btn", data: { turbo_confirm: "Delete selected blocks?" } %>
-  <% end %>
-</div>
-
-<div class="app-table-wrap">
+<div class="app-table-wrap" data-search-placeholder="Search blocks..." data-search-slot="blocks-records">
   <table class="table app-table">
     <thead>
       <tr>
@@ -65,3 +63,5 @@
     </tbody>
   </table>
 </div>
+
+<%= render "shared/table_pagination", pagination: @pagination %>

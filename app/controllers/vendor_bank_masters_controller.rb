@@ -3,7 +3,7 @@ class VendorBankMastersController < ApplicationController
 
   # GET /vendor_bank_masters or /vendor_bank_masters.json
   def index
-    @vendor_bank_masters = VendorBankMaster.masters
+    @vendor_bank_masters, @pagination = paginate_scope(VendorBankMaster.masters)
   end
 
   # GET /vendor_bank_masters/1 or /vendor_bank_masters/1.json

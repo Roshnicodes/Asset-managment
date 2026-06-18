@@ -3,7 +3,7 @@ class BlocksController < ApplicationController
 
   # GET /blocks or /blocks.json
   def index
-    @blocks = Block.includes(district: :state).order(:name)
+    @blocks, @pagination = paginate_scope(Block.includes(district: :state).order(:name))
   end
 
   def import

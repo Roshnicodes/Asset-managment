@@ -8,19 +8,25 @@
   <thead>
     <tr>
       <th>Bank Name</th>
-      <th>Action</th>
+      <% if can_manage_rbac_menu_records? %>
+        <th>Action</th>
+      <% end %>
     </tr>
   </thead>
   <tbody>
     <% @vendor_bank_masters.each do |vendor_bank_master| %>
       <tr>
         <td><%= vendor_bank_master.bank_name %></td>
-        <td class="app-row-actions">
-          <%= link_to "Edit", edit_vendor_bank_master_path(vendor_bank_master) %> |
-          <%= button_to "Delete", vendor_bank_master_path(vendor_bank_master), method: :delete, data: { turbo_confirm: "Delete this bank record?" }, class: "app-action-button app-delete-button" %>
-        </td>
+        <% if can_manage_rbac_menu_records? %>
+          <td class="app-row-actions">
+            <%= link_to "Edit", edit_vendor_bank_master_path(vendor_bank_master) %> |
+            <%= button_to "Delete", vendor_bank_master_path(vendor_bank_master), method: :delete, data: { turbo_confirm: "Delete this bank record?" }, class: "app-action-button app-delete-button" %>
+          </td>
+        <% end %>
       </tr>
     <% end %>
   </tbody>
 </table>
 </div>
+
+<%= render "shared/table_pagination", pagination: @pagination %>

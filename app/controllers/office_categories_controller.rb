@@ -3,7 +3,7 @@ class OfficeCategoriesController < ApplicationController
 
   # GET /office_categories or /office_categories.json
   def index
-    @office_categories = OfficeCategory.ordered
+    @office_categories, @pagination = paginate_scope(OfficeCategory.ordered)
   end
 
   def import

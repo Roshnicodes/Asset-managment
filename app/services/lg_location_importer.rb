@@ -115,12 +115,19 @@ class LgLocationImporter
     block_code = clean_code(row["block_code"])
     block_name = clean_name(row["block"])
 
+    return if [state_code, state_name, district_code, district_name, block_code, block_name].all?(&:blank?)
+
     if state_name.blank?
-      skip_row(result, row_number, "state name missing")
-      return
+      state = State.find_by(code: state_code) if state_code.present?
+      if state.blank?
+        skip_row(result, row_number, "state name missing")
+        return
+      end
+      state_created = false
+    else
+      state, state_created = find_or_create_state(state_name, state_code)
     end
 
-    state, state_created = find_or_create_state(state_name, state_code)
     result.states_created += 1 if state_created
 
     return if district_name.blank?

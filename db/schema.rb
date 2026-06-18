@@ -414,6 +414,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_18_120000) do
     t.datetime "updated_at", null: false
     t.index ["quotation_proposal_item_id"], name: "idx_on_quotation_proposal_item_id_b6e79a168e"
     t.index ["quotation_proposal_vendor_id", "quotation_proposal_item_id"], name: "idx_qp_vendor_items_on_vendor_and_item", unique: true
+    t.index ["quotation_proposal_vendor_id", "quotation_proposal_item_id"], name: "idx_quote_vendor_items_unique", unique: true
     t.index ["quotation_proposal_vendor_id"], name: "idx_on_quotation_proposal_vendor_id_51fa0ebc7e"
   end
 
@@ -464,6 +465,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_18_120000) do
     t.integer "rank_position"
     t.datetime "responded_at"
     t.string "response_status", default: "pending", null: false
+    t.datetime "response_submitted_at"
     t.boolean "selected", default: false, null: false
     t.datetime "updated_at", null: false
     t.text "vendor_cover_note"
@@ -627,3 +629,217 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_18_120000) do
     t.index ["vendor_registration_id"], name: "index_vendor_bank_masters_on_vendor_registration_id"
   end
 
+  create_table "vendor_registration_documents", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "document_master_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "vendor_registration_id", null: false
+    t.index ["document_master_id"], name: "index_vendor_registration_documents_on_document_master_id"
+    t.index ["vendor_registration_id", "document_master_id"], name: "idx_vendor_registration_documents_unique", unique: true
+    t.index ["vendor_registration_id"], name: "index_vendor_registration_documents_on_vendor_registration_id"
+  end
+
+  create_table "vendor_registration_invitations", force: :cascade do |t|
+    t.datetime "access_expires_at"
+    t.datetime "created_at", null: false
+    t.string "mobile_no", null: false
+    t.datetime "opened_at"
+    t.string "otp_code"
+    t.datetime "otp_expires_at"
+    t.datetime "otp_sent_at"
+    t.datetime "otp_verified_at"
+    t.datetime "sent_at"
+    t.bigint "stakeholder_category_id"
+    t.string "status", default: "draft", null: false
+    t.string "token", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.bigint "vendor_registration_id"
+    t.index ["mobile_no"], name: "index_vendor_registration_invitations_on_mobile_no"
+    t.index ["stakeholder_category_id"], name: "idx_on_stakeholder_category_id_eb1673a822"
+    t.index ["token"], name: "index_vendor_registration_invitations_on_token", unique: true
+    t.index ["user_id"], name: "index_vendor_registration_invitations_on_user_id"
+    t.index ["vendor_registration_id"], name: "idx_on_vendor_registration_id_7326b11eaa"
+  end
+
+  create_table "vendor_registration_product_varieties", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "product_variety_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "vendor_registration_id", null: false
+    t.index ["product_variety_id"], name: "idx_on_product_variety_id_c5a5c5dc8f"
+    t.index ["vendor_registration_id"], name: "idx_on_vendor_registration_id_03a9031881"
+  end
+
+  create_table "vendor_registration_products", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "product_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "vendor_registration_id", null: false
+    t.index ["product_id"], name: "index_vendor_registration_products_on_product_id"
+    t.index ["vendor_registration_id"], name: "index_vendor_registration_products_on_vendor_registration_id"
+  end
+
+  create_table "vendor_registration_themes", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "theme_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "vendor_registration_id", null: false
+    t.index ["theme_id"], name: "index_vendor_registration_themes_on_theme_id"
+    t.index ["vendor_registration_id"], name: "index_vendor_registration_themes_on_vendor_registration_id"
+  end
+
+  create_table "vendor_registrations", force: :cascade do |t|
+    t.text "address"
+    t.bigint "block_id", null: false
+    t.text "business_description"
+    t.string "company_status"
+    t.string "contact_person_designation"
+    t.string "contact_person_name"
+    t.datetime "created_at", null: false
+    t.bigint "district_id", null: false
+    t.string "email"
+    t.bigint "firm_id"
+    t.string "firm_name"
+    t.text "firm_profile"
+    t.string "firm_type"
+    t.string "gst_no"
+    t.string "mobile_no"
+    t.boolean "msme"
+    t.string "msme_number"
+    t.string "pan_no"
+    t.string "pin_no"
+    t.bigint "registration_type_id"
+    t.bigint "stakeholder_category_id"
+    t.bigint "state_id", null: false
+    t.datetime "submitted_at", null: false
+    t.string "submitted_ip", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.string "vendor_name"
+    t.index ["block_id"], name: "index_vendor_registrations_on_block_id"
+    t.index ["district_id"], name: "index_vendor_registrations_on_district_id"
+    t.index ["firm_id"], name: "index_vendor_registrations_on_firm_id"
+    t.index ["registration_type_id"], name: "index_vendor_registrations_on_registration_type_id"
+    t.index ["stakeholder_category_id"], name: "index_vendor_registrations_on_stakeholder_category_id"
+    t.index ["state_id"], name: "index_vendor_registrations_on_state_id"
+    t.index ["user_id"], name: "index_vendor_registrations_on_user_id"
+  end
+
+  create_table "vendor_selection_criteria", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.text "criteria", null: false
+    t.bigint "theme_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["theme_id"], name: "index_vendor_selection_criteria_on_theme_id"
+  end
+
+  add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "allocations", "assets"
+  add_foreign_key "allocations", "tos"
+  add_foreign_key "approval_channel_steps", "approval_channels"
+  add_foreign_key "approval_channel_steps", "employee_masters", column: "from_user_id"
+  add_foreign_key "approval_channel_steps", "employee_masters", column: "to_responsible_user_id"
+  add_foreign_key "approval_channels", "employee_masters", column: "level_1_employee_id"
+  add_foreign_key "approval_channels", "employee_masters", column: "level_2_employee_id"
+  add_foreign_key "approval_channels", "employee_masters", column: "level_3_employee_id"
+  add_foreign_key "approval_channels", "stakeholder_categories"
+  add_foreign_key "approval_channels", "themes"
+  add_foreign_key "approval_requests", "approval_channels", on_delete: :cascade
+  add_foreign_key "approval_steps", "approval_requests"
+  add_foreign_key "approval_steps", "employee_masters"
+  add_foreign_key "approval_steps", "employee_masters", column: "from_user_id"
+  add_foreign_key "assets", "office_categories", column: "primary_office_category_id"
+  add_foreign_key "assets", "office_categories", column: "secondary_office_category_id"
+  add_foreign_key "assets", "products"
+  add_foreign_key "assets", "quotation_proposal_vendor_invoice_requests"
+  add_foreign_key "assets", "quotation_proposal_vendor_items"
+  add_foreign_key "assets", "stakeholder_categories"
+  add_foreign_key "blocks", "districts"
+  add_foreign_key "districts", "states"
+  add_foreign_key "document_masters", "firms"
+  add_foreign_key "document_masters", "stakeholder_categories"
+  add_foreign_key "employee_masters", "blocks"
+  add_foreign_key "employee_masters", "districts"
+  add_foreign_key "employee_masters", "stakeholder_categories"
+  add_foreign_key "employee_masters", "states"
+  add_foreign_key "fcos", "pmus"
+  add_foreign_key "firms", "stakeholder_categories"
+  add_foreign_key "menu_permissions", "stakeholder_categories"
+  add_foreign_key "notifications", "users"
+  add_foreign_key "office_categories", "blocks"
+  add_foreign_key "office_categories", "districts"
+  add_foreign_key "office_categories", "office_category_masters"
+  add_foreign_key "office_categories", "stakeholder_categories"
+  add_foreign_key "office_categories", "states"
+  add_foreign_key "office_category_masters", "stakeholder_categories"
+  add_foreign_key "pmus", "blocks"
+  add_foreign_key "pmus", "districts"
+  add_foreign_key "product_varieties", "products"
+  add_foreign_key "product_varieties", "stakeholder_categories"
+  add_foreign_key "products", "stakeholder_categories"
+  add_foreign_key "products", "themes"
+  add_foreign_key "quotation_proposal_committee_steps", "employee_masters"
+  add_foreign_key "quotation_proposal_committee_steps", "quotation_proposals"
+  add_foreign_key "quotation_proposal_criteria_selections", "quotation_proposals"
+  add_foreign_key "quotation_proposal_criteria_selections", "vendor_selection_criteria", on_delete: :nullify
+  add_foreign_key "quotation_proposal_items", "quotation_proposals"
+  add_foreign_key "quotation_proposal_items", "units"
+  add_foreign_key "quotation_proposal_vendor_criteria_scores", "employee_masters"
+  add_foreign_key "quotation_proposal_vendor_criteria_scores", "quotation_proposal_criteria_selections"
+  add_foreign_key "quotation_proposal_vendor_criteria_scores", "quotation_proposal_vendors"
+  add_foreign_key "quotation_proposal_vendor_invoice_requests", "employee_masters", column: "maker_reviewed_by_id"
+  add_foreign_key "quotation_proposal_vendor_invoice_requests", "employee_masters", column: "payment_advice_updated_by_id"
+  add_foreign_key "quotation_proposal_vendor_invoice_requests", "employee_masters", column: "payment_reference_marked_by_id"
+  add_foreign_key "quotation_proposal_vendor_invoice_requests", "quotation_proposal_vendors"
+  add_foreign_key "quotation_proposal_vendor_items", "quotation_proposal_items"
+  add_foreign_key "quotation_proposal_vendor_items", "quotation_proposal_vendors"
+  add_foreign_key "quotation_proposal_vendor_po_activities", "employee_masters"
+  add_foreign_key "quotation_proposal_vendor_po_activities", "quotation_proposal_vendors"
+  add_foreign_key "quotation_proposal_vendor_po_activities", "users"
+  add_foreign_key "quotation_proposal_vendor_scores", "employee_masters"
+  add_foreign_key "quotation_proposal_vendor_scores", "quotation_proposal_vendors"
+  add_foreign_key "quotation_proposal_vendors", "employee_masters", column: "purchase_order_authorized_by_id"
+  add_foreign_key "quotation_proposal_vendors", "employee_masters", column: "purchase_order_reply_updated_by_id"
+  add_foreign_key "quotation_proposal_vendors", "quotation_proposals"
+  add_foreign_key "quotation_proposal_vendors", "vendor_registrations"
+  add_foreign_key "quotation_proposals", "themes"
+  add_foreign_key "quotation_proposals", "users"
+  add_foreign_key "quotation_proposals", "vendor_registrations", column: "selected_vendor_registration_id"
+  add_foreign_key "quotation_vendor_dispatches", "quotation_proposal_vendors"
+  add_foreign_key "quotation_vendor_dispatches", "quotation_proposals"
+  add_foreign_key "quotation_vendor_dispatches", "stakeholder_categories"
+  add_foreign_key "quotation_vendor_dispatches", "users"
+  add_foreign_key "quotation_vendor_dispatches", "vendor_registrations"
+  add_foreign_key "quotation_vendor_otps", "quotation_proposals"
+  add_foreign_key "quotation_vendor_otps", "quotation_vendor_dispatches"
+  add_foreign_key "quotation_vendor_otps", "vendor_registrations"
+  add_foreign_key "registration_types", "stakeholder_categories"
+  add_foreign_key "service_types", "stakeholder_categories"
+  add_foreign_key "stakeholder_categories", "office_categories"
+  add_foreign_key "themes", "stakeholder_categories"
+  add_foreign_key "tos", "fcos"
+  add_foreign_key "units", "stakeholder_categories"
+  add_foreign_key "vendor_bank_masters", "stakeholder_categories"
+  add_foreign_key "vendor_bank_masters", "vendor_registrations"
+  add_foreign_key "vendor_registration_documents", "document_masters"
+  add_foreign_key "vendor_registration_documents", "vendor_registrations"
+  add_foreign_key "vendor_registration_invitations", "stakeholder_categories"
+  add_foreign_key "vendor_registration_invitations", "users"
+  add_foreign_key "vendor_registration_invitations", "vendor_registrations"
+  add_foreign_key "vendor_registration_product_varieties", "product_varieties"
+  add_foreign_key "vendor_registration_product_varieties", "vendor_registrations"
+  add_foreign_key "vendor_registration_products", "products"
+  add_foreign_key "vendor_registration_products", "vendor_registrations"
+  add_foreign_key "vendor_registration_themes", "themes"
+  add_foreign_key "vendor_registration_themes", "vendor_registrations"
+  add_foreign_key "vendor_registrations", "blocks"
+  add_foreign_key "vendor_registrations", "districts"
+  add_foreign_key "vendor_registrations", "firms"
+  add_foreign_key "vendor_registrations", "registration_types"
+  add_foreign_key "vendor_registrations", "stakeholder_categories"
+  add_foreign_key "vendor_registrations", "states"
+  add_foreign_key "vendor_registrations", "users"
+  add_foreign_key "vendor_selection_criteria", "themes"
+end

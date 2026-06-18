@@ -89,4 +89,58 @@ class LgLocationImporterTest < ActiveSupport::TestCase
   ensure
     file&.close!
   end
+
+  test "ignores trailing rows that have no location data" do
+    file = Tempfile.new(["lg-location-trailing-import", ".csv"])
+    file.write <<~CSV
+      State Name,District Name,Block Name,Notes
+      Trailing Import State,Trailing Import District,Trailing Import Block,
+      ,,,extra formatting
+    CSV
+    file.rewind
+
+    upload = ActionDispatch::Http::UploadedFile.new(
+      tempfile: file,
+      filename: "lg-location-trailing-import.csv",
+      type: "text/csv"
+    )
+
+    result = LgLocationImporter.call(upload)
+
+    assert_equal 1, result.states_created
+    assert_equal 1, result.districts_created
+    assert_equal 1, result.blocks_created
+    assert_equal 0, result.rows_skipped
+  ensure
+    file&.close!
+  end
+
+  test "uses state code when later rows omit state name" do
+    file = Tempfile.new(["lg-location-state-code-import", ".csv"])
+    file.write <<~CSV
+      State Code,State Name,District Code,District,Block Code,Block Name
+      99,Code State,990,Code District,9901,First Code Block
+      99,,990,Code District,9902,Second Code Block
+    CSV
+    file.rewind
+
+    upload = ActionDispatch::Http::UploadedFile.new(
+      tempfile: file,
+      filename: "lg-location-state-code-import.csv",
+      type: "text/csv"
+    )
+
+    result = LgLocationImporter.call(upload)
+
+    state = State.find_by!(code: "99")
+    district = state.districts.find_by!(code: "990")
+
+    assert_equal 1, result.states_created
+    assert_equal 1, result.districts_created
+    assert_equal 2, result.blocks_created
+    assert_equal 0, result.rows_skipped
+    assert_equal ["First Code Block", "Second Code Block"], district.blocks.order(:name).pluck(:name)
+  ensure
+    file&.close!
+  end
 end

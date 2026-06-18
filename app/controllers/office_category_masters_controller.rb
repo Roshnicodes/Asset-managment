@@ -2,7 +2,7 @@ class OfficeCategoryMastersController < ApplicationController
   before_action :set_office_category_master, only: %i[show edit update destroy]
 
   def index
-    @office_category_masters = OfficeCategoryMaster.includes(:stakeholder_category).ordered
+    @office_category_masters, @pagination = paginate_scope(OfficeCategoryMaster.includes(:stakeholder_category).ordered)
   end
 
   def show

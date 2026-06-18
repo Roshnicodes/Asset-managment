@@ -1,7 +1,7 @@
 class StatesController < ApplicationController
 
   def index
-    @states = State.all
+    @states, @pagination = paginate_scope(State.order(:code, :name))
   end
 
   def show

@@ -1,4 +1,6 @@
 class OfficeCategory < ApplicationRecord
+  attr_accessor :allow_blank_import_location
+
   attribute :state_id, :integer
   attribute :district_id, :integer
   attribute :block_id, :integer
@@ -87,6 +89,7 @@ class OfficeCategory < ApplicationRecord
   end
 
   def location_or_parent_present
+    return if allow_blank_import_location
     return if state_id.present? || district_id.present? || block_id.present? || parent_id.present?
 
     errors.add(:base, "Select at least one location field or parent office")

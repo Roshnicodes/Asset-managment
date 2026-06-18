@@ -1,0 +1,25 @@
+<% pagination = local_assigns[:pagination] %>
+
+<% if pagination.present? && pagination[:total_pages] > 1 %>
+  <div class="app-table-pagination">
+    <div class="app-table-pagination-info">
+      Showing <%= pagination[:from] %>-<%= pagination[:to] %> of <%= pagination[:total_count] %>
+    </div>
+
+    <div class="app-table-pagination-actions">
+      <% if pagination[:page] > 1 %>
+        <%= link_to "Previous", url_for(request.query_parameters.merge(page: pagination[:page] - 1)), class: "app-pagination-btn" %>
+      <% else %>
+        <button type="button" class="app-pagination-btn" disabled>Previous</button>
+      <% end %>
+
+      <span class="app-pagination-pages">Page <%= pagination[:page] %> of <%= pagination[:total_pages] %></span>
+
+      <% if pagination[:page] < pagination[:total_pages] %>
+        <%= link_to "Next", url_for(request.query_parameters.merge(page: pagination[:page] + 1)), class: "app-pagination-btn" %>
+      <% else %>
+        <button type="button" class="app-pagination-btn" disabled>Next</button>
+      <% end %>
+    </div>
+  </div>
+<% end %>
