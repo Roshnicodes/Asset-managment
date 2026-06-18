@@ -10,7 +10,9 @@
   <table class="table app-table">
     <thead>
       <tr>
+        <th>District Code</th>
         <th>District Name</th>
+        <th>State Code</th>
         <th>State</th>
         <th>Action</th>
       </tr>
@@ -18,7 +20,9 @@
     <tbody>
       <% @districts.each do |district| %>
         <tr>
+          <td><%= district.code.presence || "-" %></td>
           <td><%= district.name %></td>
+          <td><%= district.state.code.presence || "-" %></td>
           <td><%= district.state.name %></td>
           <td class="app-row-actions">
             <%= link_to "Edit", edit_district_path(district) %> |

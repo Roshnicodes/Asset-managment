@@ -49,7 +49,7 @@ end
   private
 
   def state_params
-    params.require(:state).permit(:name)
+    params.require(:state).permit(:code, :name)
   end
 
 end

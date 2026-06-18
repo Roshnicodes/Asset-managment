@@ -52,7 +52,7 @@ end
   private
 
   def district_params
-    params.require(:district).permit(:name,:state_id)
+    params.require(:district).permit(:code, :name, :state_id)
   end
 
 end

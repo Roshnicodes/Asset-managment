@@ -6,12 +6,30 @@
   <%= link_to "Add Block", new_block_path, class: "app-primary-btn" %>
 </div>
 
+<div class="app-form-card app-form-card-wide mb-3">
+  <%= form_with url: import_blocks_path, multipart: true, local: true do |form| %>
+    <div class="app-form-grid two-col">
+      <div class="app-form-field">
+        <%= form.label :file, "Upload LG Excel / CSV" %>
+        <%= form.file_field :file, accept: ".csv,.xls,.xlsx" %>
+      </div>
+
+      <div class="app-form-actions">
+        <%= form.submit "Upload File", class: "app-form-submit" %>
+      </div>
+    </div>
+  <% end %>
+</div>
+
 <div class="app-table-wrap">
   <table class="table app-table">
     <thead>
       <tr>
+        <th>State Code</th>
         <th>State</th>
+        <th>District Code</th>
         <th>District</th>
+        <th>Block Code</th>
         <th>Block</th>
         <th>Action</th>
       </tr>
@@ -19,8 +37,11 @@
     <tbody>
       <% @blocks.each do |block| %>
         <tr>
+          <td><%= block.district.state.code.presence || "-" %></td>
           <td><%= block.district.state.name %></td>
+          <td><%= block.district.code.presence || "-" %></td>
           <td><%= block.district.name %></td>
+          <td><%= block.code.presence || "-" %></td>
           <td><%= block.name %></td>
           <td class="app-row-actions">
             <%= link_to "Edit", edit_block_path(block) %> |

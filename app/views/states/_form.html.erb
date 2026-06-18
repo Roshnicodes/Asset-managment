@@ -1,6 +1,11 @@
 <%= form_with model: @state do |f| %>
   <div class="app-form-card">
-    <div class="app-form-grid">
+    <div class="app-form-grid two-col">
+      <div class="app-form-field">
+        <%= f.label :code, "State Code" %>
+        <%= f.text_field :code %>
+      </div>
+
       <div class="app-form-field">
         <%= f.label :name, "State Name" %>
         <%= f.text_field :name %>

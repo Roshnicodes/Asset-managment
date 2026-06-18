@@ -6,6 +6,18 @@ class BlocksController < ApplicationController
     @blocks = Block.includes(district: :state).order(:name)
   end
 
+  def import
+    if params[:file].blank?
+      redirect_to blocks_path, alert: "Please choose an Excel or CSV file."
+      return
+    end
+
+    result = LgLocationImporter.call(params[:file])
+    redirect_to blocks_path, notice: lg_import_success_message(result)
+  rescue StandardError => error
+    redirect_to blocks_path, alert: "Import failed: #{error.message}"
+  end
+
   # GET /blocks/1 or /blocks/1.json
   def show
   end
@@ -74,5 +86,15 @@ class BlocksController < ApplicationController
 
     def load_districts
       @districts = District.includes(:state).order(:name)
+    end
+
+    def lg_import_success_message(result)
+      message = "#{result.states_created} states, #{result.districts_created} districts, and #{result.blocks_created} blocks imported successfully."
+      if result.rows_skipped.positive?
+        message += " #{result.rows_skipped} rows skipped"
+        message += " (#{result.skipped_examples.join(', ')})" if result.skipped_examples.present?
+        message += "."
+      end
+      message
     end
 end

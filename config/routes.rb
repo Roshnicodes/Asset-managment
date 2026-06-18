@@ -98,8 +98,16 @@ Rails.application.routes.draw do
   resources :stakeholder_categories
   resources :registration_types, except: :show
   resources :office_category_masters
-  resources :office_categories
-  resources :blocks
+  resources :office_categories do
+    collection do
+      post :import
+    end
+  end
+  resources :blocks do
+    collection do
+      post :import
+    end
+  end
   get "users", to: redirect("/users/sign_in")
   devise_for :users, controllers: { passwords: 'users/passwords', registrations: 'users/registrations', sessions: 'users/sessions' }
   authenticated :user do

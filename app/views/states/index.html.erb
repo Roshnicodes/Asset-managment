@@ -10,6 +10,7 @@
   <table class="table app-table">
     <thead>
       <tr>
+        <th>State Code</th>
         <th>State Name</th>
         <th>Action</th>
       </tr>
@@ -17,6 +18,7 @@
     <tbody>
       <% @states.each do |state| %>
         <tr>
+          <td><%= state.code.presence || "-" %></td>
           <td><%= state.name %></td>
           <td class="app-row-actions">
             <%= link_to "Edit", edit_state_path(state) %> |

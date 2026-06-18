@@ -6,6 +6,18 @@ class OfficeCategoriesController < ApplicationController
     @office_categories = OfficeCategory.ordered
   end
 
+  def import
+    if params[:file].blank?
+      redirect_to office_categories_path, alert: "Please choose an Excel or CSV file."
+      return
+    end
+
+    result = OfficeStructureImporter.call(params[:file])
+    redirect_to office_categories_path, notice: office_structure_import_success_message(result)
+  rescue StandardError => error
+    redirect_to office_categories_path, alert: "Import failed: #{error.message}"
+  end
+
   # GET /office_categories/1 or /office_categories/1.json
   def show
   end
@@ -105,5 +117,24 @@ class OfficeCategoriesController < ApplicationController
       @parent_category_options = parent_scope.map do |category|
         [category.display_name, category.id]
       end
+    end
+
+    def office_structure_import_success_message(result)
+      message = "#{result.office_structures_created} office structures imported successfully."
+      message += " #{result.office_structures_skipped} duplicates skipped." if result.office_structures_skipped.positive?
+      message += " #{result.category_masters_created} category masters created." if result.category_masters_created.positive?
+
+      location_count = result.states_created + result.districts_created + result.blocks_created
+      if location_count.positive?
+        message += " Locations created: #{result.states_created} states, #{result.districts_created} districts, #{result.blocks_created} blocks."
+      end
+
+      if result.rows_skipped.positive?
+        message += " #{result.rows_skipped} rows skipped"
+        message += " (#{result.skipped_examples.join(', ')})" if result.skipped_examples.present?
+        message += "."
+      end
+
+      message
     end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_30_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_18_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -149,18 +149,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_30_120000) do
   end
 
   create_table "blocks", force: :cascade do |t|
+    t.string "code"
     t.datetime "created_at", null: false
     t.bigint "district_id", null: false
     t.string "name"
     t.datetime "updated_at", null: false
+    t.index ["district_id", "code"], name: "index_blocks_on_district_id_and_code", unique: true, where: "((code IS NOT NULL) AND ((code)::text <> ''::text))"
     t.index ["district_id"], name: "index_blocks_on_district_id"
   end
 
   create_table "districts", force: :cascade do |t|
+    t.string "code"
     t.datetime "created_at", null: false
     t.string "name"
     t.bigint "state_id", null: false
     t.datetime "updated_at", null: false
+    t.index ["state_id", "code"], name: "index_districts_on_state_id_and_code", unique: true, where: "((code IS NOT NULL) AND ((code)::text <> ''::text))"
     t.index ["state_id"], name: "index_districts_on_state_id"
   end
 
@@ -565,9 +569,11 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_30_120000) do
   end
 
   create_table "states", force: :cascade do |t|
+    t.string "code"
     t.datetime "created_at", null: false
     t.string "name"
     t.datetime "updated_at", null: false
+    t.index ["code"], name: "index_states_on_code", unique: true, where: "((code IS NOT NULL) AND ((code)::text <> ''::text))"
   end
 
   create_table "themes", force: :cascade do |t|
