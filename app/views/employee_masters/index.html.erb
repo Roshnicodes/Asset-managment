@@ -204,11 +204,23 @@
   </div>
 
   <div class="app-card employee-master-table-page">
+    <div class="app-form-actions mb-2">
+      <%= form_with url: destroy_selected_employee_masters_path, method: :delete, local: true, id: "bulk-delete-employees", data: { bulk_delete_form: true } do %>
+        <%= submit_tag "Delete Selected", class: "app-danger-btn", data: { turbo_confirm: "Delete selected employees?" } %>
+      <% end %>
+    </div>
+
     <div data-table-search-slot="employee-master-records"></div>
     <div class="app-table-wrap employee-master-table-wrap" data-search-placeholder="Search employees..." data-search-slot="employee-master-records">
       <table class="table app-table">
         <thead>
           <tr>
+            <th>
+              <label class="app-bulk-select-all">
+                <%= check_box_tag :select_all_employees, "1", false, data: { bulk_delete_select_all: true }, form: "bulk-delete-employees" %>
+                <span>Select All</span>
+              </label>
+            </th>
             <th>Stakeholder</th>
             <th>User Type</th>
             <th>Employee Code</th>
@@ -233,6 +245,7 @@
         <tbody>
           <% @employee_masters.each do |employee_master| %>
             <tr>
+              <td><%= check_box_tag "employee_master_ids[]", employee_master.id, false, data: { bulk_delete_checkbox: true }, form: "bulk-delete-employees" %></td>
               <td><%= employee_master.stakeholder_category.name %></td>
               <td><%= employee_master.user_type %></td>
               <td><%= employee_master.employee_code %></td>

@@ -1382,6 +1382,67 @@ const setupFinanceQueueBulkSelection = () => {
   })
 }
 
+const setupBulkDeleteSelections = () => {
+  const rowCheckboxesFor = (formId) =>
+    Array.from(document.querySelectorAll("[data-bulk-delete-checkbox]")).filter((checkbox) => checkbox.getAttribute("form") === formId)
+
+  const selectAllCheckboxFor = (formId) =>
+    Array.from(document.querySelectorAll("[data-bulk-delete-select-all]")).find((checkbox) => checkbox.getAttribute("form") === formId)
+
+  const syncSelectionState = (formId) => {
+    const rowCheckboxes = rowCheckboxesFor(formId)
+    const selectAllCheckbox = selectAllCheckboxFor(formId)
+    if (!selectAllCheckbox || rowCheckboxes.length === 0) return
+
+    const checkedCount = rowCheckboxes.filter((checkbox) => checkbox.checked).length
+    selectAllCheckbox.checked = checkedCount === rowCheckboxes.length
+    selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < rowCheckboxes.length
+  }
+
+  if (document.body.dataset.bulkDeleteDelegationReady !== "true") {
+    document.addEventListener("change", (event) => {
+      const target = event.target
+      if (!(target instanceof HTMLInputElement)) return
+
+      if (target.matches("[data-bulk-delete-select-all]")) {
+        const formId = target.getAttribute("form")
+        if (!formId) return
+
+        rowCheckboxesFor(formId).forEach((checkbox) => {
+          checkbox.checked = target.checked
+        })
+        syncSelectionState(formId)
+        return
+      }
+
+      if (target.matches("[data-bulk-delete-checkbox]")) {
+        const formId = target.getAttribute("form")
+        if (formId) syncSelectionState(formId)
+      }
+    })
+
+    document.addEventListener("submit", (event) => {
+      const form = event.target
+      if (!(form instanceof HTMLFormElement) || !form.matches("[data-bulk-delete-form]") || !form.id) return
+
+      const selectAllCheckbox = selectAllCheckboxFor(form.id)
+      if (!selectAllCheckbox?.checked) return
+
+      rowCheckboxesFor(form.id).forEach((checkbox) => {
+        checkbox.checked = true
+      })
+    })
+
+    document.body.dataset.bulkDeleteDelegationReady = "true"
+  }
+
+  document.querySelectorAll("[data-bulk-delete-form]").forEach((form) => {
+    if (!form.id) return
+
+    syncSelectionState(form.id)
+  })
+}
+
 const passwordVisibilityIcon = (visible) => {
   if (visible) {
     return `
@@ -1448,6 +1509,7 @@ const runAppInitializers = () => {
   setupAssetProductCodeAutofill()
   setupAssetInsuranceFields()
   setupFinanceQueueBulkSelection()
+  setupBulkDeleteSelections()
   setupPasswordVisibility()
   setupFormPagination()
   setupPageSectionPagination()

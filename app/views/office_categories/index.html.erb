@@ -21,10 +21,22 @@
   <% end %>
 </div>
 
+<div class="app-form-actions mb-2">
+  <%= form_with url: destroy_selected_office_categories_path, method: :delete, local: true, id: "bulk-delete-office-structures", data: { bulk_delete_form: true } do %>
+    <%= submit_tag "Delete Selected", class: "app-danger-btn", data: { turbo_confirm: "Delete selected office structures?" } %>
+  <% end %>
+</div>
+
 <div class="app-table-wrap">
   <table class="table app-table">
     <thead>
       <tr>
+        <th>
+          <label class="app-bulk-select-all">
+            <%= check_box_tag :select_all_office_structures, "1", false, data: { bulk_delete_select_all: true }, form: "bulk-delete-office-structures" %>
+            <span>Select All</span>
+          </label>
+        </th>
         <th>Stakeholder</th>
         <th>Category Name</th>
         <th>Parent Office</th>
@@ -38,6 +50,7 @@
     <tbody>
       <% @office_categories.each do |office_category| %>
         <tr>
+          <td><%= check_box_tag "office_category_ids[]", office_category.id, false, data: { bulk_delete_checkbox: true }, form: "bulk-delete-office-structures" %></td>
           <td><%= office_category.stakeholder_category&.name || "-" %></td>
           <td><%= office_category.office_category_master_name || "-" %></td>
           <td><%= office_category.parent&.display_name || "-" %></td>

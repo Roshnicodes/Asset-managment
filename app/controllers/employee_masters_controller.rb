@@ -57,6 +57,31 @@ class EmployeeMastersController < ApplicationController
     redirect_to employee_masters_path, alert: employee_delete_blocked_message, status: :see_other
   end
 
+  def destroy_selected
+    employee_master_ids = selected_ids(:employee_master_ids)
+    if employee_master_ids.blank?
+      redirect_to employee_masters_path, alert: "Please select at least one employee to delete.", status: :see_other
+      return
+    end
+
+    deleted_count = 0
+    blocked_names = []
+
+    EmployeeMaster.where(id: employee_master_ids).each do |employee|
+      if employee.destroy
+        deleted_count += 1
+      else
+        blocked_names << employee.name
+      end
+    rescue ActiveRecord::DeleteRestrictionError, ActiveRecord::InvalidForeignKey, ActiveRecord::RecordNotDestroyed
+      blocked_names << employee.name
+    end
+
+    redirect_to employee_masters_path,
+                flash: employee_bulk_delete_flash(deleted_count, blocked_names),
+                status: :see_other
+  end
+
   def reset_login_password
     if @employee_master.email_id.blank? || @employee_master.employee_code.blank?
       redirect_to employee_masters_path, alert: "This employee needs both an employee code and email ID for login reset."
@@ -105,6 +130,22 @@ class EmployeeMastersController < ApplicationController
 
   def employee_delete_blocked_message
     "#{@employee_master.name} is used in approval flow or transaction records. Remove/replace this employee from those records before deleting."
+  end
+
+  def selected_ids(param_name)
+    Array(params[param_name]).reject(&:blank?)
+  end
+
+  def employee_bulk_delete_flash(deleted_count, blocked_names)
+    flash_messages = {}
+    flash_messages[:notice] = "#{deleted_count} employee(s) deleted successfully." if deleted_count.positive?
+    if blocked_names.present?
+      examples = blocked_names.first(5).join(", ")
+      flash_messages[:alert] = "#{blocked_names.size} employee(s) could not be deleted because they are used in approval flow or transaction records: #{examples}."
+    elsif deleted_count.zero?
+      flash_messages[:alert] = "No employees were deleted."
+    end
+    flash_messages
   end
 
   def employee_master_params

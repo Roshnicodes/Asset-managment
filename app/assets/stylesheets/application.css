@@ -5959,3 +5959,15 @@ body.auth-page-body {
     height: 32px;
   }
 }
+.app-bulk-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.app-bulk-select-all input[type="checkbox"] {
+  margin: 0;
+}

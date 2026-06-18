@@ -64,4 +64,29 @@ class LgLocationImporterTest < ActiveSupport::TestCase
   ensure
     file&.close!
   end
+
+  test "reports skipped rows with row numbers when required data is missing" do
+    file = Tempfile.new(["lg-location-invalid-import", ".csv"])
+    file.write <<~CSV
+      State Name,District Name,Block Name
+      ,Missing State District,Missing State Block
+    CSV
+    file.rewind
+
+    upload = ActionDispatch::Http::UploadedFile.new(
+      tempfile: file,
+      filename: "lg-location-invalid-import.csv",
+      type: "text/csv"
+    )
+
+    result = LgLocationImporter.call(upload)
+
+    assert_equal 0, result.states_created
+    assert_equal 0, result.districts_created
+    assert_equal 0, result.blocks_created
+    assert_equal 1, result.rows_skipped
+    assert_equal ["row 2: state name missing"], result.skipped_examples
+  ensure
+    file&.close!
+  end
 end

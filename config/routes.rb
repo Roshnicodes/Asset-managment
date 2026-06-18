@@ -86,6 +86,7 @@ Rails.application.routes.draw do
       get :export
       post :import
       post :sync_logins
+      delete :destroy_selected
     end
   end
   resources :vendor_bank_masters
@@ -101,11 +102,13 @@ Rails.application.routes.draw do
   resources :office_categories do
     collection do
       post :import
+      delete :destroy_selected
     end
   end
   resources :blocks do
     collection do
       post :import
+      delete :destroy_selected
     end
   end
   get "users", to: redirect("/users/sign_in")

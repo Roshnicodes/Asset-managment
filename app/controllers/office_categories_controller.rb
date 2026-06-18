@@ -18,6 +18,26 @@ class OfficeCategoriesController < ApplicationController
     redirect_to office_categories_path, alert: "Import failed: #{error.message}"
   end
 
+  def destroy_selected
+    office_category_ids = selected_ids(:office_category_ids)
+    if office_category_ids.blank?
+      redirect_to office_categories_path, alert: "Please select at least one office structure to delete.", status: :see_other
+      return
+    end
+
+    office_categories = OfficeCategory
+      .where(id: office_category_ids)
+      .includes(:office_category_master, :state, :district, :block, parent: [:state, :district, :block, :office_category_master])
+
+    deleted_count, blocked_names = destroy_selected_records(office_categories) do |office_category|
+      office_category.display_name
+    end
+
+    redirect_to office_categories_path,
+                flash: bulk_delete_flash("office structure", deleted_count, blocked_names),
+                status: :see_other
+  end
+
   # GET /office_categories/1 or /office_categories/1.json
   def show
   end
@@ -136,5 +156,39 @@ class OfficeCategoriesController < ApplicationController
       end
 
       message
+    end
+
+    def selected_ids(param_name)
+      Array(params[param_name]).reject(&:blank?)
+    end
+
+    def destroy_selected_records(records)
+      deleted_count = 0
+      blocked_names = []
+
+      records.each do |record|
+        label = yield(record)
+        if record.destroy
+          deleted_count += 1
+        else
+          blocked_names << label
+        end
+      rescue ActiveRecord::DeleteRestrictionError, ActiveRecord::InvalidForeignKey, ActiveRecord::RecordNotDestroyed
+        blocked_names << label
+      end
+
+      [deleted_count, blocked_names]
+    end
+
+    def bulk_delete_flash(label, deleted_count, blocked_names)
+      flash_messages = {}
+      flash_messages[:notice] = "#{deleted_count} #{label}(s) deleted successfully." if deleted_count.positive?
+      if blocked_names.present?
+        examples = blocked_names.first(5).join(", ")
+        flash_messages[:alert] = "#{blocked_names.size} #{label}(s) could not be deleted because they are used in other records: #{examples}."
+      elsif deleted_count.zero?
+        flash_messages[:alert] = "No #{label}s were deleted."
+      end
+      flash_messages
     end
 end

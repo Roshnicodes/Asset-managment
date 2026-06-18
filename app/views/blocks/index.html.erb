@@ -21,10 +21,22 @@
   <% end %>
 </div>
 
+<div class="app-form-actions mb-2">
+  <%= form_with url: destroy_selected_blocks_path, method: :delete, local: true, id: "bulk-delete-blocks", data: { bulk_delete_form: true } do %>
+    <%= submit_tag "Delete Selected", class: "app-danger-btn", data: { turbo_confirm: "Delete selected blocks?" } %>
+  <% end %>
+</div>
+
 <div class="app-table-wrap">
   <table class="table app-table">
     <thead>
       <tr>
+        <th>
+          <label class="app-bulk-select-all">
+            <%= check_box_tag :select_all_blocks, "1", false, data: { bulk_delete_select_all: true }, form: "bulk-delete-blocks" %>
+            <span>Select All</span>
+          </label>
+        </th>
         <th>State Code</th>
         <th>State</th>
         <th>District Code</th>
@@ -37,6 +49,7 @@
     <tbody>
       <% @blocks.each do |block| %>
         <tr>
+          <td><%= check_box_tag "block_ids[]", block.id, false, data: { bulk_delete_checkbox: true }, form: "bulk-delete-blocks" %></td>
           <td><%= block.district.state.code.presence || "-" %></td>
           <td><%= block.district.state.name %></td>
           <td><%= block.district.code.presence || "-" %></td>

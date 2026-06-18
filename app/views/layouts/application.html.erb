@@ -55,5 +55,47 @@
   </div>
 <% end %>
 
+<script>
+  document.addEventListener("change", function(event) {
+    var target = event.target;
+    if (!target || !target.matches("[data-bulk-delete-select-all]")) return;
+
+    var formId = target.getAttribute("form");
+    if (!formId) return;
+
+    document.querySelectorAll('[data-bulk-delete-checkbox][form="' + formId + '"]').forEach(function(checkbox) {
+      checkbox.checked = target.checked;
+    });
+  });
+
+  document.addEventListener("change", function(event) {
+    var target = event.target;
+    if (!target || !target.matches("[data-bulk-delete-checkbox]")) return;
+
+    var formId = target.getAttribute("form");
+    if (!formId) return;
+
+    var selectAll = document.querySelector('[data-bulk-delete-select-all][form="' + formId + '"]');
+    var checkboxes = Array.from(document.querySelectorAll('[data-bulk-delete-checkbox][form="' + formId + '"]'));
+    if (!selectAll || checkboxes.length === 0) return;
+
+    var checkedCount = checkboxes.filter(function(checkbox) { return checkbox.checked; }).length;
+    selectAll.checked = checkedCount === checkboxes.length;
+    selectAll.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+  });
+
+  document.addEventListener("submit", function(event) {
+    var form = event.target;
+    if (!form || !form.matches("[data-bulk-delete-form]") || !form.id) return;
+
+    var selectAll = document.querySelector('[data-bulk-delete-select-all][form="' + form.id + '"]');
+    if (!selectAll || !selectAll.checked) return;
+
+    document.querySelectorAll('[data-bulk-delete-checkbox][form="' + form.id + '"]').forEach(function(checkbox) {
+      checkbox.checked = true;
+    });
+  });
+</script>
+
 </body>
 </html>
