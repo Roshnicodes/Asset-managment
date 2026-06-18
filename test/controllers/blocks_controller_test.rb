@@ -20,7 +20,7 @@ class BlocksControllerTest < ActionDispatch::IntegrationTest
       post blocks_url, params: { block: { district_id: @block.district_id, name: @block.name } }
     end
 
-    assert_redirected_to block_url(Block.last)
+    assert_redirected_to blocks_url
   end
 
   test "should show block" do
@@ -35,14 +35,25 @@ class BlocksControllerTest < ActionDispatch::IntegrationTest
 
   test "should update block" do
     patch block_url(@block), params: { block: { district_id: @block.district_id, name: @block.name } }
-    assert_redirected_to block_url(@block)
+    assert_redirected_to blocks_url
   end
 
   test "should destroy block" do
+    block = Block.create!(name: "Unused Block", district: districts(:one))
+
     assert_difference("Block.count", -1) do
+      delete block_url(block)
+    end
+
+    assert_redirected_to blocks_url
+  end
+
+  test "should not crash when destroying block used by another record" do
+    assert_no_difference("Block.count") do
       delete block_url(@block)
     end
 
     assert_redirected_to blocks_url
+    assert_match "Cannot delete", flash[:alert]
   end
 end

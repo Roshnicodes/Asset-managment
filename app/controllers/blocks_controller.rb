@@ -65,12 +65,17 @@ class BlocksController < ApplicationController
 
   # DELETE /blocks/1 or /blocks/1.json
   def destroy
-    @block.destroy!
-
     respond_to do |format|
-      format.html { redirect_to blocks_path, notice: "Block was successfully destroyed.", status: :see_other }
-      format.json { head :no_content }
+      if @block.destroy
+        format.html { redirect_to blocks_path, notice: "Block was successfully destroyed.", status: :see_other }
+        format.json { head :no_content }
+      else
+        format.html { redirect_to blocks_path, alert: block_destroy_error_message, status: :see_other }
+        format.json { render json: @block.errors, status: :unprocessable_entity }
+      end
     end
+  rescue ActiveRecord::InvalidForeignKey
+    redirect_to blocks_path, alert: "Cannot delete this block because it is already used in other records.", status: :see_other
   end
 
   private
@@ -86,6 +91,11 @@ class BlocksController < ApplicationController
 
     def load_districts
       @districts = District.includes(:state).order(:name)
+    end
+
+    def block_destroy_error_message
+      @block.errors.full_messages.to_sentence.presence ||
+        "Cannot delete this block because it is already used in other records."
     end
 
     def lg_import_success_message(result)
