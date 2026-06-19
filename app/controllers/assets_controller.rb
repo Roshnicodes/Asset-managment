@@ -128,7 +128,7 @@ class AssetsController < ApplicationController
 
     invoice_request.snapshot_items.each do |item|
       vendor_item = invoice_request.quotation_proposal_vendor.vendor_items.find { |record| record.id == item[:vendor_item_id].to_i }
-      next unless vendor_item
+      next unless invoice_item_fixed_asset?(item, vendor_item)
 
       suggested_product = Product.find_by(name: item[:item_name])
       quantity_count = [item[:received_quantity].to_d.to_i, 1].max
@@ -150,6 +150,13 @@ class AssetsController < ApplicationController
     end
 
     rows
+  end
+
+  def invoice_item_fixed_asset?(item, vendor_item)
+    return false unless vendor_item
+    return vendor_item.fixed_asset == true unless item&.key?(:fixed_asset)
+
+    ActiveModel::Type::Boolean.new.cast(item[:fixed_asset]) == true
   end
 
   def apply_rate_filter(scope)

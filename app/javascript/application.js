@@ -1534,6 +1534,21 @@ const setupPasswordVisibility = () => {
   })
 }
 
+const setupQuotationShowDetails = () => {
+  document.querySelectorAll(".quotation-proposal-show details").forEach((details) => {
+    if (details.dataset.quotationAlwaysOpenReady === "true") {
+      details.open = true
+      return
+    }
+
+    details.open = true
+    details.addEventListener("toggle", () => {
+      if (!details.open) details.open = true
+    })
+    details.dataset.quotationAlwaysOpenReady = "true"
+  })
+}
+
 const runAppInitializers = () => {
   setupVendorRegistrationSelections()
   setupVendorDocumentToggle()
@@ -1551,6 +1566,7 @@ const runAppInitializers = () => {
   setupFinanceQueueBulkSelection()
   setupBulkDeleteSelections()
   setupPasswordVisibility()
+  setupQuotationShowDetails()
   setupFormPagination()
   setupPageSectionPagination()
 }

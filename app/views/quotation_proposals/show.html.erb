@@ -43,10 +43,10 @@
   .quotation-proposal-show[data-ui-page-pager="true"] {
     display: flex !important;
     flex-direction: column !important;
-    height: calc(100vh - 150px) !important;
-    max-height: calc(100vh - 150px) !important;
+    height: auto !important;
+    max-height: none !important;
     min-height: 0 !important;
-    overflow: hidden !important;
+    overflow: visible !important;
   }
 
   .quotation-proposal-show[data-ui-page-pager="true"]:not(.app-page-paged) {
@@ -63,6 +63,16 @@
     flex: 1 1 auto !important;
     min-height: 0 !important;
     overflow-y: auto !important;
+  }
+
+  .quotation-proposal-show details > summary {
+    cursor: default !important;
+    pointer-events: none !important;
+  }
+
+  .quotation-proposal-show__section-summary::after {
+    display: none !important;
+    content: none !important;
   }
 </style>
 
@@ -164,7 +174,7 @@
       </div>
     </div>
 
-    <details class="quotation-proposal-show__nested-details quotation-proposal-show__section-details quotation-proposal-show__overview-details">
+    <details class="quotation-proposal-show__nested-details quotation-proposal-show__section-details quotation-proposal-show__overview-details" open>
       <summary class="quotation-proposal-show__nested-summary quotation-proposal-show__section-summary">
         <div class="quotation-proposal-show__summary-copy">
           <span class="quotation-proposal-show__summary-title">More Overview Details</span>
@@ -261,7 +271,7 @@
 <% end %>
 
   <div class="app-detail-card app-stack-gap-lg">
-    <details class="quotation-proposal-show__nested-details quotation-proposal-show__section-details" <%= "open" if trail_should_open %>>
+    <details class="quotation-proposal-show__nested-details quotation-proposal-show__section-details" open>
       <summary class="quotation-proposal-show__nested-summary quotation-proposal-show__section-summary">
         <div class="quotation-proposal-show__summary-copy">
           <span class="quotation-proposal-show__summary-title">Committee Approval Trail</span>
@@ -347,7 +357,7 @@
 <% end %>
 
   <div class="app-detail-card app-stack-gap-lg">
-    <details class="quotation-proposal-show__nested-details quotation-proposal-show__section-details" <%= "open" if proposal_items_count <= 3 %>>
+    <details class="quotation-proposal-show__nested-details quotation-proposal-show__section-details" open>
       <summary class="quotation-proposal-show__nested-summary quotation-proposal-show__section-summary">
         <div class="quotation-proposal-show__summary-copy">
           <span class="quotation-proposal-show__summary-title">Proposal Items</span>
@@ -734,7 +744,7 @@
 
     <% if @selected_vendor_response.present? %>
       <div class="app-card mt-4 quotation-proposal-show__workflow-card">
-        <details class="quotation-proposal-show__nested-details quotation-proposal-show__section-details" <%= "open" if @selected_vendor_response.pending_invoice_requests? || @selected_vendor_response.purchase_order_status == "accepted" %>>
+        <details class="quotation-proposal-show__nested-details quotation-proposal-show__section-details" open>
           <summary class="quotation-proposal-show__nested-summary quotation-proposal-show__section-summary">
             <div class="quotation-proposal-show__summary-copy">
               <span class="quotation-proposal-show__summary-title">Selected Vendor PO Workflow</span>
@@ -877,7 +887,7 @@
               </div>
               <span class="badge border bg-light text-dark"><%= @selected_vendor_response.purchase_order_activities.size %> updates</span>
             </div>
-            <details class="quotation-proposal-show__timeline-details" <%= "open" if @selected_vendor_response.purchase_order_activities.size <= 3 %>>
+            <details class="quotation-proposal-show__timeline-details" open>
               <summary class="quotation-proposal-show__timeline-summary">
                 <span>View Response Timeline</span>
                 <span class="badge border bg-light text-dark"><%= @selected_vendor_response.purchase_order_activities.size %> updates</span>

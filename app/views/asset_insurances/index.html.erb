@@ -59,7 +59,7 @@
                   <td>
                     <%= check_box_tag "selected_asset_ids[]", asset.id, selected_asset_ids.include?(asset.id.to_s), class: "form-check-input", data: { finance_row_checkbox: true } %>
                   </td>
-                  <td><%= asset.asset_code.presence || "Asset ##{asset.id}" %></td>
+                  <td><%= asset.asset_code.presence || "-" %></td>
                   <td>
                     <strong><%= asset.name.presence || asset.product.name %></strong>
                     <% if asset.errors.any? %>

@@ -76,7 +76,7 @@ module ApplicationHelper
   def asset_product_code_label(product)
     return "" if product.blank?
 
-    product.asset_product_type_code_segment
+    product.asset_product_type_code_segment.presence || "#{product.name} - Fixed asset type no missing"
   end
 
   def quotation_item_display_name(item_name)

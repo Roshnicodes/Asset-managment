@@ -365,7 +365,7 @@ class QuotationProposalsController < ApplicationController
         end
 
         if receive_now_quantity.positive?
-          received_batch_items << build_received_batch_item(vendor_item, receive_now_quantity)
+          received_batch_items << build_received_batch_item(vendor_item, receive_now_quantity, fixed_asset_value)
         end
 
         updated_received_quantity = vendor_item.received_quantity.to_d + receive_now_quantity
@@ -707,6 +707,13 @@ class QuotationProposalsController < ApplicationController
           raise ActiveRecord::RecordInvalid.new(Asset.new), "Please add the asset code date for every asset row."
         end
 
+        vendor_item = @invoice_request.quotation_proposal_vendor.vendor_items.find(row[:vendor_item_id])
+        snapshot_item = @invoice_request.snapshot_items.find { |item| item[:vendor_item_id].to_i == vendor_item.id }
+
+        unless invoice_item_fixed_asset?(snapshot_item, vendor_item)
+          raise ActiveRecord::RecordInvalid.new(Asset.new), "Asset can be created only when Fixed Asset Type is Yes."
+        end
+
         product = Product.find(product_id)
         unique_product_code = row[:unique_product_code].to_s.strip.presence || product.product_code.to_s.strip.presence
 
@@ -714,7 +721,6 @@ class QuotationProposalsController < ApplicationController
           raise ActiveRecord::RecordInvalid.new(Asset.new), "Product code is required for every asset row. Please add it in Product Entry or update the item no."
         end
 
-        vendor_item = @invoice_request.quotation_proposal_vendor.vendor_items.find(row[:vendor_item_id])
         stakeholder = StakeholderCategory.find(stakeholder_category_id)
         primary_office = OfficeCategory.find(primary_office_category_id)
         secondary_office = OfficeCategory.find(secondary_office_category_id)
@@ -1280,7 +1286,7 @@ class QuotationProposalsController < ApplicationController
     nil
   end
 
-  def build_received_batch_item(vendor_item, receive_now_quantity)
+  def build_received_batch_item(vendor_item, receive_now_quantity, fixed_asset_value)
     {
       vendor_item_id: vendor_item.id,
       quotation_proposal_item_id: vendor_item.quotation_proposal_item_id,
@@ -1288,7 +1294,8 @@ class QuotationProposalsController < ApplicationController
       unit_name: vendor_item.unit&.name,
       ordered_quantity: vendor_item.quantity.to_s,
       received_quantity: receive_now_quantity.to_s,
-      cumulative_received_quantity: (vendor_item.received_quantity.to_d + receive_now_quantity).to_s
+      cumulative_received_quantity: (vendor_item.received_quantity.to_d + receive_now_quantity).to_s,
+      fixed_asset: fixed_asset_value
     }
   end
 
@@ -1320,7 +1327,7 @@ class QuotationProposalsController < ApplicationController
 
     invoice_request.snapshot_items.each do |item|
       vendor_item = invoice_request.quotation_proposal_vendor.vendor_items.find { |record| record.id == item[:vendor_item_id].to_i }
-      next unless vendor_item&.fixed_asset == true
+      next unless invoice_item_fixed_asset?(item, vendor_item)
 
       suggested_product = Product.find_by(name: item[:item_name])
       quantity_count = item[:received_quantity].to_d.to_i
@@ -1341,32 +1348,14 @@ class QuotationProposalsController < ApplicationController
       end
     end
 
-    if rows.blank? && invoice_request.uploaded?
-      invoice_request.snapshot_items.each do |item|
-        vendor_item = invoice_request.quotation_proposal_vendor.vendor_items.find { |record| record.id == item[:vendor_item_id].to_i }
-        next unless vendor_item
-
-        suggested_product = Product.find_by(name: item[:item_name])
-        quantity_count = [item[:received_quantity].to_d.to_i, 1].max
-
-        quantity_count.times do |index|
-          rows << {
-            vendor_item_id: vendor_item.id,
-            asset_name: item[:item_name],
-            suggested_product_id: suggested_product&.id,
-            stakeholder_category_id: suggested_stakeholder_id,
-            primary_office_category_id: nil,
-            secondary_office_category_id: nil,
-            asset_code_date: nil,
-            unit_name: item[:unit_name],
-            row_label: "#{item[:item_name]} ##{index + 1}",
-            unique_product_code: suggested_product&.product_code
-          }
-        end
-      end
-    end
-
     rows
+  end
+
+  def invoice_item_fixed_asset?(item, vendor_item)
+    return false unless vendor_item
+    return vendor_item.fixed_asset == true unless item&.key?(:fixed_asset)
+
+    ActiveModel::Type::Boolean.new.cast(item[:fixed_asset]) == true
   end
 
   def asset_row_params

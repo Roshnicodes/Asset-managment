@@ -16,7 +16,7 @@ class Product < ApplicationRecord
   end
 
   def asset_product_type_code_segment
-    product_varieties.min_by(&:id)&.product_type_code.to_s.strip.presence || asset_code_segment
+    product_varieties.min_by(&:id)&.product_type_code.to_s.strip.presence
   end
 
   private

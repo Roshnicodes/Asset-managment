@@ -110,7 +110,10 @@ class Asset < ApplicationRecord
   end
 
   def assign_asset_code
-    return unless structured_asset_code_ready?
+    unless structured_asset_code_ready?
+      self.asset_code = nil
+      return
+    end
 
     self.asset_code = self.class.generate_asset_code(
       stakeholder_name: stakeholder_category.name,
@@ -135,6 +138,7 @@ class Asset < ApplicationRecord
       primary_office_category.present? &&
       secondary_office_category.present? &&
       product.present? &&
+      product.asset_product_type_code_segment.present? &&
       asset_code_date.present? &&
       unique_product_code.present?
   end
