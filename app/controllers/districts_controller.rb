@@ -1,7 +1,15 @@
 class DistrictsController < ApplicationController
 
   def index
-    @districts, @pagination = paginate_scope(District.includes(:state).order(:code, :name))
+    districts = District.joins(:state).includes(:state).order(:code, :name)
+    if search_query.present?
+      districts = districts.where(
+        "LOWER(districts.name) LIKE :query OR LOWER(districts.code) LIKE :query OR LOWER(states.name) LIKE :query OR LOWER(states.code) LIKE :query",
+        query: search_pattern
+      )
+    end
+
+    @districts, @pagination = paginate_scope(districts)
   end
 
   def new

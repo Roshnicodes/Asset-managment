@@ -1,0 +1,10 @@
+<% placeholder = local_assigns[:placeholder] || "Search in this table..." %>
+
+<%= form_with url: request.path, method: :get, local: true, class: "app-table-search" do %>
+  <% request.query_parameters.except("page", "q").each do |key, value| %>
+    <%= hidden_field_tag key, value %>
+  <% end %>
+
+  <%= search_field_tag :q, params[:q], class: "app-table-search-input", placeholder: placeholder %>
+  <%= submit_tag "Search", class: "app-form-submit app-table-search-btn", name: nil %>
+<% end %>

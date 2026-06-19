@@ -3,7 +3,15 @@ class VendorBankMastersController < ApplicationController
 
   # GET /vendor_bank_masters or /vendor_bank_masters.json
   def index
-    @vendor_bank_masters, @pagination = paginate_scope(VendorBankMaster.masters)
+    vendor_bank_masters = VendorBankMaster.masters
+    if search_query.present?
+      vendor_bank_masters = vendor_bank_masters.where(
+        "LOWER(vendor_bank_masters.bank_name) LIKE :query",
+        query: search_pattern
+      )
+    end
+
+    @vendor_bank_masters, @pagination = paginate_scope(vendor_bank_masters)
   end
 
   # GET /vendor_bank_masters/1 or /vendor_bank_masters/1.json

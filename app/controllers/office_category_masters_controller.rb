@@ -2,7 +2,18 @@ class OfficeCategoryMastersController < ApplicationController
   before_action :set_office_category_master, only: %i[show edit update destroy]
 
   def index
-    @office_category_masters, @pagination = paginate_scope(OfficeCategoryMaster.includes(:stakeholder_category).ordered)
+    office_category_masters = OfficeCategoryMaster
+      .joins(:stakeholder_category)
+      .includes(:stakeholder_category)
+      .order("stakeholder_categories.name ASC, office_category_masters.name ASC")
+    if search_query.present?
+      office_category_masters = office_category_masters.where(
+        "LOWER(office_category_masters.name) LIKE :query OR LOWER(stakeholder_categories.name) LIKE :query",
+        query: search_pattern
+      )
+    end
+
+    @office_category_masters, @pagination = paginate_scope(office_category_masters)
   end
 
   def show

@@ -22,10 +22,12 @@
     <% end %>
   </div>
 
-  <div class="app-list-control-search" data-table-search-slot="blocks-records" style="display:inline-flex!important;flex:0 1 260px!important;width:260px!important;margin-left:0!important;"></div>
+  <div class="app-list-control-search" data-table-search-slot="blocks-records" style="display:inline-flex!important;flex:0 1 380px!important;width:380px!important;margin-left:0!important;">
+    <%= render "shared/table_search", placeholder: "Search blocks..." %>
+  </div>
 </div>
 
-<div class="app-table-wrap" data-search-placeholder="Search blocks..." data-search-slot="blocks-records">
+<div class="app-table-wrap" data-search-placeholder="Search blocks..." data-search-slot="blocks-records" data-server-search="true" data-table-search="false">
   <table class="table app-table">
     <thead>
       <tr>

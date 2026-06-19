@@ -6,7 +6,9 @@
   <%= link_to "Add State", new_state_path, class: "app-primary-btn" %>
 </div>
 
-<div class="app-table-wrap">
+<%= render "shared/table_search", placeholder: "Search states..." %>
+
+<div class="app-table-wrap" data-search-placeholder="Search states..." data-server-search="true" data-table-search="false">
   <table class="table app-table">
     <thead>
       <tr>

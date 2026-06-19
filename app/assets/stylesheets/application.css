@@ -333,6 +333,8 @@ body.auth-page-body {
 
 .app-table-search {
   display: flex;
+  align-items: center;
+  gap: 0.5rem;
   justify-content: flex-end;
   margin-bottom: 0.8rem;
 }
@@ -6061,8 +6063,8 @@ body.auth-page-body {
 
 .app-list-control-search {
   display: inline-flex !important;
-  flex: 0 1 260px !important;
-  width: 260px !important;
+  flex: 0 1 380px !important;
+  width: 380px !important;
   margin-left: 0 !important;
 }
 
@@ -6111,15 +6113,24 @@ body.auth-page-body {
 }
 
 .app-list-controls .app-table-search {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
   justify-content: stretch;
   margin: 0;
+  width: 100%;
 }
 
 .app-list-controls .app-table-search-input {
+  flex: 1 1 auto;
   max-width: none;
   min-height: 36px;
   padding: 0.42rem 0.65rem;
   font-size: 0.88rem;
+}
+
+.app-list-controls .app-table-search-btn {
+  flex: 0 0 auto;
 }
 
 .app-row-actions .app-delete-button,

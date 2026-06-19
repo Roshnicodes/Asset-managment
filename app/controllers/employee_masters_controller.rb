@@ -5,7 +5,37 @@ class EmployeeMastersController < ApplicationController
   before_action :set_employee_master, only: %i[edit update destroy reset_login_password]
 
   def index
-    @employee_masters = EmployeeMaster.includes(:stakeholder_category).order(:name)
+    employee_masters = EmployeeMaster
+      .left_outer_joins(:stakeholder_category, :state, :district, :block)
+      .includes(:stakeholder_category, :state, :district, :block)
+      .order(:name)
+
+    if search_query.present?
+      employee_masters = employee_masters.where(
+        [
+          "LOWER(employee_masters.name) LIKE :query",
+          "LOWER(employee_masters.employee_code) LIKE :query",
+          "LOWER(employee_masters.email_id) LIKE :query",
+          "LOWER(employee_masters.mobile_no) LIKE :query",
+          "LOWER(employee_masters.designation) LIKE :query",
+          "LOWER(employee_masters.user_type) LIKE :query",
+          "LOWER(employee_masters.office) LIKE :query",
+          "LOWER(employee_masters.parent_office) LIKE :query",
+          "LOWER(employee_masters.location) LIKE :query",
+          "LOWER(employee_masters.full_address) LIKE :query",
+          "LOWER(employee_masters.pincode) LIKE :query",
+          "LOWER(employee_masters.gram_panchayat) LIKE :query",
+          "LOWER(employee_masters.village) LIKE :query",
+          "LOWER(stakeholder_categories.name) LIKE :query",
+          "LOWER(states.name) LIKE :query",
+          "LOWER(districts.name) LIKE :query",
+          "LOWER(blocks.name) LIKE :query"
+        ].join(" OR "),
+        query: search_pattern
+      )
+    end
+
+    @employee_masters, @pagination = paginate_scope(employee_masters)
   end
 
   def export

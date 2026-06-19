@@ -3,7 +3,15 @@ class BlocksController < ApplicationController
 
   # GET /blocks or /blocks.json
   def index
-    @blocks, @pagination = paginate_scope(Block.includes(district: :state).order(:name))
+    blocks = Block.joins(district: :state).includes(district: :state).order(:name)
+    if search_query.present?
+      blocks = blocks.where(
+        "LOWER(blocks.name) LIKE :query OR LOWER(blocks.code) LIKE :query OR LOWER(districts.name) LIKE :query OR LOWER(districts.code) LIKE :query OR LOWER(states.name) LIKE :query OR LOWER(states.code) LIKE :query",
+        query: search_pattern
+      )
+    end
+
+    @blocks, @pagination = paginate_scope(blocks)
   end
 
   def import

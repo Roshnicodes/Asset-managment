@@ -173,6 +173,14 @@ class ApplicationController < ActionController::Base
     [records, pagination]
   end
 
+  def search_query
+    params[:q].to_s.strip
+  end
+
+  def search_pattern
+    "%#{ActiveRecord::Base.sanitize_sql_like(search_query.downcase)}%"
+  end
+
   def set_no_store_headers
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     response.headers["Pragma"] = "no-cache"

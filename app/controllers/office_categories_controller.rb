@@ -3,7 +3,15 @@ class OfficeCategoriesController < ApplicationController
 
   # GET /office_categories or /office_categories.json
   def index
-    @office_categories, @pagination = paginate_scope(OfficeCategory.ordered)
+    office_categories = OfficeCategory.ordered.left_outer_joins(:state, :district, :block)
+    if search_query.present?
+      office_categories = office_categories.where(
+        "LOWER(stakeholder_categories.name) LIKE :query OR LOWER(office_category_masters.name) LIKE :query OR LOWER(office_categories.name) LIKE :query OR LOWER(office_categories.office_level) LIKE :query OR LOWER(states.name) LIKE :query OR LOWER(districts.name) LIKE :query OR LOWER(blocks.name) LIKE :query",
+        query: search_pattern
+      )
+    end
+
+    @office_categories, @pagination = paginate_scope(office_categories)
   end
 
   def import

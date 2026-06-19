@@ -1,7 +1,15 @@
 class StatesController < ApplicationController
 
   def index
-    @states, @pagination = paginate_scope(State.order(:code, :name))
+    states = State.order(:code, :name)
+    if search_query.present?
+      states = states.where(
+        "LOWER(states.name) LIKE :query OR LOWER(states.code) LIKE :query",
+        query: search_pattern
+      )
+    end
+
+    @states, @pagination = paginate_scope(states)
   end
 
   def show

@@ -162,23 +162,31 @@
 
   .employee-master-controls .app-list-control-search {
     display: inline-flex !important;
-    flex: 0 1 260px !important;
-    width: 260px !important;
+    flex: 0 1 380px !important;
+    width: 380px !important;
     min-width: 180px !important;
     margin-left: 0 !important;
   }
 
   .employee-master-controls .app-table-search {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
     width: 100% !important;
     margin: 0 !important;
   }
 
   .employee-master-controls .app-table-search-input {
+    flex: 1 1 auto !important;
     width: 100% !important;
     max-width: none !important;
     min-height: 36px !important;
     padding: 6px 10px !important;
     font-size: 14px !important;
+  }
+
+  .employee-master-controls .app-table-search-btn {
+    flex: 0 0 auto !important;
   }
 
   .employee-master-table-wrap thead th {
@@ -271,11 +279,13 @@
       <% end %>
     </div>
 
-    <div class="app-list-control-search" data-table-search-slot="employee-master-records" style="display:inline-flex!important;flex:0 1 260px!important;width:260px!important;margin-left:0!important;"></div>
+    <div class="app-list-control-search" data-table-search-slot="employee-master-records" style="display:inline-flex!important;flex:0 1 380px!important;width:380px!important;margin-left:0!important;">
+      <%= render "shared/table_search", placeholder: "Search employees..." %>
+    </div>
   </div>
 
   <div class="app-card employee-master-table-page">
-    <div class="app-table-wrap employee-master-table-wrap" data-search-placeholder="Search employees..." data-search-slot="employee-master-records">
+    <div class="app-table-wrap employee-master-table-wrap" data-search-placeholder="Search employees..." data-search-slot="employee-master-records" data-server-search="true" data-table-search="false">
       <table class="table app-table">
         <thead>
           <tr>
@@ -361,5 +371,6 @@
         </tbody>
       </table>
     </div>
+    <%= render "shared/table_pagination", pagination: @pagination %>
   </div>
 </div>

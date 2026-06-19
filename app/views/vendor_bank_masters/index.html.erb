@@ -3,7 +3,9 @@
   <%= link_to "Add Bank Name", new_vendor_bank_master_path, class: "app-primary-btn" %>
 </div>
 
-<div class="app-table-wrap">
+<%= render "shared/table_search", placeholder: "Search banks..." %>
+
+<div class="app-table-wrap" data-search-placeholder="Search banks..." data-server-search="true" data-table-search="false">
 <table class="table app-table">
   <thead>
     <tr>

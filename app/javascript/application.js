@@ -112,10 +112,20 @@ const setupMsmeToggle = () => {
   syncMsmeState()
 }
 
+const escapeAttribute = (value) =>
+  String(value).replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[character])
+
 const setupTableSearch = () => {
   document.querySelectorAll(".app-table-wrap").forEach((tableWrap, index) => {
-    if (tableWrap.dataset.searchReady === "true") return
     if (tableWrap.dataset.tableSearch === "false") return
+    const serverSearch = tableWrap.dataset.serverSearch === "true"
+    if (tableWrap.dataset.searchReady === "true" && !serverSearch) return
 
     const table = tableWrap.querySelector("table")
     const tbody = tableWrap.querySelector("tbody")
@@ -127,17 +137,46 @@ const setupTableSearch = () => {
       ? document.querySelector(`[data-table-search-slot="${searchSlotName}"]`)
       : null
     const existingInput = searchSlot?.querySelector(".app-table-search-input")
-    const searchBar = existingInput?.closest(".app-table-search") || document.createElement("div")
+    let searchBar = existingInput?.closest(".app-table-search")
 
-    if (!existingInput) {
+    if (!searchBar || (serverSearch && searchBar.tagName !== "FORM")) {
+      searchBar = document.createElement(serverSearch ? "form" : "div")
       searchBar.className = "app-table-search"
+    }
+
+    if (serverSearch) {
+      const urlParams = new URLSearchParams(window.location.search)
+      const preservedFields = Array.from(urlParams.entries())
+        .filter(([key]) => key !== "page" && key !== "q")
+        .map(([key, value]) => `<input type="hidden" name="${escapeAttribute(key)}" value="${escapeAttribute(value)}">`)
+        .join("")
+
+      searchBar.setAttribute("method", "get")
+      searchBar.setAttribute("action", window.location.pathname)
+      searchBar.innerHTML = `
+        ${preservedFields}
+        <input type="search" name="q" class="app-table-search-input" placeholder="${escapeAttribute(placeholder)}" value="${escapeAttribute(urlParams.get("q") || "")}">
+        <button type="submit" class="app-form-submit app-table-search-btn">Search</button>
+      `
+    } else if (!existingInput) {
       searchBar.innerHTML = `
         <input type="search" class="app-table-search-input" placeholder="${placeholder}">
       `
     }
 
-    const input = searchBar.querySelector("input")
+    const input = searchBar.querySelector(".app-table-search-input")
     input.setAttribute("placeholder", placeholder)
+    if (serverSearch) {
+      if (searchSlot) {
+        if (!searchSlot.contains(searchBar)) searchSlot.replaceChildren(searchBar)
+      } else {
+        tableWrap.parentNode.insertBefore(searchBar, tableWrap)
+      }
+
+      tableWrap.dataset.searchReady = "true"
+      return
+    }
+
     input.addEventListener("input", () => {
       const query = input.value.trim().toLowerCase()
 
@@ -166,6 +205,7 @@ const setupTablePagination = () => {
   document.querySelectorAll(".app-table-wrap").forEach((tableWrap) => {
     if (tableWrap.dataset.paginationReady === "true") return
     if (tableWrap.dataset.tablePagination === "false") return
+    if (tableWrap.dataset.serverSearch === "true") return
 
     const table = tableWrap.querySelector("table")
     const tbody = tableWrap.querySelector("tbody")
