@@ -21,7 +21,13 @@
 <% form_url = local_assigns[:form_url] %>
 <% form_method = local_assigns[:form_method] %>
 <% lock_mobile_no = local_assigns[:lock_mobile_no] == true %>
-<% form_data = { vendor_validation_form: true, ui_form_pager: true } %>
+<% form_data = {
+  vendor_validation_form: true,
+  ui_form_pager: true,
+  controller: "office-location",
+  office_location_districts_value: (@district_filter_data || []).to_json,
+  office_location_blocks_value: (@block_filter_data || []).to_json
+} %>
 <% form_data[:turbo] = false if local_assigns[:disable_turbo] == true %>
 <% form_options = { model: vendor_registration, local: true, data: form_data, html: { novalidate: true } } %>
 <% form_options[:url] = form_url if form_url.present? %>
@@ -213,7 +219,7 @@
     <div class="app-form-grid four-col">
       <div class="app-form-field <%= "has-error" if field_errors.call(:state).any? || field_errors.call(:state_id).any? %>">
         <%= form.label :state_id, "State" %>
-        <%= form.collection_select :state_id, @states, :id, :name, { prompt: "Select state" }, { required: true, data: { validation_label: "State" } } %>
+        <%= form.collection_select :state_id, @states, :id, :name, { prompt: "Select state" }, { required: true, data: { validation_label: "State", office_location_target: "state", action: "change->office-location#stateChanged" } } %>
         <% (field_errors.call(:state) + field_errors.call(:state_id)).uniq.each do |message| %>
           <div class="app-form-error"><%= message %></div>
         <% end %>
@@ -222,7 +228,7 @@
 
       <div class="app-form-field <%= "has-error" if field_errors.call(:district).any? || field_errors.call(:district_id).any? %>">
         <%= form.label :district_id, "District" %>
-        <%= form.collection_select :district_id, @districts, :id, :name, { prompt: "Select district" }, { required: true, data: { validation_label: "District" } } %>
+        <%= form.select :district_id, options_for_select([], vendor_registration.district_id), { prompt: "Select district" }, { required: true, data: { validation_label: "District", office_location_target: "district", action: "change->office-location#districtChanged" } } %>
         <% (field_errors.call(:district) + field_errors.call(:district_id)).uniq.each do |message| %>
           <div class="app-form-error"><%= message %></div>
         <% end %>
@@ -231,7 +237,7 @@
 
       <div class="app-form-field <%= "has-error" if field_errors.call(:block).any? || field_errors.call(:block_id).any? %>">
         <%= form.label :block_id, "Block" %>
-        <%= form.collection_select :block_id, @blocks, :id, :name, { prompt: "Select block" }, { required: true, data: { validation_label: "Block" } } %>
+        <%= form.select :block_id, options_for_select([], vendor_registration.block_id), { prompt: "Select block" }, { required: true, data: { validation_label: "Block", office_location_target: "block" } } %>
         <% (field_errors.call(:block) + field_errors.call(:block_id)).uniq.each do |message| %>
           <div class="app-form-error"><%= message %></div>
         <% end %>

@@ -21,21 +21,20 @@ export default class extends Controller {
   renderDistricts() {
     const stateId = this.stateTarget.value
     const selectedDistrictId = this.districtTarget.value
-    const districts = this.districtsValue.filter((district) => !stateId || String(district.state_id) === stateId)
+    const districts = stateId
+      ? this.districtsValue.filter((district) => String(district.state_id) === stateId)
+      : []
 
     this.populateSelect(this.districtTarget, districts, selectedDistrictId, "Select district")
   }
 
   renderBlocks() {
-    const stateId = this.stateTarget.value
     const districtId = this.districtTarget.value
     const selectedBlockId = this.blockTarget.value
 
-    const blocks = this.blocksValue.filter((block) => {
-      if (districtId) return String(block.district_id) === districtId
-      if (stateId) return String(block.state_id) === stateId
-      return true
-    })
+    const blocks = districtId
+      ? this.blocksValue.filter((block) => String(block.district_id) === districtId)
+      : []
 
     this.populateSelect(this.blockTarget, blocks, selectedBlockId, "Select block")
   }

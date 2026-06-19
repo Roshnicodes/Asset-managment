@@ -222,6 +222,12 @@ class VendorRegistrationInvitationsController < ApplicationController
     @states = State.order(:name)
     @districts = District.includes(:state).order(:name)
     @blocks = Block.includes(district: :state).order(:name)
+    @district_filter_data = @districts.map do |district|
+      { id: district.id, name: district.name, state_id: district.state_id }
+    end
+    @block_filter_data = @blocks.map do |block|
+      { id: block.id, name: block.name, district_id: block.district_id, state_id: block.district&.state_id }
+    end
     @themes = Theme.includes(products: :product_varieties).order(:name)
     @products = Product.includes(:theme).order(:name)
     @product_varieties = ProductVariety.includes(product: :theme).order(:name)
