@@ -218,6 +218,7 @@ class ApplicationController < ActionController::Base
   def rbac_menu_access_allowed?(identifier)
     return true if identifier.blank?
     return true if identifier == "dashboard"
+    return true if %w[products product_varieties].include?(identifier)
     return finance_queue_access? if identifier == "payment_advice_queue"
 
     employee = current_employee_master

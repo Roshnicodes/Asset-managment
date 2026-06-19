@@ -187,11 +187,13 @@
                   <%= link_to asset_insurances_path(asset_ids: asset.id, anchor: "asset-insurance-workspace"), class: "app-action-icon text-info", title: "Insurance" do %>
                     <%= app_icon(:insurance, size: 18) %>
                   <% end %>
-                  <%= link_to edit_asset_path(asset), class: "app-action-icon text-warning", title: "Edit" do %>
-                    <%= app_icon(:pencil, size: 18) %>
-                  <% end %>
-                  <%= link_to remove_asset_path(asset), class: "app-action-icon text-danger", title: "Delete", onclick: "return confirm('Delete this asset?');" do %>
-                    <%= app_icon(:trash, size: 18) %>
+                  <% if admin_user? %>
+                    <%= link_to edit_asset_path(asset), class: "app-action-icon text-warning", title: "Edit" do %>
+                      <%= app_icon(:pencil, size: 18) %>
+                    <% end %>
+                    <%= link_to remove_asset_path(asset), class: "app-action-icon text-danger", title: "Delete", onclick: "return confirm('Delete this asset?');" do %>
+                      <%= app_icon(:trash, size: 18) %>
+                    <% end %>
                   <% end %>
                 </div>
               </td>

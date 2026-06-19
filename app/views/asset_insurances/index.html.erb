@@ -47,6 +47,9 @@
                 <th>Serial Number</th>
                 <th>Rate</th>
                 <th>Current Status</th>
+                <% if admin_user? %>
+                  <th>Action</th>
+                <% end %>
               </tr>
             </thead>
             <tbody>
@@ -75,6 +78,22 @@
                   <td><%= asset.serial_number.presence || "-" %></td>
                   <td><%= asset.quotation_proposal_vendor_item&.quoted_rate.present? ? number_with_precision(asset.quotation_proposal_vendor_item.quoted_rate, precision: 2) : "-" %></td>
                   <td><span class="<%= asset.insurance_status_css_class %>"><%= asset.insurance_status_label %></span></td>
+                  <% if admin_user? %>
+                    <td class="app-row-actions">
+                      <div class="d-flex align-items-center gap-2">
+                        <%= link_to edit_asset_insurance_path(asset), class: "app-action-icon text-warning", title: "Edit Insurance" do %>
+                          <%= app_icon(:pencil, size: 18) %>
+                        <% end %>
+                        <%= button_to asset_insurance_path(asset),
+                              method: :delete,
+                              data: { turbo_confirm: "Delete insurance details for this asset?" },
+                              class: "app-action-icon text-danger",
+                              form_class: "d-inline-block" do %>
+                          <%= app_icon(:trash, size: 18) %>
+                        <% end %>
+                      </div>
+                    </td>
+                  <% end %>
                 </tr>
               <% end %>
             </tbody>

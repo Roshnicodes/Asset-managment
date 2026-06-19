@@ -3,12 +3,17 @@
     <div class="app-form-grid two-col">
       <div class="app-form-field">
         <%= f.label :stakeholder_category_id, "Stakeholder" %>
-        <%= f.collection_select :stakeholder_category_id, StakeholderCategory.order(:name), :id, :name, { prompt: "Select stakeholder" }, class: "form-control" %>
+        <% if admin_user? %>
+          <%= f.collection_select :stakeholder_category_id, @stakeholders, :id, :name, { prompt: "Select stakeholder" }, class: "form-control" %>
+        <% else %>
+          <div class="app-readonly-value"><%= current_employee_master&.stakeholder_category&.name || "-" %></div>
+          <%= f.hidden_field :stakeholder_category_id, value: current_employee_master&.stakeholder_category_id %>
+        <% end %>
       </div>
 
       <div class="app-form-field">
         <%= f.label :theme_id, "Thematic Type" %>
-        <%= f.collection_select :theme_id, Theme.order(:name), :id, :name, { prompt: "Select thematic type" }, class: "form-control" %>
+        <%= f.collection_select :theme_id, @themes, :id, :name, { prompt: "Select thematic type" }, class: "form-control" %>
       </div>
 
       <div class="app-form-field">

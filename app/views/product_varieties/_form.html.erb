@@ -14,7 +14,12 @@
     <div class="app-form-grid two-col">
       <div class="app-form-field">
         <%= form.label :stakeholder_category_id, "Stakeholder" %>
-        <%= form.collection_select :stakeholder_category_id, StakeholderCategory.order(:name), :id, :name, { prompt: "Select stakeholder" }, class: "form-control" %>
+        <% if admin_user? %>
+          <%= form.collection_select :stakeholder_category_id, @stakeholders, :id, :name, { prompt: "Select stakeholder" }, class: "form-control" %>
+        <% else %>
+          <div class="app-readonly-value"><%= current_employee_master&.stakeholder_category&.name || "-" %></div>
+          <%= form.hidden_field :stakeholder_category_id, value: current_employee_master&.stakeholder_category_id %>
+        <% end %>
       </div>
 
       <div class="app-form-field">

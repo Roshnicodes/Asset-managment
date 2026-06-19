@@ -1,46 +1,49 @@
 class ProductsController < ApplicationController
 
   def index
-    @products = Product.includes(:theme).order(:name)
+    @products = product_scope.includes(:theme).order(:name)
   end
 
   def show
-    @product = Product.find(params[:id])
+    @product = product_scope.find(params[:id])
     redirect_to edit_product_path(@product)
   end
 
   def new
     @product = Product.new
-    @themes = Theme.order(:name)
+    prepare_product_form_collections
   end
 
   def create
     @product = Product.new(product_params)
 
-    if @product.save
+    if enforce_product_department!(@product) && @product.save
       redirect_to products_path, notice: "Product created successfully."
     else
+      prepare_product_form_collections
       render :new
     end
   end
 
   def edit
-    @product = Product.find(params[:id])
-    @themes = Theme.order(:name)
+    @product = product_scope.find(params[:id])
+    prepare_product_form_collections
   end
 
   def update
-    @product = Product.find(params[:id])
+    @product = product_scope.find(params[:id])
+    @product.assign_attributes(product_params)
 
-    if @product.update(product_params)
+    if enforce_product_department!(@product) && @product.save
       redirect_to products_path, notice: "Product updated successfully."
     else
+      prepare_product_form_collections
       render :edit
     end
   end
 
   def destroy
-    @product = Product.find(params[:id])
+    @product = product_scope.find(params[:id])
 
     if @product.destroy
       redirect_to products_path, notice: "Product deleted successfully."
@@ -54,6 +57,45 @@ class ProductsController < ApplicationController
 
   def product_params
     params.require(:product).permit(:name, :product_code, :description, :theme_id, :stakeholder_category_id)
+  end
+
+  def product_scope
+    scope = Product.all
+    return scope if admin_user?
+    return scope.none if current_employee_master&.stakeholder_category_id.blank?
+
+    stakeholder_id = current_employee_master.stakeholder_category_id
+    scope.left_outer_joins(:theme).where(
+      "products.stakeholder_category_id = :stakeholder_id OR themes.stakeholder_category_id = :stakeholder_id",
+      stakeholder_id: stakeholder_id
+    )
+  end
+
+  def prepare_product_form_collections
+    @stakeholders = admin_user? ? StakeholderCategory.order(:name) : StakeholderCategory.where(id: current_employee_master&.stakeholder_category_id)
+    @themes = if admin_user?
+      Theme.order(:name)
+    elsif current_employee_master&.stakeholder_category_id.present?
+      Theme.where(stakeholder_category_id: current_employee_master.stakeholder_category_id).order(:name)
+    else
+      Theme.none
+    end
+  end
+
+  def enforce_product_department!(product)
+    return true if admin_user?
+
+    stakeholder = current_employee_master&.stakeholder_category
+    if stakeholder.blank?
+      product.errors.add(:base, "Employee department is not mapped.")
+      return false
+    end
+
+    product.stakeholder_category = stakeholder
+    return true if product.theme_id.blank? || Theme.where(id: product.theme_id, stakeholder_category_id: stakeholder.id).exists?
+
+    product.errors.add(:theme_id, "must belong to your department")
+    false
   end
 
 end

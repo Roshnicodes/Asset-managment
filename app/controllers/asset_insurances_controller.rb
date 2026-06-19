@@ -1,5 +1,7 @@
 class AssetInsurancesController < ApplicationController
   before_action :ensure_asset_schema_loaded
+  before_action :set_asset, only: %i[edit update destroy]
+  before_action :ensure_admin_asset_insurance_management!, only: %i[edit update destroy]
 
   def index
     load_insurance_page_data
@@ -7,6 +9,30 @@ class AssetInsurancesController < ApplicationController
 
   def overview
     @assets = insurance_asset_scope.serial_number_ascending
+  end
+
+  def edit
+  end
+
+  def update
+    if @asset.update(asset_insurance_attributes(asset_insurance_params))
+      redirect_to asset_insurances_path(asset_ids: @asset.id), notice: "Insurance details updated successfully."
+    else
+      render :edit, status: :unprocessable_entity
+    end
+  end
+
+  def destroy
+    @asset.update_columns(
+      insured: nil,
+      insurance_date: nil,
+      insurance_company_name: nil,
+      insurance_policy_number: nil,
+      insurance_expiry_date: nil,
+      updated_at: Time.current
+    )
+
+    redirect_to asset_insurances_path(asset_ids: @asset.id), notice: "Insurance details deleted successfully."
   end
 
   def update_all
@@ -35,6 +61,16 @@ class AssetInsurancesController < ApplicationController
   end
 
   private
+
+  def set_asset
+    @asset = insurance_asset_scope.find(params[:id])
+  end
+
+  def ensure_admin_asset_insurance_management!
+    return if admin_user?
+
+    redirect_to asset_insurances_path, alert: "Only admin can edit or delete asset insurance details."
+  end
 
   def load_insurance_page_data
     @asset_ids_filter = normalized_asset_ids.join(",")
@@ -102,6 +138,16 @@ class AssetInsurancesController < ApplicationController
 
   def bulk_insurance_params
     @bulk_insurance_params ||= params.permit(
+      :insured,
+      :insurance_date,
+      :insurance_company_name,
+      :insurance_policy_number,
+      :insurance_expiry_date
+    )
+  end
+
+  def asset_insurance_params
+    params.require(:asset).permit(
       :insured,
       :insurance_date,
       :insurance_company_name,

@@ -1,0 +1,92 @@
+<div class="assets-page asset-insurance-page">
+  <div class="app-toolbar assets-toolbar">
+    <div class="assets-toolbar-copy">
+      <h1 class="assets-page-title">Edit Asset Insurance</h1>
+      <p class="app-section-note assets-page-note">Update insurance status and policy details for this asset.</p>
+    </div>
+
+    <div class="assets-toolbar-controls">
+      <%= link_to "Back to Insurance", asset_insurances_path(asset_ids: @asset.id), class: "app-secondary-btn" %>
+      <%= link_to "Back to Assets", assets_path, class: "app-secondary-btn" %>
+    </div>
+  </div>
+
+  <div class="app-form-card app-form-card-wide" data-asset-insurance-card="true">
+    <% if @asset.errors.any? %>
+      <div class="app-form-errors">
+        <h2><%= pluralize(@asset.errors.count, "error") %> found</h2>
+        <ul>
+          <% @asset.errors.each do |error| %>
+            <li><%= error.full_message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="app-detail-grid" style="margin-bottom: 1rem;">
+      <div class="app-detail-item">
+        <div class="app-detail-label">Asset Code</div>
+        <div class="app-detail-value"><%= @asset.asset_code.presence || "Asset ##{@asset.id}" %></div>
+      </div>
+      <div class="app-detail-item">
+        <div class="app-detail-label">Asset Name</div>
+        <div class="app-detail-value"><%= @asset.name.presence || @asset.product&.name || "-" %></div>
+      </div>
+      <div class="app-detail-item">
+        <div class="app-detail-label">Serial Number</div>
+        <div class="app-detail-value"><%= @asset.serial_number.presence || "-" %></div>
+      </div>
+    </div>
+
+    <%= form_with model: @asset, url: asset_insurance_path(@asset), method: :patch, local: true do |form| %>
+      <div class="app-form-grid two-col">
+        <div class="app-form-field">
+          <%= form.label :insured, "Insurance Available?" %>
+          <%= form.select :insured,
+                options_for_select([["Select status", ""], ["No", "false"], ["Yes", "true"]], @asset.insured.nil? ? "" : @asset.insured.to_s),
+                {},
+                class: "form-control",
+                data: { insurance_status_select: true },
+                required: true %>
+        </div>
+      </div>
+
+      <div class="app-form-grid four-col asset-insurance-extra-fields <%= "is-hidden" unless @asset.insured? %>"
+           data-insurance-extra-fields="true"
+           <%= "hidden" unless @asset.insured? %>>
+        <div class="app-form-field">
+          <%= form.label :insurance_company_name, "Insurance Company Name" %>
+          <%= form.text_field :insurance_company_name, class: "form-control", placeholder: "Enter company name" %>
+        </div>
+
+        <div class="app-form-field">
+          <%= form.label :insurance_policy_number, "Policy Number" %>
+          <%= form.text_field :insurance_policy_number, class: "form-control", placeholder: "Enter policy number" %>
+        </div>
+
+        <div class="app-form-field">
+          <%= form.label :insurance_date, "Insurance Date" %>
+          <%= form.date_field :insurance_date, class: "form-control" %>
+        </div>
+
+        <div class="app-form-field">
+          <%= form.label :insurance_expiry_date, "Insurance Expiry Date" %>
+          <%= form.date_field :insurance_expiry_date, class: "form-control" %>
+        </div>
+      </div>
+
+      <div class="app-form-actions">
+        <%= form.submit "Save Insurance", class: "app-form-submit" %>
+        <%= link_to "Cancel", asset_insurances_path(asset_ids: @asset.id), class: "app-secondary-btn" %>
+      </div>
+    <% end %>
+
+    <div class="app-form-actions" style="margin-top: .75rem;">
+      <%= button_to "Delete Insurance Details",
+            asset_insurance_path(@asset),
+            method: :delete,
+            data: { turbo_confirm: "Delete insurance details for this asset?" },
+            class: "app-danger-btn" %>
+    </div>
+  </div>
+</div>

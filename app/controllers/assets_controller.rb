@@ -1,5 +1,6 @@
 class AssetsController < ApplicationController
   before_action :ensure_asset_schema_loaded, only: %i[index new create edit update]
+  before_action :ensure_admin_asset_management!, only: %i[edit update destroy remove]
 
   def index
     @rate_filter = params[:rate_filter].to_s
@@ -67,6 +68,12 @@ class AssetsController < ApplicationController
   end
 
   private
+
+  def ensure_admin_asset_management!
+    return if admin_user?
+
+    redirect_to assets_path, alert: "Only admin can edit or delete assets."
+  end
 
   def asset_params
     params.require(:asset).permit(

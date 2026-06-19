@@ -128,7 +128,7 @@ Rails.application.routes.draw do
   resources :themes
   resources :vendor_selection_criteria, except: :show
   resources :products
-  resources :asset_insurances, only: [:index] do
+  resources :asset_insurances, only: [:index, :edit, :update, :destroy] do
     collection do
       get :overview
       patch :update_all

@@ -17,7 +17,7 @@
           <td><%= theme.name %></td>
           <td class="app-row-actions">
             <%= link_to "Edit", edit_theme_path(theme) %> |
-            <%= link_to "Delete", theme_path(theme), data: { turbo_method: :delete, turbo_confirm: "Delete this thematic type?" } %>
+            <%= button_to "Delete", theme_path(theme), method: :delete, data: { turbo_confirm: "Delete this thematic type?" }, class: "app-action-button app-delete-button" %>
           </td>
         </tr>
       <% end %>
