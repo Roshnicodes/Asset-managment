@@ -1604,10 +1604,10 @@ body.auth-page-body {
 .app-static-paged-form {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 150px);
-  max-height: calc(100vh - 150px);
-  min-height: 420px;
-  overflow: hidden;
+  height: auto;
+  max-height: none;
+  min-height: 0;
+  overflow: visible;
 }
 
 .app-static-page-toggle {
@@ -5557,9 +5557,9 @@ body.auth-page-body {
 .app-content > .quotation-proposal-show.app-page-paged {
   flex: 0 1 auto;
   min-height: 0;
-  height: calc(100vh - 150px);
-  max-height: calc(100vh - 150px);
-  overflow: hidden;
+  height: auto;
+  max-height: none;
+  overflow: visible;
 }
 
 .quotation-proposal-show.app-page-paged > :not(.app-page-header):not(.app-detail-actions):not(.app-form-pager) {
@@ -5569,8 +5569,11 @@ body.auth-page-body {
 }
 
 .app-content > .quotation-proposal-show {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
   max-height: none;
-  overflow-y: visible;
+  overflow: visible;
 }
 
 .quotation-proposal-show.app-page-paged {
@@ -6749,5 +6752,208 @@ body {
     position: static;
     inset: auto;
     display: block;
+  }
+}
+
+@media print {
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  body {
+    position: static !important;
+    inset: auto !important;
+    display: block !important;
+  }
+
+  body > .app-navbar {
+    display: none !important;
+  }
+
+  body > .app-shell {
+    display: block !important;
+    position: static !important;
+    inset: auto !important;
+    width: 100% !important;
+    min-height: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  body > .app-shell > .app-sidebar {
+    display: none !important;
+  }
+
+  body > .app-shell > .app-main {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  body > .app-shell > .app-main > .app-content {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  body > .app-shell > .app-main > .app-content > *:not(.po-page),
+  .print-hide,
+  .alert {
+    display: none !important;
+  }
+
+  .po-page {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .po-preview-frame,
+  .po-preview-sheet {
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .po-sheet {
+    width: 100% !important;
+    margin: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+}
+
+@media screen and (min-width: 992px) {
+  html,
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) {
+    width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) {
+    display: block;
+    position: fixed;
+    inset: 0;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-navbar {
+    position: fixed !important;
+    inset: 0 0 auto 0;
+    min-height: 72px;
+    z-index: 1050;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-shell {
+    position: fixed;
+    inset: 74px 0 0 0;
+    display: grid;
+    grid-template-columns: clamp(230px, 16vw, 280px) minmax(0, 1fr);
+    align-items: stretch;
+    gap: 1rem;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    max-width: 100vw;
+    padding: 0.85rem;
+    overflow: hidden;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-shell > .app-sidebar {
+    position: relative;
+    top: auto;
+    height: 100%;
+    max-height: none;
+    overflow-y: auto;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-shell > .app-main {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-shell > .app-main > .app-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+    overflow: auto;
+    padding: 1.25rem;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content > .app-toolbar,
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content > .app-page-header,
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content > .alert,
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content > .app-list-controls,
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content > .app-table-search,
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content > .app-table-pagination,
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content > .app-form-actions {
+    flex: 0 0 auto;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content > .quotation-proposal-show,
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content > form[data-ui-form-pager],
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content > .app-page-shell,
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content > .assets-page,
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content > .asset-insurance-page,
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content > .employee-master-workspace {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: 100%;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content > .quotation-proposal-show {
+    height: 100%;
+    overflow: auto;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .quotation-proposal-show[data-ui-page-pager="true"] {
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .quotation-proposal-show[data-ui-page-pager="true"] > :not(.app-page-header):not(.app-detail-actions):not(.app-form-pager) {
+    overflow-y: auto !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-form-card-paged,
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-page-paged,
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-static-paged-form {
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-detail-item,
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-detail-item-full {
+    height: auto;
+    min-height: 104px;
+    overflow: visible;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-detail-value {
+    display: block;
+    max-height: none;
+    overflow: visible;
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: initial;
   }
 }

@@ -4,9 +4,9 @@ class QuotationProposalsController < ApplicationController
   before_action :set_quotation_proposal, only: %i[
     show edit update destroy approve_committee return_committee
     send_to_vendors score_vendor score_vendors select_vendor purchase_order send_purchase_order update_purchase_order_reply goods_receive update_goods_receive
-    new_invoice_request_assets create_invoice_request_assets review_invoice_request assign_payment_references
+    new_invoice_request_assets create_invoice_request_assets review_invoice_request assign_payment_references purchase_order_print
   ]
-  before_action :ensure_quotation_owner_access!, only: %i[edit update destroy send_to_vendors purchase_order send_purchase_order goods_receive update_goods_receive new_invoice_request_assets create_invoice_request_assets review_invoice_request]
+  before_action :ensure_quotation_owner_access!, only: %i[edit update destroy send_to_vendors purchase_order purchase_order_print send_purchase_order goods_receive update_goods_receive new_invoice_request_assets create_invoice_request_assets review_invoice_request]
   before_action :ensure_quotation_owner_access!, only: %i[assign_payment_references]
   before_action :ensure_quotation_change_allowed!, only: %i[edit update destroy]
   before_action :authorize_quotation_form_access!, only: %i[index new create edit update destroy send_for_approval send_to_vendors]
@@ -252,6 +252,13 @@ class QuotationProposalsController < ApplicationController
 
   def purchase_order
     load_purchase_order_context!
+  end
+
+  def purchase_order_print
+    load_purchase_order_context!
+    return if performed?
+
+    render :purchase_order_print, layout: "print"
   end
 
   def goods_receive

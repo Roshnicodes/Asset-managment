@@ -1,0 +1,22 @@
+<script>
+  window.addEventListener("load", function () {
+    window.setTimeout(function () {
+      window.print();
+    }, 300);
+  });
+</script>
+
+<div class="print-hide" style="display:flex; justify-content:flex-end; gap:0.75rem; padding: 1rem;">
+  <button type="button" class="app-form-submit" onclick="window.print()">Print / Save PDF</button>
+  <%= link_to "Back to Purchase Order", purchase_order_quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn" %>
+</div>
+
+<%= render "purchase_order_sheet",
+      proposal_vendor: @selected_proposal_vendor,
+      quotation_proposal: @quotation_proposal,
+      purchase_order_year_label: @purchase_order_year_label,
+      authorized_by: @authorized_by,
+      po_payment_terms: @po_payment_terms,
+      po_completion_terms: @po_completion_terms,
+      po_warranty_terms: @po_warranty_terms,
+      po_earnest_money_terms: @po_earnest_money_terms %>

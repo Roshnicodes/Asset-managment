@@ -7,12 +7,13 @@ class QuotationVendorQrsController < ApplicationController
     proposal_vendor_id, quotation_proposal_id = approved_link_ids(params[:encoded_reference])
     proposal_vendor = QuotationProposalVendor.find_by(id: proposal_vendor_id, quotation_proposal_id: quotation_proposal_id)
 
-    unless proposal_vendor&.qr_token.present?
+    unless proposal_vendor
       flash.now[:alert] = "This vendor quotation link is invalid or no longer available."
       render :invalid_link, status: :not_found
       return
     end
 
+    proposal_vendor.ensure_qr_token!
     redirect_to quotation_vendor_qr_path(proposal_vendor.qr_token)
   end
 

@@ -42,6 +42,7 @@ Rails.application.routes.draw do
       patch :assign_payment_references
       post :send_to_vendors
       get :purchase_order
+      get :purchase_order_print
       post :send_purchase_order
       get :goods_receive
       patch :update_goods_receive

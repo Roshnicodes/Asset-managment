@@ -29,7 +29,7 @@
       </div>
     </div>
     <div class="po-header-actions">
-      <button type="button" class="app-form-submit" onclick="window.print()">Print Purchase Order</button>
+      <%= link_to "Print Purchase Order", purchase_order_print_quotation_proposal_path(@quotation_proposal), class: "app-form-submit", target: "_blank", rel: "noopener" %>
       <%= link_to "Back to Quotation", quotation_proposal_path(@quotation_proposal), class: "po-back-link" %>
     </div>
   </div>

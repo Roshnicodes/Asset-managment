@@ -6,7 +6,7 @@
   <%= link_to "Add Block", new_block_path, class: "app-primary-btn" %>
 </div>
 
-<div class="app-list-controls" style="display:flex!important;align-items:center!important;gap:8px!important;flex-wrap:nowrap!important;margin-bottom:8px!important;padding:8px 10px!important;overflow:hidden!important;">
+<div class="app-list-controls" style="display:flex!important;align-items:center!important;gap:8px!important;flex-wrap:wrap!important;margin-bottom:8px!important;padding:8px 10px!important;overflow:visible!important;">
   <div class="app-list-control-upload" style="display:inline-flex!important;flex:0 0 auto!important;width:auto!important;">
     <%= form_with url: import_blocks_path, multipart: true, local: true, html: { style: "display:inline-flex!important;align-items:center!important;width:auto!important;margin:0!important;" } do |form| %>
       <div class="app-list-upload-inline" style="display:inline-flex!important;align-items:center!important;gap:8px!important;width:auto!important;">
@@ -22,7 +22,7 @@
     <% end %>
   </div>
 
-  <div class="app-list-control-search" data-table-search-slot="blocks-records" style="display:inline-flex!important;flex:0 1 380px!important;width:380px!important;margin-left:0!important;">
+  <div class="app-list-control-search" data-table-search-slot="blocks-records" style="display:inline-flex!important;flex:1 1 320px!important;width:min(100%, 380px)!important;margin-left:0!important;">
     <%= render "shared/table_search", placeholder: "Search blocks..." %>
   </div>
 </div>

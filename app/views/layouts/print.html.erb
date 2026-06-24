@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Print</title>
+
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <%= stylesheet_link_tag "application", "data-turbo-track": "reload", preload_links_header: false %>
+  <%= javascript_importmap_tags %>
+  <style>
+    html, body {
+      background: #fff;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+    }
+
+    .print-layout {
+      min-height: 100vh;
+    }
+
+    .print-hide {
+      display: none !important;
+    }
+
+    @media print {
+      html, body {
+        height: auto !important;
+        overflow: visible !important;
+      }
+    }
+  </style>
+</head>
+<body class="print-layout">
+  <%= yield %>
+</body>
+</html>

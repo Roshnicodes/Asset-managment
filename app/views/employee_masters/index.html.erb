@@ -13,11 +13,11 @@
   .employee-master-workspace {
     display: flex !important;
     flex-direction: column !important;
-    height: calc(100vh - 140px) !important;
-    max-height: calc(100vh - 140px) !important;
+    height: auto !important;
+    max-height: none !important;
     min-height: 0 !important;
     gap: 0.5rem !important;
-    overflow: hidden !important;
+    overflow: visible !important;
   }
 
   .app-toolbar:has(+ style + .employee-master-workspace) {
@@ -31,7 +31,7 @@
   .employee-master-workspace.app-page-paged > :not(.app-page-header):not(.app-detail-actions):not(.app-form-pager) {
     flex: 1 1 auto !important;
     min-height: 0 !important;
-    overflow-y: auto !important;
+    overflow: visible !important;
   }
 
   .employee-master-workspace .app-table-wrap {
@@ -69,7 +69,7 @@
     flex-direction: column !important;
     min-height: 0 !important;
     padding: 0.75rem !important;
-    overflow: hidden !important;
+    overflow: visible !important;
   }
 
   .employee-master-upload-card {
@@ -118,13 +118,13 @@
     display: flex !important;
     align-items: center !important;
     flex: 0 0 auto !important;
-    flex-wrap: nowrap !important;
+    flex-wrap: wrap !important;
     gap: 8px !important;
     width: 100% !important;
     min-height: 48px !important;
     margin: 0 0 8px !important;
     padding: 6px 8px !important;
-    overflow: hidden !important;
+    overflow: visible !important;
   }
 
   .employee-master-controls form,
@@ -263,7 +263,7 @@
 </script>
 
 <div class="employee-master-workspace">
-  <div class="app-list-controls employee-master-controls" style="display:flex!important;align-items:center!important;gap:8px!important;flex-wrap:nowrap!important;margin-bottom:8px!important;padding:8px 10px!important;overflow:hidden!important;">
+  <div class="app-list-controls employee-master-controls" style="display:flex!important;align-items:center!important;gap:8px!important;flex-wrap:wrap!important;margin-bottom:8px!important;padding:8px 10px!important;overflow:visible!important;">
     <div class="app-list-control-upload" style="display:inline-flex!important;flex:0 0 auto!important;width:auto!important;">
       <%= form_with url: import_employee_masters_path, multipart: true, local: true, html: { style: "display:inline-flex!important;align-items:center!important;width:auto!important;margin:0!important;" } do |form| %>
         <div class="app-list-upload-inline" style="display:inline-flex!important;align-items:center!important;gap:8px!important;width:auto!important;">

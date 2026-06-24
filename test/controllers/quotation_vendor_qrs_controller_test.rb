@@ -18,6 +18,20 @@ class QuotationVendorQrsControllerTest < ActionDispatch::IntegrationTest
     )
   end
 
+  test "approved link query params redirect to vendor qr token" do
+    proposal_vendor = Minitest::Mock.new
+    proposal_vendor.expect(:ensure_qr_token!, "generated-token")
+    proposal_vendor.expect(:qr_token, "generated-token")
+
+    QuotationProposalVendor.stub(:find_by, proposal_vendor) do
+      get "/xyz?v=22&qp=12"
+    end
+
+    proposal_vendor.verify
+
+    assert_redirected_to quotation_vendor_qr_path("generated-token")
+  end
+
   test "shows not found page for an invalid vendor token" do
     get quotation_vendor_qr_path("invalid-token")
 
