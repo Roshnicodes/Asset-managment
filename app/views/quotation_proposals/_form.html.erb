@@ -2,6 +2,30 @@
   .app-static-paged-form { display: flex !important; flex-direction: column !important; height: 100% !important; max-height: 100% !important; min-height: 0 !important; overflow: hidden !important; }
   .app-static-page-toggle { position: absolute !important; opacity: 0 !important; pointer-events: none !important; }
   .app-static-page { display: none !important; flex: 1 1 auto !important; min-height: 0 !important; overflow: auto !important; padding-right: .35rem !important; }
+  .app-rfp-table-wrap { max-height: 64vh; overflow: auto; border: 1px solid #dce8e2; border-radius: 14px; background: #fff; }
+  .app-rfp-table-wrap table { margin-bottom: 0; }
+  .app-rfp-table-wrap thead th { position: sticky; top: 0; z-index: 2; background: #f7fbf8; color: #064f45; font-weight: 800; }
+  .app-rfp-form-table .app-rfp-table-label { width: 220px; padding: 0.95rem 1rem; background: #f7fbf8; font-weight: 800; color: #064f45; vertical-align: top; white-space: nowrap; }
+  .app-rfp-form-table .app-rfp-table-value { padding: 0.85rem 1rem; vertical-align: top; }
+  .app-rfp-form-table .app-rfp-cell-field { gap: 0.25rem; }
+  .app-rfp-form-table .app-rfp-cell-field > label { font-size: 0.82rem; }
+  .app-rfp-items-table tbody tr + tr td,
+  .app-rfp-committee-table tbody tr + tr td { border-top: 1px solid #edf3ef; }
+  .app-rfp-items-table .app-rfp-table-cell,
+  .app-rfp-committee-table .app-rfp-table-cell { padding: 0.85rem 0.95rem; vertical-align: top; }
+  .app-rfp-committee-table .app-rfp-table-cell--level { width: 180px; background: #f7fbf8; font-weight: 800; color: #064f45; }
+  .app-rfp-items-table .app-rfp-table-cell--action,
+  .app-rfp-committee-table .app-rfp-table-cell--action { width: 140px; text-align: center; vertical-align: middle; }
+  .app-rfp-items-table .app-rfp-cell-field,
+  .app-rfp-committee-table .app-rfp-cell-field { margin: 0; padding: 0; border: 0; background: transparent; box-shadow: none; }
+  .app-rfp-items-table .app-rfp-cell-field input:not([type="checkbox"]):not([type="radio"]),
+  .app-rfp-items-table .app-rfp-cell-field select,
+  .app-rfp-items-table .app-rfp-cell-field textarea,
+  .app-rfp-committee-table .app-rfp-cell-field input:not([type="checkbox"]):not([type="radio"]),
+  .app-rfp-committee-table .app-rfp-cell-field select,
+  .app-rfp-committee-table .app-rfp-cell-field textarea { border-radius: 10px; }
+  .app-rfp-items-table .app-rfp-table-cell--action .app-action-button,
+  .app-rfp-committee-table .app-rfp-table-cell--action .app-action-button { width: 100%; }
   .app-static-pager-nav { flex: 0 0 auto !important; margin-top: 1rem !important; padding-top: 1rem !important; border-top: 1px solid #e2ece6 !important; background: rgba(255,255,255,.98) !important; }
   .app-static-pager-row { display: none !important; align-items: center !important; justify-content: space-between !important; gap: .8rem !important; flex-wrap: wrap !important; }
   .app-static-pager-status { color: var(--brand-deep) !important; font-weight: 800 !important; }
@@ -58,57 +82,86 @@
       </div>
     <% end %>
 
-    <div class="app-form-grid five-col app-rfp-meta-grid">
-      <div class="app-form-field">
-        <%= form.label :procurement_amount_bucket, "Quotation Value" %>
-        <%= form.select :procurement_amount_bucket, [["Above 10K", "above_10k"], ["Below 10K", "below_10k"]], {}, class: "form-control", id: "quotation_proposal_procurement_amount_bucket" %>
-      </div>
+    <div class="app-rfp-table-wrap">
+      <table class="table app-table app-rfp-form-table">
+        <tbody>
+          <tr>
+            <th scope="row" class="app-rfp-table-label">Quotation Value</th>
+            <td class="app-rfp-table-value">
+              <div class="app-form-field app-rfp-cell-field">
+                <%= form.label :procurement_amount_bucket, "Quotation Value", class: "visually-hidden" %>
+                <%= form.select :procurement_amount_bucket, [["Above 10K", "above_10k"], ["Below 10K", "below_10k"]], {}, class: "form-control", id: "quotation_proposal_procurement_amount_bucket" %>
+              </div>
+            </td>
+          </tr>
 
-      <div class="app-form-field">
-        <%= form.label :theme_id, "Select Theme" %>
-        <%= form.select :theme_id,
-                        options_for_select(
-                          @themes.map do |theme|
-                            stakeholder_name = theme.stakeholder_category&.name.to_s.strip.presence
-                            theme_label = stakeholder_name.present? ? "#{theme.name} (#{stakeholder_name})" : theme.name
-                            [theme_label, theme.id, { "data-stakeholder-id": theme.stakeholder_category_id }]
-                          end,
-                          quotation_proposal.theme_id
-                        ),
-                        { prompt: "Select theme" },
-                        { id: "quotation_proposal_theme_id", required: true, data: { validation_label: "Select Theme" } } %>
-        <% (field_errors.call(:theme) + field_errors.call(:theme_id)).uniq.each do |message| %>
-          <div class="app-form-error"><%= message %></div>
-        <% end %>
-        <div class="app-form-error app-form-error-client" data-field-error="true"></div>
-      </div>
+          <tr>
+            <th scope="row" class="app-rfp-table-label">Select Theme</th>
+            <td class="app-rfp-table-value">
+              <div class="app-form-field app-rfp-cell-field">
+                <%= form.label :theme_id, "Select Theme", class: "visually-hidden" %>
+                <%= form.select :theme_id,
+                                options_for_select(
+                                  @themes.map do |theme|
+                                    stakeholder_name = theme.stakeholder_category&.name.to_s.strip.presence
+                                    theme_label = stakeholder_name.present? ? "#{theme.name} (#{stakeholder_name})" : theme.name
+                                    [theme_label, theme.id, { "data-stakeholder-id": theme.stakeholder_category_id }]
+                                  end,
+                                  quotation_proposal.theme_id
+                                ),
+                                { prompt: "Select theme" },
+                                { id: "quotation_proposal_theme_id", required: true, data: { validation_label: "Select Theme" } } %>
+                <% (field_errors.call(:theme) + field_errors.call(:theme_id)).uniq.each do |message| %>
+                  <div class="app-form-error"><%= message %></div>
+                <% end %>
+                <div class="app-form-error app-form-error-client" data-field-error="true"></div>
+              </div>
+            </td>
+          </tr>
 
-      <div class="app-form-field <%= "has-error" if field_errors.call(:subject).any? %>">
-        <%= form.label :subject, "Quotation Subject" %>
-        <%= form.text_field :subject, required: true, data: { validation_label: "Quotation Subject" } %>
-        <% field_errors.call(:subject).each do |message| %>
-          <div class="app-form-error"><%= message %></div>
-        <% end %>
-        <div class="app-form-error app-form-error-client" data-field-error="true"></div>
-      </div>
+          <tr>
+            <th scope="row" class="app-rfp-table-label">Quotation Subject</th>
+            <td class="app-rfp-table-value">
+              <div class="app-form-field app-rfp-cell-field <%= "has-error" if field_errors.call(:subject).any? %>">
+                <%= form.label :subject, "Quotation Subject", class: "visually-hidden" %>
+                <%= form.text_field :subject, required: true, data: { validation_label: "Quotation Subject" } %>
+                <% field_errors.call(:subject).each do |message| %>
+                  <div class="app-form-error"><%= message %></div>
+                <% end %>
+                <div class="app-form-error app-form-error-client" data-field-error="true"></div>
+              </div>
+            </td>
+          </tr>
 
-      <div class="app-form-field <%= "has-error" if field_errors.call(:proposal_end_date).any? %>">
-        <%= form.label :proposal_end_date, "Proposal Ending Date" %>
-        <%= form.date_field :proposal_end_date, required: true, data: { validation_label: "Proposal Ending Date" } %>
-        <% field_errors.call(:proposal_end_date).each do |message| %>
-          <div class="app-form-error"><%= message %></div>
-        <% end %>
-        <div class="app-form-error app-form-error-client" data-field-error="true"></div>
-      </div>
+          <tr>
+            <th scope="row" class="app-rfp-table-label">Proposal Ending Date</th>
+            <td class="app-rfp-table-value">
+              <div class="app-form-field app-rfp-cell-field <%= "has-error" if field_errors.call(:proposal_end_date).any? %>">
+                <%= form.label :proposal_end_date, "Proposal Ending Date", class: "visually-hidden" %>
+                <%= form.date_field :proposal_end_date, required: true, data: { validation_label: "Proposal Ending Date" } %>
+                <% field_errors.call(:proposal_end_date).each do |message| %>
+                  <div class="app-form-error"><%= message %></div>
+                <% end %>
+                <div class="app-form-error app-form-error-client" data-field-error="true"></div>
+              </div>
+            </td>
+          </tr>
 
-      <div class="app-form-field <%= "has-error" if field_errors.call(:remark).any? %>">
-        <%= form.label :remark, "Proposal Remark" %>
-        <%= form.text_area :remark, rows: 3, required: true, data: { validation_label: "Proposal Remark" } %>
-        <% field_errors.call(:remark).each do |message| %>
-          <div class="app-form-error"><%= message %></div>
-        <% end %>
-        <div class="app-form-error app-form-error-client" data-field-error="true"></div>
-      </div>
+          <tr>
+            <th scope="row" class="app-rfp-table-label">Proposal Remark</th>
+            <td class="app-rfp-table-value">
+              <div class="app-form-field app-rfp-cell-field <%= "has-error" if field_errors.call(:remark).any? %>">
+                <%= form.label :remark, "Proposal Remark", class: "visually-hidden" %>
+                <%= form.text_area :remark, rows: 3, required: true, data: { validation_label: "Proposal Remark" } %>
+                <% field_errors.call(:remark).each do |message| %>
+                  <div class="app-form-error"><%= message %></div>
+                <% end %>
+                <div class="app-form-error app-form-error-client" data-field-error="true"></div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     </div>
@@ -173,11 +226,25 @@
       </div>
     </div>
 
-    <div class="app-quotation-items app-rfp-section-panel" data-quotation-items>
-      <div data-quotation-item-list>
+    <div class="app-rfp-section-panel" data-quotation-items>
+      <div class="app-rfp-table-wrap" data-table-search="false" data-table-pagination="false">
+        <table class="table app-table app-rfp-items-table">
+          <thead>
+            <tr>
+              <th>Item Name</th>
+              <th>Unit</th>
+              <th>Quantity</th>
+              <th>Max Rate</th>
+              <th>Remark</th>
+              <th style="width: 140px;">Action</th>
+            </tr>
+          </thead>
+          <tbody data-quotation-item-list>
         <%= form.fields_for :quotation_proposal_items do |item_form| %>
           <%= render "quotation_proposal_item_fields", form: item_form %>
         <% end %>
+          </tbody>
+        </table>
       </div>
 
       <template data-quotation-item-template>
@@ -255,11 +322,22 @@
       </div>
     </div>
 
-    <div class="app-quotation-committee app-rfp-section-panel" data-quotation-committee data-min-committee-members="<%= QuotationProposal::MIN_COMMITTEE_MEMBERS %>">
-      <div class="app-form-grid four-col" data-quotation-committee-list>
+    <div class="app-rfp-section-panel" data-quotation-committee data-min-committee-members="<%= QuotationProposal::MIN_COMMITTEE_MEMBERS %>">
+      <div class="app-rfp-table-wrap" data-table-search="false" data-table-pagination="false">
+        <table class="table app-table app-rfp-committee-table">
+          <thead>
+            <tr>
+              <th style="width: 180px;">Level</th>
+              <th>Committee Member</th>
+              <th style="width: 140px;">Action</th>
+            </tr>
+          </thead>
+          <tbody data-quotation-committee-list>
         <%= form.fields_for :committee_steps, quotation_proposal.committee_steps.sort_by(&:level) do |committee_form| %>
           <%= render "committee_step_fields", form: committee_form %>
         <% end %>
+          </tbody>
+        </table>
       </div>
 
       <template data-quotation-committee-template>

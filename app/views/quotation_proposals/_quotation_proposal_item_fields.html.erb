@@ -1,18 +1,11 @@
-<div class="app-quotation-item-row" data-quotation-item-row>
-  <%= form.hidden_field :_destroy, value: "false", data: { quotation_item_destroy: true } %>
+<tr class="app-quotation-item-row" data-quotation-item-row>
   <% current_item_name = form.object.item_name.to_s.strip %>
   <% catalog_item_values = @products.map { |product| product.name.to_s.strip } + @product_varieties.map { |variety| variety.name.to_s.strip } %>
 
-  <div class="app-quotation-item-row-head">
-    <div>
-      <h4 class="app-quotation-item-row-title">Proposal Item</h4>
-      <p class="app-quotation-item-row-note">Enter the item details for this proposal line.</p>
-    </div>
-  </div>
-
-  <div class="app-form-grid app-quotation-item-grid app-rfp-item-grid">
-    <div class="app-form-field <%= "has-error" if form.object.errors[:item_name].any? %>">
-      <%= form.label :item_name, "Item Name" %>
+  <td class="app-rfp-table-cell">
+    <%= form.hidden_field :_destroy, value: "false", data: { quotation_item_destroy: true } %>
+    <div class="app-form-field app-rfp-cell-field <%= "has-error" if form.object.errors[:item_name].any? %>">
+      <%= form.label :item_name, "Item Name", class: "visually-hidden" %>
       <select name="<%= form.field_name(:item_name) %>" id="<%= form.field_id(:item_name) %>" required data-validation-label="Item Name" data-proposal-item-name="true">
         <option value="">Select item</option>
         <optgroup label="Products">
@@ -34,27 +27,33 @@
       <% end %>
       <div class="app-form-error app-form-error-client" data-field-error="true"></div>
     </div>
+  </td>
 
-    <div class="app-form-field <%= "has-error" if form.object.errors[:unit].any? || form.object.errors[:unit_id].any? %>">
-      <%= form.label :unit_id, "Unit" %>
+  <td class="app-rfp-table-cell">
+    <div class="app-form-field app-rfp-cell-field <%= "has-error" if form.object.errors[:unit].any? || form.object.errors[:unit_id].any? %>">
+      <%= form.label :unit_id, "Unit", class: "visually-hidden" %>
       <%= form.collection_select :unit_id, @units, :id, :name, { prompt: "Select unit" }, { required: true, data: { validation_label: "Unit" } } %>
       <% (form.object.errors[:unit] + form.object.errors[:unit_id]).uniq.each do |message| %>
         <div class="app-form-error"><%= message %></div>
       <% end %>
       <div class="app-form-error app-form-error-client" data-field-error="true"></div>
     </div>
+  </td>
 
-    <div class="app-form-field <%= "has-error" if form.object.errors[:quantity].any? %>">
-      <%= form.label :quantity, "Quantity" %>
+  <td class="app-rfp-table-cell">
+    <div class="app-form-field app-rfp-cell-field <%= "has-error" if form.object.errors[:quantity].any? %>">
+      <%= form.label :quantity, "Quantity", class: "visually-hidden" %>
       <%= form.number_field :quantity, step: :any, min: 0.01, required: true, data: { validation_label: "Quantity" } %>
       <% form.object.errors[:quantity].uniq.each do |message| %>
         <div class="app-form-error"><%= message %></div>
       <% end %>
       <div class="app-form-error app-form-error-client" data-field-error="true"></div>
     </div>
+  </td>
 
-    <div class="app-form-field <%= "has-error" if form.object.errors[:max_rate].any? %>">
-      <%= form.label :max_rate, "Max Rate" %>
+  <td class="app-rfp-table-cell">
+    <div class="app-form-field app-rfp-cell-field <%= "has-error" if form.object.errors[:max_rate].any? %>">
+      <%= form.label :max_rate, "Max Rate", class: "visually-hidden" %>
       <%= form.number_field :max_rate, step: :any, min: 0, placeholder: "Internal max rate", required: true, data: { validation_label: "Max Rate" } %>
       <% form.object.errors[:max_rate].uniq.each do |message| %>
         <div class="app-form-error"><%= message %></div>
@@ -62,18 +61,20 @@
       <div class="app-form-error app-form-error-client" data-field-error="true"></div>
       <small class="app-field-hint">This is an internal field and is not shown to the vendor.</small>
     </div>
+  </td>
 
-    <div class="app-form-field app-rfp-item-remark-field <%= "has-error" if form.object.errors[:remark].any? %>">
-      <%= form.label :remark, "Item Remark" %>
+  <td class="app-rfp-table-cell">
+    <div class="app-form-field app-rfp-cell-field app-rfp-item-remark-field <%= "has-error" if form.object.errors[:remark].any? %>">
+      <%= form.label :remark, "Item Remark", class: "visually-hidden" %>
       <%= form.text_field :remark, placeholder: "Any special note for this item", required: true, data: { validation_label: "Item Remark" } %>
       <% form.object.errors[:remark].uniq.each do |message| %>
         <div class="app-form-error"><%= message %></div>
       <% end %>
       <div class="app-form-error app-form-error-client" data-field-error="true"></div>
     </div>
-  </div>
+  </td>
 
-  <div class="app-approval-step-row-actions">
+  <td class="app-rfp-table-cell app-rfp-table-cell--action">
     <button type="button" class="app-action-button app-delete-button app-delete-button-soft" data-remove-quotation-item>Remove Item</button>
-  </div>
-</div>
+  </td>
+</tr>
