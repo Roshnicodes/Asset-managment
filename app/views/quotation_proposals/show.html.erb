@@ -40,29 +40,17 @@
 %>
 
 <style>
-  .quotation-proposal-show[data-ui-page-pager="true"] {
+  .quotation-proposal-show {
     display: flex !important;
     flex-direction: column !important;
-    height: 100% !important;
-    max-height: 100% !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
-  }
-
-  .quotation-proposal-show[data-ui-page-pager="true"]:not(.app-page-paged) {
-    overflow: hidden !important;
-  }
-
-  .quotation-proposal-show[data-ui-page-pager="true"] > .app-page-header,
-  .quotation-proposal-show[data-ui-page-pager="true"] > .app-detail-actions,
-  .quotation-proposal-show[data-ui-page-pager="true"] > .app-form-pager {
-    flex: 0 0 auto !important;
-  }
-
-  .quotation-proposal-show[data-ui-page-pager="true"].app-page-paged > :not(.app-page-header):not(.app-detail-actions):not(.app-form-pager) {
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
-    overflow-y: auto !important;
+    gap: 0.7rem !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 100% !important;
+    overflow: visible !important;
+    padding: 0.75rem !important;
+    border-radius: 18px !important;
+    background: #f6faf7 !important;
   }
 
   .quotation-proposal-show details > summary {
@@ -74,9 +62,208 @@
     display: none !important;
     content: none !important;
   }
+
+  .quotation-proposal-show__hero,
+  .quotation-proposal-show__status-bar,
+  .quotation-proposal-show .app-detail-card,
+  .quotation-proposal-show .app-form-card,
+  .quotation-proposal-show .app-card {
+    flex: 0 0 auto !important;
+    border: 1px solid #d9e8dd !important;
+    border-radius: 16px !important;
+    background: #ffffff !important;
+    box-shadow: 0 8px 22px rgba(15, 73, 45, 0.05) !important;
+  }
+
+  .quotation-proposal-show__hero {
+    padding: 0.85rem 1rem !important;
+  }
+
+  .quotation-proposal-show__status-bar {
+    padding: 0.65rem 0.8rem !important;
+  }
+
+  .quotation-proposal-show__overview-card {
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .quotation-proposal-show__overview-head {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 1rem !important;
+    padding: 0.85rem 1rem !important;
+    border-bottom: 1px solid #dfeee5 !important;
+    background:
+      linear-gradient(90deg, rgba(16, 111, 64, 0.08), rgba(255, 255, 255, 0)),
+      #f7fbf8 !important;
+  }
+
+  .quotation-proposal-show__overview-head h3 {
+    margin: 0 !important;
+    color: #125f38 !important;
+    font-size: 1rem !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+  }
+
+  .quotation-proposal-show__overview-head p {
+    margin: 0.18rem 0 0 !important;
+    color: #52665a !important;
+    font-size: 0.86rem !important;
+    font-weight: 600 !important;
+  }
+
+  .quotation-proposal-show__overview-head span {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: max-content !important;
+    padding: 0.38rem 0.7rem !important;
+    border: 1px solid #bddbc8 !important;
+    border-radius: 999px !important;
+    background: #eef8f2 !important;
+    color: #12623a !important;
+    font-size: 0.82rem !important;
+    font-weight: 800 !important;
+  }
+
+  .quotation-proposal-show__overview-table-wrap {
+    width: 100% !important;
+    overflow-x: auto !important;
+    border: 0 !important;
+    border-radius: 16px !important;
+    background: #ffffff !important;
+  }
+
+  .quotation-proposal-show__overview-table {
+    width: 100% !important;
+    min-width: 980px !important;
+    margin: 0 !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    table-layout: fixed !important;
+  }
+
+  .quotation-proposal-show__overview-table th,
+  .quotation-proposal-show__overview-table td {
+    padding: 0.82rem 1rem !important;
+    border: 0 !important;
+    border-right: 1px solid #e0eee5 !important;
+    border-bottom: 1px solid #e0eee5 !important;
+    vertical-align: top !important;
+    line-height: 1.35 !important;
+  }
+
+  .quotation-proposal-show__overview-table th {
+    width: 16% !important;
+    background: #edf7f1 !important;
+    color: #155f3a !important;
+    font-size: 0.8rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0 !important;
+    text-transform: none !important;
+    white-space: nowrap !important;
+  }
+
+  .quotation-proposal-show__overview-table td {
+    width: 34% !important;
+    background: #ffffff !important;
+    color: #17251c !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    word-break: break-word !important;
+  }
+
+  .quotation-proposal-show__overview-table tr th:last-of-type,
+  .quotation-proposal-show__overview-table tr td:last-child {
+    border-right: 0 !important;
+  }
+
+  .quotation-proposal-show__overview-table tr:last-child th,
+  .quotation-proposal-show__overview-table tr:last-child td {
+    border-bottom: 0 !important;
+  }
+
+  .quotation-proposal-show__overview-table tr:nth-child(even) td {
+    background: #fbfdfb !important;
+  }
+
+  .quotation-proposal-show__overview-table tr:hover td {
+    background: #f6fbf8 !important;
+  }
+
+  .quotation-proposal-show__overview-table .quotation-proposal-show__table-muted {
+    color: #51645a !important;
+    font-weight: 650 !important;
+  }
+
+  .quotation-proposal-show__table-status {
+    display: inline-flex !important;
+    align-items: center !important;
+    padding: 0.3rem 0.62rem !important;
+    border: 1px solid #9ccdac !important;
+    border-radius: 999px !important;
+    background: #eaf8ef !important;
+    color: #0e6b3d !important;
+    font-size: 0.86rem !important;
+    font-weight: 800 !important;
+  }
+
+  .quotation-proposal-show__tag-list--table {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.4rem !important;
+  }
+
+  .quotation-proposal-show__section-details {
+    overflow: hidden !important;
+  }
+
+  .quotation-proposal-show .app-detail-card:not(.quotation-proposal-show__overview-card) {
+    padding: 0.65rem !important;
+  }
+
+  .quotation-proposal-show__nested-summary,
+  .quotation-proposal-show__timeline-summary {
+    background: #f3f8f5 !important;
+    border-bottom: 1px solid #e0eee5 !important;
+  }
+
+  .quotation-proposal-show__section-body,
+  .quotation-proposal-show__nested-body {
+    padding: 0.85rem !important;
+  }
+
+  .quotation-proposal-show .app-stack-gap-lg {
+    gap: 0.65rem !important;
+  }
+
+  .quotation-proposal-show .app-page-header,
+  .quotation-proposal-show .app-subsection-header-tight {
+    margin-bottom: 0 !important;
+  }
+
+  .quotation-proposal-show__criteria-panel,
+  .quotation-proposal-show__finance-panel,
+  .quotation-proposal-show__timeline-block {
+    margin-top: 0.75rem !important;
+  }
+
+  .quotation-proposal-show__workflow-header:empty,
+  .quotation-proposal-show__invoice-request-list:empty {
+    display: none !important;
+  }
+
+  @media (max-width: 991px) {
+    .quotation-proposal-show__overview-table {
+      min-width: 820px !important;
+    }
+  }
 </style>
 
-<div class="quotation-proposal-show" data-ui-page-pager="true">
+<div class="quotation-proposal-show">
   <div class="app-page-header app-page-header-top quotation-proposal-show__hero">
     <div>
       <h2 class="app-page-title quotation-proposal-show__title">Quotation Proposal Details</h2>
@@ -133,7 +320,6 @@
       <div class="app-page-header app-subsection-header-tight">
         <div>
           <h3 style="margin-bottom: 0.35rem;">Returned To Employee</h3>
-          <p class="app-section-note mb-0">Review the returned remark, update the quotation, and save to restart the same approval chain from Committee Member 1.</p>
         </div>
       </div>
 
@@ -152,95 +338,73 @@
   <% end %>
 
   <div class="app-detail-card quotation-proposal-show__overview-card">
-    <div class="app-detail-grid quotation-proposal-show__detail-grid quotation-proposal-show__detail-grid--primary">
-      <div class="app-detail-item">
-        <div class="app-detail-label">Subject</div>
-        <div class="app-detail-value"><%= @quotation_proposal.subject %></div>
+    <div class="quotation-proposal-show__overview-head">
+      <div>
+        <h3>Proposal Overview</h3>
+        <p>Key proposal, workflow, vendor, and selection details</p>
       </div>
-
-      <div class="app-detail-item">
-        <div class="app-detail-label">Theme</div>
-        <div class="app-detail-value"><%= @quotation_proposal.theme.name %></div>
-      </div>
-
-      <div class="app-detail-item">
-        <div class="app-detail-label">Proposal End Date</div>
-        <div class="app-detail-value"><%= @quotation_proposal.proposal_end_date.strftime("%d-%m-%Y") %></div>
-      </div>
-
-      <div class="app-detail-item">
-        <div class="app-detail-label">Quotation Value</div>
-        <div class="app-detail-value"><%= @quotation_proposal.procurement_amount_bucket_label %></div>
-      </div>
+      <span><%= @quotation_proposal.vendor_registrations.size %> Vendors</span>
     </div>
-
-    <details class="quotation-proposal-show__nested-details quotation-proposal-show__section-details quotation-proposal-show__overview-details" open>
-      <summary class="quotation-proposal-show__nested-summary quotation-proposal-show__section-summary">
-        <div class="quotation-proposal-show__summary-copy">
-          <span class="quotation-proposal-show__summary-title">More Overview Details</span>
-          <span class="quotation-proposal-show__summary-note">Workflow fields, selected vendors, and criteria</span>
-        </div>
-        <div class="quotation-proposal-show__summary-meta">
-          <span class="badge border bg-light text-dark">4 more fields</span>
-          <span class="badge border bg-light text-dark"><%= @quotation_proposal.vendor_registrations.size %> vendors</span>
-          <% if selected_criteria_selections.any? %>
-            <span class="badge border bg-light text-dark"><%= selected_criteria_selections.size %> criteria</span>
-          <% end %>
-        </div>
-      </summary>
-
-      <div class="quotation-proposal-show__nested-body quotation-proposal-show__section-body">
-        <div class="app-detail-grid quotation-proposal-show__detail-grid quotation-proposal-show__detail-grid--secondary">
-          <div class="app-detail-item">
-            <div class="app-detail-label">Workflow Status</div>
-            <div class="app-detail-value"><%= @quotation_proposal.workflow_status.humanize %></div>
-          </div>
-
-          <div class="app-detail-item">
-            <div class="app-detail-label">Sent To Vendor At</div>
-            <div class="app-detail-value"><%= @quotation_proposal.sent_to_vendors_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
-          </div>
-
-          <div class="app-detail-item">
-            <div class="app-detail-label">Selected Vendor</div>
-            <div class="app-detail-value"><%= @quotation_proposal.selected_vendor_registration&.display_name || "-" %></div>
-          </div>
-
-          <div class="app-detail-item">
-            <div class="app-detail-label">Remark</div>
-            <div class="app-detail-value"><%= @quotation_proposal.remark.presence || "-" %></div>
-          </div>
-
-          <div class="app-detail-item app-detail-item-full">
-            <div class="app-detail-label">Selected Vendors</div>
-            <div class="app-detail-value">
-              <div class="d-flex flex-wrap gap-2">
+    <div class="quotation-proposal-show__overview-table-wrap">
+      <table class="quotation-proposal-show__overview-table">
+        <tbody>
+          <tr>
+            <th scope="row">Subject</th>
+            <td><%= @quotation_proposal.subject %></td>
+            <th scope="row">Theme</th>
+            <td><%= @quotation_proposal.theme.name %></td>
+          </tr>
+          <tr>
+            <th scope="row">Proposal End Date</th>
+            <td><%= @quotation_proposal.proposal_end_date.strftime("%d-%m-%Y") %></td>
+            <th scope="row">Quotation Value</th>
+            <td><%= @quotation_proposal.procurement_amount_bucket_label %></td>
+          </tr>
+          <tr>
+            <th scope="row">Workflow Status</th>
+            <td>
+              <span class="quotation-proposal-show__table-status">
+                <%= @quotation_proposal.workflow_status.humanize %>
+              </span>
+            </td>
+            <th scope="row">Sent To Vendor At</th>
+            <td><span class="quotation-proposal-show__table-muted"><%= @quotation_proposal.sent_to_vendors_at&.strftime("%d-%m-%Y %H:%M") || "-" %></span></td>
+          </tr>
+          <tr>
+            <th scope="row">Selected Vendor</th>
+            <td><%= @quotation_proposal.selected_vendor_registration&.display_name || "-" %></td>
+            <th scope="row">Remark</th>
+            <td><%= @quotation_proposal.remark.presence || "-" %></td>
+          </tr>
+          <tr>
+            <th scope="row">Selected Vendors</th>
+            <td colspan="3">
+              <div class="quotation-proposal-show__tag-list quotation-proposal-show__tag-list--table">
                 <% @quotation_proposal.vendor_registrations.each do |vendor| %>
                   <span class="badge border bg-light text-dark px-3 py-2 quotation-proposal-show__tag">
                     <%= vendor.display_name %>
                   </span>
                 <% end %>
               </div>
-            </div>
-          </div>
-
+            </td>
+          </tr>
           <% if selected_criteria_selections.any? %>
-            <div class="app-detail-item app-detail-item-full">
-              <div class="app-detail-label">Vendor Selection Criteria</div>
-              <div class="app-detail-value">
-                <div class="quotation-proposal-show__tag-list">
+            <tr>
+              <th scope="row">Vendor Selection Criteria</th>
+              <td colspan="3">
+                <div class="quotation-proposal-show__tag-list quotation-proposal-show__tag-list--table">
                   <% selected_criteria_selections.each do |criterion_selection| %>
                     <span class="badge border bg-light text-dark px-3 py-2 quotation-proposal-show__tag">
                       <%= criterion_selection.display_label %>
                     </span>
                   <% end %>
                 </div>
-              </div>
-            </div>
+              </td>
+            </tr>
           <% end %>
-        </div>
-      </div>
-    </details>
+        </tbody>
+      </table>
+    </div>
   </div>
 
 <% if creator_can_dispatch && direct_response_mode && @quotation_proposal.committee_completed? %>
@@ -248,10 +412,6 @@
     <div class="app-page-header app-subsection-header-tight">
       <div>
         <h3 style="margin-bottom: 0.25rem;">Direct Response Forms</h3>
-        <p class="app-section-note mb-0">
-          For below 10K cases, no mobile link is sent to the vendor.
-          After approval, the maker can open the vendor form directly from here and fill in the details.
-        </p>
       </div>
     </div>
 
@@ -263,7 +423,6 @@
       </div>
     <% else %>
       <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
-        <p class="app-section-note mb-0">Committee approval is complete. Use the button below to open the direct vendor form.</p>
         <%= button_to "Open Vendor Form", send_to_vendors_quotation_proposal_path(@quotation_proposal), method: :post, class: "app-form-submit" %>
       </div>
     <% end %>
@@ -275,7 +434,6 @@
       <summary class="quotation-proposal-show__nested-summary quotation-proposal-show__section-summary">
         <div class="quotation-proposal-show__summary-copy">
           <span class="quotation-proposal-show__summary-title">Committee Approval Trail</span>
-          <span class="quotation-proposal-show__summary-note">Approval levels, timestamps, and remarks</span>
         </div>
         <div class="quotation-proposal-show__summary-meta">
           <span class="badge border bg-light text-dark"><%= trail_completed_count %>/<%= committee_trail_steps.size %> updated</span>
@@ -326,7 +484,6 @@
     <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
       <div>
         <h3 style="margin-bottom: 0.35rem;">Committee Action</h3>
-        <p class="app-section-note mb-0">Once committee approval starts, each pending member can approve, return, or reject from their own login. A return goes directly to the employee, and resubmission syncs the approval chain again.</p>
       </div>
       <span class="badge border bg-info bg-opacity-10 text-info px-3 py-2" style="font-size: 0.9rem;">
         Pending For You: L<%= current_step.level %>
@@ -361,7 +518,6 @@
       <summary class="quotation-proposal-show__nested-summary quotation-proposal-show__section-summary">
         <div class="quotation-proposal-show__summary-copy">
           <span class="quotation-proposal-show__summary-title">Proposal Items</span>
-          <span class="quotation-proposal-show__summary-note">Requested items, quantities, max rates, and remarks</span>
         </div>
         <div class="quotation-proposal-show__summary-meta">
           <span class="badge border bg-light text-dark">Total Items: <%= proposal_items_count %></span>
@@ -454,15 +610,7 @@
       <div class="quotation-proposal-show__criteria-panel">
         <div>
           <h4 class="quotation-proposal-show__criteria-title">Committee Evaluation Criteria</h4>
-          <p class="quotation-proposal-show__criteria-note">Committee members assign marks from 0 to 10 for every selected criterion. Vendor ranking is based on the overall marks total.</p>
         </div>
-
-        <% unless committee_scoring_allowed %>
-          <div class="quotation-proposal-show__criteria-help">
-            This screen is in view-only mode for your current login. Use an assigned committee member login to enter marks.
-          </div>
-        <% end %>
-
         <div class="quotation-proposal-show__tag-list">
           <% selected_criteria_selections.each do |criterion_selection| %>
             <span class="badge border bg-light text-dark px-3 py-2 quotation-proposal-show__tag">
@@ -748,7 +896,6 @@
           <summary class="quotation-proposal-show__nested-summary quotation-proposal-show__section-summary">
             <div class="quotation-proposal-show__summary-copy">
               <span class="quotation-proposal-show__summary-title">Selected Vendor PO Workflow</span>
-              <span class="quotation-proposal-show__summary-note">Vendor reply, PO updates, invoice requests, and activity trail</span>
             </div>
             <div class="quotation-proposal-show__summary-meta">
               <span class="badge border bg-light text-dark"><%= @selected_vendor_response.invoice_requests.size %> invoice requests</span>
@@ -761,9 +908,6 @@
 
           <div class="quotation-proposal-show__nested-body quotation-proposal-show__section-body quotation-proposal-show__section-body--workflow">
         <div class="d-flex justify-content-between gap-3 flex-wrap align-items-start quotation-proposal-show__workflow-header">
-          <div class="quotation-proposal-show__workflow-header-copy">
-            <p class="app-section-note mb-0">Maker and committee members can review vendor responses, reply updates, and the full dated timeline here.</p>
-          </div>
           <div class="d-flex gap-2 flex-wrap quotation-proposal-show__workflow-badges">
             <% if current_user == @quotation_proposal.user && @selected_vendor_response.purchase_order_status == "accepted" %>
               <%= link_to "Goods Receive", goods_receive_quotation_proposal_path(@quotation_proposal), class: "app-form-submit" %>
@@ -824,7 +968,6 @@
               <div class="d-flex justify-content-between gap-3 flex-wrap align-items-start">
                 <div>
                   <div class="quotation-proposal-show__finance-panel-title">Send Accepted Invoices To Finance</div>
-                  <div class="small text-muted mt-1">Select the accepted invoices to move them into the finance queue with the same PDO, RFP, and date details.</div>
                 </div>
                 <% if finance_queue_access? && @selected_vendor_response.invoice_requests.any?(&:payment_advice_pending?) %>
                   <%= link_to "Open Finance Queue", payment_advice_quotation_proposals_path, class: "app-secondary-btn" %>
@@ -861,8 +1004,6 @@
                     <%= submit_tag "Move Selected Invoices To Finance", class: "app-form-submit" %>
                   </div>
                 <% end %>
-              <% else %>
-                <div class="small text-muted mt-3">No accepted invoice request is pending for finance reference entry.</div>
               <% end %>
             </div>
           <% end %>
@@ -872,8 +1013,6 @@
               <% @selected_vendor_response.invoice_requests.recent_first.each do |invoice_request| %>
                 <%= render "invoice_request_card", invoice_request: invoice_request %>
               <% end %>
-            <% else %>
-              <div class="text-muted">Vendor invoice upload requests appear here after goods receive.</div>
             <% end %>
           </div>
         </div>
@@ -883,7 +1022,6 @@
             <div class="d-flex justify-content-between gap-3 flex-wrap align-items-end quotation-proposal-show__timeline-header" style="margin-bottom: 0.85rem;">
               <div>
                 <h4 style="margin-bottom: 0.2rem;">Response Timeline</h4>
-                <p class="app-section-note mb-0">All purchase order, invoice, finance, and asset updates in one compact trail.</p>
               </div>
               <span class="badge border bg-light text-dark"><%= @selected_vendor_response.purchase_order_activities.size %> updates</span>
             </div>

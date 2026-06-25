@@ -6957,3 +6957,98 @@ body {
     -webkit-box-orient: initial;
   }
 }
+
+@media screen and (min-width: 992px) {
+  html,
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) {
+    width: 100%;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    overflow: hidden !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) {
+    position: fixed !important;
+    inset: 0 !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-navbar {
+    position: fixed !important;
+    inset: 0 0 auto 0 !important;
+    height: 96px !important;
+    min-height: 96px !important;
+    padding: 0.55rem 1.25rem !important;
+    z-index: 1100 !important;
+    background: #ffffff !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-brand,
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-logo-img {
+    flex: 0 0 auto !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-logo-img {
+    width: auto !important;
+    max-width: 220px !important;
+    max-height: 78px !important;
+    object-fit: contain !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-shell {
+    position: fixed !important;
+    inset: 96px 0 0 0 !important;
+    display: grid !important;
+    grid-template-columns: 280px minmax(0, 1fr) !important;
+    gap: 0.75rem !important;
+    width: 100vw !important;
+    height: calc(100vh - 96px) !important;
+    min-height: 0 !important;
+    padding: 0.75rem !important;
+    overflow: hidden !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-shell > .app-sidebar {
+    position: relative !important;
+    top: auto !important;
+    height: 100% !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    border-radius: 20px !important;
+    padding: 1rem 0.9rem !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-shell > .app-main {
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-shell > .app-main > .app-content {
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 0.75rem !important;
+    border-radius: 20px !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content > .quotation-proposal-show {
+    flex: 0 0 auto !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+@media screen and (max-width: 991px) {
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-navbar {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1100 !important;
+  }
+}
