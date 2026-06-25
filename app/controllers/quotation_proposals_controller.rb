@@ -706,10 +706,6 @@ class QuotationProposalsController < ApplicationController
           raise ActiveRecord::RecordInvalid.new(Asset.new), "Please select the first location for every asset row."
         end
 
-        if secondary_office_category_id.blank?
-          raise ActiveRecord::RecordInvalid.new(Asset.new), "Please select the second location for every asset row."
-        end
-
         if asset_code_date.blank?
           raise ActiveRecord::RecordInvalid.new(Asset.new), "Please add the asset code date for every asset row."
         end
@@ -730,7 +726,7 @@ class QuotationProposalsController < ApplicationController
 
         stakeholder = StakeholderCategory.find(stakeholder_category_id)
         primary_office = OfficeCategory.find(primary_office_category_id)
-        secondary_office = OfficeCategory.find(secondary_office_category_id)
+        secondary_office = secondary_office_category_id.present? ? OfficeCategory.find(secondary_office_category_id) : nil
 
         created_assets << Asset.create!(
           name: row[:asset_name].presence || vendor_item.item_name,

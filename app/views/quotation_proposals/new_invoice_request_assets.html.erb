@@ -36,7 +36,7 @@
   <% else %>
     <%= form_with url: create_invoice_request_assets_quotation_proposal_path(@quotation_proposal, invoice_request_id: @invoice_request.id), method: :post, local: true do %>
       <div class="app-table-wrap" style="overflow-x: auto;">
-        <table class="table app-table" style="min-width: 1240px;">
+        <table class="table app-table assets-table assets-workspace-entry-table">
           <thead>
             <tr>
               <th>S.No.</th>
@@ -45,7 +45,7 @@
               <th>Unit</th>
               <th>Stakeholder</th>
               <th>First Location</th>
-              <th>Second Location</th>
+              <th>Second Location <span class="text-muted">(Optional)</span></th>
               <th>Product Type Code</th>
               <th>Item No</th>
               <th>Asset Code Date</th>
@@ -80,7 +80,7 @@
                 <td>
                   <%= select_tag "asset_rows[#{index}][secondary_office_category_id]",
                         grouped_options_for_select(@asset_office_category_grouped_options, row[:secondary_office_category_id]),
-                        prompt: "Select second location",
+                        prompt: "Second location optional",
                         class: "form-control",
                         style: "min-width: 220px;" %>
                 </td>
@@ -107,9 +107,9 @@
                 <td>
                   <%= date_field_tag "asset_rows[#{index}][asset_code_date]",
                         row[:asset_code_date],
-                        class: "form-control",
+                        class: "form-control assets-table-input assets-table-date-input",
                         required: true,
-                        style: "min-width: 180px;" %>
+                        style: "min-width: 190px;" %>
                 </td>
                 <td>
                   <span class="badge border bg-light text-dark">Only if product type code exists</span>

@@ -26,10 +26,10 @@
       </div>
 
       <div class="app-form-field">
-        <%= f.label :secondary_office_category_id, "Second Location" %>
+        <%= f.label :secondary_office_category_id, "Second Location (Optional)" %>
         <%= f.select :secondary_office_category_id,
               grouped_options_for_select(@asset_office_category_grouped_options, asset.secondary_office_category_id),
-              { prompt: "Select second location" },
+              { prompt: "Second location optional" },
               class: "form-control" %>
       </div>
 
