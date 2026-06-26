@@ -26,6 +26,12 @@ class ApplicationController < ActionController::Base
     "product_varieties" => "product_varieties",
     "products" => "products",
     "quotation_proposals" => {
+      "show" => "quotation_proposal_main",
+      "approve_committee" => "quotation_proposal_main",
+      "return_committee" => "quotation_proposal_main",
+      "score_vendor" => "quotation_proposal_main",
+      "score_vendors" => "quotation_proposal_main",
+      "select_vendor" => "quotation_proposal_main",
       "list" => "quotation_proposal_list",
       "payment_advice" => "payment_advice_queue",
       "update_payment_advice" => "payment_advice_queue",
@@ -39,8 +45,13 @@ class ApplicationController < ActionController::Base
     "tos" => "office_category_name",
     "units" => "units",
     "vendor_bank_masters" => "banks",
-    "vendor_registration_invitations" => "vendor_registration",
+    "vendor_registration_invitations" => {
+      "show" => "vendor_registration_main",
+      "resend" => "vendor_registration",
+      "default" => "vendor_registration"
+    },
     "vendor_registrations" => {
+      "show" => "vendor_registration_main",
       "list" => "vendor_registration_list",
       "default" => "vendor_registration"
     },
@@ -64,6 +75,8 @@ class ApplicationController < ActionController::Base
   helper_method :finance_queue_access?
   helper_method :senior_manager_finance?
   helper_method :can_manage_rbac_menu_records?
+  helper_method :vendor_registration_maker?
+  helper_method :quotation_proposal_maker?
 
   def current_employee_master
     return @current_employee_master if defined?(@current_employee_master)
@@ -147,6 +160,14 @@ class ApplicationController < ActionController::Base
     return true if admin_user?
 
     senior_manager_finance?
+  end
+
+  def vendor_registration_maker?
+    approval_form_maker?(["Vendor Registration"])
+  end
+
+  def quotation_proposal_maker?
+    approval_form_maker?(["Quotation Proposal", "Quotation Request", "Vendor Registration"])
   end
 
   private
@@ -246,6 +267,19 @@ class ApplicationController < ActionController::Base
     else
       role_permissions.find_by(menu_identifier: identifier)&.can_view? || false
     end
+  end
+
+  def approval_form_maker?(form_names)
+    return true if admin_user?
+
+    employee_ids = current_approval_employee_ids
+    return false if employee_ids.blank?
+
+    ApprovalChannel.where(form_name: Array(form_names))
+      .joins(:approval_channel_steps)
+      .where(approval_channel_steps: { to_responsible_user_id: employee_ids })
+      .where("LOWER(TRIM(approval_channel_steps.current_action)) = ?", "proposal create")
+      .exists?
   end
 
   def can_manage_rbac_menu_records?

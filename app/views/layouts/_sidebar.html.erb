@@ -69,30 +69,30 @@
         <% end %>
       </li>
     <% end %>
-    <% if can_view_menu?("vendor_registration_main") || can_view_menu?("vendor_registration") || can_view_menu?("vendor_registration_list") %>
+    <% if can_view_menu?("vendor_registration_list") || (can_view_menu?("vendor_registration") && vendor_registration_maker?) %>
       <li>
         <%= app_dropdown_toggle("Vendor Registration Form", "vendorRegistrationMenu", icon: :vendor, identifier: "vendor_registration_main") %>
         <div class="collapse submenu h-auto" id="vendorRegistrationMenu">
           <ul class="nav flex-column">
-            <% if can_view_menu?("vendor_registration") %>
+            <% if can_view_menu?("vendor_registration") && vendor_registration_maker? %>
               <li><%= link_to "Vendor Registration", vendor_registrations_path, class: "nav-link" %></li>
             <% end %>
-            <% if can_view_menu?("vendor_registration_list") || can_view_menu?("vendor_registration") %>
+            <% if can_view_menu?("vendor_registration_list") || (can_view_menu?("vendor_registration") && vendor_registration_maker?) %>
               <li><%= link_to "Vendor Registration List", list_vendor_registrations_path, class: "nav-link" %></li>
             <% end %>
           </ul>
         </div>
       </li>
     <% end %>
-    <% if can_view_menu?("quotation_proposal_main") || can_view_menu?("quotation_proposal_form") || can_view_menu?("quotation_proposal_list") || can_view_menu?("payment_advice_queue") %>
+    <% if can_view_menu?("quotation_proposal_list") || (can_view_menu?("quotation_proposal_form") && quotation_proposal_maker?) || can_view_menu?("payment_advice_queue") %>
       <li>
         <%= app_dropdown_toggle("Quotation Proposal", "quotationProposalMenu", icon: :document, identifier: "quotation_proposal_main") %>
         <div class="collapse submenu h-auto" id="quotationProposalMenu">
           <ul class="nav flex-column">
-            <% if can_view_menu?("quotation_proposal_form") %>
+            <% if can_view_menu?("quotation_proposal_form") && quotation_proposal_maker? %>
               <li><%= link_to "Request for Proposal", quotation_proposals_path, class: "nav-link" %></li>
             <% end %>
-            <% if can_view_menu?("quotation_proposal_list") || can_view_menu?("quotation_proposal_form") %>
+            <% if can_view_menu?("quotation_proposal_list") || (can_view_menu?("quotation_proposal_form") && quotation_proposal_maker?) %>
               <li><%= link_to "Quotation Proposal List", list_quotation_proposals_path, class: "nav-link" %></li>
             <% end %>
             <% if can_view_menu?("payment_advice_queue") %>

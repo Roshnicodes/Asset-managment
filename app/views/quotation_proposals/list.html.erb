@@ -4,7 +4,8 @@
   .quotation-list-table-wrap { max-height: none; overflow-x: auto; overflow-y: visible; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
 </style>
 
-<% sendable_quotation_proposals = @quotation_proposals.select { |quotation_proposal| quotation_proposal.approval_request.blank? } %>
+<% can_manage_quotation_proposals = can_view_menu?("quotation_proposal_form") && quotation_proposal_maker? %>
+<% sendable_quotation_proposals = can_manage_quotation_proposals ? @quotation_proposals.select { |quotation_proposal| quotation_proposal.approval_request.blank? && (admin_user? || quotation_proposal.user_id == current_user.id) } : [] %>
 
 <div class="app-toolbar">
   <div class="d-flex align-items-center gap-3" style="width:100%">
@@ -13,7 +14,7 @@
       <p class="app-section-note mb-0">Draft and approval-started quotation proposals with current status and reviewer trail.</p>
     </div>
     <div style="margin-left:auto; display:flex; gap:.5rem; align-items:center;">
-      <% if can_view_menu?("quotation_proposal_form") %>
+      <% if can_manage_quotation_proposals %>
         <%= form_tag send_for_approval_quotation_proposals_path, method: :post, id: "send-quotation-approval-form", style: "display: inline;" do %>
           <button type="submit" class="app-secondary-btn d-none" id="send_quotation_for_approval_button">Send for Approval</button>
         <% end %>
@@ -26,7 +27,7 @@
   <table class="table app-table">
     <thead class="sticky-top">
       <tr>
-        <% if can_view_menu?("quotation_proposal_form") %>
+        <% if can_manage_quotation_proposals %>
           <th>
             <% if sendable_quotation_proposals.any? %>
               <input type="checkbox" id="quotation_select_all_checkbox" style="cursor: pointer;">
@@ -43,7 +44,7 @@
         <th>Latest Remark</th>
         <th>Approval Trail</th>
         <th>Created By</th>
-        <% if can_view_menu?("quotation_proposal_form") %>
+        <% if can_manage_quotation_proposals %>
           <th>Action</th>
         <% end %>
       </tr>
@@ -51,9 +52,9 @@
     <tbody>
       <% @quotation_proposals.each do |quotation_proposal| %>
         <tr>
-          <% if can_view_menu?("quotation_proposal_form") %>
+          <% if can_manage_quotation_proposals %>
             <td>
-              <% if quotation_proposal.approval_request.blank? %>
+              <% if quotation_proposal.approval_request.blank? && (admin_user? || quotation_proposal.user_id == current_user.id) %>
                 <input type="checkbox" name="quotation_proposal_ids[]" value="<%= quotation_proposal.id %>" class="quotation-approval-checkbox" style="cursor: pointer;" form="send-quotation-approval-form">
               <% end %>
             </td>
@@ -116,7 +117,7 @@
             </div>
           </td>
           <td><%= quotation_proposal.user&.email || "-" %></td>
-          <% if can_view_menu?("quotation_proposal_form") %>
+          <% if can_manage_quotation_proposals %>
             <td class="app-row-actions">
               <div class="d-flex align-items-center gap-2">
                 <% if quotation_proposal.selected_vendor_registration_id.present? %>
@@ -124,7 +125,7 @@
                     <%= app_icon(:document, size: 18) %>
                   <% end %>
                 <% end %>
-                <% unless quotation_proposal.approval_locked? %>
+                <% if (admin_user? || quotation_proposal.user_id == current_user.id) && !quotation_proposal.approval_locked? %>
                   <%= link_to edit_quotation_proposal_path(quotation_proposal), class: "app-action-icon text-warning", title: "Edit" do %>
                     <%= app_icon(:pencil, size: 18) %>
                   <% end %>

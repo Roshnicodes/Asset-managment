@@ -11,7 +11,7 @@
       <p class="app-section-note mb-0">Create drafts, submit them for approval, and monitor proposal workflow in one place.</p>
     </div>
     <div style="margin-left:auto; display:flex; gap:.5rem; align-items:center;">
-      <% if can_view_menu?("quotation_proposal_form") %>
+      <% if can_view_menu?("quotation_proposal_form") && quotation_proposal_maker? %>
         <%= link_to "Request for Proposal", new_quotation_proposal_path, class: "app-primary-btn" %>
       <% end %>
     </div>
@@ -104,7 +104,7 @@
           <td><%= quotation_proposal.user&.email || "-" %></td>
           <td class="app-row-actions">
             <div class="d-flex align-items-center gap-2">
-              <% unless quotation_proposal.approval_locked? %>
+              <% if (admin_user? || quotation_proposal.user_id == current_user.id) && !quotation_proposal.approval_locked? %>
                 <%= link_to edit_quotation_proposal_path(quotation_proposal), class: "app-action-icon text-warning", title: "Edit" do %>
                   <%= app_icon(:pencil, size: 18) %>
                 <% end %>

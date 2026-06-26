@@ -2,6 +2,7 @@ class VendorRegistrationsController < ApplicationController
   before_action :set_vendor_registration, only: %i[ show edit update destroy ]
   before_action :ensure_vendor_owner_or_admin_view_access!, only: %i[show]
   before_action :ensure_vendor_owner_access!, only: %i[edit update destroy]
+  before_action :authorize_vendor_registration_maker_access!, only: %i[index new create send_for_approval]
   before_action :ensure_vendor_registration_change_allowed!, only: %i[edit update destroy]
   before_action :ensure_vendor_registration_editable!, only: %i[edit update]
   before_action :set_current_stakeholder_category
@@ -261,6 +262,13 @@ class VendorRegistrationsController < ApplicationController
       return if admin_user? || @vendor_registration.user_id == current_user.id
 
       redirect_to list_vendor_registrations_path, alert: "Only the creator can perform this action on the vendor registration."
+    end
+
+    def authorize_vendor_registration_maker_access!
+      return if vendor_registration_maker?
+
+      redirect_to list_vendor_registrations_path,
+                  alert: "Only the Proposal Create maker can create vendor registrations or send vendor registration links."
     end
 
     def sync_vendor_approval_requests!

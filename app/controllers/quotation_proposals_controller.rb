@@ -999,7 +999,7 @@ class QuotationProposalsController < ApplicationController
   end
 
   def authorize_quotation_form_access!
-    return if can_access_menu?("quotation_proposal_form") && quotation_maker_eligible?
+    return if can_access_menu?("quotation_proposal_form") && quotation_proposal_maker?
 
     redirect_to root_path, alert: "You are not authorized to access Quotation Proposal form."
   end
@@ -1014,12 +1014,6 @@ class QuotationProposalsController < ApplicationController
     return if finance_queue_access?
 
     redirect_to root_path, alert: "You are not authorized to view Payment Advice Queue."
-  end
-
-  def quotation_maker_eligible?
-    return true if admin_user?
-
-    current_user.vendor_registrations.exists?
   end
 
   def authorize_quotation_view_access!

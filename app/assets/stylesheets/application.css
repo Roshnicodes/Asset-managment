@@ -7099,3 +7099,39 @@ body {
     z-index: 1100 !important;
   }
 }
+
+@media screen and (min-width: 992px) {
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content > form[data-ui-form-pager] {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content > form[data-ui-form-pager] > .app-static-paged-form {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-static-page {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding-bottom: 0.85rem !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-static-pager-nav {
+    position: relative !important;
+    z-index: 4 !important;
+    flex: 0 0 auto !important;
+    margin-top: 0.65rem !important;
+    padding-top: 0.65rem !important;
+  }
+}

@@ -1,6 +1,7 @@
 class VendorRegistrationInvitationsController < ApplicationController
   skip_before_action :authenticate_user!, only: %i[public_start public_lookup public_show send_otp verify_otp register]
   before_action :set_current_stakeholder_category, only: %i[new create]
+  before_action :authorize_vendor_registration_maker_access!, only: %i[new create resend]
   before_action :set_invitation, only: %i[show resend]
   before_action :set_public_invitation, only: %i[public_show send_otp verify_otp register]
   layout :layout_for_action
@@ -134,6 +135,13 @@ class VendorRegistrationInvitationsController < ApplicationController
   end
 
   private
+
+  def authorize_vendor_registration_maker_access!
+    return if vendor_registration_maker?
+
+    redirect_to list_vendor_registrations_path,
+                alert: "Only the Proposal Create maker can send vendor registration links."
+  end
 
   def set_invitation
     scope = admin_user? ? VendorRegistrationInvitation.all : VendorRegistrationInvitation.where(user_id: current_user.id)
