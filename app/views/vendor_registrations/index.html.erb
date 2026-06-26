@@ -107,7 +107,7 @@
                 <%= app_icon(:pencil, size: 18) %>
               <% end %>
             <% end %>
-            <% if (admin_user? || vendor_registration.user_id == current_user.id) && !vendor_registration.approval_locked? %>
+            <% if admin_user? || (vendor_registration.user_id == current_user.id && !vendor_registration.approval_locked?) %>
               <%= button_to vendor_registration_path(vendor_registration), method: :delete, data: { turbo_confirm: "Delete this vendor registration?" }, class: "app-action-icon text-danger", title: "Delete" do %>
                 <%= app_icon(:trash, size: 18) %>
               <% end %>

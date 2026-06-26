@@ -12,6 +12,8 @@
       <%= link_to "← Back", vendor_registrations_path, class: "app-back-link" %>
       <% if owner_or_admin && !@vendor_registration.approval_locked? %>
         <%= link_to "Edit", edit_vendor_registration_path(@vendor_registration), class: "app-primary-btn" %>
+      <% end %>
+      <% if admin_user? || (@vendor_registration.user_id == current_user.id && !@vendor_registration.approval_locked?) %>
         <%= button_to "Delete", @vendor_registration, method: :delete, data: { turbo_confirm: "Are you sure you want to delete this vendor registration?" }, class: "app-danger-btn" %>
       <% end %>
     </div>
