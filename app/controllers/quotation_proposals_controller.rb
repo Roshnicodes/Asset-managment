@@ -8,7 +8,7 @@ class QuotationProposalsController < ApplicationController
   ]
   before_action :ensure_quotation_owner_access!, only: %i[edit update destroy send_to_vendors purchase_order purchase_order_print send_purchase_order goods_receive update_goods_receive new_invoice_request_assets create_invoice_request_assets review_invoice_request]
   before_action :ensure_quotation_owner_access!, only: %i[assign_payment_references]
-  before_action :ensure_quotation_change_allowed!, only: %i[edit update destroy]
+  before_action :ensure_quotation_change_allowed!, only: %i[edit update]
   before_action :authorize_quotation_form_access!, only: %i[index new create edit update destroy send_for_approval send_to_vendors]
   before_action :authorize_quotation_list_access!, only: %i[list]
   before_action :authorize_payment_advice_access!, only: %i[payment_advice update_payment_advice]

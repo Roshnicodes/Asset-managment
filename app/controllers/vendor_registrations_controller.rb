@@ -3,7 +3,7 @@ class VendorRegistrationsController < ApplicationController
   before_action :ensure_vendor_owner_or_admin_view_access!, only: %i[show]
   before_action :ensure_vendor_owner_access!, only: %i[edit update destroy]
   before_action :authorize_vendor_registration_maker_access!, only: %i[index new create send_for_approval]
-  before_action :ensure_vendor_registration_change_allowed!, only: %i[edit update destroy]
+  before_action :ensure_vendor_registration_change_allowed!, only: %i[edit update]
   before_action :ensure_vendor_registration_editable!, only: %i[edit update]
   before_action :set_current_stakeholder_category
 
