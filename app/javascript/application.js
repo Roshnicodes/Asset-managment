@@ -1549,6 +1549,18 @@ const setupQuotationShowDetails = () => {
   })
 }
 
+const setupAutoDismissFlash = () => {
+  document.querySelectorAll("[data-auto-dismiss-flash='true']").forEach((flash) => {
+    if (flash.dataset.autoDismissReady === "true") return
+
+    flash.dataset.autoDismissReady = "true"
+    window.setTimeout(() => {
+      flash.classList.add("is-dismissing")
+      window.setTimeout(() => flash.remove(), 250)
+    }, 3000)
+  })
+}
+
 const runAppInitializers = () => {
   setupVendorRegistrationSelections()
   setupVendorDocumentToggle()
@@ -1567,6 +1579,7 @@ const runAppInitializers = () => {
   setupBulkDeleteSelections()
   setupPasswordVisibility()
   setupQuotationShowDetails()
+  setupAutoDismissFlash()
   setupFormPagination()
   setupPageSectionPagination()
 }

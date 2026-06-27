@@ -135,11 +135,11 @@
 
         <!-- FLASH -->
         <% if notice %>
-          <div class="alert alert-success"><%= notice %></div>
+          <div class="alert alert-success" data-auto-dismiss-flash="true"><%= notice %></div>
         <% end %>
 
         <% if alert %>
-          <div class="alert alert-danger"><%= alert %></div>
+          <div class="alert alert-danger" data-auto-dismiss-flash="true"><%= alert %></div>
         <% end %>
 
         <%= yield %>

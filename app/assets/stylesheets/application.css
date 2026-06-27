@@ -6549,6 +6549,17 @@ body {
   border: 0;
   border-radius: var(--ui-radius-md);
   box-shadow: var(--ui-shadow-sm);
+  transition: opacity 220ms ease, transform 220ms ease, margin 220ms ease, padding 220ms ease;
+}
+
+.alert.is-dismissing {
+  opacity: 0;
+  transform: translateY(-6px);
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  pointer-events: none;
 }
 
 .alert-success {

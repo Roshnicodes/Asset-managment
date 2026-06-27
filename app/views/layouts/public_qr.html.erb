@@ -85,11 +85,11 @@
 
     <div class="public-qr-flash-stack">
       <% if notice %>
-        <div class="alert alert-success public-qr-flash"><%= notice %></div>
+        <div class="alert alert-success public-qr-flash" data-auto-dismiss-flash="true"><%= notice %></div>
       <% end %>
 
       <% if alert %>
-        <div class="alert alert-danger public-qr-flash"><%= alert %></div>
+        <div class="alert alert-danger public-qr-flash" data-auto-dismiss-flash="true"><%= alert %></div>
       <% end %>
     </div>
 
