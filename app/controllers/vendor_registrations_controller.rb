@@ -204,7 +204,7 @@ class VendorRegistrationsController < ApplicationController
         QuotationVendorOtp.where(vendor_registration_id: @vendor_registration.id).find_each(&:destroy!)
         QuotationVendorDispatch.where(vendor_registration_id: @vendor_registration.id).find_each(&:destroy!)
         VendorRegistrationInvitation.where(vendor_registration_id: @vendor_registration.id).update_all(vendor_registration_id: nil, updated_at: Time.current)
-        @vendor_registration.quotation_proposal_vendors.find_each(&:destroy!)
+        QuotationProposalVendor.where(vendor_registration_id: @vendor_registration.id).find_each(&:destroy!)
         @vendor_registration.destroy!
       end
 

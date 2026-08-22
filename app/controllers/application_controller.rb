@@ -101,7 +101,7 @@ class ApplicationController < ActionController::Base
   def admin_user?
     return false unless current_user
 
-    current_user.admin? || current_employee_master&.user_type == "Admin"
+    current_user.admin? || current_employee_master&.user_type.to_s.strip.casecmp("Admin").zero?
   end
 
   def current_approval_employee_ids
