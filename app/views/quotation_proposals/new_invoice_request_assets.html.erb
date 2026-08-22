@@ -45,7 +45,7 @@
               <th>Unit</th>
               <th>Stakeholder</th>
               <th>First Location</th>
-              <th>Second Location <span class="text-muted">(Optional)</span></th>
+              <th>Second Location</th>
               <th>Product Type Code</th>
               <th>Item No</th>
               <th>Asset Code Date</th>
@@ -80,8 +80,9 @@
                 <td>
                   <%= select_tag "asset_rows[#{index}][secondary_office_category_id]",
                         grouped_options_for_select(@asset_office_category_grouped_options, row[:secondary_office_category_id]),
-                        prompt: "Second location optional",
+                        prompt: "Select second location",
                         class: "form-control",
+                        required: true,
                         style: "min-width: 220px;" %>
                 </td>
                 <td>

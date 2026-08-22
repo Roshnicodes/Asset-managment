@@ -1979,7 +1979,9 @@ body.auth-page-body {
 }
 
 .assets-workspace-table {
-  overflow-y: visible;
+  max-height: 46vh;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .assets-list-table {
@@ -2002,6 +2004,13 @@ body.auth-page-body {
   line-height: 1.25;
 }
 
+.assets-workspace-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: #f8fcf9;
+}
+
 .assets-table {
   min-width: 1320px;
   table-layout: fixed;
@@ -2009,7 +2018,7 @@ body.auth-page-body {
 }
 
 .assets-workspace-entry-table {
-  min-width: 2140px;
+  min-width: 2300px;
 }
 
 .assets-insurance-workspace-table {
@@ -2069,7 +2078,7 @@ body.auth-page-body {
 .assets-workspace-entry-table td:nth-child(6),
 .assets-workspace-entry-table th:nth-child(7),
 .assets-workspace-entry-table td:nth-child(7) {
-  width: 270px;
+  width: 340px;
 }
 
 .assets-workspace-entry-table th:nth-child(8),
@@ -2103,7 +2112,8 @@ body.auth-page-body {
 }
 
 .assets-table-input {
-  min-width: 220px;
+  width: 100%;
+  min-width: 0;
   border-radius: 12px;
 }
 
@@ -2113,7 +2123,8 @@ body.auth-page-body {
 }
 
 .assets-table-select {
-  min-width: 200px;
+  min-width: 0;
+  width: 100%;
 }
 
 .assets-submit-row {
@@ -7145,4 +7156,259 @@ body {
     margin-top: 0.65rem !important;
     padding-top: 0.65rem !important;
   }
+}
+
+
+/* Approval request desk: presentation-only table polish. */
+.approval-requests-table-wrap {
+  border-radius: 18px;
+  box-shadow: 0 14px 34px rgba(28, 64, 48, 0.06);
+}
+
+.approval-requests-table {
+  min-width: 1180px;
+  table-layout: fixed;
+}
+
+.approval-requests-table thead th {
+  padding: 0.82rem 0.9rem;
+  font-size: 0.88rem;
+  line-height: 1.2;
+  white-space: normal;
+}
+
+.approval-requests-table tbody td {
+  padding: 0.9rem;
+  vertical-align: top;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.approval-requests-table__form {
+  width: 10rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.approval-requests-table__reference {
+  width: 8rem;
+  font-weight: 700;
+  color: var(--brand-deep);
+}
+
+.approval-requests-table__status {
+  width: 12rem;
+}
+
+.approval-requests-table__level {
+  width: 9rem;
+  color: var(--text-main);
+}
+
+.approval-requests-table__approver {
+  width: 12rem;
+}
+
+.approval-requests-table__current-action {
+  width: 9rem;
+}
+
+.approval-requests-table__trail {
+  width: 18rem;
+}
+
+.approval-requests-table__view {
+  width: 6rem;
+  text-align: center;
+  vertical-align: middle !important;
+}
+
+.approval-requests-table__actions {
+  width: 12rem;
+}
+
+.approval-status-chip,
+.approval-you-chip,
+.approval-status-chip--plain {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  border-radius: 999px;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.approval-status-chip--plain {
+  padding: 0.35rem 0.7rem;
+  border: 1px solid #cfe0d2;
+  background: #f6fbf7;
+  color: var(--brand-deep);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.approval-trail-summary {
+  display: grid;
+  gap: 0.38rem;
+  max-height: 7.2rem;
+  overflow: auto;
+  padding: 0.55rem;
+  border: 1px solid #e0ece2;
+  border-radius: 12px;
+  background: #fbfdfb;
+  color: #22362f;
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.approval-trail-summary__item {
+  display: grid;
+  grid-template-columns: minmax(4rem, auto) minmax(0, 1fr);
+  gap: 0.18rem 0.45rem;
+  align-items: center;
+  padding: 0.38rem 0.45rem;
+  border: 1px solid #e5efe7;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.approval-trail-summary__level {
+  color: var(--brand-deep);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.approval-trail-summary__name {
+  min-width: 0;
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.approval-trail-summary__status {
+  grid-column: 1 / -1;
+  color: var(--text-soft);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.approval-trail-summary__item--approved .approval-trail-summary__status { color: #237a3d; }
+.approval-trail-summary__item--pending .approval-trail-summary__status { color: #0d5c63; }
+.approval-trail-summary__item--returned .approval-trail-summary__status { color: #9a6700; }
+.approval-trail-summary__item--rejected .approval-trail-summary__status { color: #b42318; }
+
+.approval-action-stack {
+  display: flex;
+  align-items: center;
+  gap: 0.38rem;
+  flex-wrap: wrap;
+}
+
+.approval-action-stack .approval-you-chip {
+  flex-basis: 100%;
+  justify-content: flex-start;
+  padding: 0.26rem 0.45rem !important;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.approval-action-stack .approval-action-btn,
+.approval-view-link {
+  width: auto;
+  min-width: 0;
+  min-height: 32px;
+  padding: 0.34rem 0.58rem;
+  border-radius: 10px;
+  font-size: 0.78rem;
+  line-height: 1.1;
+}
+
+.approval-action-stack .app-danger-btn {
+  min-width: 4rem;
+}
+
+.approval-view-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .approval-requests-table {
+    min-width: 980px;
+  }
+
+  .approval-requests-table tbody td,
+  .approval-requests-table thead th {
+    padding: 0.72rem;
+  }
+
+  .approval-requests-table__trail {
+    width: 15rem;
+  }
+
+  .approval-requests-table__actions {
+    width: 12rem;
+  }
+}
+
+
+/* Keep vendor approval view readable inside the fixed app shell. */
+body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content > .vendor-registration-show-page {
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 0.35rem;
+}
+
+.vendor-registration-show-page .vendor-detail-card,
+.vendor-registration-show-page .vendor-approval-action-card {
+  flex: 0 0 auto;
+}
+
+.vendor-registration-show-page .app-detail-item,
+.vendor-registration-show-page .vendor-detail-section,
+.vendor-registration-show-page .vendor-bank-card,
+.vendor-registration-show-page .vendor-document-card {
+  min-width: 0;
+}
+
+.vendor-registration-show-page .badge,
+.vendor-registration-show-page .app-detail-value,
+.vendor-registration-show-page .vendor-approval-step {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.vendor-approval-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.vendor-approval-action-buttons .app-primary-btn,
+.vendor-approval-action-buttons .app-secondary-btn,
+.vendor-approval-action-buttons .app-danger-btn,
+.approval-action-stack .approval-action-btn,
+.approval-action-stack .app-form-submit.approval-action-btn,
+.approval-action-stack .app-secondary-btn.approval-action-btn,
+.approval-action-stack .app-danger-btn.approval-action-btn {
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 30px !important;
+  height: auto !important;
+  padding: 0.28rem 0.52rem !important;
+  border-radius: 9px !important;
+  font-size: 0.76rem !important;
+  line-height: 1.1 !important;
+  box-shadow: none !important;
+}
+
+.approval-action-stack .approval-action-btn {
+  flex: 0 0 auto;
 }

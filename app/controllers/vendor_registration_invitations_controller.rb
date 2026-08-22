@@ -109,6 +109,7 @@ class VendorRegistrationInvitationsController < ApplicationController
 
     permitted_params = vendor_registration_params
     @vendor_registration = VendorRegistration.new(permitted_params.except(:document_uploads))
+    @vendor_registration.user = @invitation.user
     @vendor_registration.mobile_no = @invitation.mobile_no
     @vendor_registration.incoming_document_files = permitted_params[:document_uploads]
     @vendor_registration.submitted_at ||= Time.current

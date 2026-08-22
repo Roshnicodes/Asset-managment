@@ -18,7 +18,8 @@
   show_edit_action = owner_or_admin && (current_user == @quotation_proposal.user ? editable_by_owner : true)
   show_start_approval_action = owner_or_admin && @quotation_proposal.approval_request.blank? && @quotation_proposal.sent_to_vendors_at.blank? && !@quotation_proposal.committee_completed?
   show_send_vendor_action = creator_can_dispatch && @quotation_proposal.committee_completed? && !@quotation_proposal.vendor_responses_received?
-  status_actions_present = show_edit_action || show_start_approval_action || show_send_vendor_action
+  print_actions_present = true
+  status_actions_present = show_edit_action || show_start_approval_action || show_send_vendor_action || print_actions_present
   trail_should_open = approver_view || pending_approval_count.positive? || committee_trail_steps.size <= 2
   trail_completed_count = if committee_approval_started
     committee_trail_steps.count do |step|
@@ -297,6 +298,10 @@
 
     <% if status_actions_present %>
       <div class="d-flex align-items-center gap-2 flex-wrap quotation-proposal-show__status-actions">
+      <%= link_to "Print Quotation", quotation_print_quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn", target: "_blank", rel: "noopener" %>
+      <% if @quotation_proposal.vendor_responses_received? && @quotation_proposal.all_max_rates_present? %>
+        <%= link_to "Print Comparison", comparison_print_quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn", target: "_blank", rel: "noopener" %>
+      <% end %>
       <% if show_edit_action %>
         <%= link_to "Edit", edit_quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn" %>
       <% end %>
@@ -579,9 +584,12 @@
       <div>
         <h3 style="margin-bottom: 0.25rem;">Committee Comparison</h3>
       </div>
-      <span class="badge border bg-light text-dark px-3 py-2" style="font-size: 0.9rem;">
-        <%= committee_scoring_allowed ? "Committee scoring access" : "View only" %>
-      </span>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <%= link_to "Print Comparison", comparison_print_quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn", target: "_blank", rel: "noopener" %>
+        <span class="badge border bg-light text-dark px-3 py-2" style="font-size: 0.9rem;">
+          <%= committee_scoring_allowed ? "Committee scoring access" : "View only" %>
+        </span>
+      </div>
     </div>
 
     <% comparison_vendors = QuotationProposalVendor.where(quotation_proposal_id: @quotation_proposal.id).includes(vendor_registration: [], committee_member_scores: :employee_master, committee_criteria_scores: :quotation_proposal_criteria_selection, vendor_items: { quotation_proposal_item: :unit }) %>

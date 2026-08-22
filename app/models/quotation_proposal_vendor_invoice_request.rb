@@ -95,6 +95,10 @@ class QuotationProposalVendorInvoiceRequest < ApplicationRecord
     snapshot_items.sum { |item| item[:received_quantity].to_d }
   end
 
+  def invoice_hard_copy_received?
+    has_attribute?(:invoice_hard_copy_received) && invoice_hard_copy_received == true
+  end
+
   private
 
   def finance_transaction_type_value

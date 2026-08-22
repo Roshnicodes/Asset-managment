@@ -4,7 +4,7 @@ class QuotationProposalsController < ApplicationController
   before_action :set_quotation_proposal, only: %i[
     show edit update destroy approve_committee return_committee
     send_to_vendors score_vendor score_vendors select_vendor purchase_order send_purchase_order update_purchase_order_reply goods_receive update_goods_receive
-    new_invoice_request_assets create_invoice_request_assets review_invoice_request assign_payment_references purchase_order_print
+    new_invoice_request_assets create_invoice_request_assets review_invoice_request assign_payment_references purchase_order_print quotation_print comparison_print
   ]
   before_action :ensure_quotation_owner_access!, only: %i[edit update destroy send_to_vendors purchase_order purchase_order_print send_purchase_order goods_receive update_goods_receive new_invoice_request_assets create_invoice_request_assets review_invoice_request]
   before_action :ensure_quotation_owner_access!, only: %i[assign_payment_references]
@@ -12,7 +12,7 @@ class QuotationProposalsController < ApplicationController
   before_action :authorize_quotation_form_access!, only: %i[index new create edit update destroy send_for_approval send_to_vendors]
   before_action :authorize_quotation_list_access!, only: %i[list]
   before_action :authorize_payment_advice_access!, only: %i[payment_advice update_payment_advice]
-  before_action :authorize_quotation_view_access!, only: %i[show approve_committee return_committee]
+  before_action :authorize_quotation_view_access!, only: %i[show approve_committee return_committee quotation_print comparison_print]
   before_action :authorize_committee_comparison_access!, only: %i[score_vendor score_vendors select_vendor]
 
   def index
@@ -261,6 +261,25 @@ class QuotationProposalsController < ApplicationController
     render :purchase_order_print, layout: "print"
   end
 
+  def quotation_print
+    render :quotation_print, layout: "print"
+  end
+
+  def comparison_print
+    unless @quotation_proposal.vendor_responses_received? && @quotation_proposal.all_max_rates_present?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Committee comparison print is available after vendor responses and max rates are complete."
+      return
+    end
+
+    @comparison_vendors = QuotationProposalVendor
+      .where(quotation_proposal_id: @quotation_proposal.id)
+      .includes(:vendor_registration, committee_member_scores: :employee_master, committee_criteria_scores: :quotation_proposal_criteria_selection, vendor_items: { quotation_proposal_item: :unit })
+    @responded_vendors = @comparison_vendors.select(&:response_submitted?)
+    @selected_criteria_selections = @quotation_proposal.criteria_selections.to_a
+
+    render :comparison_print, layout: "print"
+  end
+
   def goods_receive
     load_goods_receive_context!
   end
@@ -350,11 +369,14 @@ class QuotationProposalsController < ApplicationController
     return if performed?
 
     item_params = params.fetch(:goods_receive_items, {}).permit!.to_h
+    invoice_hard_copy_received = parse_boolean_param(params[:invoice_hard_copy_received])
     received_batch_items = []
 
     QuotationProposalVendorItem.transaction do
       @goods_receive_vendor.vendor_items.each do |vendor_item|
-        raw_item_params = item_params[vendor_item.id.to_s] || {}
+        raw_item_params = item_params[vendor_item.id.to_s]
+        next if raw_item_params.blank?
+
         goods_received_value = parse_boolean_param(raw_item_params["goods_received"])
         fixed_asset_value = parse_boolean_param(raw_item_params["fixed_asset"])
         receive_now_quantity = raw_item_params["receive_now_quantity"].to_d
@@ -390,11 +412,16 @@ class QuotationProposalsController < ApplicationController
     invoice_request = nil
     invoice_request_notice = nil
     if received_batch_items.any?
-      invoice_request = @goods_receive_vendor.invoice_requests.create!(
+      invoice_request_attrs = {
         item_snapshot: received_batch_items,
         requested_at: Time.current,
         status: "pending_invoice"
-      )
+      }
+      if QuotationProposalVendorInvoiceRequest.column_names.include?("invoice_hard_copy_received")
+        invoice_request_attrs[:invoice_hard_copy_received] = invoice_hard_copy_received
+      end
+
+      invoice_request = @goods_receive_vendor.invoice_requests.create!(invoice_request_attrs)
       invoice_request.ensure_request_token!
 
       @goods_receive_vendor.add_purchase_order_activity!(
@@ -437,6 +464,7 @@ class QuotationProposalsController < ApplicationController
         id: invoice_request.id,
         status: invoice_request.status.to_s.humanize,
         requested_at: invoice_request.requested_at&.strftime("%d-%m-%Y %H:%M"),
+        invoice_hard_copy_received: invoice_request.invoice_hard_copy_received?,
         items_label: received_batch_items.map { |item| "#{item[:item_name]} (#{item[:received_quantity]})" }.join(", ")
       } : nil
     }
@@ -704,6 +732,10 @@ class QuotationProposalsController < ApplicationController
 
         if primary_office_category_id.blank?
           raise ActiveRecord::RecordInvalid.new(Asset.new), "Please select the first location for every asset row."
+        end
+
+        if secondary_office_category_id.blank?
+          raise ActiveRecord::RecordInvalid.new(Asset.new), "Please select the second location for every asset row."
         end
 
         if asset_code_date.blank?
@@ -1277,8 +1309,9 @@ class QuotationProposalsController < ApplicationController
   end
 
   def parse_boolean_param(value)
-    return true if value == "yes"
-    return false if value == "no"
+    normalized_value = value.to_s.strip.downcase
+    return true if normalized_value.in?(%w[yes true 1])
+    return false if normalized_value.in?(%w[no false 0])
 
     nil
   end
@@ -1327,7 +1360,9 @@ class QuotationProposalsController < ApplicationController
       next unless invoice_item_fixed_asset?(item, vendor_item)
 
       suggested_product = Product.find_by(name: item[:item_name])
-      quantity_count = item[:received_quantity].to_d.to_i
+      target_quantity = item[:cumulative_received_quantity].presence || item[:received_quantity]
+      existing_assets_count = vendor_item.assets.count
+      quantity_count = [target_quantity.to_d.to_i - existing_assets_count, 0].max
 
       quantity_count.times do |index|
         rows << {
@@ -1339,7 +1374,7 @@ class QuotationProposalsController < ApplicationController
           secondary_office_category_id: nil,
           asset_code_date: nil,
           unit_name: item[:unit_name],
-          row_label: "#{item[:item_name]} ##{index + 1}",
+          row_label: "#{item[:item_name]} ##{existing_assets_count + index + 1}",
           unique_product_code: suggested_product&.product_code
         }
       end

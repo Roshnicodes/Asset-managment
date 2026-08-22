@@ -3,6 +3,7 @@ class VendorRegistration < ApplicationRecord
   PAN_NO_FORMAT = /\A[A-Z]{5}\d{4}[A-Z]\z/.freeze
   MOBILE_NO_FORMAT = /\A[6-9]\d{9}\z/.freeze
   PIN_NO_FORMAT = /\A[1-9]\d{5}\z/.freeze
+  MIN_DESCRIPTION_WORDS = 20
 
   belongs_to :user, optional: true
   belongs_to :stakeholder_category, optional: true
@@ -36,6 +37,7 @@ class VendorRegistration < ApplicationRecord
   validate :theme_selection_required
   validate :product_selection_required
   validate :product_variety_selection_required
+  validate :profile_descriptions_have_minimum_words
   validate :bank_details_required
   validate :aadhar_document_required_for_proprietor
   validates :gst_no, format: { with: GST_NO_FORMAT, message: "must be a valid 15-character GST number" }, allow_blank: true
@@ -144,7 +146,21 @@ class VendorRegistration < ApplicationRecord
   end
 
   def product_variety_selection_required
-    errors.add(:product_variety_ids, "must select at least one product type") if product_variety_ids.reject(&:blank?).blank?
+    errors.add(:product_variety_ids, "must select at least one product company") if product_variety_ids.reject(&:blank?).blank?
+  end
+
+  def profile_descriptions_have_minimum_words
+    validate_minimum_words(:firm_profile, "Firm profile")
+    validate_minimum_words(:business_description, "Business description")
+  end
+
+  def validate_minimum_words(attribute, label)
+    return if public_send(attribute).blank?
+
+    word_count = public_send(attribute).to_s.scan(/\b[[:alnum:]]+\b/).size
+    return if word_count >= MIN_DESCRIPTION_WORDS
+
+    errors.add(attribute, "must be at least #{MIN_DESCRIPTION_WORDS} words")
   end
 
   def bank_details_required

@@ -164,7 +164,13 @@ class VendorRegistrationsController < ApplicationController
 
   # DELETE /vendor_registrations/1 or /vendor_registrations/1.json
   def destroy
-    if @vendor_registration.destroy
+    destroyed = if admin_user?
+      destroy_vendor_registration_as_admin!
+    else
+      @vendor_registration.destroy
+    end
+
+    if destroyed
       respond_to do |format|
         format.html { redirect_to vendor_registrations_path, notice: "Vendor registration was successfully destroyed.", status: :see_other }
         format.json { head :no_content }
@@ -178,7 +184,7 @@ class VendorRegistrationsController < ApplicationController
       end
     end
   rescue ActiveRecord::InvalidForeignKey
-    message = "Vendor registration cannot be deleted because it is already linked to quotation proposals."
+    message = admin_user? ? "Vendor registration could not be deleted because one or more linked records still exist." : "Vendor registration cannot be deleted because it is already linked to quotation proposals."
 
     respond_to do |format|
       format.html { redirect_to vendor_registrations_path, alert: message, status: :see_other }
@@ -190,6 +196,21 @@ class VendorRegistrationsController < ApplicationController
     # Use callbacks to share common setup or constraints between actions.
     def set_vendor_registration
       @vendor_registration = VendorRegistration.find(params.expect(:id))
+    end
+
+    def destroy_vendor_registration_as_admin!
+      VendorRegistration.transaction do
+        QuotationProposal.where(selected_vendor_registration_id: @vendor_registration.id).update_all(selected_vendor_registration_id: nil, updated_at: Time.current)
+        QuotationVendorOtp.where(vendor_registration_id: @vendor_registration.id).find_each(&:destroy!)
+        QuotationVendorDispatch.where(vendor_registration_id: @vendor_registration.id).find_each(&:destroy!)
+        VendorRegistrationInvitation.where(vendor_registration_id: @vendor_registration.id).update_all(vendor_registration_id: nil, updated_at: Time.current)
+        @vendor_registration.quotation_proposal_vendors.find_each(&:destroy!)
+        @vendor_registration.destroy!
+      end
+
+      true
+    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotDestroyed
+      false
     end
 
     # Only allow a list of trusted parameters through.

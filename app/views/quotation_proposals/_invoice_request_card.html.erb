@@ -54,6 +54,10 @@
       <strong><%= number_with_precision(invoice_request.received_quantity_total, precision: 2, strip_insignificant_zeros: true) %></strong>
     </div>
     <div class="quotation-proposal-show__invoice-metric">
+      <span class="quotation-proposal-show__invoice-metric-label">Original Invoice Receive</span>
+      <strong><%= invoice_request.invoice_hard_copy_received? ? "Yes" : "No" %></strong>
+    </div>
+    <div class="quotation-proposal-show__invoice-metric">
       <span class="quotation-proposal-show__invoice-metric-label">Assets</span>
       <strong><%= total_assets_count %></strong>
     </div>

@@ -1,0 +1,71 @@
+<style>
+  .quotation-print-page { padding: 24px; color: #172033; }
+  .quotation-print-toolbar { display: flex; justify-content: flex-end; gap: 12px; margin-bottom: 16px; }
+  .quotation-print-title { margin: 0 0 4px; font-size: 24px; color: #125f38; }
+  .quotation-print-subtitle { margin: 0 0 20px; color: #52665a; }
+  .quotation-print-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .quotation-print-box { border: 1px solid #d9e8dd; border-radius: 8px; padding: 12px; }
+  .quotation-print-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .04em; }
+  .quotation-print-value { margin-top: 4px; font-weight: 700; }
+  .quotation-print-table { width: 100%; border-collapse: collapse; margin-top: 14px; }
+  .quotation-print-table th, .quotation-print-table td { border: 1px solid #d9e8dd; padding: 8px; text-align: left; vertical-align: top; }
+  .quotation-print-table th { background: #f6faf7; color: #125f38; }
+  @media print { .quotation-print-toolbar { display: none !important; } .quotation-print-page { padding: 0; } }
+</style>
+
+<div class="quotation-print-page">
+  <div class="quotation-print-toolbar print-hide">
+    <button type="button" class="app-form-submit" onclick="window.print()">Print / Save PDF</button>
+  </div>
+
+  <h1 class="quotation-print-title">Quotation Proposal</h1>
+  <p class="quotation-print-subtitle"><%= @quotation_proposal.subject %></p>
+
+  <div class="quotation-print-grid">
+    <div class="quotation-print-box"><div class="quotation-print-label">Theme</div><div class="quotation-print-value"><%= @quotation_proposal.theme&.name || "-" %></div></div>
+    <div class="quotation-print-box"><div class="quotation-print-label">Status</div><div class="quotation-print-value"><%= @quotation_proposal.workflow_status.humanize %></div></div>
+    <div class="quotation-print-box"><div class="quotation-print-label">Proposal Ending Date</div><div class="quotation-print-value"><%= @quotation_proposal.proposal_end_date&.strftime("%d-%m-%Y") || "-" %></div></div>
+    <div class="quotation-print-box"><div class="quotation-print-label">Procurement Amount</div><div class="quotation-print-value"><%= @quotation_proposal.procurement_amount_bucket_label %></div></div>
+    <div class="quotation-print-box"><div class="quotation-print-label">Created By</div><div class="quotation-print-value"><%= @quotation_proposal.user&.email || "-" %></div></div>
+    <div class="quotation-print-box"><div class="quotation-print-label">Created At</div><div class="quotation-print-value"><%= @quotation_proposal.created_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div></div>
+  </div>
+
+  <div class="quotation-print-box">
+    <div class="quotation-print-label">Remark</div>
+    <div class="quotation-print-value"><%= simple_format(@quotation_proposal.remark.presence || "-") %></div>
+  </div>
+
+  <h2 style="font-size: 18px; margin-top: 22px;">Items</h2>
+  <table class="quotation-print-table">
+    <thead>
+      <tr><th>Item</th><th>Unit</th><th>Quantity</th><th>Max Rate</th><th>Remark</th></tr>
+    </thead>
+    <tbody>
+      <% @quotation_proposal.quotation_proposal_items.includes(:unit).each do |item| %>
+        <tr>
+          <td><%= quotation_item_display_name(item.item_name) %></td>
+          <td><%= item.unit&.name || "-" %></td>
+          <td><%= item.quantity %></td>
+          <td><%= item.max_rate.present? ? number_with_precision(item.max_rate, precision: 2) : "-" %></td>
+          <td><%= item.remark.presence || "-" %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  <h2 style="font-size: 18px; margin-top: 22px;">Vendors</h2>
+  <table class="quotation-print-table">
+    <thead><tr><th>Vendor</th><th>Status</th><th>Response Submitted</th></tr></thead>
+    <tbody>
+      <% @quotation_proposal.quotation_proposal_vendors.includes(:vendor_registration).each do |proposal_vendor| %>
+        <tr>
+          <td><%= proposal_vendor.vendor_registration&.display_name || "-" %></td>
+          <td><%= proposal_vendor.response_status.to_s.humanize.presence || "-" %></td>
+          <td><%= proposal_vendor.response_submitted? ? "Yes" : "No" %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<script>window.addEventListener("load", function () { window.print(); });</script>

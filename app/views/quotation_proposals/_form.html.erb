@@ -124,7 +124,8 @@
             <td class="app-rfp-table-value">
               <div class="app-form-field app-rfp-cell-field <%= "has-error" if field_errors.call(:subject).any? %>">
                 <%= form.label :subject, "Quotation Subject", class: "visually-hidden" %>
-                <%= form.text_field :subject, required: true, data: { validation_label: "Quotation Subject" } %>
+                <%= form.text_field :subject, required: true, data: { validation_label: "Quotation Subject", min_words: 20 } %>
+                <small class="app-field-hint">Minimum 20 words required.</small>
                 <% field_errors.call(:subject).each do |message| %>
                   <div class="app-form-error"><%= message %></div>
                 <% end %>

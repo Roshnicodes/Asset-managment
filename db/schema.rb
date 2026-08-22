@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_06_18_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_22_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -369,6 +369,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_06_18_120000) do
     t.string "asa_bank_name"
     t.datetime "assets_created_at"
     t.datetime "created_at", null: false
+    t.boolean "invoice_hard_copy_received", default: false, null: false
     t.datetime "invoice_uploaded_at"
     t.text "item_snapshot"
     t.text "maker_review_remark"

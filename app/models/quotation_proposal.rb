@@ -4,6 +4,7 @@ class QuotationProposal < ApplicationRecord
   REQUIRED_COMMITTEE_LEVELS = [1, 2, 3].freeze
   DEFAULT_COMMITTEE_MEMBERS = 4
   PROCUREMENT_AMOUNT_BUCKETS = %w[above_10k below_10k].freeze
+  MIN_SUBJECT_WORDS = 20
 
   WORKFLOW_STATUSES = %w[
     committee_pending
@@ -33,6 +34,7 @@ class QuotationProposal < ApplicationRecord
   validates :subject, :proposal_end_date, :remark, :theme, presence: true
   validates :workflow_status, inclusion: { in: WORKFLOW_STATUSES }
   validates :procurement_amount_bucket, inclusion: { in: PROCUREMENT_AMOUNT_BUCKETS }
+  validate :subject_has_minimum_words
   validate :must_have_at_least_one_vendor
   validate :must_have_at_least_one_item
   validate :must_have_all_committee_levels
@@ -41,6 +43,15 @@ class QuotationProposal < ApplicationRecord
   validate :selected_vendors_must_match_stakeholder
 
   after_commit :sync_vendor_item_rows, on: %i[create update]
+
+  def subject_has_minimum_words
+    return if subject.blank?
+
+    word_count = subject.to_s.scan(/\b[[:alnum:]]+\b/).size
+    return if word_count >= MIN_SUBJECT_WORDS
+
+    errors.add(:subject, "must be at least #{MIN_SUBJECT_WORDS} words")
+  end
 
   def display_name
     subject

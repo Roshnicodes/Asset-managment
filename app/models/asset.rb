@@ -27,7 +27,7 @@ class Asset < ApplicationRecord
   before_validation :clear_insurance_details_unless_insured
 
   validates :serial_number, uniqueness: true, allow_blank: true
-  validates :name, :unique_product_code, :stakeholder_category, :primary_office_category, :asset_code_date,
+  validates :name, :unique_product_code, :stakeholder_category, :primary_office_category, :secondary_office_category, :asset_code_date,
             presence: true,
             if: :structured_asset_code_required?
   validates :insurance_company_name, :insurance_policy_number, :insurance_date, :insurance_expiry_date, presence: true, if: :insured?
@@ -118,7 +118,7 @@ class Asset < ApplicationRecord
     self.asset_code = self.class.generate_asset_code(
       stakeholder_name: stakeholder_category.name,
       primary_location: primary_office_category.asset_code_segment,
-      secondary_location: secondary_office_category&.asset_code_segment,
+      secondary_location: secondary_office_category.asset_code_segment,
       product_type_code: product.asset_product_type_code_segment,
       item_number: unique_product_code,
       code_date: asset_code_date
@@ -136,6 +136,7 @@ class Asset < ApplicationRecord
   def structured_asset_code_ready?
     stakeholder_category.present? &&
       primary_office_category.present? &&
+      secondary_office_category.present? &&
       product.present? &&
       product.asset_product_type_code_segment.present? &&
       asset_code_date.present? &&

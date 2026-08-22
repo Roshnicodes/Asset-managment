@@ -680,9 +680,18 @@ const setupQuotationProposalForm = () => {
 
       clearFieldError(input)
 
+      const label = input.dataset.validationLabel || input.getAttribute("aria-label") || "This field"
+      const minWords = parseInt(input.dataset.minWords || "0", 10)
+      if (minWords > 0 && input.value.trim() !== "") {
+        const wordCount = (input.value.match(/\b[\w]+\b/g) || []).length
+        if (wordCount < minWords) {
+          showFieldError(input, `${label} must be at least ${minWords} words.`)
+          return false
+        }
+      }
+
       if (input.checkValidity()) return true
 
-      const label = input.dataset.validationLabel || input.getAttribute("aria-label") || "This field"
       let message = `${label} is invalid.`
 
       if (input.validity.valueMissing) {

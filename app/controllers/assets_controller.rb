@@ -131,7 +131,9 @@ class AssetsController < ApplicationController
       next unless invoice_item_fixed_asset?(item, vendor_item)
 
       suggested_product = Product.find_by(name: item[:item_name])
-      quantity_count = [item[:received_quantity].to_d.to_i, 1].max
+      target_quantity = item[:cumulative_received_quantity].presence || item[:received_quantity]
+      existing_assets_count = vendor_item.assets.count
+      quantity_count = [target_quantity.to_d.to_i - existing_assets_count, 0].max
 
       quantity_count.times do |index|
         rows << {
@@ -143,7 +145,7 @@ class AssetsController < ApplicationController
           secondary_office_category_id: nil,
           asset_code_date: nil,
           unit_name: item[:unit_name],
-          row_label: "#{item[:item_name]} ##{index + 1}",
+          row_label: "#{item[:item_name]} ##{existing_assets_count + index + 1}",
           unique_product_code: suggested_product&.product_code
         }
       end

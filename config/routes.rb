@@ -43,6 +43,8 @@ Rails.application.routes.draw do
       post :send_to_vendors
       get :purchase_order
       get :purchase_order_print
+      get :quotation_print
+      get :comparison_print
       post :send_purchase_order
       get :goods_receive
       patch :update_goods_receive

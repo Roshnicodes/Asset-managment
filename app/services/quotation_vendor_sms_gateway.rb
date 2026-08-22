@@ -177,7 +177,7 @@ class QuotationVendorSmsGateway
   end
 
   def self.goods_receive_invoice_sms_link_for_config(token, config:)
-    purchase_order_sms_link_for_config(token, config: config)
+    goods_receive_invoice_link_for_config(token, config: config)
   end
 
   def self.vendor_link_message(dispatch, config:)
