@@ -22,6 +22,8 @@ class ApplicationController < ActionController::Base
     "menu_permissions" => "rbac_master",
     "office_categories" => "office_category_name",
     "office_category_masters" => "office_category_master",
+    "banks" => "payment_advice_studio",
+    "payment_advices" => "payment_advice_studio",
     "pmus" => "office_category_name",
     "product_varieties" => "product_varieties",
     "products" => "products",
@@ -73,6 +75,7 @@ class ApplicationController < ActionController::Base
   helper_method :approval_actor_for
   helper_method :employee_matches_current_login?
   helper_method :finance_queue_access?
+  helper_method :payment_advice_studio_access?
   helper_method :senior_manager_finance?
   helper_method :can_manage_rbac_menu_records?
   helper_method :vendor_registration_maker?
@@ -162,6 +165,20 @@ class ApplicationController < ActionController::Base
     senior_manager_finance?
   end
 
+  def payment_advice_studio_access?
+    return false unless current_user
+    return true if senior_manager_finance?
+
+    employee_name = current_employee_master&.name.to_s.strip.downcase
+    return true if employee_name.include?("prabhjot")
+
+    email = current_login_email
+    local_part = email.split("@").first.to_s
+    configured_emails = ENV.fetch("PAYMENT_ADVICE_ACCESS_EMAILS", "").split(",").map { |value| value.strip.downcase }.reject(&:blank?)
+
+    configured_emails.include?(email) || %w[pdffinanace pdffinance pdfinance].include?(local_part)
+  end
+
   def vendor_registration_maker?
     approval_form_maker?(["Vendor Registration"])
   end
@@ -239,8 +256,8 @@ class ApplicationController < ActionController::Base
   def rbac_menu_access_allowed?(identifier)
     return true if identifier.blank?
     return true if identifier == "dashboard"
-    return true if %w[products product_varieties].include?(identifier)
     return finance_queue_access? if identifier == "payment_advice_queue"
+    return payment_advice_studio_access? if identifier == "payment_advice_studio"
 
     employee = current_employee_master
     return false unless employee
@@ -284,6 +301,15 @@ class ApplicationController < ActionController::Base
 
   def can_manage_rbac_menu_records?
     admin_user?
+  end
+
+  def require_payment_advice_studio_access!
+    return if payment_advice_studio_access?
+
+    respond_to do |format|
+      format.html { redirect_to root_path, alert: "Payment Advice is available only for the finance login." }
+      format.json { render json: { error: "Payment Advice is available only for the finance login." }, status: :forbidden }
+    end
   end
 
   def senior_manager_finance?

@@ -28,6 +28,17 @@ Rails.application.routes.draw do
   patch "goods-receive-vendor/:token", to: "goods_receive_vendor_qrs#update"
   resources :notifications, only: [:index]
   resources :menu_permissions, only: [:index, :create]
+  resources :banks, only: %i[create destroy]
+  resources :payment_advices, only: %i[new create destroy] do
+    member do
+      post :send_mail
+    end
+  end
+  namespace :api do
+    namespace :v1 do
+      post "payment_advices/send_mail", to: "payment_advices#create_and_send"
+    end
+  end
   resources :quotation_proposals do
     collection do
       get :list

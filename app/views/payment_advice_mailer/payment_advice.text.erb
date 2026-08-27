@@ -1,0 +1,22 @@
+Payment Advice
+
+Dear Sir/Madam,
+
+Your payment has been processed.
+
+Advice No.: <%= @payment_advice.advice_no %>
+Payee: <%= @payment_advice.payee_name %>
+Invoice No.: <%= @payment_advice.invoice_no %>
+Invoice Date: <%= @payment_advice.invoice_date&.strftime("%d %b %Y") || "-" %>
+Gross Amount: <%= number_to_currency(@payment_advice.gross_amount, unit: "Rs. ") %>
+TDS Deducted: <%= number_to_currency(@payment_advice.tds_amount, unit: "Rs. ") %>
+Other Deduction: <%= number_to_currency(@payment_advice.other_deduction, unit: "Rs. ") %>
+Net Amount Paid: <%= number_to_currency(@payment_advice.net_amount, unit: "Rs. ") %>
+Payment Mode: <%= @payment_advice.payment_mode %>
+Reference No.: <%= @payment_advice.reference_no.presence || "-" %>
+Bank Name: <%= @payment_advice.bank_name.presence || "-" %>
+Payment Date: <%= @payment_advice.payment_date&.strftime("%d %b %Y") || "-" %>
+Remarks: <%= @payment_advice.remarks.presence || "-" %>
+
+Regards,
+Accounts Department

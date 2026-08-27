@@ -1,0 +1,63 @@
+<h2>Payment Advice</h2>
+
+<p>Dear Sir/Madam,</p>
+<p>Your payment has been processed. Details are below:</p>
+
+<table cellpadding="8" cellspacing="0" border="1" style="border-collapse: collapse;">
+  <tbody>
+    <tr>
+      <th align="left">Advice No.</th>
+      <td><%= @payment_advice.advice_no %></td>
+    </tr>
+    <tr>
+      <th align="left">Payee</th>
+      <td><%= @payment_advice.payee_name %></td>
+    </tr>
+    <tr>
+      <th align="left">Invoice No.</th>
+      <td><%= @payment_advice.invoice_no %></td>
+    </tr>
+    <tr>
+      <th align="left">Invoice Date</th>
+      <td><%= @payment_advice.invoice_date&.strftime("%d %b %Y") || "-" %></td>
+    </tr>
+    <tr>
+      <th align="left">Gross Amount</th>
+      <td><%= number_to_currency(@payment_advice.gross_amount, unit: "Rs. ") %></td>
+    </tr>
+    <tr>
+      <th align="left">TDS Deducted</th>
+      <td><%= number_to_currency(@payment_advice.tds_amount, unit: "Rs. ") %></td>
+    </tr>
+    <tr>
+      <th align="left">Other Deduction</th>
+      <td><%= number_to_currency(@payment_advice.other_deduction, unit: "Rs. ") %></td>
+    </tr>
+    <tr>
+      <th align="left">Net Amount Paid</th>
+      <td><strong><%= number_to_currency(@payment_advice.net_amount, unit: "Rs. ") %></strong></td>
+    </tr>
+    <tr>
+      <th align="left">Payment Mode</th>
+      <td><%= @payment_advice.payment_mode %></td>
+    </tr>
+    <tr>
+      <th align="left">Reference No.</th>
+      <td><%= @payment_advice.reference_no.presence || "-" %></td>
+    </tr>
+    <tr>
+      <th align="left">Bank Name</th>
+      <td><%= @payment_advice.bank_name.presence || "-" %></td>
+    </tr>
+    <tr>
+      <th align="left">Payment Date</th>
+      <td><%= @payment_advice.payment_date&.strftime("%d %b %Y") || "-" %></td>
+    </tr>
+    <tr>
+      <th align="left">Remarks</th>
+      <td><%= @payment_advice.remarks.presence || "-" %></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Regards,<br>Accounts Department</p>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_22_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_26_073100) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -148,6 +148,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_22_090000) do
     t.index ["stakeholder_category_id"], name: "index_assets_on_stakeholder_category_id"
   end
 
+  create_table "banks", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.datetime "updated_at", null: false
+    t.index "lower((name)::text)", name: "index_banks_on_lower_name", unique: true
+  end
+
   create_table "blocks", force: :cascade do |t|
     t.string "code"
     t.datetime "created_at", null: false
@@ -275,6 +282,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_22_090000) do
     t.datetime "updated_at", null: false
     t.index ["stakeholder_category_id", "name"], name: "index_office_category_masters_on_stakeholder_and_name", unique: true
     t.index ["stakeholder_category_id"], name: "index_office_category_masters_on_stakeholder_category_id"
+  end
+
+  create_table "payment_advices", force: :cascade do |t|
+    t.string "advice_no", null: false
+    t.string "bank_name"
+    t.string "company_name", null: false
+    t.datetime "created_at", null: false
+    t.decimal "gross_amount", precision: 14, scale: 2, default: "0.0", null: false
+    t.date "invoice_date"
+    t.string "invoice_no", null: false
+    t.decimal "net_amount", precision: 14, scale: 2, default: "0.0", null: false
+    t.decimal "other_deduction", precision: 14, scale: 2, default: "0.0", null: false
+    t.string "payee_email"
+    t.string "payee_name", null: false
+    t.date "payment_date"
+    t.string "payment_mode", null: false
+    t.string "reference_no"
+    t.text "remarks"
+    t.decimal "tds_amount", precision: 14, scale: 2, default: "0.0", null: false
+    t.datetime "updated_at", null: false
+    t.index ["advice_no"], name: "index_payment_advices_on_advice_no", unique: true
   end
 
   create_table "pmus", force: :cascade do |t|

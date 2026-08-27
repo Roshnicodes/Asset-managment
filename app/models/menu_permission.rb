@@ -39,6 +39,7 @@ class MenuPermission < ApplicationRecord
       "Quotation Proposal List" => "quotation_proposal_list",
       "Payment Advice Queue" => "payment_advice_queue"
     },
+    "Payment Advice Studio" => "payment_advice_studio",
     "Vendor Registration Form" => {
       "main" => "vendor_registration_main",
       "Vendor Registration" => "vendor_registration",

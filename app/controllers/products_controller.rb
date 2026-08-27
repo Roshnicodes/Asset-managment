@@ -61,10 +61,11 @@ class ProductsController < ApplicationController
 
   def product_scope
     scope = Product.all
-    return scope if admin_user?
-    return scope.none if current_employee_master&.stakeholder_category_id.blank?
+    return scope if global_product_catalog_admin?
 
-    stakeholder_id = current_employee_master.stakeholder_category_id
+    stakeholder_id = current_employee_master&.stakeholder_category_id
+    return scope.none if stakeholder_id.blank?
+
     scope.left_outer_joins(:theme).where(
       "products.stakeholder_category_id = :stakeholder_id OR themes.stakeholder_category_id = :stakeholder_id",
       stakeholder_id: stakeholder_id
@@ -72,18 +73,27 @@ class ProductsController < ApplicationController
   end
 
   def prepare_product_form_collections
-    @stakeholders = admin_user? ? StakeholderCategory.order(:name) : StakeholderCategory.where(id: current_employee_master&.stakeholder_category_id)
-    @themes = if admin_user?
+    stakeholder_id = current_employee_master&.stakeholder_category_id
+
+    @stakeholders = if global_product_catalog_admin?
+      StakeholderCategory.order(:name)
+    elsif stakeholder_id.present?
+      StakeholderCategory.where(id: stakeholder_id)
+    else
+      StakeholderCategory.none
+    end
+
+    @themes = if global_product_catalog_admin?
       Theme.order(:name)
-    elsif current_employee_master&.stakeholder_category_id.present?
-      Theme.where(stakeholder_category_id: current_employee_master.stakeholder_category_id).order(:name)
+    elsif stakeholder_id.present?
+      Theme.where(stakeholder_category_id: stakeholder_id).order(:name)
     else
       Theme.none
     end
   end
 
   def enforce_product_department!(product)
-    return true if admin_user?
+    return true if global_product_catalog_admin?
 
     stakeholder = current_employee_master&.stakeholder_category
     if stakeholder.blank?
@@ -96,6 +106,10 @@ class ProductsController < ApplicationController
 
     product.errors.add(:theme_id, "must belong to your department")
     false
+  end
+
+  def global_product_catalog_admin?
+    admin_user? && current_employee_master&.stakeholder_category_id.blank?
   end
 
 end

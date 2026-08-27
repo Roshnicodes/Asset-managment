@@ -1,0 +1,321 @@
+<% content_for :title, "Payment Advice Studio" %>
+
+<main
+  class="payment-advice-shell"
+  data-controller="payment-advice"
+  data-payment-advice-banks-value="<%= @banks.to_json %>"
+  data-payment-advice-records-value="<%= @payment_advices.to_json %>"
+  data-payment-advice-next-advice-no-value="<%= @next_advice_no %>"
+  data-payment-advice-create-bank-url-value="<%= banks_path %>"
+  data-payment-advice-create-record-url-value="<%= payment_advices_path %>"
+>
+  <aside class="payment-advice-sidebar">
+    <div class="payment-advice-sidebar-brand">
+      <div class="payment-advice-mark">PA</div>
+      <div>
+        <strong>Accounts</strong>
+        <span>Department</span>
+      </div>
+    </div>
+
+    <nav class="payment-advice-side-nav" aria-label="Payment Advice">
+      <button class="active" type="button" data-payment-advice-target="navItem" data-view="advice" data-action="payment-advice#showView">
+        <span>01</span> Advice Details
+      </button>
+      <button type="button" data-payment-advice-target="navItem" data-view="banks" data-action="payment-advice#showView">
+        <span>02</span> Bank Master
+      </button>
+      <button type="button" data-payment-advice-target="navItem" data-view="preview" data-action="payment-advice#showView">
+        <span>03</span> Final Preview
+      </button>
+      <button type="button" data-payment-advice-target="navItem" data-view="records" data-action="payment-advice#showView">
+        <span>04</span> Saved Records
+      </button>
+    </nav>
+
+    <div class="payment-advice-sidebar-footer">
+      <span>Signed in</span>
+      <strong><%= current_employee_master&.name.presence || current_user.email %></strong>
+    </div>
+  </aside>
+
+  <section class="payment-advice-main">
+    <header class="payment-advice-topbar">
+      <div class="payment-advice-title-cluster">
+        <div>
+          <h1>Payment Advice Studio</h1>
+        </div>
+      </div>
+      <div class="payment-advice-topbar-actions">
+        <button class="payment-advice-ghost-button" type="button" data-action="payment-advice#resetForm">New Advice</button>
+        <button class="payment-advice-ghost-button" type="button" data-view="preview" data-action="payment-advice#showView">Preview</button>
+        <button class="payment-advice-secondary-button" type="button" data-action="payment-advice#saveAdvice">Save Record</button>
+        <button class="payment-advice-primary-button" type="button" data-action="payment-advice#printAdvice">Print Advice</button>
+      </div>
+    </header>
+
+    <div class="payment-advice-workspace">
+      <section class="payment-advice-view-panel active" data-payment-advice-target="panel" data-view="advice" id="advice-form">
+        <form class="payment-advice-entry-panel" autocomplete="off">
+          <input data-payment-advice-target="companyName" data-action="input->payment-advice#refresh" type="hidden" value="Accounts Department">
+
+          <div class="payment-advice-section-heading">
+            <div>
+              <span>01</span>
+              <h2>Payee Details</h2>
+            </div>
+          </div>
+
+          <div class="payment-advice-form-grid">
+            <label>
+              Advice No.
+              <input data-payment-advice-target="adviceNo" data-action="input->payment-advice#refresh" type="text" value="<%= @next_advice_no %>">
+            </label>
+
+            <label>
+              Vendor / Payee Name
+              <input data-payment-advice-target="payeeName" data-action="input->payment-advice#refresh" type="text" value="">
+            </label>
+
+            <label>
+              Recipient Email
+              <input data-payment-advice-target="payeeEmail" data-action="input->payment-advice#refresh" type="email" value="">
+            </label>
+          </div>
+
+          <div class="payment-advice-section-heading">
+            <div>
+              <span>02</span>
+              <h2>Invoice Details</h2>
+            </div>
+          </div>
+
+          <div class="payment-advice-form-grid">
+            <label>
+              Invoice No.
+              <input data-payment-advice-target="invoiceNo" data-action="input->payment-advice#refresh" type="text" value="">
+            </label>
+
+            <label>
+              Invoice Date
+              <input data-payment-advice-target="invoiceDate" data-action="input->payment-advice#refresh" type="date">
+            </label>
+
+            <label>
+              Gross Amount
+              <input data-payment-advice-target="grossAmount" data-action="input->payment-advice#refresh" type="number" min="0" step="0.01" value="0">
+            </label>
+
+            <label>
+              TDS Deducted
+              <input data-payment-advice-target="tdsAmount" data-action="input->payment-advice#refresh" type="number" min="0" step="0.01" value="0">
+            </label>
+
+            <label>
+              Other Deduction
+              <input data-payment-advice-target="otherDeduction" data-action="input->payment-advice#refresh" type="number" min="0" step="0.01" value="0">
+            </label>
+
+            <div class="payment-advice-net-preview">
+              <span>Net Payable</span>
+              <strong data-payment-advice-target="netPreview">Rs. 0.00</strong>
+            </div>
+          </div>
+
+          <div class="payment-advice-section-heading">
+            <div>
+              <span>03</span>
+              <h2>Payment Details</h2>
+            </div>
+          </div>
+
+          <div class="payment-advice-form-grid">
+            <label>
+              Payment Mode
+              <select data-payment-advice-target="paymentMode" data-action="change->payment-advice#refresh">
+                <option>NEFT</option>
+                <option>RTGS</option>
+                <option>Cheque</option>
+                <option>IMPS</option>
+                <option>UPI</option>
+              </select>
+            </label>
+
+            <label>
+              UTR / Cheque No.
+              <input data-payment-advice-target="referenceNo" data-action="input->payment-advice#refresh" type="text" value="">
+            </label>
+
+            <label>
+              Bank Name
+              <select data-payment-advice-target="bankSelect" data-action="change->payment-advice#refresh"></select>
+            </label>
+
+            <label>
+              Payment Date
+              <input data-payment-advice-target="paymentDate" data-action="input->payment-advice#refresh" type="date">
+            </label>
+
+            <label class="payment-advice-wide-field">
+              Purpose / Remarks
+              <textarea data-payment-advice-target="remarks" data-action="input->payment-advice#refresh" rows="3">Payment processed against the above invoice.</textarea>
+            </label>
+          </div>
+
+          <div class="payment-advice-form-actions">
+            <span class="payment-advice-save-message" data-payment-advice-target="saveMessage"></span>
+            <button class="payment-advice-ghost-button" type="button" data-view="preview" data-action="payment-advice#showView">Preview Advice</button>
+            <button class="payment-advice-secondary-button" type="button" data-action="payment-advice#saveAdvice">Save Record</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="payment-advice-view-panel" data-payment-advice-target="panel" data-view="banks" id="bank-master">
+        <section class="payment-advice-master-panel">
+          <div class="payment-advice-section-heading compact">
+            <div>
+              <span>04</span>
+              <h2>Bank Master</h2>
+            </div>
+            <strong data-payment-advice-target="bankCount">0 Banks</strong>
+          </div>
+
+          <div class="payment-advice-master-add">
+            <label>
+              Add Bank
+              <input data-payment-advice-target="newBankName" type="text" placeholder="Example: State Bank of India">
+            </label>
+            <button class="payment-advice-secondary-button" type="button" data-action="payment-advice#addBank">Add</button>
+          </div>
+
+          <div class="payment-advice-bank-list" data-payment-advice-target="bankList"></div>
+        </section>
+      </section>
+
+      <section class="payment-advice-view-panel" data-payment-advice-target="panel" data-view="records" id="saved-records">
+        <section class="payment-advice-master-panel payment-advice-records-panel">
+          <div class="payment-advice-section-heading compact">
+            <div>
+              <span>05</span>
+              <h2>Saved Records</h2>
+            </div>
+            <strong data-payment-advice-target="recordCount">0 Records</strong>
+          </div>
+
+          <div class="payment-advice-record-list" data-payment-advice-target="recordList"></div>
+        </section>
+      </section>
+
+      <section class="payment-advice-view-panel payment-advice-preview-panel" data-payment-advice-target="panel" data-view="preview" id="payment-preview">
+        <div class="payment-advice-preview-actions">
+          <button class="payment-advice-ghost-button" type="button" data-action="payment-advice#sendMail">Send Mail</button>
+          <button class="payment-advice-primary-button" type="button" data-action="payment-advice#printAdvice">Print Advice</button>
+        </div>
+
+        <article class="payment-advice-paper">
+          <header class="payment-advice-paper-header">
+            <div class="payment-advice-paper-brand">
+              <div class="payment-advice-paper-logo">PA</div>
+              <div>
+                <p data-payment-advice-target="previewCompany">Accounts Department</p>
+                <h2>Payment Advice</h2>
+              </div>
+            </div>
+            <div class="payment-advice-meta">
+              <span>Advice No.</span>
+              <strong data-payment-advice-target="previewAdviceNo"><%= @next_advice_no %></strong>
+            </div>
+          </header>
+
+          <div class="payment-advice-paper-copy">
+            <p class="payment-advice-subject">Subject: Payment details against invoice <strong data-payment-advice-target="previewInvoiceSubject">-</strong></p>
+            <p>Dear Sir/Madam,</p>
+            <p>
+              We are pleased to inform you that payment has been processed in your favour.
+              The transaction details are mentioned below for your reference and records.
+            </p>
+          </div>
+
+          <section class="payment-advice-summary-strip">
+            <div>
+              <span>Recipient</span>
+              <strong data-payment-advice-target="previewPayee">-</strong>
+            </div>
+            <div>
+              <span>Payment Date</span>
+              <strong data-payment-advice-target="previewPaymentDate">-</strong>
+            </div>
+            <div>
+              <span>Net Amount</span>
+              <strong data-payment-advice-target="previewNetAmount">Rs. 0.00</strong>
+            </div>
+          </section>
+
+          <table class="payment-advice-details-table">
+            <tbody>
+              <tr>
+                <th>Recipient Email</th>
+                <td data-payment-advice-target="previewEmail">-</td>
+              </tr>
+              <tr>
+                <th>Invoice No.</th>
+                <td data-payment-advice-target="previewInvoiceNo">-</td>
+              </tr>
+              <tr>
+                <th>Invoice Date</th>
+                <td data-payment-advice-target="previewInvoiceDate">-</td>
+              </tr>
+              <tr>
+                <th>Gross Amount</th>
+                <td data-payment-advice-target="previewGrossAmount">Rs. 0.00</td>
+              </tr>
+              <tr>
+                <th>TDS Deducted</th>
+                <td data-payment-advice-target="previewTdsAmount">Rs. 0.00</td>
+              </tr>
+              <tr>
+                <th>Other Deduction</th>
+                <td data-payment-advice-target="previewOtherDeduction">Rs. 0.00</td>
+              </tr>
+              <tr class="payment-advice-net-row">
+                <th>Net Amount Paid</th>
+                <td data-payment-advice-target="previewNetAmountTable">Rs. 0.00</td>
+              </tr>
+              <tr>
+                <th>Payment Mode</th>
+                <td data-payment-advice-target="previewPaymentMode">NEFT</td>
+              </tr>
+              <tr>
+                <th>UTR / Cheque No.</th>
+                <td data-payment-advice-target="previewReferenceNo">-</td>
+              </tr>
+              <tr>
+                <th>Bank Name</th>
+                <td data-payment-advice-target="previewBankName">HDFC Bank</td>
+              </tr>
+              <tr>
+                <th>Remarks</th>
+                <td data-payment-advice-target="previewRemarks">Payment processed against the above invoice.</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="payment-advice-acknowledgement">
+            <p>
+              Kindly acknowledge receipt of this payment. For any clarification or supporting
+              document, please contact the Accounts Department.
+            </p>
+          </div>
+
+          <footer class="payment-advice-paper-footer">
+            <div>
+              <strong>Regards,</strong>
+              <span>Accounts Department</span>
+            </div>
+            <div class="payment-advice-signature-line">Authorised Signatory</div>
+          </footer>
+        </article>
+      </section>
+    </div>
+  </section>
+</main>

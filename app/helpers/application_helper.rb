@@ -124,7 +124,7 @@ module ApplicationHelper
   def can_view_menu?(identifier)
     return true if identifier.nil?
     return true if identifier == "dashboard"
-    return true if %w[products product_varieties].include?(identifier)
+    return payment_advice_studio_access? if identifier == "payment_advice_studio"
     return true if admin_user?
     return finance_queue_access? if identifier == "payment_advice_queue"
     
