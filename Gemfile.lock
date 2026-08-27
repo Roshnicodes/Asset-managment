@@ -460,6 +460,7 @@ DEPENDENCIES
   capybara
   debug
   devise
+  dotenv
   image_processing (~> 1.2)
   importmap-rails
   jbuilder

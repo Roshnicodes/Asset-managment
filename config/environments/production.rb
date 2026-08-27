@@ -16,6 +16,7 @@ Rails.application.configure do
   smtp_authentication = ENV["SMTP_AUTHENTICATION"].presence || Rails.application.credentials.dig(:smtp, :authentication).presence || "plain"
   smtp_enable_starttls_auto =
     ENV["SMTP_ENABLE_STARTTLS_AUTO"].presence ||
+    ENV["SMTP_STARTTLS"].presence ||
     Rails.application.credentials.dig(:smtp, :enable_starttls_auto)
 
   # Settings specified here will take precedence over those in config/application.rb.
@@ -119,4 +120,3 @@ Rails.application.configure do
   # Skip DNS rebinding protection for the default health check endpoint.
   # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
 end
-

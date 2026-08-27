@@ -121,23 +121,7 @@ export default class extends Controller {
     this.showSaveMessage("Saving...", "muted")
 
     try {
-      const response = await fetch(this.createRecordUrlValue, {
-        method: "POST",
-        headers: this.requestHeaders(),
-        credentials: "same-origin",
-        body: JSON.stringify({ payment_advice: this.recordPayload() })
-      })
-
-      const payload = await this.responsePayload(response)
-      if (!response.ok) {
-        this.showSaveMessage(payload.errors?.join(", ") || payload.error || "Record could not be saved.", "error")
-        return
-      }
-
-      this.currentRecordId = payload.id
-      this.records = [payload, ...this.records.filter((item) => item.id !== payload.id)]
-      this.renderRecords()
-      this.nextAdviceNoValue = this.nextAdviceNumber()
+      await this.persistAdvice()
       this.showSaveMessage("Record saved successfully.", "success")
       this.activateView("preview")
     } catch (error) {
@@ -242,20 +226,53 @@ export default class extends Controller {
       return
     }
 
-    if (!this.currentRecordId) {
-      alert("Please save the record first, then open it from Saved Records to send mail.")
+    this.showSaveMessage("Saving before mail...", "muted")
+
+    let savedRecord
+    try {
+      savedRecord = await this.persistAdvice()
+    } catch (error) {
+      this.showSaveMessage(error.message || "Record could not be saved.", "error")
+      alert(error.message || "Record could not be saved before sending mail.")
       this.activateView("advice")
       return
     }
 
-    const response = await fetch(`/payment_advices/${this.currentRecordId}/send_mail`, {
+    try {
+      const response = await fetch(`/payment_advices/${savedRecord.id}/send_mail`, {
+        method: "POST",
+        headers: this.requestHeaders(),
+        credentials: "same-origin",
+        body: JSON.stringify({ payment_advice: this.recordPayload() })
+      })
+
+      const payload = await this.responsePayload(response)
+      const message = payload.message || payload.error || payload.errors?.join(", ") || "Mail request completed."
+      this.showSaveMessage(message, response.ok ? "success" : "error")
+      alert(message)
+    } catch (error) {
+      this.showSaveMessage(error.message || "Mail could not be sent.", "error")
+      alert(error.message || "Mail could not be sent.")
+    }
+  }
+
+  async persistAdvice() {
+    const response = await fetch(this.createRecordUrlValue, {
       method: "POST",
       headers: this.requestHeaders(),
-      credentials: "same-origin"
+      credentials: "same-origin",
+      body: JSON.stringify({ payment_advice: this.recordPayload() })
     })
 
     const payload = await this.responsePayload(response)
-    alert(payload.message || payload.error || "Mail request completed.")
+    if (!response.ok) throw new Error(payload.errors?.join(", ") || payload.error || "Record could not be saved.")
+
+    this.currentRecordId = payload.id
+    this.records = [payload, ...this.records.filter((item) => item.id !== payload.id)]
+    this.renderRecords()
+    this.nextAdviceNoValue = this.nextAdviceNumber()
+
+    return payload
   }
 
   renderBanks(selectedBank) {

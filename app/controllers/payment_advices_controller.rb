@@ -27,12 +27,14 @@ class PaymentAdvicesController < ApplicationController
   end
 
   def send_mail
+    return unless apply_payment_advice_params_for_mail
+
     if @payment_advice.payee_email.blank?
       render json: { error: "Recipient Email is required before sending mail." }, status: :unprocessable_entity
       return
     end
 
-    unless mail_delivery_configured?
+    unless PaymentAdviceMailer.payment_advice_delivery_configured?
       render json: { error: "SMTP is not configured. Please add SMTP_ADDRESS in server environment or Rails credentials." }, status: :unprocessable_entity
       return
     end
@@ -49,20 +51,19 @@ class PaymentAdvicesController < ApplicationController
     @payment_advice = PaymentAdviceRecord.find(params[:id])
   end
 
-  def mail_delivery_configured?
-    return true if Rails.env.test?
-    return true if ActionMailer::Base.delivery_method == :file
+  def apply_payment_advice_params_for_mail
+    return true unless params[:payment_advice].present?
 
-    smtp_address.present?
-  end
+    @payment_advice.assign_attributes(payment_advice_params)
+    return true if @payment_advice.save
 
-  def smtp_address
-    ENV["SMTP_ADDRESS"].presence || Rails.application.credentials.dig(:smtp, :address).presence
+    render json: { errors: @payment_advice.errors.full_messages }, status: :unprocessable_entity
+    false
   end
 
   def mail_success_message
-    if ActionMailer::Base.delivery_method == :file
-      "Local test email created for #{@payment_advice.payee_email}. Configure SMTP_ADDRESS in server environment or Rails credentials to send real mail."
+    if PaymentAdviceMailer.payment_advice_local_file_delivery? && !PaymentAdviceMailer.payment_advice_real_smtp_configured?
+      "Mail was not sent to inbox. Local test copy saved at tmp/payment_advice_mails/#{@payment_advice.payee_email}. Configure SMTP_ADDRESS, SMTP_USERNAME and SMTP_PASSWORD for real email."
     else
       "Payment advice sent to #{@payment_advice.payee_email}."
     end

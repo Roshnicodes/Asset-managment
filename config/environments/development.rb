@@ -31,14 +31,33 @@ Rails.application.configure do
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :local
 
-  # Don't care if the mailer can't send.
-  config.action_mailer.raise_delivery_errors = false
+  config.action_mailer.raise_delivery_errors = true
 
   # Make template changes take effect immediately.
   config.action_mailer.perform_caching = false
 
   # Set localhost to be used by links generated in mailer templates.
   config.action_mailer.default_url_options = { host: "localhost", port: 3000 }
+
+  if ENV["SMTP_ADDRESS"].present?
+    config.action_mailer.delivery_method = :smtp
+    config.action_mailer.perform_deliveries = true
+    config.action_mailer.smtp_settings = {
+      address: ENV.fetch("SMTP_ADDRESS"),
+      port: ENV.fetch("SMTP_PORT", 587).to_i,
+      domain: ENV.fetch("SMTP_DOMAIN", "localhost"),
+      user_name: ENV.fetch("SMTP_USERNAME", ENV.fetch("SMTP_FROM", nil)),
+      password: ENV.fetch("SMTP_PASSWORD"),
+      authentication: ENV.fetch("SMTP_AUTHENTICATION", "plain").to_sym,
+      enable_starttls_auto: ENV.fetch("SMTP_ENABLE_STARTTLS_AUTO", ENV.fetch("SMTP_STARTTLS", "true")) == "true",
+      ssl: ENV.fetch("SMTP_SSL", "false") == "true",
+      open_timeout: ENV.fetch("SMTP_OPEN_TIMEOUT", 10).to_i,
+      read_timeout: ENV.fetch("SMTP_READ_TIMEOUT", 10).to_i
+    }.compact
+  else
+    config.action_mailer.delivery_method = :file
+    config.action_mailer.file_settings = { location: Rails.root.join("tmp", "sent_mails").to_s }
+  end
 
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log

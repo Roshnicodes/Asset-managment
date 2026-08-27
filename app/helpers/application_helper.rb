@@ -36,7 +36,10 @@ module ApplicationHelper
   def app_nav_link(label, path, icon:, identifier: nil, class_name: "nav-link")
     return unless can_view_menu?(identifier)
 
-    link_to path, class: class_name do
+    link_classes = [class_name]
+    link_classes << "is-active" if app_nav_path_active?(path)
+
+    link_to path, class: link_classes.join(" ") do
       content_tag(:span, class: "app-link-wrap") do
         safe_join([app_icon(icon), content_tag(:span, label, class: "app-link-label")])
       end
@@ -49,6 +52,10 @@ module ApplicationHelper
     content_tag(:a, class: "nav-link dropdown-toggle-link", data: { bs_toggle: "collapse" }, href: "##{target_id}") do
       safe_join([content_tag(:span, safe_join([app_icon(icon), content_tag(:span, label, class: "app-link-label")]), class: "app-link-wrap")])
     end
+  end
+
+  def app_nav_path_active?(path)
+    request.path == path.to_s.split("?").first
   end
 
   def catalog_item_option_label(item)

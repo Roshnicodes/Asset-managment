@@ -17,14 +17,14 @@ module Api
           return
         end
 
-        unless mail_delivery_configured?
+        unless PaymentAdviceMailer.payment_advice_delivery_configured?
           render json: { error: "SMTP is not configured. Please add SMTP_ADDRESS in server environment or Rails credentials." }, status: :unprocessable_entity
           return
         end
 
         PaymentAdviceMailer.with(payment_advice: payment_advice).payment_advice.deliver_now
         render json: {
-          message: "Payment advice sent to #{payment_advice.payee_email}.",
+          message: mail_success_message(payment_advice),
           payment_advice: payment_advice_payload(payment_advice)
         }, status: payment_advice.previously_new_record? ? :created : :ok
       rescue StandardError => e
@@ -51,15 +51,12 @@ module Api
         request.authorization.to_s.match(/\ABearer (.+)\z/)&.[](1).to_s
       end
 
-      def mail_delivery_configured?
-        return true if Rails.env.test?
-        return true if ActionMailer::Base.delivery_method == :file
-
-        smtp_address.present?
-      end
-
-      def smtp_address
-        ENV["SMTP_ADDRESS"].presence || Rails.application.credentials.dig(:smtp, :address).presence
+      def mail_success_message(payment_advice)
+        if PaymentAdviceMailer.payment_advice_local_file_delivery? && !PaymentAdviceMailer.payment_advice_real_smtp_configured?
+          "Mail was not sent to inbox. Local test copy saved at tmp/payment_advice_mails/#{payment_advice.payee_email}. Configure SMTP_ADDRESS, SMTP_USERNAME and SMTP_PASSWORD for real email."
+        else
+          "Payment advice sent to #{payment_advice.payee_email}."
+        end
       end
 
       def payment_advice_params

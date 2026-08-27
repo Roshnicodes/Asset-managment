@@ -1,34 +1,36 @@
-<div class="app-toolbar">
-  <h1>Product Entry</h1>
-  <%= link_to "Add Product", new_product_path, class: "app-primary-btn" %>
-</div>
+<section class="catalog-index-page">
+  <div class="app-toolbar catalog-toolbar">
+    <h1>Product Entry</h1>
+    <%= link_to "Add Product", new_product_path, class: "app-primary-btn" %>
+  </div>
 
-<div class="app-table-wrap">
-  <table class="table app-table">
-    <thead>
-      <tr>
-        <th>Thematic Type</th>
-        <th>Product Code</th>
-        <th>Product Name</th>
-        <% if admin_user? %>
-          <th>Action</th>
-        <% end %>
-      </tr>
-    </thead>
-    <tbody>
-      <% @products.each do |product| %>
+  <div class="app-table-wrap catalog-table-wrap">
+    <table class="table app-table catalog-table">
+      <thead>
         <tr>
-          <td><%= product.theme&.name %></td>
-          <td><%= product.product_code.presence || "-" %></td>
-          <td><%= product.name %></td>
+          <th>Thematic Type</th>
+          <th>Product Code</th>
+          <th>Product Name</th>
           <% if admin_user? %>
-            <td class="app-row-actions">
-              <%= link_to "Edit", edit_product_path(product) %> |
-              <%= button_to "Delete", product_path(product), method: :delete, data: { turbo_confirm: "Delete this product?" }, class: "app-action-button app-delete-button" %>
-            </td>
+            <th>Action</th>
           <% end %>
         </tr>
-      <% end %>
-    </tbody>
-  </table>
-</div>
+      </thead>
+      <tbody>
+        <% @products.each do |product| %>
+          <tr>
+            <td><%= product.theme&.name %></td>
+            <td><%= product.product_code.presence || "-" %></td>
+            <td><%= product.name %></td>
+            <% if admin_user? %>
+              <td class="app-row-actions">
+                <%= link_to "Edit", edit_product_path(product) %> |
+                <%= button_to "Delete", product_path(product), method: :delete, data: { turbo_confirm: "Delete this product?" }, class: "app-action-button app-delete-button" %>
+              </td>
+            <% end %>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</section>
