@@ -26,6 +26,8 @@ Rails.application.routes.draw do
   post "goods-receive-vendor/:token/send-otp", to: "goods_receive_vendor_qrs#send_otp", as: :send_goods_receive_vendor_qr_otp
   post "goods-receive-vendor/:token/verify-otp", to: "goods_receive_vendor_qrs#verify_otp", as: :verify_goods_receive_vendor_qr_otp
   patch "goods-receive-vendor/:token", to: "goods_receive_vendor_qrs#update"
+  get "manual/download", to: "user_manuals#download", as: :download_user_manual
+  get "manual", to: "user_manuals#index", as: :user_manual
   resources :notifications, only: [:index]
   resources :menu_permissions, only: [:index, :create]
   resources :banks, only: %i[create destroy]

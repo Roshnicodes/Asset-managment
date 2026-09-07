@@ -205,6 +205,22 @@ class QuotationProposalVendor < ApplicationRecord
     end
   end
 
+  def missing_committee_score_members(committee_members = nil)
+    members = if committee_members.nil?
+      quotation_proposal.committee_steps.includes(:employee_master).map(&:employee_master)
+    else
+      Array(committee_members)
+    end.compact
+
+    scored_employee_ids = if committee_member_scores.loaded? || new_record?
+      committee_member_scores.select { |record| record.score.present? }.map(&:employee_master_id)
+    else
+      committee_member_scores.where.not(score: nil).pluck(:employee_master_id)
+    end
+
+    members.reject { |member| scored_employee_ids.include?(member.id) }
+  end
+
   def sync_cached_committee_score!
     return if destroyed?
 

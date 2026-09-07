@@ -179,12 +179,21 @@ class EmployeeMastersController < ApplicationController
   end
 
   def employee_master_params
-    params.require(:employee_master).permit(
+    permitted_params = params.require(:employee_master).permit(
       :stakeholder_category_id, :user_type, :name, :designation, :email_id, :password, :password_confirmation,
       :employee_code,
       :mobile_no, :state_id, :district_id, :block_id, :gram_panchayat, :village, :parent_office, :office,
       :location, :full_address, :pincode
     )
+
+    permitted_params[:user_type] = "User" unless admin_user?
+    permitted_params
+  end
+
+  def import_user_type(value)
+    return value.presence || "User" if admin_user?
+
+    "User"
   end
 
   def import_rows(file)
@@ -219,7 +228,7 @@ class EmployeeMastersController < ApplicationController
 
       employee.assign_attributes(
         stakeholder_category: stakeholder,
-        user_type: row["user_type"].presence || "User",
+        user_type: import_user_type(row["user_type"]),
         employee_code: employee_code,
         name: row["user_name"].presence || row["employee_name"],
         designation: row["designation"],

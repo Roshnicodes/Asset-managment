@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="<%= @manual_language %>">
+<head>
+  <meta charset="utf-8">
+  <title><%= @manual_copy[:page_title] %></title>
+  <style>
+    @page {
+      size: A4;
+      margin: 8mm;
+    }
+
+    * {
+      box-sizing: border-box;
+      letter-spacing: 0;
+    }
+
+    body {
+      margin: 0;
+      color: #142821;
+      background: #ffffff;
+      font-family: <%= @manual_language == "hi" ? '"Noto Sans Devanagari", "Nirmala UI", Mangal,' : "" %> "DejaVu Sans", Arial, sans-serif;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .pdf-page {
+      width: 100%;
+    }
+
+    .pdf-hero {
+      display: table;
+      width: 100%;
+      padding: 14px;
+      border: 1px solid #d7e7dd;
+      border-left: 5px solid #0b6f66;
+      background: #f4faf6;
+    }
+
+    .pdf-logo,
+    .pdf-title {
+      display: table-cell;
+      vertical-align: top;
+    }
+
+    .pdf-logo {
+      width: 110px;
+      padding-right: 14px;
+    }
+
+    .pdf-logo-box {
+      width: 96px;
+      min-height: 70px;
+      padding: 7px;
+      border: 1px solid #d7e7dd;
+      background: #ffffff;
+      text-align: center;
+    }
+
+    .pdf-logo-box img {
+      max-width: 82px;
+      max-height: 56px;
+      vertical-align: middle;
+    }
+
+    .pdf-kicker {
+      display: inline-block;
+      margin-bottom: 5px;
+      padding: 3px 7px;
+      border-radius: 10px;
+      background: #e1f2ea;
+      color: #07483f;
+      font-size: 8px;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      color: #142821;
+      line-height: 1.18;
+    }
+
+    h1 {
+      font-size: 23px;
+    }
+
+    .pdf-subtitle {
+      margin: 7px 0 0;
+      color: #4f625b;
+      font-size: 11px;
+    }
+
+    .pdf-meta {
+      margin-top: 8px;
+      color: #07483f;
+      font-size: 9px;
+      font-weight: bold;
+    }
+
+    .pdf-meta span {
+      display: inline-block;
+      margin-right: 8px;
+      padding: 3px 7px;
+      border: 1px solid #d7e7dd;
+      background: #ffffff;
+    }
+
+    .pdf-intro {
+      display: table;
+      table-layout: fixed;
+      width: 100%;
+      margin-top: 10px;
+      border-spacing: 7px 0;
+    }
+
+    .pdf-intro-card {
+      display: table-cell;
+      width: 33.33%;
+      padding: 9px;
+      border: 1px solid #d7e7dd;
+      background: #ffffff;
+      vertical-align: top;
+    }
+
+    .pdf-intro-card h2 {
+      font-size: 12px;
+    }
+
+    .pdf-intro-card p {
+      margin: 5px 0 0;
+      color: #5c6f67;
+      font-size: 9px;
+    }
+
+    .pdf-flow {
+      margin-top: 10px;
+      padding: 9px 10px;
+      border: 1px solid #d7e7dd;
+      background: #f8fbf9;
+    }
+
+    .pdf-flow h2 {
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+
+    .pdf-flow span {
+      display: inline-block;
+      margin: 0 4px 5px 0;
+      padding: 3px 7px;
+      border: 1px solid #c8ded3;
+      border-radius: 10px;
+      color: #07483f;
+      background: #ffffff;
+      font-size: 8.5px;
+      font-weight: bold;
+    }
+
+    .pdf-toc {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #d7e7dd;
+    }
+
+    .pdf-toc h2 {
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+
+    .pdf-toc ol {
+      columns: 2;
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .pdf-toc li {
+      margin-bottom: 3px;
+      color: #354940;
+      font-size: 9px;
+      break-inside: avoid;
+    }
+
+    .pdf-section {
+      page-break-inside: avoid;
+      margin-top: 13px;
+      padding-top: 13px;
+      border-top: 2px solid #0b6f66;
+    }
+
+    .pdf-section-head {
+      display: table;
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    .pdf-section-number,
+    .pdf-section-title {
+      display: table-cell;
+      vertical-align: middle;
+    }
+
+    .pdf-section-number {
+      width: 38px;
+    }
+
+    .pdf-number {
+      display: inline-block;
+      width: 30px;
+      height: 30px;
+      padding-top: 7px;
+      border-radius: 4px;
+      background: #07483f;
+      color: #ffffff;
+      text-align: center;
+      font-size: 9px;
+      font-weight: bold;
+    }
+
+    .pdf-section-title h2 {
+      font-size: 15px;
+    }
+
+    .pdf-steps {
+      margin: 0 0 8px;
+      padding-left: 19px;
+    }
+
+    .pdf-steps li {
+      margin-bottom: 4px;
+      color: #243932;
+      font-size: 10px;
+    }
+
+    .pdf-note {
+      margin: 8px 0 9px;
+      padding: 8px;
+      border: 1px solid #ebd89d;
+      background: #fff9ea;
+      color: #55431b;
+      font-size: 9px;
+    }
+
+    .pdf-shot {
+      page-break-inside: avoid;
+      margin: 9px 0 0;
+      padding: 7px;
+      border: 1px solid #c8ded3;
+      background: #f8fbf9;
+    }
+
+    .pdf-shot-bar {
+      height: 14px;
+      margin: -7px -7px 7px;
+      border-bottom: 1px solid #d7e7dd;
+      background: #eef6f1;
+    }
+
+    .pdf-shot img {
+      display: block;
+      width: 100%;
+      max-height: 360px;
+      object-fit: contain;
+      object-position: top left;
+      background: #ffffff;
+    }
+
+    .pdf-shot figcaption {
+      margin-top: 5px;
+      color: #5c6f67;
+      font-size: 8.5px;
+    }
+
+    .pdf-shot strong {
+      color: #07483f;
+    }
+  </style>
+</head>
+<body>
+  <% stakeholder_name = @manual_stakeholder&.name.presence || "ASA / PAPL / PGPL" %>
+  <main class="pdf-page">
+    <header class="pdf-hero">
+      <div class="pdf-logo">
+        <div class="pdf-logo-box">
+          <% if (logo_data_uri = manual_stakeholder_logo_data_uri).present? %>
+            <img src="<%= logo_data_uri %>" alt="<%= stakeholder_name %> Logo">
+          <% end %>
+        </div>
+      </div>
+      <div class="pdf-title">
+        <div class="pdf-kicker"><%= @manual_copy[:updated_label] %></div>
+        <h1><%= @manual_copy[:page_title] %></h1>
+        <p class="pdf-subtitle"><%= @manual_copy[:subtitle] %></p>
+        <div class="pdf-meta">
+          <span><%= @manual_copy[:stakeholder_label] %>: <%= stakeholder_name %></span>
+          <span><%= @manual_copy[:module_label] %></span>
+        </div>
+      </div>
+    </header>
+
+    <section class="pdf-intro">
+      <% @manual_copy[:intro_cards].each do |card| %>
+        <article class="pdf-intro-card">
+          <h2><%= card[:title] %></h2>
+          <p><%= card[:body] %></p>
+        </article>
+      <% end %>
+    </section>
+
+    <section class="pdf-flow">
+      <h2><%= @manual_copy[:quick_flow_title] %></h2>
+      <% @manual_copy[:quick_flow].each do |flow_item| %>
+        <span><%= flow_item %></span>
+      <% end %>
+    </section>
+
+    <section class="pdf-toc">
+      <h2><%= @manual_copy[:contents_label] %></h2>
+      <ol>
+        <% @manual_copy[:sections].each do |section| %>
+          <li><%= section[:title] %></li>
+        <% end %>
+      </ol>
+    </section>
+
+    <% @manual_copy[:sections].each do |section| %>
+      <article class="pdf-section">
+        <div class="pdf-section-head">
+          <div class="pdf-section-number"><span class="pdf-number"><%= section[:number] %></span></div>
+          <div class="pdf-section-title"><h2><%= section[:title] %></h2></div>
+        </div>
+
+        <ol class="pdf-steps">
+          <% section[:steps].each do |step| %>
+            <li><%= step %></li>
+          <% end %>
+        </ol>
+
+        <div class="pdf-note">
+          <strong><%= @manual_copy[:note_label] %>:</strong>
+          <%= section[:note] %>
+        </div>
+
+        <% section[:screenshots].each_with_index do |screenshot, index| %>
+          <% image_data_uri = manual_asset_data_uri(screenshot[:image]) %>
+          <% next if image_data_uri.blank? %>
+
+          <figure class="pdf-shot">
+            <div class="pdf-shot-bar"></div>
+            <img src="<%= image_data_uri %>" alt="<%= @manual_copy[:screenshot_label] %> <%= index + 1 %> - <%= section[:title] %>">
+            <figcaption>
+              <strong><%= @manual_copy[:screenshot_label] %> <%= index + 1 %>:</strong>
+              <%= screenshot[:caption] %>
+            </figcaption>
+          </figure>
+        <% end %>
+      </article>
+    <% end %>
+  </main>
+</body>
+</html>

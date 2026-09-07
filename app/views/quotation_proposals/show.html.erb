@@ -595,6 +595,7 @@
     <% comparison_vendors = QuotationProposalVendor.where(quotation_proposal_id: @quotation_proposal.id).includes(vendor_registration: [], committee_member_scores: :employee_master, committee_criteria_scores: :quotation_proposal_criteria_selection, vendor_items: { quotation_proposal_item: :unit }) %>
     <% responded_vendors = comparison_vendors.select(&:response_submitted?) %>
     <% committee_scoring_complete = @quotation_proposal.committee_scoring_complete? %>
+    <% committee_score_members = @committee_score_members || @quotation_proposal.committee_steps.includes(:employee_master).map(&:employee_master).compact %>
     <% selected_vendor_registration_id = @quotation_proposal.selected_vendor_registration_id %>
     <% lowest_amount_vendor_id = responded_vendors.min_by { |vendor| vendor.total_quoted_amount.to_d }&.id %>
     <% lowest_grand_total_vendor_id = responded_vendors.min_by { |vendor| vendor.grand_total_amount.to_d }&.id %>
@@ -785,12 +786,18 @@
                     </div>
                   <% end %>
                   <div class="small text-muted mt-1">
+                    <% missing_score_members = proposal_vendor.missing_committee_score_members(committee_score_members) %>
                     <% if criteria_based_scoring && committee_scoring_allowed %>
                       Saved score from criteria: <strong><%= member_score_value.nil? ? "Incomplete" : member_score_value %></strong>
                       |
                     <% end %>
                     Total score: <strong><%= proposal_vendor.committee_score_value.presence || "Not scored yet" %></strong>
                     | Scored by: <strong><%= proposal_vendor.committee_score_count %>/<%= @committee_member_count %></strong>
+                    <% if missing_score_members.any? %>
+                      <div class="quotation-proposal-show__pending-score-members">
+                        Pending score from: <strong><%= missing_score_members.map { |member| member.name.presence || member.email_id.presence || "Committee Member" }.join(", ") %></strong>
+                      </div>
+                    <% end %>
                   </div>
                 <% else %>
                   <span class="text-muted">Awaiting vendor response</span>
@@ -856,11 +863,17 @@
             <td style="position: sticky; left: 0; z-index: 2; background: #fdfefe; box-shadow: 8px 0 18px rgba(26, 58, 42, 0.03);"><strong>Selection Status</strong></td>
             <% comparison_vendors.each do |proposal_vendor| %>
               <% proposal_vendor_selected = selected_vendor_registration_id.present? && proposal_vendor.vendor_registration_id == selected_vendor_registration_id %>
+              <% missing_score_members = proposal_vendor.response_submitted? ? proposal_vendor.missing_committee_score_members(committee_score_members) : [] %>
               <td>
                 <% if committee_scoring_complete && proposal_vendor_selected %>
                   <span class="badge border bg-success bg-opacity-10 text-success">Auto selected by top rank</span>
                 <% elsif proposal_vendor.response_submitted? && proposal_vendor.committee_score_value.present? && !committee_scoring_complete %>
                   <span class="text-muted">Waiting for all committee scores</span>
+                  <% if missing_score_members.any? %>
+                    <div class="quotation-proposal-show__pending-score-members">
+                      Pending: <strong><%= missing_score_members.map { |member| member.name.presence || member.email_id.presence || "Committee Member" }.join(", ") %></strong>
+                    </div>
+                  <% end %>
                 <% elsif proposal_vendor.response_submitted? && proposal_vendor.committee_score_value.present? %>
                   <span class="text-muted">Selection follows rank order</span>
                 <% else %>

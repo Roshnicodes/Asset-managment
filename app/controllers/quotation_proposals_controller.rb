@@ -74,7 +74,8 @@ class QuotationProposalsController < ApplicationController
     end
     @current_scoring_employee = approval_actor_for(@quotation_proposal)
     @committee_scoring_allowed = committee_scoring_allowed_for?(@quotation_proposal)
-    @committee_member_count = @quotation_proposal.committee_steps.size
+    @committee_score_members = @quotation_proposal.committee_steps.includes(:employee_master).map(&:employee_master).compact
+    @committee_member_count = @committee_score_members.size
     @selected_vendor_response = QuotationProposalVendor
       .includes(
         :vendor_registration,
@@ -276,6 +277,7 @@ class QuotationProposalsController < ApplicationController
       .includes(:vendor_registration, committee_member_scores: :employee_master, committee_criteria_scores: :quotation_proposal_criteria_selection, vendor_items: { quotation_proposal_item: :unit })
     @responded_vendors = @comparison_vendors.select(&:response_submitted?)
     @selected_criteria_selections = @quotation_proposal.criteria_selections.to_a
+    @committee_score_members = @quotation_proposal.committee_steps.includes(:employee_master).map(&:employee_master).compact
 
     render :comparison_print, layout: "print"
   end

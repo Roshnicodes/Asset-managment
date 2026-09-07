@@ -19,7 +19,12 @@
 
       <div class="app-form-field">
         <%= form.label :user_type, "User Type" %>
-        <%= form.select :user_type, EmployeeMaster::USER_TYPES, { prompt: "Select user type" } %>
+        <% if admin_user? %>
+          <%= form.select :user_type, EmployeeMaster::USER_TYPES, { prompt: "Select user type" } %>
+        <% else %>
+          <%= form.hidden_field :user_type, value: "User" %>
+          <%= text_field_tag :user_type_display, employee_master.user_type.presence || "User", disabled: true %>
+        <% end %>
       </div>
 
       <div class="app-form-field">

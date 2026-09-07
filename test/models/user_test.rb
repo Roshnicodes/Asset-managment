@@ -11,8 +11,8 @@ class UserTest < ActiveSupport::TestCase
   test "normalizes email and defaults role to user" do
     user = User.create!(
       email: "  Mixed.Case@example.com  ",
-      password: "password123",
-      password_confirmation: "password123"
+      password: "password12",
+      password_confirmation: "password12"
     )
 
     assert_equal "mixed.case@example.com", user.email
@@ -23,8 +23,8 @@ class UserTest < ActiveSupport::TestCase
     user = User.new(
       email: "admin.candidate@example.com",
       role: :admin,
-      password: "password123",
-      password_confirmation: "password123"
+      password: "password12",
+      password_confirmation: "password12"
     )
 
     assert_not user.valid?
@@ -65,8 +65,8 @@ class UserTest < ActiveSupport::TestCase
   test "database authentication does not accept email as login id" do
     User.create!(
       email: "email.login@example.com",
-      password: "password123",
-      password_confirmation: "password123"
+      password: "password12",
+      password_confirmation: "password12"
     )
 
     assert_nil User.find_for_database_authentication(email: "email.login@example.com")

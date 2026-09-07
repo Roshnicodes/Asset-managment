@@ -46,6 +46,25 @@ class QuotationProposalVendorTest < ActiveSupport::TestCase
     assert_equal({ 11 => 15, 12 => 6 }, vendor.criteria_score_totals_for_selection_ids([11, 12]))
   end
 
+  test "missing_committee_score_members returns members without completed scores" do
+    vendor = QuotationProposalVendor.new
+    members = [
+      OpenStruct.new(id: 7, name: "Aaditya"),
+      OpenStruct.new(id: 8, name: "Anamika"),
+      OpenStruct.new(id: 9, name: "Bhavesh")
+    ]
+    collection = LoadedCriteriaScoreCollection.new(
+      records: [
+        OpenStruct.new(employee_master_id: 7, score: 8),
+        OpenStruct.new(employee_master_id: 8, score: nil)
+      ]
+    )
+
+    vendor.define_singleton_method(:committee_member_scores) { collection }
+
+    assert_equal [members[1], members[2]], vendor.missing_committee_score_members(members)
+  end
+
   test "remark helpers expose saved committee remarks" do
     vendor = QuotationProposalVendor.new
     employee = OpenStruct.new(id: 7)

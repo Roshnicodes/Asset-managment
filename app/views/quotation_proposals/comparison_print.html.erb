@@ -16,6 +16,7 @@
 <% lowest_amount_vendor_id = @responded_vendors.min_by { |vendor| vendor.total_quoted_amount.to_d }&.id %>
 <% lowest_grand_total_vendor_id = @responded_vendors.min_by { |vendor| vendor.grand_total_amount.to_d }&.id %>
 <% top_rank_vendor_id = @responded_vendors.find { |vendor| vendor.rank_position == 1 }&.id %>
+<% committee_score_members = @committee_score_members || @quotation_proposal.committee_steps.includes(:employee_master).map(&:employee_master).compact %>
 
 <div class="comparison-print-page">
   <div class="comparison-print-toolbar print-hide">
@@ -54,6 +55,10 @@
             <td>
               <strong><%= proposal_vendor.committee_score_value.presence || "Not scored" %></strong>
               <div>Scored by: <%= proposal_vendor.committee_score_count %>/<%= @quotation_proposal.committee_steps.size %></div>
+              <% missing_score_members = proposal_vendor.response_submitted? ? proposal_vendor.missing_committee_score_members(committee_score_members) : [] %>
+              <% if missing_score_members.any? %>
+                <div>Pending score from: <strong><%= missing_score_members.map { |member| member.name.presence || member.email_id.presence || "Committee Member" }.join(", ") %></strong></div>
+              <% end %>
               <% if proposal_vendor.score_remarks.any? %>
                 <% proposal_vendor.score_remarks.each do |author_name, remark_text| %>
                   <div><strong><%= author_name %>:</strong> <%= remark_text %></div>

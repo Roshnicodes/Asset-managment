@@ -8,7 +8,7 @@ class PasswordResetFlowTest < ActionDispatch::IntegrationTest
     ActionMailer::Base.deliveries.clear
   end
 
-  test "sending reset instructions works with mixed-case employee code input" do
+  test "direct reset opens reset form with mixed-case employee code input" do
     stakeholder_category = StakeholderCategory.create!(name: "Reset Team")
     EmployeeMaster.create!(
       name: "Reset User",
@@ -17,21 +17,33 @@ class PasswordResetFlowTest < ActionDispatch::IntegrationTest
       user_type: "User",
       stakeholder_category: stakeholder_category
     )
-    user = User.create!(
-      email: "reset.user@example.com",
-      password: "password123",
-      password_confirmation: "password123"
-    )
+    user = User.find_by!(email: "reset.user@example.com")
 
-    assert_emails 1 do
-      post user_password_path, params: { user: { email: "  rst001  " } }
+    assert_no_emails do
+      with_direct_password_reset do
+        post user_password_path, params: { user: { email: "  rst001  " } }
+      end
     end
 
-    assert_redirected_to new_user_session_path
+    assert_response :redirect
+    assert_match %r{/users/password/edit\?reset_password_token=}, response.location
 
     user.reload
     assert_not_nil user.reset_password_token
     assert_not_nil user.reset_password_sent_at
-    assert_includes ActionMailer::Base.deliveries.last.body.encoded, "reset_password_token="
+  end
+
+  private
+
+  def with_direct_password_reset
+    previous_value = ENV["DIRECT_PASSWORD_RESET"]
+    ENV["DIRECT_PASSWORD_RESET"] = "true"
+    yield
+  ensure
+    if previous_value.nil?
+      ENV.delete("DIRECT_PASSWORD_RESET")
+    else
+      ENV["DIRECT_PASSWORD_RESET"] = previous_value
+    end
   end
 end

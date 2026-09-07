@@ -1,0 +1,347 @@
+<%= render "styles" %>
+
+<% stakeholder_name = @manual_stakeholder&.name.presence || "ASA / PAPL / PGPL" %>
+<% is_hindi = @manual_language == "hi" %>
+
+<div class="user-manual-page <%= "is-hindi" if is_hindi %>">
+  <!-- Hero Header -->
+  <header class="user-manual-hero">
+    <div class="user-manual-hero-left">
+      <div class="user-manual-logo-wrap">
+        <%= image_tag stakeholder_logo_source(@manual_stakeholder),
+                      alt: stakeholder_logo_alt(@manual_stakeholder),
+                      class: "user-manual-logo-img" %>
+      </div>
+      <div class="user-manual-hero-info">
+        <div class="user-manual-tag-row">
+          <span class="user-manual-badge-primary">
+            <svg class="um-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/><path fill-rule="evenodd" d="M1.38 8.28a.87.87 0 0 1 0-.56C2.41 4.96 4.99 3 8 3s5.59 1.96 6.62 4.72c.04.1.04.22 0 .32C13.59 10.84 11.01 12.8 8 12.8s-5.59-1.96-6.62-4.72zM8 11.3c2.03 0 3.86-1.15 4.77-2.8A5.67 5.67 0 0 0 8 4.7c-2.03 0-3.86 1.15-4.77 2.8A5.67 5.67 0 0 0 8 11.3z"/></svg>
+            <%= @manual_copy[:updated_label] %>
+          </span>
+          <span class="user-manual-badge-neutral">
+            <%= @manual_copy[:stakeholder_label] %>: <strong><%= stakeholder_name %></strong>
+          </span>
+          <span class="user-manual-badge-neutral">
+            <%= @manual_copy[:module_label] %>
+          </span>
+        </div>
+        <h1 class="user-manual-title"><%= @manual_copy[:page_title] %></h1>
+        <p class="user-manual-subtitle"><%= @manual_copy[:subtitle] %></p>
+      </div>
+    </div>
+
+    <div class="user-manual-hero-right">
+      <div class="user-manual-lang-pills" role="group" aria-label="Language selection">
+        <% @manual_copy[:language_links].each do |language| %>
+          <%= link_to language[:label],
+                      user_manual_path(lang: language[:code]),
+                      class: ["user-manual-lang-btn", ("active" if @manual_language == language[:code])].compact.join(" "),
+                      aria: { current: (@manual_language == language[:code] ? "page" : nil) } %>
+        <% end %>
+      </div>
+
+      <div class="user-manual-hero-actions">
+        <%= link_to download_user_manual_path(lang: @manual_language),
+                    class: "user-manual-btn-download",
+                    data: { turbo: false },
+                    id: "btn-download-pdf" do %>
+          <svg class="um-icon-dl" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
+          </svg>
+          <span class="btn-text"><%= @manual_copy[:download_label] %></span>
+        <% end %>
+
+        <button type="button" class="user-manual-btn-print" onclick="window.print()" title="<%= is_hindi ? 'ब्राउज़र से प्रिंट करें' : 'Print via browser' %>">
+          <svg class="um-icon" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
+            <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sleek Process Stepper -->
+  <section class="user-manual-workflow-bar" aria-label="<%= @manual_copy[:quick_flow_title] %>">
+    <div class="um-workflow-title">
+      <svg class="um-icon-flow" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
+      <span><%= @manual_copy[:quick_flow_title] %></span>
+    </div>
+    <div class="um-stepper-track">
+      <% @manual_copy[:quick_flow].each_with_index do |flow_item, index| %>
+        <div class="um-step-item">
+          <span class="um-step-dot"><%= index + 1 %></span>
+          <span class="um-step-text"><%= flow_item %></span>
+        </div>
+        <% unless index == @manual_copy[:quick_flow].length - 1 %>
+          <span class="um-step-connector" aria-hidden="true"></span>
+        <% end %>
+      <% end %>
+    </div>
+  </section>
+
+  <!-- Slim Key Highlights Strip -->
+  <section class="user-manual-tips-strip" aria-label="Manual key pointers">
+    <% @manual_copy[:intro_cards].each_with_index do |card, i| %>
+      <div class="um-tip-card">
+        <div class="um-tip-icon">
+          <% if i == 0 %>
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+          <% elsif i == 1 %>
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+          <% else %>
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+          <% end %>
+        </div>
+        <div class="um-tip-content">
+          <h4><%= card[:title] %></h4>
+          <p><%= card[:body] %></p>
+        </div>
+      </div>
+    <% end %>
+  </section>
+
+  <!-- Main Layout: Navigation + Sections -->
+  <div class="user-manual-main-layout">
+    <!-- Sticky Table of Contents -->
+    <aside class="user-manual-sidebar" aria-label="<%= @manual_copy[:contents_label] %>">
+      <div class="um-toc-sticky-box">
+        <div class="um-toc-header">
+          <h3>
+            <svg class="um-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+            <%= @manual_copy[:contents_label] %>
+          </h3>
+          <span class="um-toc-count"><%= @manual_copy[:sections].length %> <%= is_hindi ? "भाग" : "parts" %></span>
+        </div>
+
+        <div class="um-toc-search-wrap">
+          <svg class="um-search-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+          <input type="text"
+                 id="um-filter-input"
+                 placeholder="<%= is_hindi ? 'विषय या शब्द खोजें...' : 'Search manual topics...' %>"
+                 aria-label="Filter manual topics">
+          <button type="button" id="um-filter-clear" class="um-filter-clear-btn" aria-label="Clear filter" style="display: none;">&times;</button>
+        </div>
+
+        <nav class="um-toc-nav" id="um-toc-nav">
+          <% @manual_copy[:sections].each_with_index do |section, idx| %>
+            <a href="#<%= section[:id] %>" class="um-toc-link <%= 'active' if idx == 0 %>" data-section-id="<%= section[:id] %>">
+              <span class="um-toc-num"><%= section[:number] %></span>
+              <span class="um-toc-title"><%= section[:title] %></span>
+            </a>
+          <% end %>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- Sections Content Area -->
+    <main class="user-manual-content" id="um-sections-container">
+      <% @manual_copy[:sections].each do |section| %>
+        <article class="user-manual-card" id="<%= section[:id] %>" data-title="<%= section[:title].downcase %>">
+          <header class="um-card-header">
+            <div class="um-card-title-group">
+              <span class="um-section-badge"><%= section[:number] %></span>
+              <h2><%= section[:title] %></h2>
+            </div>
+            <span class="um-step-badge">
+              <%= section[:steps].length %> <%= is_hindi ? "स्टेप्स" : "Steps" %>
+            </span>
+          </header>
+
+          <div class="um-card-body">
+            <!-- Steps List -->
+            <div class="um-steps-wrapper">
+              <ol class="um-steps-list">
+                <% section[:steps].each_with_index do |step, s_idx| %>
+                  <li class="um-step-row">
+                    <span class="um-step-marker"><%= s_idx + 1 %></span>
+                    <div class="um-step-detail"><%= step %></div>
+                  </li>
+                <% end %>
+              </ol>
+
+              <!-- Note Callout -->
+              <% if section[:note].present? %>
+                <div class="um-note-callout">
+                  <div class="um-note-icon">
+                    <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+                  </div>
+                  <div class="um-note-body">
+                    <strong><%= @manual_copy[:note_label] %>:</strong>
+                    <span><%= section[:note] %></span>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+
+            <!-- Screenshots Section -->
+            <% if section[:screenshots].present? %>
+              <div class="um-screenshots-wrapper">
+                <% section[:screenshots].each_with_index do |screenshot, index| %>
+                  <% image_uri = manual_asset_data_uri(screenshot[:image]) || screenshot[:image] %>
+                  <figure class="um-screenshot-card">
+                    <a href="<%= image_uri %>" target="_blank" rel="noopener noreferrer" class="um-screenshot-frame" title="<%= is_hindi ? 'फुल साइज़ इमेज नए टैब में देखें' : 'Open full image in new tab' %>">
+                      <div class="um-screenshot-topbar">
+                        <span class="um-window-btn red"></span>
+                        <span class="um-window-btn yellow"></span>
+                        <span class="um-window-btn green"></span>
+                        <span class="um-window-title"><%= @manual_copy[:screenshot_label] %> <%= index + 1 %> - <%= section[:title] %></span>
+                        <span class="um-zoom-hint">
+                          <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/><path fill-rule="evenodd" d="M8 6a1 1 0 011 1v1h1a1 1 0 110 2H9v1a1 1 0 11-2 0v-1H6a1 1 0 110-2h1V7a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+                          <%= is_hindi ? "बड़ा देखें" : "View Full" %>
+                        </span>
+                      </div>
+                      <%= image_tag image_uri,
+                                    alt: "#{@manual_copy[:screenshot_label]} #{index + 1} - #{section[:title]}",
+                                    loading: "lazy",
+                                    class: "um-screenshot-img" %>
+                    </a>
+                    <figcaption class="um-screenshot-caption">
+                      <strong><%= @manual_copy[:screenshot_label] %> <%= index + 1 %>:</strong>
+                      <%= screenshot[:caption] %>
+                    </figcaption>
+                  </figure>
+                <% end %>
+                <p class="um-screenshot-guide-note"><%= @manual_copy[:screenshot_note] %></p>
+              </div>
+            <% end %>
+          </div>
+        </article>
+      <% end %>
+
+      <div id="um-no-results" class="um-no-results-box" style="display: none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <h4><%= is_hindi ? "कोई परिणाम नहीं मिला" : "No matching topics found" %></h4>
+        <p><%= is_hindi ? "कृपया अन्य शब्द खोजें या फ़िल्टर हटाएँ।" : "Please try searching with different keywords." %></p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Floating Back to Top Button -->
+  <button type="button" id="um-back-to-top" class="um-back-to-top" aria-label="Scroll to top" title="Scroll to top">
+    <svg viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clip-rule="evenodd"/>
+    </svg>
+  </button>
+</div>
+
+<script>
+  (function() {
+    function initUserManual() {
+      // 1. Search / Filter in TOC & sections
+      const filterInput = document.getElementById('um-filter-input');
+      const filterClear = document.getElementById('um-filter-clear');
+      const sections = document.querySelectorAll('.user-manual-card');
+      const tocLinks = document.querySelectorAll('.um-toc-link');
+      const noResults = document.getElementById('um-no-results');
+
+      if (filterInput) {
+        filterInput.addEventListener('input', function() {
+          const q = this.value.trim().toLowerCase();
+          if (filterClear) filterClear.style.display = q.length > 0 ? 'block' : 'none';
+
+          let visibleCount = 0;
+          sections.forEach(function(section) {
+            const text = (section.innerText || section.textContent).toLowerCase();
+            const matches = q === '' || text.indexOf(q) !== -1;
+            section.style.display = matches ? 'block' : 'none';
+            if (matches) visibleCount++;
+          });
+
+          tocLinks.forEach(function(link) {
+            const secId = link.getAttribute('data-section-id');
+            const targetSec = document.getElementById(secId);
+            if (targetSec) {
+              link.style.display = targetSec.style.display !== 'none' ? 'flex' : 'none';
+            }
+          });
+
+          if (noResults) {
+            noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+          }
+        });
+
+        if (filterClear) {
+          filterClear.addEventListener('click', function() {
+            filterInput.value = '';
+            filterInput.dispatchEvent(new Event('input'));
+            filterInput.focus();
+          });
+        }
+      }
+
+      // 3. ScrollSpy for TOC
+      const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            const id = entry.target.id;
+            tocLinks.forEach(function(link) {
+              if (link.getAttribute('data-section-id') === id) {
+                link.classList.add('active');
+              } else {
+                link.classList.remove('active');
+              }
+            });
+          }
+        });
+      }, {
+        root: null,
+        rootMargin: '-10% 0px -70% 0px',
+        threshold: 0
+      });
+
+      sections.forEach(function(sec) {
+        observer.observe(sec);
+      });
+
+      // 4. Back to Top button
+      const backToTopBtn = document.getElementById('um-back-to-top');
+      const scrollContainer = document.querySelector('.app-content') || window;
+
+      function checkScroll() {
+        const scrollTop = scrollContainer === window ? window.scrollY : scrollContainer.scrollTop;
+        if (backToTopBtn) {
+          if (scrollTop > 400) {
+            backToTopBtn.classList.add('visible');
+          } else {
+            backToTopBtn.classList.remove('visible');
+          }
+        }
+      }
+
+      scrollContainer.addEventListener('scroll', checkScroll, { passive: true });
+      if (backToTopBtn) {
+        backToTopBtn.addEventListener('click', function() {
+          if (scrollContainer === window) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          } else {
+            scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        });
+      }
+
+      // 5. Download button feedback
+      const dlBtn = document.getElementById('btn-download-pdf');
+      if (dlBtn) {
+        dlBtn.addEventListener('click', function() {
+          const textSpan = this.querySelector('.btn-text');
+          if (textSpan) {
+            const originalText = textSpan.textContent;
+            textSpan.textContent = '<%= is_hindi ? "डाउनलोड हो रहा है..." : "Generating PDF..." %>';
+            setTimeout(function() {
+              textSpan.textContent = originalText;
+            }, 6000);
+          }
+        });
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initUserManual);
+    } else {
+      initUserManual();
+    }
+    document.addEventListener('turbo:load', initUserManual);
+  })();
+</script>
+
