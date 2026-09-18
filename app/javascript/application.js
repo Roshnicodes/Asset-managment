@@ -388,6 +388,197 @@ const setupFormPagination = () => {
   })
 }
 
+const setupFormDraftAutosave = () => {
+  const storagePrefix = "asa-form-draft"
+  const ignoredFieldNames = new Set(["authenticity_token", "utf8", "commit"])
+  const draftSelector = "[data-draft-autosave='true']"
+
+  const storageAvailable = () => {
+    try {
+      const testKey = `${storagePrefix}:test`
+      window.localStorage.setItem(testKey, "1")
+      window.localStorage.removeItem(testKey)
+      return true
+    } catch (_error) {
+      return false
+    }
+  }
+
+  if (!storageAvailable()) return
+
+  const draftStorageKey = (form) => `${storagePrefix}:${form.dataset.draftKey || `${window.location.pathname}:${form.action}`}`
+
+  const shouldSkipField = (field) =>
+    !field.name ||
+    ignoredFieldNames.has(field.name) ||
+    field.name.endsWith("_form_step") ||
+    field.disabled ||
+    field.type === "file" ||
+    field.type === "submit" ||
+    field.type === "button" ||
+    field.type === "reset"
+
+  const readDraft = (key) => {
+    try {
+      return JSON.parse(window.localStorage.getItem(key) || "null")
+    } catch (_error) {
+      window.localStorage.removeItem(key)
+      return null
+    }
+  }
+
+  const valuePresent = (value) => String(value || "").trim() !== ""
+
+  const valuesHaveContent = (values) =>
+    Object.entries(values).some(([name, entries]) => {
+      if (name.endsWith("[_destroy]")) return false
+      return entries.some(valuePresent)
+    })
+
+  const collectValues = (form) => {
+    const values = {}
+
+    Array.from(form.elements).forEach((field) => {
+      if (shouldSkipField(field)) return
+
+      if (field.type === "checkbox" || field.type === "radio") {
+        if (!field.checked) return
+        values[field.name] ||= []
+        values[field.name].push(field.value)
+        return
+      }
+
+      if (field.tagName === "SELECT" && field.multiple) {
+        values[field.name] = Array.from(field.selectedOptions).map((option) => option.value)
+        return
+      }
+
+      values[field.name] ||= []
+      values[field.name].push(field.value)
+    })
+
+    return values
+  }
+
+  const keysForNestedAttributes = (values, prefix) => {
+    const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    const matcher = new RegExp(`^${escapedPrefix}\\[([^\\]]+)\\]\\[`)
+    const keys = new Set()
+
+    Object.keys(values).forEach((name) => {
+      const match = name.match(matcher)
+      if (match) keys.add(match[1])
+    })
+
+    return Array.from(keys)
+  }
+
+  const formHasNestedKey = (form, prefix, key) =>
+    Array.from(form.elements).some((field) => field.name?.startsWith(`${prefix}[${key}]`))
+
+  const nestedKeyMarkedForDestroy = (values, prefix, key) =>
+    values[`${prefix}[${key}][_destroy]`]?.includes("1")
+
+  const restoreQuotationRows = (form, values) => {
+    const itemPrefix = "quotation_proposal[quotation_proposal_items_attributes]"
+    const itemList = form.querySelector("[data-quotation-item-list]")
+    const itemTemplate = form.querySelector("[data-quotation-item-template]")
+
+    if (itemList && itemTemplate) {
+      keysForNestedAttributes(values, itemPrefix).forEach((key) => {
+        if (nestedKeyMarkedForDestroy(values, itemPrefix, key)) return
+        if (formHasNestedKey(form, itemPrefix, key)) return
+
+        itemList.insertAdjacentHTML("beforeend", itemTemplate.innerHTML.replace(/NEW_ITEM/g, key))
+      })
+    }
+
+    const committeePrefix = "quotation_proposal[committee_steps_attributes]"
+    const committeeList = form.querySelector("[data-quotation-committee-list]")
+    const committeeTemplate = form.querySelector("[data-quotation-committee-template]")
+
+    if (committeeList && committeeTemplate) {
+      keysForNestedAttributes(values, committeePrefix).forEach((key) => {
+        if (nestedKeyMarkedForDestroy(values, committeePrefix, key)) return
+        if (formHasNestedKey(form, committeePrefix, key)) return
+
+        committeeList.insertAdjacentHTML("beforeend", committeeTemplate.innerHTML.replace(/NEW_COMMITTEE_STEP/g, key))
+      })
+    }
+  }
+
+  const applyValues = (form, values) => {
+    Array.from(form.elements).forEach((field) => {
+      if (shouldSkipField(field)) return
+      if (!Object.prototype.hasOwnProperty.call(values, field.name)) return
+
+      const savedValues = values[field.name].map(String)
+
+      if (field.type === "checkbox" || field.type === "radio") {
+        field.checked = savedValues.includes(String(field.value))
+      } else if (field.tagName === "SELECT" && field.multiple) {
+        Array.from(field.options).forEach((option) => {
+          option.selected = savedValues.includes(String(option.value))
+        })
+      } else {
+        field.value = savedValues[0] || ""
+      }
+
+      field.dispatchEvent(new Event("input", { bubbles: true }))
+      field.dispatchEvent(new Event("change", { bubbles: true }))
+    })
+  }
+
+  document.querySelectorAll(draftSelector).forEach((form) => {
+    if (form.dataset.draftAutosaveReady === "true") return
+
+    const key = draftStorageKey(form)
+    const draft = readDraft(key)
+
+    if (draft?.values) {
+      restoreQuotationRows(form, draft.values)
+      applyValues(form, draft.values)
+      window.setTimeout(() => applyValues(form, draft.values), 150)
+      window.setTimeout(() => applyValues(form, draft.values), 600)
+    }
+
+    const persistDraft = () => {
+      const values = collectValues(form)
+      if (!valuesHaveContent(values)) {
+        window.localStorage.removeItem(key)
+        return
+      }
+
+      window.localStorage.setItem(key, JSON.stringify({
+        savedAt: new Date().toISOString(),
+        values,
+      }))
+    }
+
+    let saveTimer
+    const saveDraft = () => {
+      window.clearTimeout(saveTimer)
+      saveTimer = window.setTimeout(persistDraft, 200)
+    }
+
+    form.addEventListener("input", saveDraft)
+    form.addEventListener("change", saveDraft)
+    form.addEventListener("click", () => window.setTimeout(saveDraft, 0))
+
+    form.addEventListener("submit", (event) => {
+      window.setTimeout(() => {
+        if (!event.defaultPrevented) window.localStorage.removeItem(key)
+      }, 0)
+    })
+
+    document.addEventListener("turbo:before-cache", persistDraft)
+    window.addEventListener("beforeunload", persistDraft)
+
+    form.dataset.draftAutosaveReady = "true"
+    saveDraft()
+  })
+}
+
 const setupPageSectionPagination = () => {
   document.querySelectorAll("[data-ui-page-pager='true']").forEach((container) => {
     if (container.dataset.uiPagePagerReady === "true") return
@@ -1492,6 +1683,59 @@ const setupBulkDeleteSelections = () => {
   })
 }
 
+const setupProductBatchForm = () => {
+  document.querySelectorAll("[data-product-batch-form]").forEach((form) => {
+    if (form.dataset.productBatchReady === "true") return
+
+    const rowsContainer = form.querySelector("[data-product-rows]")
+    const template = form.querySelector("[data-product-row-template]")
+    const addButton = form.querySelector("[data-add-product-row]")
+    const rowCount = form.querySelector("[data-product-row-count]")
+    if (!rowsContainer || !template || !addButton) return
+
+    let nextIndex = Array.from(rowsContainer.querySelectorAll("[data-product-row]")).length
+
+    const syncRows = () => {
+      const rows = Array.from(rowsContainer.querySelectorAll("[data-product-row]"))
+
+      if (rowCount) rowCount.textContent = String(rows.length)
+
+      rows.forEach((row, index) => {
+        const number = row.querySelector("[data-product-row-number]")
+        const removeButton = row.querySelector("[data-remove-product-row]")
+
+        if (number) number.textContent = String(index + 1)
+        if (removeButton) removeButton.hidden = rows.length === 1
+      })
+    }
+
+    addButton.addEventListener("click", () => {
+      const html = template.innerHTML.replaceAll("NEW_RECORD", String(nextIndex))
+      nextIndex += 1
+
+      rowsContainer.insertAdjacentHTML("beforeend", html)
+      syncRows()
+
+      const lastRow = rowsContainer.querySelector("[data-product-row]:last-child")
+      lastRow?.querySelector("input[type='text'], select, textarea")?.focus()
+    })
+
+    rowsContainer.addEventListener("click", (event) => {
+      const removeButton = event.target instanceof Element ? event.target.closest("[data-remove-product-row]") : null
+      if (!removeButton) return
+
+      const rows = Array.from(rowsContainer.querySelectorAll("[data-product-row]"))
+      if (rows.length <= 1) return
+
+      removeButton.closest("[data-product-row]")?.remove()
+      syncRows()
+    })
+
+    form.dataset.productBatchReady = "true"
+    syncRows()
+  })
+}
+
 const passwordVisibilityIcon = (visible) => {
   if (visible) {
     return `
@@ -1571,6 +1815,7 @@ const setupAutoDismissFlash = () => {
 }
 
 const runAppInitializers = () => {
+  setupFormDraftAutosave()
   setupVendorRegistrationSelections()
   setupVendorDocumentToggle()
   setupMsmeToggle()
@@ -1586,6 +1831,7 @@ const runAppInitializers = () => {
   setupAssetInsuranceFields()
   setupFinanceQueueBulkSelection()
   setupBulkDeleteSelections()
+  setupProductBatchForm()
   setupPasswordVisibility()
   setupQuotationShowDetails()
   setupAutoDismissFlash()

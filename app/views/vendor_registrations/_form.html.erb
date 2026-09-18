@@ -24,6 +24,8 @@
 <% form_data = {
   vendor_validation_form: true,
   ui_form_pager: true,
+  draft_autosave: true,
+  draft_key: "vendor-registration:#{request.path}:#{vendor_registration.to_key&.join('-') || 'new'}",
   controller: "office-location",
   office_location_districts_value: (@district_filter_data || []).to_json,
   office_location_blocks_value: (@block_filter_data || []).to_json

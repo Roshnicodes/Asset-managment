@@ -13,6 +13,8 @@ class ProductVarietiesController < ApplicationController
   # GET /product_varieties/new
   def new
     @product_variety = ProductVariety.new
+    @product_varieties = [@product_variety]
+    @product_variety_batch_context = default_product_variety_batch_context
     load_themes
   end
 
@@ -23,6 +25,11 @@ class ProductVarietiesController < ApplicationController
 
   # POST /product_varieties or /product_varieties.json
   def create
+    if params[:product_varieties].present?
+      create_batch
+      return
+    end
+
     @product_variety = ProductVariety.new(product_variety_params)
 
     respond_to do |format|
@@ -64,6 +71,43 @@ class ProductVarietiesController < ApplicationController
   end
 
   private
+    def create_batch
+      @product_varieties = product_variety_batch_params.reject { |attributes| blank_product_variety_row?(attributes) }.map do |attributes|
+        ProductVariety.new(attributes)
+      end
+
+      if @product_varieties.blank?
+        @product_variety = ProductVariety.new
+        @product_variety.errors.add(:base, "Please add at least one product type.")
+        @product_varieties = [@product_variety]
+        @product_variety_batch_context = product_variety_batch_context_params
+        load_themes
+        render :new, status: :unprocessable_entity
+        return
+      end
+
+      created_count = 0
+
+      ActiveRecord::Base.transaction do
+        @product_varieties.each do |product_variety|
+          unless enforce_product_variety_department!(product_variety) && product_variety.save
+            raise ActiveRecord::Rollback
+          end
+
+          created_count += 1
+        end
+      end
+
+      if created_count == @product_varieties.size
+        redirect_to product_varieties_path, notice: "#{created_count} #{'product type'.pluralize(created_count)} were successfully created."
+      else
+        @product_variety = @product_varieties.find { |product_variety| product_variety.errors.any? } || @product_varieties.first
+        @product_variety_batch_context = product_variety_batch_context_params
+        load_themes
+        render :new, status: :unprocessable_entity
+      end
+    end
+
     # Use callbacks to share common setup or constraints between actions.
     def set_product_variety
       @product_variety = product_variety_scope.find(params.expect(:id))
@@ -72,6 +116,38 @@ class ProductVarietiesController < ApplicationController
     # Only allow a list of trusted parameters through.
     def product_variety_params
       params.expect(product_variety: [ :name, :product_type_code, :product_id, :stakeholder_category_id ])
+    end
+
+    def product_variety_batch_params
+      batch_context = product_variety_batch_context_params.to_h.compact_blank
+      raw_rows = params.fetch(:product_varieties, {})
+      rows = if raw_rows.respond_to?(:to_unsafe_h)
+        raw_rows.to_unsafe_h.sort_by { |index, _attributes| index.to_s.to_i }.map(&:last)
+      else
+        Array(raw_rows)
+      end
+
+      rows.map do |attributes|
+        ActionController::Parameters.new(attributes)
+          .permit(:name, :product_type_code, :product_id, :stakeholder_category_id)
+          .merge(batch_context)
+      end
+    end
+
+    def product_variety_batch_context_params
+      return default_product_variety_batch_context unless params[:product_variety_batch].present?
+
+      params.require(:product_variety_batch).permit(:product_id, :stakeholder_category_id)
+    end
+
+    def default_product_variety_batch_context
+      ActionController::Parameters.new(
+        stakeholder_category_id: (current_employee_master&.stakeholder_category_id unless global_product_catalog_admin?)
+      ).permit(:product_id, :stakeholder_category_id)
+    end
+
+    def blank_product_variety_row?(attributes)
+      attributes.slice(:name, :product_type_code).values.all? { |value| value.to_s.strip.blank? }
     end
 
     def load_themes

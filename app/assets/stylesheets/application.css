@@ -8351,3 +8351,209 @@ body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-navbar {
     font-size: 1.22rem;
   }
 }
+
+.product-batch-card {
+  padding: 0;
+  overflow: hidden;
+  border-color: rgba(11, 74, 79, 0.18);
+  background: #ffffff;
+}
+
+.product-batch-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(11, 74, 79, 0.12);
+  background: #f8fbf9;
+}
+
+.product-batch-toolbar-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.product-batch-toolbar-title strong {
+  color: var(--brand-deep);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.product-batch-toolbar-title span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  height: 1.85rem;
+  padding: 0 0.6rem;
+  border-radius: 999px;
+  background: rgba(242, 177, 52, 0.18);
+  color: #6b4500;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.product-batch-add-button {
+  min-height: 2.45rem;
+  padding: 0.62rem 1rem;
+  border-color: rgba(11, 74, 79, 0.24);
+  background: #ffffff;
+  color: var(--brand-deep);
+  white-space: nowrap;
+}
+
+.product-batch-rows {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.75rem 1rem;
+  background: #fbfdfc;
+}
+
+.product-batch-context {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.75rem 1rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(11, 74, 79, 0.1);
+  background: #ffffff;
+}
+
+.product-batch-row {
+  position: relative;
+  display: grid;
+  gap: 0.72rem;
+  border: 1px solid rgba(11, 74, 79, 0.14);
+  border-left: 4px solid var(--brand-accent);
+  border-radius: 8px;
+  padding: 0.8rem 0.95rem;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(11, 74, 79, 0.05);
+}
+
+.product-batch-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.product-batch-row-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  color: var(--brand-deep);
+  font-weight: 800;
+}
+
+.product-batch-row-title span {
+  font-size: 0.98rem;
+}
+
+.product-batch-row-title strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 999px;
+  background: rgba(11, 74, 79, 0.1);
+  color: var(--brand-deep);
+  font-size: 0.9rem;
+}
+
+.product-batch-remove-button {
+  border: 1px solid rgba(185, 28, 28, 0.18);
+  border-radius: 8px;
+  padding: 0.58rem 0.85rem;
+  background: #fff7f7;
+  color: #9f1d1d;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.product-batch-remove-button:hover {
+  background: #fee2e2;
+  color: #7f1d1d;
+}
+
+.product-batch-rows > .product-batch-row:only-child .product-batch-remove-button,
+.product-batch-remove-button[hidden] {
+  display: none;
+}
+
+.product-batch-row .app-form-grid.two-col {
+  gap: 0.65rem 1rem;
+}
+
+.product-batch-description-field {
+  grid-column: 1 / -1;
+}
+
+.product-batch-description-field textarea.form-control {
+  height: 58px;
+  min-height: 58px;
+  max-height: 90px;
+  resize: vertical;
+}
+
+.product-batch-row .form-control {
+  background-color: #ffffff;
+}
+
+.product-batch-row .form-control:hover {
+  border-color: rgba(11, 74, 79, 0.26);
+}
+
+.product-batch-row-errors {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid rgba(185, 28, 28, 0.22);
+  border-radius: 8px;
+  background: rgba(254, 242, 242, 0.88);
+  color: #991b1b;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.product-batch-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid rgba(11, 74, 79, 0.12);
+  background: #ffffff;
+}
+
+@media screen and (max-width: 820px) {
+  .product-batch-toolbar,
+  .product-batch-row-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .product-batch-add-button,
+  .product-batch-remove-button,
+  .product-batch-actions .app-form-submit {
+    width: 100%;
+  }
+
+  .product-batch-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .product-batch-context {
+    grid-template-columns: 1fr;
+  }
+
+  .product-batch-description-field {
+    grid-column: auto;
+  }
+}

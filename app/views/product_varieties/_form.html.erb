@@ -1,45 +1,356 @@
-<%= form_with(model: product_variety) do |form| %>
-  <div class="app-form-card">
-    <% if product_variety.errors.any? %>
-      <div class="app-form-errors">
-        <h2><%= pluralize(product_variety.errors.count, "error") %> found</h2>
-        <ul>
-          <% product_variety.errors.each do |error| %>
-            <li><%= error.full_message %></li>
-          <% end %>
-        </ul>
-      </div>
-    <% end %>
+<% if product_variety.persisted? %>
+  <%= form_with(model: product_variety, local: true) do |form| %>
+    <div class="app-form-card">
+      <% if product_variety.errors.any? %>
+        <div class="app-form-errors">
+          <h2><%= pluralize(product_variety.errors.count, "error") %> found</h2>
+          <ul>
+            <% product_variety.errors.each do |error| %>
+              <li><%= error.full_message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
 
-    <div class="app-form-grid two-col">
-      <div class="app-form-field">
-        <%= form.label :stakeholder_category_id, "Stakeholder" %>
-        <% if admin_user? %>
-          <%= form.collection_select :stakeholder_category_id, @stakeholders, :id, :name, { prompt: "Select stakeholder" }, class: "form-control" %>
-        <% else %>
-          <div class="app-readonly-value"><%= current_employee_master&.stakeholder_category&.name || "-" %></div>
-          <%= form.hidden_field :stakeholder_category_id, value: current_employee_master&.stakeholder_category_id %>
+      <div class="app-form-grid two-col">
+        <div class="app-form-field">
+          <%= form.label :stakeholder_category_id, "Stakeholder" %>
+          <% if admin_user? && current_employee_master&.stakeholder_category_id.blank? %>
+            <%= form.collection_select :stakeholder_category_id, @stakeholders, :id, :name, { prompt: "Select stakeholder" }, class: "form-control" %>
+          <% else %>
+            <% stakeholder = product_variety.stakeholder_category || current_employee_master&.stakeholder_category %>
+            <div class="app-readonly-value"><%= stakeholder&.name || "-" %></div>
+            <%= form.hidden_field :stakeholder_category_id, value: stakeholder&.id %>
+          <% end %>
+        </div>
+
+        <div class="app-form-field">
+          <%= form.label :product_id, "Product" %>
+          <%= form.grouped_collection_select :product_id, @themes, :products, :name, :id, :name, { prompt: "Select product" }, class: "form-control" %>
+        </div>
+
+        <div class="app-form-field">
+          <%= form.label :product_type_code, "Product Type Code" %>
+          <%= form.text_field :product_type_code, class: "form-control", placeholder: "Enter product type code" %>
+        </div>
+
+        <div class="app-form-field">
+          <%= form.label :name, "Product Company" %>
+          <%= form.text_field :name, class: "form-control" %>
+        </div>
+      </div>
+
+      <div class="app-form-actions">
+        <%= form.submit "Save Product Type", class: "app-form-submit" %>
+      </div>
+    </div>
+  <% end %>
+<% else %>
+  <% product_variety_rows = Array(@product_varieties.presence || [product_variety]) %>
+  <% batch_context = (@product_variety_batch_context || {}).to_h.with_indifferent_access %>
+  <% batch_stakeholder_id = batch_context[:stakeholder_category_id].presence || current_employee_master&.stakeholder_category_id %>
+  <% batch_stakeholder = @stakeholders.find { |stakeholder| stakeholder.id.to_s == batch_stakeholder_id.to_s } || current_employee_master&.stakeholder_category %>
+  <% batch_product_id = batch_context[:product_id].presence || product_variety_rows.find { |row| row.product_id.present? }&.product_id %>
+  <% grouped_product_options = @themes.map { |theme| [theme.name, theme.products.map { |product_option| [product_option.name, product_option.id] }] } %>
+
+  <%= form_with(url: product_varieties_path, method: :post, local: true, class: "product-batch-form", data: { product_batch_form: true }) do %>
+    <div class="app-form-card product-batch-card">
+      <div class="product-batch-toolbar">
+        <div class="product-batch-toolbar-title">
+          <strong>Product Types</strong>
+          <span data-product-row-count><%= product_variety_rows.size %></span>
+        </div>
+      </div>
+
+      <div class="product-batch-context">
+        <div class="app-form-field">
+          <%= label_tag "product_variety_batch_stakeholder_category_id", "Stakeholder" %>
+          <% if admin_user? && current_employee_master&.stakeholder_category_id.blank? %>
+            <%= select_tag "product_variety_batch[stakeholder_category_id]",
+                  options_from_collection_for_select(@stakeholders, :id, :name, batch_stakeholder_id),
+                  include_blank: "Select stakeholder",
+                  id: "product_variety_batch_stakeholder_category_id",
+                  class: "form-control" %>
+          <% else %>
+            <div class="app-readonly-value"><%= batch_stakeholder&.name || "-" %></div>
+            <%= hidden_field_tag "product_variety_batch[stakeholder_category_id]", batch_stakeholder_id, id: "product_variety_batch_stakeholder_category_id" %>
+          <% end %>
+        </div>
+
+        <div class="app-form-field">
+          <%= label_tag "product_variety_batch_product_id", "Product" %>
+          <%= select_tag "product_variety_batch[product_id]",
+                grouped_options_for_select(grouped_product_options, batch_product_id),
+                include_blank: "Select product",
+                id: "product_variety_batch_product_id",
+                required: true,
+                class: "form-control" %>
+        </div>
+      </div>
+
+      <div class="product-batch-rows" data-product-rows>
+        <% product_variety_rows.each_with_index do |product_variety_row, index| %>
+          <%= render "product_varieties/product_variety_row_fields", product_variety: product_variety_row, index: index %>
         <% end %>
       </div>
 
-      <div class="app-form-field">
-        <%= form.label :product_id, "Product" %>
-        <%= form.grouped_collection_select :product_id, @themes, :products, :name, :id, :name, { prompt: "Select product" }, class: "form-control" %>
-      </div>
+      <template data-product-row-template>
+        <%= render "product_varieties/product_variety_row_fields", product_variety: ProductVariety.new, index: "NEW_RECORD" %>
+      </template>
 
-      <div class="app-form-field">
-        <%= form.label :product_type_code, "Product Type Code" %>
-        <%= form.text_field :product_type_code, class: "form-control", placeholder: "Enter product type code" %>
-      </div>
-
-      <div class="app-form-field">
-        <%= form.label :name, "Product Company" %>
-        <%= form.text_field :name, class: "form-control" %>
+      <div class="app-form-actions product-batch-actions">
+        <button type="button" class="app-secondary-btn product-batch-add-button" data-add-product-row>+ Add New</button>
+        <%= submit_tag "Save Product Types", class: "app-form-submit" %>
       </div>
     </div>
+  <% end %>
 
-    <div class="app-form-actions">
-      <%= form.submit "Save Product Type", class: "app-form-submit" %>
-    </div>
-  </div>
+  <style>
+    .product-batch-form .product-batch-card {
+      padding: 0 !important;
+      overflow: hidden !important;
+      border: 1px solid rgba(11, 74, 79, 0.18) !important;
+      border-radius: 8px !important;
+      background: #ffffff !important;
+      box-shadow: none !important;
+    }
+
+    .product-batch-form .product-batch-toolbar {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: flex-start !important;
+      gap: 1rem !important;
+      padding: 0.75rem 1rem !important;
+      border-bottom: 1px solid rgba(11, 74, 79, 0.12) !important;
+      background: #f8fbf9 !important;
+    }
+
+    .product-batch-form .product-batch-toolbar-title {
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 0.7rem !important;
+      min-width: 0 !important;
+    }
+
+    .product-batch-form .product-batch-toolbar-title strong {
+      color: var(--brand-deep) !important;
+      font-size: 1rem !important;
+      font-weight: 800 !important;
+    }
+
+    .product-batch-form .product-batch-toolbar-title span {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      min-width: 2rem !important;
+      height: 1.8rem !important;
+      padding: 0 0.6rem !important;
+      border-radius: 999px !important;
+      background: rgba(242, 177, 52, 0.2) !important;
+      color: #6b4500 !important;
+      font-size: 0.86rem !important;
+      font-weight: 800 !important;
+    }
+
+    .product-batch-form .product-batch-context {
+      display: grid !important;
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) !important;
+      gap: 0.65rem 1rem !important;
+      padding: 0.75rem 1rem !important;
+      border-bottom: 1px solid rgba(11, 74, 79, 0.1) !important;
+      background: #ffffff !important;
+    }
+
+    .product-batch-form .product-batch-rows {
+      display: grid !important;
+      gap: 0.65rem !important;
+      padding: 0.75rem 1rem !important;
+      background: #fbfdfc !important;
+    }
+
+    .product-batch-form .product-batch-row {
+      display: grid !important;
+      gap: 0.62rem !important;
+      border: 1px solid rgba(11, 74, 79, 0.14) !important;
+      border-left: 4px solid var(--brand-accent) !important;
+      border-radius: 8px !important;
+      padding: 0.75rem 0.95rem !important;
+      background: #ffffff !important;
+      box-shadow: 0 8px 20px rgba(11, 74, 79, 0.05) !important;
+    }
+
+    .product-batch-form .product-batch-row-header {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 1rem !important;
+    }
+
+    .product-batch-form .product-batch-row-title {
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 0.55rem !important;
+      color: var(--brand-deep) !important;
+      font-weight: 800 !important;
+    }
+
+    .product-batch-form .product-batch-row-title strong {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      min-width: 1.9rem !important;
+      height: 1.9rem !important;
+      border-radius: 999px !important;
+      background: rgba(11, 74, 79, 0.1) !important;
+      color: var(--brand-deep) !important;
+      font-size: 0.9rem !important;
+    }
+
+    .product-batch-form .product-batch-remove-button {
+      border: 1px solid rgba(185, 28, 28, 0.18) !important;
+      border-radius: 8px !important;
+      padding: 0.58rem 0.85rem !important;
+      background: #fff7f7 !important;
+      color: #9f1d1d !important;
+      font: inherit !important;
+      font-size: 0.9rem !important;
+      font-weight: 800 !important;
+      line-height: 1 !important;
+    }
+
+    .product-batch-form .product-batch-remove-button:hover {
+      background: #fee2e2 !important;
+    }
+
+    .product-batch-form .product-batch-rows > .product-batch-row:only-child .product-batch-remove-button,
+    .product-batch-form .product-batch-remove-button[hidden] {
+      display: none !important;
+    }
+
+    .product-batch-form .product-batch-row .app-form-grid.two-col {
+      display: grid !important;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+      gap: 0.65rem 1rem !important;
+    }
+
+    .product-batch-form .product-batch-row-errors {
+      padding: 0.75rem 0.9rem !important;
+      border: 1px solid rgba(185, 28, 28, 0.22) !important;
+      border-radius: 8px !important;
+      background: rgba(254, 242, 242, 0.88) !important;
+      color: #991b1b !important;
+      font-size: 0.95rem !important;
+      font-weight: 700 !important;
+    }
+
+    .product-batch-form .product-batch-actions {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 1rem !important;
+      margin: 0 !important;
+      padding: 0.75rem 1rem !important;
+      border-top: 1px solid rgba(11, 74, 79, 0.12) !important;
+      background: #ffffff !important;
+    }
+
+    .product-batch-form .product-batch-add-button {
+      min-height: 2.45rem !important;
+      padding: 0.62rem 1rem !important;
+      border: 1px solid rgba(11, 74, 79, 0.24) !important;
+      border-radius: 8px !important;
+      background: #ffffff !important;
+      color: var(--brand-deep) !important;
+      font-weight: 800 !important;
+      white-space: nowrap !important;
+    }
+
+    .product-batch-form .product-batch-add-button:hover {
+      background: rgba(11, 74, 79, 0.06) !important;
+    }
+
+    @media screen and (max-width: 820px) {
+      .product-batch-form .product-batch-context,
+      .product-batch-form .product-batch-row .app-form-grid.two-col {
+        grid-template-columns: 1fr !important;
+      }
+
+      .product-batch-form .product-batch-row-header,
+      .product-batch-form .product-batch-actions {
+        align-items: stretch !important;
+        flex-direction: column !important;
+      }
+
+      .product-batch-form .product-batch-add-button,
+      .product-batch-form .product-batch-remove-button,
+      .product-batch-form .product-batch-actions .app-form-submit {
+        width: 100% !important;
+      }
+    }
+  </style>
+
+  <script>
+    (function() {
+      function setupProductBatchForm() {
+        document.querySelectorAll("[data-product-batch-form]").forEach(function(form) {
+          if (form.dataset.productBatchReady === "true") return;
+
+          var rowsContainer = form.querySelector("[data-product-rows]");
+          var template = form.querySelector("[data-product-row-template]");
+          var addButton = form.querySelector("[data-add-product-row]");
+          var rowCount = form.querySelector("[data-product-row-count]");
+
+          if (!rowsContainer || !template || !addButton) return;
+
+          var nextIndex = rowsContainer.querySelectorAll("[data-product-row]").length;
+
+          function syncRows() {
+            var rows = Array.prototype.slice.call(rowsContainer.querySelectorAll("[data-product-row]"));
+
+            if (rowCount) rowCount.textContent = String(rows.length);
+
+            rows.forEach(function(row, index) {
+              var number = row.querySelector("[data-product-row-number]");
+              var removeButton = row.querySelector("[data-remove-product-row]");
+
+              if (number) number.textContent = String(index + 1);
+              if (removeButton) removeButton.hidden = rows.length === 1;
+            });
+          }
+
+          addButton.addEventListener("click", function() {
+            var html = template.innerHTML.split("NEW_RECORD").join(String(nextIndex));
+            nextIndex += 1;
+
+            rowsContainer.insertAdjacentHTML("beforeend", html);
+            syncRows();
+
+            var lastRow = rowsContainer.querySelector("[data-product-row]:last-child");
+            var firstField = lastRow && lastRow.querySelector("input[type='text'], select, textarea");
+            if (firstField) firstField.focus();
+          });
+
+          rowsContainer.addEventListener("click", function(event) {
+            var target = event.target;
+            var removeButton = target && target.closest ? target.closest("[data-remove-product-row]") : null;
+            if (!removeButton) return;
+
+            var rows = rowsContainer.querySelectorAll("[data-product-row]");
+            if (rows.length <= 1) return;
+
+            var row = removeButton.closest("[data-product-row]");
+            if (row) row.remove();
+            syncRows();
+          });
+
+          form.dataset.productBatchReady = "true";
+          syncRows();
+        });
+      }
+
+      document.addEventListener("turbo:load", setupProductBatchForm);
+      document.addEventListener("DOMContentLoaded", setupProductBatchForm);
+      setupProductBatchForm();
+    })();
+  </script>
 <% end %>

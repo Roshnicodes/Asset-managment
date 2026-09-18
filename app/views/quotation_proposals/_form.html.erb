@@ -36,7 +36,7 @@
   #quotation-step-1:checked ~ .app-static-pager-nav .quotation-nav-1, #quotation-step-2:checked ~ .app-static-pager-nav .quotation-nav-2, #quotation-step-3:checked ~ .app-static-pager-nav .quotation-nav-3, #quotation-step-4:checked ~ .app-static-pager-nav .quotation-nav-4, #quotation-step-5:checked ~ .app-static-pager-nav .quotation-nav-5 { display: flex !important; }
 </style>
 
-<%= form_with(model: quotation_proposal, html: { class: "app-rfp-form", data: { quotation_validation_form: true, ui_form_pager: true }, novalidate: true }) do |form| %>
+<%= form_with(model: quotation_proposal, html: { class: "app-rfp-form", data: { quotation_validation_form: true, ui_form_pager: true, draft_autosave: true, draft_key: "quotation-proposal:#{request.path}:#{quotation_proposal.to_key&.join('-') || 'new'}" }, novalidate: true }) do |form| %>
   <% approval_request = quotation_proposal.approval_request %>
   <% field_errors = ->(field_name) { quotation_proposal.errors.full_messages_for(field_name) } %>
   <% selected_criterion_ids = Array(@selected_vendor_selection_criterion_ids).map(&:to_i) %>

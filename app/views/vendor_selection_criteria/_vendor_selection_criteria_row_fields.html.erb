@@ -1,0 +1,22 @@
+<div class="product-batch-row" data-product-row>
+  <div class="product-batch-row-header">
+    <div class="product-batch-row-title">
+      <span>Criteria</span>
+      <strong data-product-row-number><%= index.to_i + 1 unless index.to_s == "NEW_RECORD" %></strong>
+    </div>
+    <button type="button" class="product-batch-remove-button" data-remove-product-row>Remove</button>
+  </div>
+
+  <% if vendor_selection_criterion.errors.any? %>
+    <div class="product-batch-row-errors">
+      <%= vendor_selection_criterion.errors.full_messages.to_sentence %>
+    </div>
+  <% end %>
+
+  <div class="app-form-grid">
+    <div class="app-form-field <%= "has-error" if vendor_selection_criterion.errors[:criteria].any? %>">
+      <%= label_tag "vendor_selection_criteria_#{index}_criteria", "Criteria" %>
+      <%= text_field_tag "vendor_selection_criteria[#{index}][criteria]", vendor_selection_criterion.criteria, id: "vendor_selection_criteria_#{index}_criteria", class: "form-control", placeholder: "Enter vendor selection criteria" %>
+    </div>
+  </div>
+</div>
