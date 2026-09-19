@@ -1,3 +1,142 @@
+<style>
+  .approval-requests-table {
+    min-width: 1180px !important;
+    table-layout: fixed !important;
+  }
+
+  .approval-requests-table .approval-requests-table__trail {
+    width: 20rem !important;
+    min-width: 20rem !important;
+    max-width: 20rem !important;
+    overflow: visible !important;
+  }
+
+  .approval-requests-table .approval-trail-summary {
+    display: flex !important;
+    align-items: flex-start !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 0.35rem !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    padding: 0.4rem !important;
+    border: 1px solid #dce9df !important;
+    border-radius: 12px !important;
+    background: #f8fcf9 !important;
+  }
+
+  .approval-requests-table .approval-trail-summary::before {
+    display: none !important;
+    content: none !important;
+  }
+
+  .approval-requests-table .approval-trail-summary__item {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 0.12rem 0.35rem !important;
+    flex: 0 1 calc(50% - 0.18rem) !important;
+    width: auto !important;
+    min-width: 8.5rem !important;
+    max-width: calc(50% - 0.18rem) !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0.38rem 0.45rem !important;
+    border: 1px solid #e2eee5 !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+    box-shadow: 0 4px 10px rgba(11, 74, 79, 0.03) !important;
+  }
+
+  .approval-requests-table .approval-trail-summary__item::before {
+    display: none !important;
+    content: none !important;
+  }
+
+  .approval-requests-table .approval-trail-summary__level,
+  .approval-requests-table .approval-trail-summary__name,
+  .approval-requests-table .approval-trail-summary__status {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    overflow-wrap: normal !important;
+  }
+
+  .approval-requests-table .approval-trail-summary__level {
+    grid-column: 1 / 2 !important;
+    color: var(--brand-deep) !important;
+    font-size: 0.66rem !important;
+    font-weight: 900 !important;
+    line-height: 1.15 !important;
+  }
+
+  .approval-requests-table .approval-trail-summary__name {
+    grid-column: 1 / -1 !important;
+    color: var(--text-main) !important;
+    font-weight: 800 !important;
+    font-size: 0.72rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .approval-requests-table .approval-trail-summary__status {
+    grid-column: 2 / 3 !important;
+    grid-row: 1 / 2 !important;
+    align-self: center !important;
+    justify-self: end !important;
+    padding: 0.16rem 0.42rem !important;
+    border-radius: 999px !important;
+    background: #f3f8f5 !important;
+    color: var(--text-soft) !important;
+    font-size: 0.64rem !important;
+    font-weight: 900 !important;
+    text-align: right !important;
+    line-height: 1.15 !important;
+  }
+
+  .approval-requests-table .approval-trail-summary__item--approved .approval-trail-summary__status {
+    background: #ecf8ef !important;
+    color: #237a3d !important;
+  }
+
+  .approval-requests-table .approval-trail-summary__item--pending .approval-trail-summary__status {
+    background: #eafcff !important;
+    color: #0d5c63 !important;
+  }
+
+  .approval-requests-table .approval-trail-summary__item--returned .approval-trail-summary__status {
+    background: #fff7e5 !important;
+    color: #9a6700 !important;
+  }
+
+  .approval-requests-table .approval-trail-summary__item--rejected .approval-trail-summary__status {
+    background: #fff0ef !important;
+    color: #b42318 !important;
+  }
+
+  @media (max-width: 760px) {
+    .approval-requests-table .approval-requests-table__trail {
+      width: 17rem !important;
+      min-width: 17rem !important;
+      max-width: 17rem !important;
+    }
+
+    .approval-requests-table .approval-trail-summary__item {
+      flex-basis: 100% !important;
+      max-width: 100% !important;
+    }
+  }
+</style>
+
 <div class="app-hero-card">
   <div class="app-hero-copy">
     <span class="app-hero-eyebrow">Workflow Desk</span>

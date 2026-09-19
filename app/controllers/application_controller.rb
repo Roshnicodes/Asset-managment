@@ -237,9 +237,40 @@ class ApplicationController < ActionController::Base
       return
     end
 
+    return if approval_assigned_record_view_request?
     return if rbac_menu_access_allowed?(menu_identifier)
 
     redirect_to root_path, alert: "You are not authorized to access this page."
+  end
+
+  def approval_assigned_record_view_request?
+    return false unless current_approval_employee_ids.any?
+
+    case controller_name
+    when "vendor_registrations"
+      return false unless action_name == "show"
+
+      approval_request_for_record(VendorRegistration, params[:id])&.approval_steps&.any? do |step|
+        employee_matches_current_login?(step.employee_master)
+      end || false
+    when "quotation_proposals"
+      return false unless action_name.in?(%w[show quotation_print comparison_print])
+
+      approval_request_for_record(QuotationProposal, params[:id])&.approval_steps&.any? do |step|
+        employee_matches_current_login?(step.employee_master)
+      end || false
+    else
+      false
+    end
+  end
+
+  def approval_request_for_record(record_class, record_id)
+    return if record_id.blank?
+
+    record_class
+      .includes(approval_request: { approval_steps: :employee_master })
+      .find_by(id: record_id)
+      &.approval_request
   end
 
   def rbac_menu_identifier_for_current_request
