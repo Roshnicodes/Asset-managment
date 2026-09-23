@@ -491,7 +491,7 @@
     <p class="app-section-note">Submit time and user IP are saved automatically on submit.</p>
 
     <div class="app-form-actions">
-      <%= form.submit "Submit Registration", class: "app-form-submit" %>
+      <%= form.submit(approval_request&.employee_return_pending? ? "Update And Resubmit" : "Submit Registration", class: "app-form-submit") %>
     </div>
     </div>
 

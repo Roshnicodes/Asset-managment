@@ -80,6 +80,7 @@ class ApplicationController < ActionController::Base
   helper_method :can_manage_rbac_menu_records?
   helper_method :vendor_registration_maker?
   helper_method :quotation_proposal_maker?
+  helper_method :workflow_record_editable_by_current_user?
 
   def current_employee_master
     return @current_employee_master if defined?(@current_employee_master)
@@ -187,6 +188,19 @@ class ApplicationController < ActionController::Base
     approval_form_maker?(["Quotation Proposal", "Quotation Request", "Vendor Registration"])
   end
 
+  def workflow_record_editable_by_current_user?(record)
+    return false unless current_user && record.respond_to?(:user_id)
+    return false if record.respond_to?(:approval_locked?) && record.approval_locked?
+    return true if admin_user?
+    return false unless record.user_id == current_user.id
+
+    approval_request = record.try(:approval_request)
+    return true if approval_request.blank?
+    return true if approval_request.employee_return_pending?
+
+    false
+  end
+
   private
 
   def paginate_scope(scope, per_page: 10)
@@ -233,6 +247,8 @@ class ApplicationController < ActionController::Base
     return if admin_user?
 
     if controller_name == "menu_permissions" || RBAC_ADMIN_ONLY_ACTIONS.include?(action_name)
+      return if workflow_record_edit_request?
+
       redirect_to root_path, alert: "Only admin can edit or delete records."
       return
     end
@@ -271,6 +287,20 @@ class ApplicationController < ActionController::Base
       .includes(approval_request: { approval_steps: :employee_master })
       .find_by(id: record_id)
       &.approval_request
+  end
+
+  def workflow_record_edit_request?
+    return false unless action_name.in?(%w[edit update])
+    return false if params[:id].blank?
+
+    record = case controller_name
+             when "vendor_registrations"
+               VendorRegistration.includes(:approval_request).find_by(id: params[:id])
+             when "quotation_proposals"
+               QuotationProposal.includes(:approval_request).find_by(id: params[:id])
+             end
+
+    workflow_record_editable_by_current_user?(record)
   end
 
   def rbac_menu_identifier_for_current_request

@@ -353,7 +353,7 @@
     </div>
 
     <div class="app-form-actions">
-      <%= form.submit "Save Request for Proposal", class: "app-form-submit" %>
+      <%= form.submit(approval_request&.employee_return_pending? ? "Update And Resubmit" : "Save Request for Proposal", class: "app-form-submit") %>
     </div>
     </div>
 
