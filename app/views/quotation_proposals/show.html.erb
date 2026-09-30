@@ -7,7 +7,7 @@
   committee_approval_started = approval_request.present?
   owner_or_admin = current_user == @quotation_proposal.user || admin_user?
   creator_can_dispatch = current_user == @quotation_proposal.user
-  editable_by_current_user = workflow_record_editable_by_current_user?(@quotation_proposal)
+  editable_by_owner = !@quotation_proposal.approval_locked? && (approval_request.blank? || approval_request.employee_return_pending? || @quotation_proposal.missing_max_rates?)
   committee_trail_steps = approval_request.present? ? approval_request.trail_steps : @quotation_proposal.committee_steps
   pending_approval_count = approval_request.present? ? approval_request.approval_steps.where(status: "pending").count : 0
   committee_scoring_allowed = @committee_scoring_allowed
@@ -15,7 +15,7 @@
   criteria_based_scoring = selected_criteria_selections.any?
   direct_response_mode = @quotation_proposal.below_10k?
   proposal_items_count = @quotation_proposal.quotation_proposal_items.size
-  show_edit_action = editable_by_current_user
+  show_edit_action = owner_or_admin && (current_user == @quotation_proposal.user ? editable_by_owner : true)
   show_start_approval_action = owner_or_admin && @quotation_proposal.approval_request.blank? && @quotation_proposal.sent_to_vendors_at.blank? && !@quotation_proposal.committee_completed?
   show_send_vendor_action = creator_can_dispatch && @quotation_proposal.committee_completed? && !@quotation_proposal.vendor_responses_received?
   print_actions_present = true

@@ -226,6 +226,7 @@
   .vendor-quote-table {
     margin-bottom: 0;
     min-width: 1320px;
+    table-layout: auto;
     border-collapse: separate;
     border-spacing: 0;
   }
@@ -263,6 +264,18 @@
 
   .vendor-quote-table tbody tr:hover td {
     background: #fbfdfb;
+  }
+
+  .vendor-quote-table th:nth-child(2),
+  .vendor-quote-table tbody td.vendor-quote-item-name {
+    min-width: 280px;
+  }
+
+  .vendor-quote-table tbody td.vendor-quote-item-name {
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
   }
 
   .vendor-quote-table input,
@@ -798,7 +811,7 @@
                     <%= form.fields_for :vendor_items, vendor_item do |item_form| %>
                       <tr data-vendor-quote-row>
                         <td data-label="S.No."><%= index + 1 %><%= item_form.hidden_field :id %></td>
-                        <td data-label="Item Name"><%= quotation_item_display_name(vendor_item.quotation_proposal_item.item_name) %></td>
+                        <td class="vendor-quote-item-name" data-label="Item Name"><%= quotation_item_display_name(vendor_item.quotation_proposal_item.item_name) %></td>
                         <td data-label="Unit"><%= vendor_item.quotation_proposal_item.unit.name %></td>
                         <td data-label="Quantity" data-quote-quantity><%= number_with_precision(vendor_item.quotation_proposal_item.quantity, precision: 2, strip_insignificant_zeros: true) %></td>
                         <td data-label="Proposal Remark"><%= vendor_item.quotation_proposal_item.remark.presence || "-" %></td>
