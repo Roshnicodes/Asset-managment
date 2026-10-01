@@ -6,6 +6,6 @@ class AddProcurementFlexibilityToQuotationProposals < ActiveRecord::Migration[8.
                   :reused_from_quotation_proposal,
                   foreign_key: { to_table: :quotation_proposals }
 
-    add_index :vendor_registrations, :mobile_no, unique: true
+    add_index :vendor_registrations, :mobile_no
   end
 end
