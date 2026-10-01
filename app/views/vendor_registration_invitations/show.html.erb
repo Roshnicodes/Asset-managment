@@ -5,7 +5,7 @@
 
 <div class="app-detail-card">
   <p class="app-section-note">
-    The registration invite has been sent to the vendor mobile number. The registration link is not shown here; the vendor must open the SMS link and verify OTP before submitting the registration form.
+    Share this OTP-protected registration link with the vendor. This page also shows the maker the current delivery, verification, and registration status for follow-up.
   </p>
 
   <div class="app-detail-grid">
@@ -31,6 +31,14 @@
     </div>
   </div>
 
+  <div class="app-form-field" style="margin-top: 1rem;">
+    <label for="vendor-registration-share-link">Shareable Registration Link</label>
+    <div class="d-flex gap-2 flex-wrap">
+      <input id="vendor-registration-share-link" type="text" class="form-control" readonly value="<%= @invitation.registration_link %>">
+      <%= link_to "Open Link", @invitation.registration_link, class: "app-secondary-btn", target: "_blank", rel: "noopener" %>
+    </div>
+    <p class="app-section-note mb-0">The vendor must still verify the OTP sent to this mobile number.</p>
+  </div>
   <div style="margin-top: 1.25rem; max-width: 220px;">
     <div data-vendor-registration-qr="true">
       <%= qr_code_svg(@invitation.registration_link, module_size: 4) %>

@@ -96,6 +96,21 @@
           </tr>
 
           <tr>
+            <th scope="row" class="app-rfp-table-label">Approval Route</th>
+            <td class="app-rfp-table-value">
+              <div class="app-form-field app-rfp-cell-field">
+                <% if vertical_head? %>
+                  <%= form.label :committee_approval_required, "Approval Route" %>
+                  <%= form.select :committee_approval_required, [["Committee Approval Required", "true"], ["Share Directly With Vendor", "false"]], {}, class: "form-control" %>
+                  <small class="app-field-hint">Vertical Head can decide whether this request must go to the committee.</small>
+                <% else %>
+                  <%= form.hidden_field :committee_approval_required, value: quotation_proposal.committee_approval_required? %>
+                  <small class="app-field-hint">Committee approval is required unless the Vertical Head changes this route.</small>
+                <% end %>
+              </div>
+            </td>
+          </tr>
+          <tr>
             <th scope="row" class="app-rfp-table-label">Select Theme</th>
             <td class="app-rfp-table-value">
               <div class="app-form-field app-rfp-cell-field">
@@ -124,8 +139,8 @@
             <td class="app-rfp-table-value">
               <div class="app-form-field app-rfp-cell-field <%= "has-error" if field_errors.call(:subject).any? %>">
                 <%= form.label :subject, "Quotation Subject", class: "visually-hidden" %>
-                <%= form.text_field :subject, required: true, data: { validation_label: "Quotation Subject", min_words: 20 } %>
-                <small class="app-field-hint">Minimum 20 words required.</small>
+                <%= form.text_field :subject, required: true, data: { validation_label: "Quotation Subject", min_words: 5, max_words: 20 } %>
+                <small class="app-field-hint">Use between 5 and 20 words.</small>
                 <% field_errors.call(:subject).each do |message| %>
                   <div class="app-form-error"><%= message %></div>
                 <% end %>
@@ -318,12 +333,37 @@
       <div>
         <h3>Approval Committee</h3>
         <p class="app-section-note mb-0">
-          Add more members with `Add Committee Member` if needed.
+          A predefined Quotation Committee mapped to the selected Head/Vertical is used automatically. Members are entered manually only when no mapping exists.
         </p>
       </div>
     </div>
 
-    <div class="app-rfp-section-panel" data-quotation-committee data-min-committee-members="<%= QuotationProposal::MIN_COMMITTEE_MEMBERS %>">
+    <div class="app-rfp-section-panel"
+         data-quotation-committee
+         data-min-committee-members="<%= QuotationProposal::MIN_COMMITTEE_MEMBERS %>"
+         data-configured-committees="<%= (@configured_committees_by_theme || {}).to_json %>">
+      <div class="app-rfp-notice app-section-note" data-quotation-committee-skipped hidden>
+        Committee approval is not required for this request. The quotation link will be shared directly with the selected vendors after saving.
+      </div>
+
+      <div data-quotation-committee-configured hidden>
+        <p class="app-section-note">
+          Predefined Quotation Committee for <strong data-quotation-committee-configured-theme></strong>. These members are applied automatically &mdash; no manual entry is needed.
+        </p>
+        <div class="app-rfp-table-wrap" data-table-search="false" data-table-pagination="false">
+          <table class="table app-table app-rfp-committee-table">
+            <thead>
+              <tr>
+                <th style="width: 180px;">Level</th>
+                <th>Committee Member</th>
+              </tr>
+            </thead>
+            <tbody data-quotation-committee-configured-list></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div data-quotation-committee-manual>
       <div class="app-rfp-table-wrap" data-table-search="false" data-table-pagination="false">
         <table class="table app-table app-rfp-committee-table">
           <thead>
@@ -349,6 +389,7 @@
 
       <div class="app-quotation-toolbar">
         <button type="button" class="app-secondary-btn app-secondary-btn-soft" data-add-committee-step>Add Committee Member</button>
+      </div>
       </div>
     </div>
 

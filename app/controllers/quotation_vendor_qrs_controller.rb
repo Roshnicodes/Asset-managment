@@ -81,6 +81,9 @@ class QuotationVendorQrsController < ApplicationController
       return
     end
 
+    was_response_submitted = @quotation_proposal_vendor.response_submitted?
+    pricing_before = vendor_pricing_snapshot(@quotation_proposal_vendor)
+
     if @quotation_proposal_vendor.update(vendor_response_params)
       if @quotation_proposal.missing_max_rates?
         @quotation_vendor_dispatch.update!(
@@ -102,7 +105,12 @@ class QuotationVendorQrsController < ApplicationController
         return
       end
 
-      @quotation_proposal_vendor.update!(response_status: "responded", responded_at: Time.current)
+      response_received_at = Time.current
+      @quotation_proposal_vendor.update!(response_status: "responded", responded_at: response_received_at)
+      @quotation_proposal.set_quotation_validity_from!(response_received_at)
+      if was_response_submitted && pricing_before != vendor_pricing_snapshot(@quotation_proposal_vendor)
+        @quotation_proposal.invalidate_reused_quotations!
+      end
       @quotation_vendor_dispatch.update!(
         status: "responded",
         access_granted: true,
@@ -195,8 +203,14 @@ class QuotationVendorQrsController < ApplicationController
     )
   end
 
+  def vendor_pricing_snapshot(proposal_vendor)
+    proposal_vendor.vendor_items.order(:quotation_proposal_item_id).pluck(:quotation_proposal_item_id, :quoted_rate, :gst_percentage).map do |item_id, quoted_rate, gst_percentage|
+      [item_id, quoted_rate.to_d, gst_percentage.to_d]
+    end
+  end
+
   def direct_maker_access_allowed?
-    return false unless @quotation_proposal.below_10k?
+    return false unless @quotation_proposal.below_10k? || params[:physical_entry] == "1"
     return false unless params[:direct_access] == "1"
     return false unless current_user.present?
 

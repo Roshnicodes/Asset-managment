@@ -46,11 +46,16 @@ module ApplicationHelper
     end
   end
 
-  def app_dropdown_toggle(label, target_id, icon:, identifier: nil)
+  def app_dropdown_toggle(label, target_id, icon:, identifier: nil, badge_count: 0)
     return unless can_view_menu?(identifier)
 
     content_tag(:a, class: "nav-link dropdown-toggle-link", data: { bs_toggle: "collapse" }, href: "##{target_id}") do
-      safe_join([content_tag(:span, safe_join([app_icon(icon), content_tag(:span, label, class: "app-link-label")]), class: "app-link-wrap")])
+      wrap_parts = [app_icon(icon), content_tag(:span, label, class: "app-link-label")]
+      if badge_count.to_i.positive?
+        wrap_parts << content_tag(:span, badge_count, class: "badge rounded-pill text-bg-danger")
+      end
+
+      safe_join([content_tag(:span, safe_join(wrap_parts), class: "app-link-wrap")])
     end
   end
 

@@ -4,7 +4,9 @@ class QuotationProposal < ApplicationRecord
   REQUIRED_COMMITTEE_LEVELS = [1, 2, 3].freeze
   DEFAULT_COMMITTEE_MEMBERS = 4
   PROCUREMENT_AMOUNT_BUCKETS = %w[above_10k below_10k].freeze
-  MIN_SUBJECT_WORDS = 20
+  MIN_SUBJECT_WORDS = 5
+  MAX_SUBJECT_WORDS = 20
+  COMMITTEE_CHANNEL_FORM_NAMES = ["Quotation Proposal", "Quotation Request"].freeze
 
   WORKFLOW_STATUSES = %w[
     committee_pending
@@ -16,10 +18,20 @@ class QuotationProposal < ApplicationRecord
     rejected
   ].freeze
 
+  # Set when the committee rows were built from the predefined Head/Vertical
+  # mapping instead of being entered by the maker.
+  attr_accessor :committee_from_configured_channel
+
   belongs_to :theme
   belongs_to :user, optional: true
+  belongs_to :reused_from_quotation_proposal, class_name: "QuotationProposal", optional: true
   belongs_to :selected_vendor_registration, class_name: "VendorRegistration", optional: true
 
+  has_many :reused_quotation_proposals,
+           class_name: "QuotationProposal",
+           foreign_key: :reused_from_quotation_proposal_id,
+           dependent: :nullify,
+           inverse_of: :reused_from_quotation_proposal
   has_many :quotation_proposal_vendors, dependent: :destroy
   has_many :vendor_registrations, through: :quotation_proposal_vendors, validate: false
   has_many :quotation_proposal_items, dependent: :destroy, inverse_of: :quotation_proposal
@@ -48,10 +60,71 @@ class QuotationProposal < ApplicationRecord
     return if subject.blank?
 
     word_count = subject.to_s.scan(/\b[[:alnum:]]+\b/).size
-    return if word_count >= MIN_SUBJECT_WORDS
+    return if word_count.between?(MIN_SUBJECT_WORDS, MAX_SUBJECT_WORDS)
 
-    errors.add(:subject, "must be at least #{MIN_SUBJECT_WORDS} words")
+    errors.add(:subject, "must be between #{MIN_SUBJECT_WORDS} and #{MAX_SUBJECT_WORDS} words")
   end
+
+
+  def committee_approval_required?
+    committee_approval_required != false
+  end
+
+  def committee_not_required?
+    !committee_approval_required?
+  end
+
+  def configured_committee_channel
+    return unless committee_approval_required?
+
+    COMMITTEE_CHANNEL_FORM_NAMES.each do |form_name|
+      channel = ApprovalRequestBuilder.approval_channel_for(self, form_name: form_name)
+      return channel if channel&.flow_steps&.any?
+    end
+
+    nil
+  end
+
+  # Members of the predefined committee mapped to this proposal's Head/Vertical.
+  def configured_committee_members
+    channel = configured_committee_channel
+    return [] if channel.blank?
+
+    channel.flow_steps.map(&:to_responsible_user).compact
+  end
+
+  def self.configured_committee_members_for(theme, user: nil)
+    return [] if theme.blank?
+
+    probe = new(theme: theme, user: user)
+    probe.configured_committee_members
+  end
+
+
+  # Approval channels configured for a Head/Vertical (stakeholder) or Theme are
+  # the source of truth for the predefined quotation committee. Manual rows are
+  # retained only until that mapping is configured.
+  def apply_configured_committee!
+    if committee_not_required?
+      committee_steps.each(&:mark_for_destruction)
+      self.committee_from_configured_channel = false
+      return true
+    end
+
+    configured_members = configured_committee_members
+    if configured_members.empty?
+      self.committee_from_configured_channel = false
+      return false
+    end
+
+    committee_steps.each(&:mark_for_destruction)
+    configured_members.each_with_index do |member, index|
+      committee_steps.build(employee_master: member, level: index + 1, status: "waiting")
+    end
+    self.committee_from_configured_channel = true
+    true
+  end
+
 
   def display_name
     subject
@@ -148,6 +221,7 @@ class QuotationProposal < ApplicationRecord
   end
 
   def committee_completed?
+    return true if committee_not_required?
     return approval_request.status == "approved" if approval_request.present?
 
     committee_steps.exists? && committee_steps.all? { |step| step.status == "approved" }
@@ -253,6 +327,39 @@ class QuotationProposal < ApplicationRecord
     end
     update!(sent_to_vendors_at: Time.current)
     refresh_response_status!
+  end
+
+  def quotation_currently_usable?
+    selected_vendor_registration_id.present? &&
+      quotation_proposal_vendors.responded.exists? &&
+      quotation_valid_until.present? &&
+      quotation_valid_until >= Date.current
+  end
+
+  def set_quotation_validity_from!(received_at = Time.current)
+    received_date = received_at.to_date
+    financial_year_end = if received_date.month <= 3
+      Date.new(received_date.year, 3, 31)
+    else
+      Date.new(received_date.year + 1, 3, 31)
+    end
+
+    self.quotation_valid_until = financial_year_end
+    save!(validate: false)
+  end
+
+  def invalidate_quotation_reuse!
+    return if quotation_valid_until.blank?
+
+    self.quotation_valid_until = Date.current - 1.day
+    save!(validate: false)
+  end
+
+  def invalidate_reused_quotations!
+    reused_quotation_proposals.find_each do |reused_quotation|
+      reused_quotation.invalidate_quotation_reuse!
+      reused_quotation.invalidate_reused_quotations!
+    end
   end
 
   def refresh_response_status!
@@ -618,7 +725,15 @@ class QuotationProposal < ApplicationRecord
   end
 
   def must_have_all_committee_levels
+    return unless committee_approval_required?
+
     kept_steps = committee_steps.reject(&:marked_for_destruction?)
+
+    if committee_from_configured_channel
+      errors.add(:base, "Selected Head/Vertical ke liye predefined Quotation Committee me koi member nahi mila.") if kept_steps.empty?
+      return
+    end
+
     levels = kept_steps.map(&:level).compact.sort
     levels_with_members = kept_steps.select { |step| step.employee_master_id.present? }.map(&:level).compact.sort
 
@@ -626,7 +741,6 @@ class QuotationProposal < ApplicationRecord
       errors.add(:base, "Committee me kam se kam #{MIN_COMMITTEE_MEMBERS} members required hain.")
       return
     end
-
     expected_levels = (1..kept_steps.size).to_a
     errors.add(:base, "Committee Member 1 se levels bina gap ke continue hone chahiye.") if levels != expected_levels
 
@@ -638,16 +752,25 @@ class QuotationProposal < ApplicationRecord
   end
 
   def maker_cannot_be_committee_member
+    return unless committee_approval_required?
+
     maker_employee = user&.employee_master
     return if maker_employee.blank?
 
     committee_member_ids = committee_steps.reject(&:marked_for_destruction?).map(&:employee_master_id).compact
     return unless committee_member_ids.include?(maker_employee.id)
 
+    if committee_from_configured_channel
+      errors.add(:base, "Selected Head/Vertical ki predefined Quotation Committee me aap hi maker hain. Please admin se committee mapping update karwayein.")
+      return
+    end
+
     errors.add(:base, "Maker cannot be part of the approval committee.")
   end
 
   def committee_members_must_be_unique
+    return unless committee_approval_required?
+
     committee_member_ids = committee_steps.reject(&:marked_for_destruction?).map(&:employee_master_id).compact
     return if committee_member_ids.uniq.size == committee_member_ids.size
 

@@ -1,12 +1,17 @@
 <% if @vendor_registration.present? %>
   <div class="app-page-header">
-    <h2>Vendor Registration Form</h2>
+    <div>
+      <h2><%= @vendor_registration.persisted? ? "Update Vendor Details" : "Vendor Registration Form" %></h2>
+      <% if @vendor_registration.persisted? %>
+        <p class="app-section-note mb-0">Your registration is already on record. Edit, add, or update any detail below and submit &mdash; the changes will be sent for approval.</p>
+      <% end %>
+    </div>
   </div>
 
   <%= render "vendor_registrations/form",
         vendor_registration: @vendor_registration,
         form_url: register_vendor_registration_invitation_path(@invitation.token),
-        form_method: :post,
+        form_method: @vendor_registration.persisted? ? :patch : :post,
         lock_mobile_no: true,
         disable_turbo: true %>
 <% else %>

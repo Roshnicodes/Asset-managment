@@ -7,10 +7,11 @@
   committee_approval_started = approval_request.present?
   owner_or_admin = current_user == @quotation_proposal.user || admin_user?
   creator_can_dispatch = current_user == @quotation_proposal.user
-  editable_by_owner = !@quotation_proposal.approval_locked? && (approval_request.blank? || approval_request.employee_return_pending? || @quotation_proposal.missing_max_rates?)
+  editable_by_owner = !@quotation_proposal.approval_locked?
   committee_trail_steps = approval_request.present? ? approval_request.trail_steps : @quotation_proposal.committee_steps
   pending_approval_count = approval_request.present? ? approval_request.approval_steps.where(status: "pending").count : 0
   committee_scoring_allowed = @committee_scoring_allowed
+  scoring_pending_for_me = committee_scoring_allowed && pending_committee_scoring_proposals.any? { |proposal| proposal.id == @quotation_proposal.id }
   selected_criteria_selections = @quotation_proposal.criteria_selections.to_a
   criteria_based_scoring = selected_criteria_selections.any?
   direct_response_mode = @quotation_proposal.below_10k?
@@ -316,6 +317,16 @@
            end %>
         <%= button_to send_button_label, send_to_vendors_quotation_proposal_path(@quotation_proposal), method: :post, class: "app-form-submit" %>
       <% end %>
+      <% if creator_can_dispatch && @quotation_proposal.quotation_currently_usable? %>
+        <%= link_to "Reuse Quote / Direct PO", reuse_quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn" %>
+      <% end %>
+      <% if creator_can_dispatch && @quotation_proposal.committee_completed? %>
+        <% @quotation_proposal.quotation_proposal_vendors.includes(:vendor_registration).each do |proposal_vendor| %>
+          <%= button_to "Enter Physical Quote: #{proposal_vendor.vendor_registration.display_name}",
+                        physical_quotation_quotation_proposal_path(@quotation_proposal, proposal_vendor_id: proposal_vendor.id),
+                        method: :post, class: "app-secondary-btn" %>
+        <% end %>
+      <% end %>
       </div>
     <% end %>
   </div>
@@ -431,6 +442,27 @@
         <%= button_to "Open Vendor Form", send_to_vendors_quotation_proposal_path(@quotation_proposal), method: :post, class: "app-form-submit" %>
       </div>
     <% end %>
+  </div>
+<% end %>
+<% if creator_can_dispatch && @quotation_proposal.sent_to_vendors_at.present? %>
+  <div class="app-detail-card app-stack-gap-lg">
+    <div class="app-page-header app-subsection-header-tight">
+      <div>
+        <h3 style="margin-bottom: 0.25rem;">Vendor Links & Tracking</h3>
+        <p class="app-section-note mb-0">Share each vendor link below. The maker can use this quotation page as the tracking link.</p>
+      </div>
+      <%= link_to "Maker Tracking", quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn" %>
+    </div>
+    <div class="d-flex flex-column gap-2">
+      <% @quotation_proposal.quotation_proposal_vendors.includes(:vendor_registration, :vendor_dispatch).each do |proposal_vendor| %>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <strong><%= proposal_vendor.vendor_registration.display_name %></strong>
+          <%= link_to "Vendor Quotation Link", quotation_vendor_qr_path(proposal_vendor.qr_token), class: "app-secondary-btn", target: "_blank", rel: "noopener" %>
+          <span class="badge border bg-light text-dark">Link status: <%= proposal_vendor.vendor_dispatch&.status.to_s.humanize.presence || "Ready" %></span>
+          <span class="badge border bg-light text-dark">Response: <%= proposal_vendor.response_status.humanize %></span>
+        </div>
+      <% end %>
+    </div>
   </div>
 <% end %>
 
@@ -578,11 +610,39 @@
   </div>
 <% end %>
 
+<% if @quotation_proposal.vendor_responses_received? && @quotation_proposal.committee_not_required? && creator_can_dispatch %>
+  <div class="app-detail-card app-stack-gap-lg">
+    <div class="app-page-header app-subsection-header-tight">
+      <div>
+        <h3 style="margin-bottom: 0.25rem;">Select Vendor</h3>
+        <p class="app-section-note mb-0">Committee approval is not required for this request. Select the preferred vendor to create the purchase order.</p>
+      </div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <% @quotation_proposal.quotation_proposal_vendors.responded.includes(:vendor_registration).each do |proposal_vendor| %>
+        <% if proposal_vendor.vendor_registration_id == @quotation_proposal.selected_vendor_registration_id %>
+          <span class="badge border bg-success bg-opacity-10 text-success px-3 py-2"><%= proposal_vendor.vendor_registration.display_name %> selected</span>
+        <% else %>
+          <%= button_to "Select #{proposal_vendor.vendor_registration.display_name}", select_vendor_quotation_proposal_path(@quotation_proposal, proposal_vendor_id: proposal_vendor.id), method: :patch, class: "app-secondary-btn" %>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
 <% if @quotation_proposal.vendor_responses_received? && !direct_response_mode && @quotation_proposal.all_max_rates_present? %>
   <div class="app-detail-card app-stack-gap-lg">
     <div class="app-page-header app-subsection-header-tight">
       <div>
-        <h3 style="margin-bottom: 0.25rem;">Committee Comparison</h3>
+        <h3 style="margin-bottom: 0.25rem;">
+          Committee Comparison
+          <% if scoring_pending_for_me %>
+            <span class="badge rounded-pill text-bg-danger align-middle ms-2">Your scoring is pending</span>
+          <% end %>
+        </h3>
+        <% if scoring_pending_for_me %>
+          <p class="app-section-note mb-0 text-danger">Please enter your marks for each vendor below and save &mdash; vendor selection is waiting on your score.</p>
+        <% end %>
       </div>
       <div class="d-flex align-items-center gap-2 flex-wrap">
         <%= link_to "Print Comparison", comparison_print_quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn", target: "_blank", rel: "noopener" %>

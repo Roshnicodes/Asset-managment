@@ -2,6 +2,8 @@
   .sticky-top { position: sticky; top: 0; z-index: 100; }
   .app-table thead th { background: #f8fcf9 !important; border-bottom: 2px solid #eef3ef !important; }
   .quotation-list-table-wrap { max-height: none; overflow-x: auto; overflow-y: visible; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+  .app-table tbody tr.quotation-row-pending > td { background: #fdf3f3; }
+  .app-table tbody tr.quotation-row-pending > td:first-child { box-shadow: inset 3px 0 0 #a32d2d; }
 </style>
 
 <% can_manage_quotation_proposals = can_view_menu?("quotation_proposal_form") && quotation_proposal_maker? %>
@@ -22,6 +24,22 @@
     </div>
   </div>
 </div>
+
+<% pending_summary = quotation_pending_actions %>
+<% if pending_summary.any? %>
+  <div class="app-detail-card" style="border-left: 3px solid #a32d2d; background: #fdf3f3; margin-bottom: 1rem;">
+    <strong style="color: #a32d2d;">Pending with you</strong>
+    <div class="app-section-note mb-0" style="margin-top: .35rem;">
+      <% QuotationPendingHelper::QUOTATION_PENDING_LABELS.each do |kind, label| %>
+        <% count = pending_summary.count { |_id, pending_kind| pending_kind == kind } %>
+        <% next if count.zero? %>
+        <span class="badge rounded-pill text-bg-danger me-1"><%= count %></span>
+        <span class="me-3"><%= label.downcase %></span>
+      <% end %>
+      &mdash; highlighted rows below are shown first.
+    </div>
+  </div>
+<% end %>
 
 <div class="app-table-wrap quotation-list-table-wrap" data-page-size="10" data-search-placeholder="Search quotation proposals...">
   <table class="table app-table">
@@ -50,8 +68,12 @@
       </tr>
     </thead>
     <tbody>
-      <% @quotation_proposals.each do |quotation_proposal| %>
-        <tr>
+      <%# Anything waiting on this user is listed first so it cannot be missed. %>
+      <% pending_actions = quotation_pending_actions %>
+      <% ordered_quotation_proposals = @quotation_proposals.sort_by { |proposal| [pending_actions.key?(proposal.id) ? 0 : 1, -proposal.id] } %>
+      <% ordered_quotation_proposals.each do |quotation_proposal| %>
+        <% pending_label = quotation_pending_label(quotation_proposal) %>
+        <tr class="<%= "quotation-row-pending" if pending_label %>">
           <% if can_manage_quotation_proposals %>
             <td>
               <% if quotation_proposal.approval_request.blank? && (admin_user? || quotation_proposal.user_id == current_user.id) %>
@@ -64,7 +86,12 @@
               <%= app_icon(:eye, size: 18) %>
             <% end %>
           </td>
-          <td><%= quotation_proposal.subject %></td>
+          <td>
+            <%= quotation_proposal.subject %>
+            <% if pending_label %>
+              <span class="badge rounded-pill text-bg-danger ms-1"><%= pending_label %></span>
+            <% end %>
+          </td>
           <td><%= quotation_proposal.theme.name %></td>
           <td><%= quotation_proposal.vendor_registrations.map(&:display_name).join(", ") %></td>
           <td><%= quotation_proposal.proposal_end_date.strftime("%d-%m-%Y") %></td>

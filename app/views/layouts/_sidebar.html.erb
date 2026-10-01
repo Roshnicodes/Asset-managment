@@ -84,9 +84,21 @@
         </div>
       </li>
     <% end %>
+    <% pending_scoring_proposals = pending_committee_scoring_proposals %>
+    <% if pending_scoring_proposals.any? %>
+      <li>
+        <%= link_to(pending_scoring_proposals.one? ? quotation_proposal_path(pending_scoring_proposals.first) : list_quotation_proposals_path, class: "nav-link", title: "Vendor marks pending from you") do %>
+          <span class="app-link-wrap">
+            <%= app_icon(:approval) %>
+            <span class="app-link-label">Committee Scoring</span>
+            <span class="badge rounded-pill text-bg-danger"><%= pending_scoring_proposals.size %></span>
+          </span>
+        <% end %>
+      </li>
+    <% end %>
     <% if can_view_menu?("quotation_proposal_list") || (can_view_menu?("quotation_proposal_form") && quotation_proposal_maker?) || can_view_menu?("payment_advice_queue") %>
       <li>
-        <%= app_dropdown_toggle("Quotation Proposal", "quotationProposalMenu", icon: :document, identifier: "quotation_proposal_main") %>
+        <%= app_dropdown_toggle("Quotation Proposal", "quotationProposalMenu", icon: :document, identifier: "quotation_proposal_main", badge_count: quotation_approval_pending_count) %>
         <div class="collapse submenu h-auto" id="quotationProposalMenu">
           <ul class="nav flex-column">
             <% if can_view_menu?("quotation_proposal_form") && quotation_proposal_maker? %>

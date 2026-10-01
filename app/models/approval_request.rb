@@ -403,6 +403,31 @@ class ApprovalRequest < ApplicationRecord
     sync_quotation_proposal!
   end
 
+  def restart_after_revision!
+    return if approval_steps.empty?
+
+    transaction do
+      approval_steps.order(:level).each do |step|
+        reset_attributes = { status: "waiting", remark: nil, actioned_at: nil }
+        if step.proposal_create_step?
+          reset_attributes[:status] = "approved"
+          reset_attributes[:actioned_at] = Time.current
+        end
+        step.update!(reset_attributes)
+      end
+
+      next_pending_step = first_actionable_step
+      if next_pending_step.present?
+        next_pending_step.update!(status: "pending")
+        update!(current_level: next_pending_step.level, status: "pending", return_mode: nil, returned_by_level: nil, returned_to_level: nil)
+        NotificationDispatcher.notify_approval_step(self, next_pending_step)
+      else
+        update!(current_level: nil, status: "approved", return_mode: nil, returned_by_level: nil, returned_to_level: nil)
+      end
+    end
+
+    sync_quotation_proposal!
+  end
   def resubmit_after_return!
     return unless employee_return_pending?
 

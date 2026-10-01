@@ -1,0 +1,32 @@
+<div class="app-page-header">
+  <div>
+    <h2>Reuse Quotation for Direct Purchase Order</h2>
+    <p class="app-section-note mb-0">The approved vendor rates remain unchanged. Update only the required quantities, then create the purchase order draft.</p>
+  </div>
+  <%= link_to "Back", quotation_proposal_path(@quotation_proposal), class: "app-back-link" %>
+</div>
+
+<div class="app-form-card">
+  <p class="app-section-note">Valid until <strong><%= @quotation_proposal.quotation_valid_until.strftime("%d-%m-%Y") %></strong>. Vendor: <strong><%= @reuse_vendor.vendor_registration.display_name %></strong>.</p>
+  <%= form_with url: reuse_quotation_proposal_path(@quotation_proposal), method: :post, local: true, data: { turbo: false } do %>
+    <div class="app-table-wrap">
+      <table class="table app-table">
+        <thead><tr><th>Item</th><th>Unit</th><th>Approved Rate</th><th>Revised Quantity</th></tr></thead>
+        <tbody>
+          <% @quotation_proposal.quotation_proposal_items.order(:id).each do |item| %>
+            <% vendor_item = @reuse_vendor.vendor_items.find_by(quotation_proposal_item_id: item.id) %>
+            <tr>
+              <td><%= item.item_name %></td>
+              <td><%= item.unit.name %></td>
+              <td><%= number_to_currency(vendor_item&.quoted_rate || 0, unit: "₹", precision: 2) %></td>
+              <td><%= number_field_tag "quantities[#{item.id}]", item.quantity, min: 0.01, step: 0.01, required: true, class: "form-control" %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+    <div class="app-form-actions">
+      <%= submit_tag "Create Purchase Order Draft", class: "app-form-submit" %>
+    </div>
+  <% end %>
+</div>

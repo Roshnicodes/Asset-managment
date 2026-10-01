@@ -880,6 +880,14 @@ const setupQuotationProposalForm = () => {
           return false
         }
       }
+      const maxWords = parseInt(input.dataset.maxWords || "0", 10)
+      if (maxWords > 0 && input.value.trim() !== "") {
+        const wordCount = (input.value.match(/\b[\w]+\b/g) || []).length
+        if (wordCount > maxWords) {
+          showFieldError(input, `${label} must not exceed ${maxWords} words.`)
+          return false
+        }
+      }
 
       if (input.checkValidity()) return true
 
@@ -1289,6 +1297,8 @@ const setupQuotationProposalForm = () => {
     const addButton = container.querySelector("[data-add-committee-step]")
     const minimumMembers = Number(container.dataset.minCommitteeMembers || "2")
     const form = container.closest("[data-quotation-validation-form]")
+    const approvalRoute = form?.querySelector("[name='quotation_proposal[committee_approval_required]']")
+    const committeeRequired = () => approvalRoute?.value !== "false"
     if (!list || !template || !addButton) return
 
     const activeRows = () =>
@@ -1299,6 +1309,7 @@ const setupQuotationProposalForm = () => {
 
     const syncCommitteeRows = () => {
       const rows = activeRows()
+      const needsCommittee = committeeRequired()
       const selectedMemberIds = rows
         .map((row) => row.querySelector("[data-committee-member-select]")?.value)
         .filter((value) => value)
@@ -1314,7 +1325,7 @@ const setupQuotationProposalForm = () => {
         if (label) label.textContent = `Committee Member ${level}`
         if (levelField) levelField.value = level
         if (selectField) {
-          selectField.required = requiredLevel
+          selectField.required = needsCommittee && requiredLevel
           selectField.dataset.validationLabel = `Committee Member ${level}`
           Array.from(selectField.querySelectorAll("option")).forEach((option) => {
             if (!option.value) return
@@ -1324,7 +1335,7 @@ const setupQuotationProposalForm = () => {
             option.hidden = selectedElsewhere
           })
         }
-        if (removeButton) removeButton.disabled = requiredLevel || rows.length <= minimumMembers
+        if (removeButton) removeButton.disabled = !needsCommittee || requiredLevel || rows.length <= minimumMembers
       })
     }
 
@@ -1349,6 +1360,11 @@ const setupQuotationProposalForm = () => {
     }
 
     const validateCommittee = () => {
+      if (!committeeRequired()) {
+        activeRows().forEach((row) => clearCommitteeFieldError(row.querySelector("[data-committee-member-select]")))
+        return true
+      }
+
       const rows = activeRows()
       let isValid = rows.length >= 3
       const selectedCounts = {}
@@ -1419,6 +1435,10 @@ const setupQuotationProposalForm = () => {
 
     form?.addEventListener("submit", (event) => {
       if (!validateCommittee()) event.preventDefault()
+    })
+    approvalRoute?.addEventListener("change", () => {
+      syncCommitteeRows()
+      validateCommittee()
     })
 
     syncCommitteeRows()

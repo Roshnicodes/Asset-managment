@@ -358,9 +358,9 @@
         <div class="app-form-error app-form-error-client" data-field-error="true"></div>
       </div>
 
-      <div class="app-form-field <%= "has-error" if field_errors.call(:product_variety_ids).any? %>" data-checkbox-group="true" data-checkbox-group-label="Product Type Name">
-        <%= form.label :product_variety_ids, "Product Type Name" %>
-        <p class="app-checkbox-note">Product types are filtered by the selected products.</p>
+      <div class="app-form-field <%= "has-error" if field_errors.call(:product_variety_ids).any? %>">
+        <%= form.label :product_variety_ids, "Product Type Name (Optional)" %>
+        <p class="app-checkbox-note">Product types are filtered by the selected products. Leave this blank when it is not applicable.</p>
         <%= hidden_field_tag "vendor_registration[product_variety_ids][]", "" %>
         <div class="app-checkbox-grid">
           <% @product_varieties.each do |product_variety| %>

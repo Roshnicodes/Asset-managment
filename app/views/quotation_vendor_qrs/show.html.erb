@@ -1,5 +1,6 @@
 <%
-  direct_access_mode = params[:direct_access] == "1" && @quotation_proposal.below_10k?
+  direct_access_mode = params[:direct_access] == "1" && (@quotation_proposal.below_10k? || params[:physical_entry] == "1")
+  physical_entry_mode = params[:physical_entry] == "1"
   otp_verified = direct_access_mode ? (@otp_verified_for_render || false) : ((@otp_verified_for_render || false) && @quotation_vendor_dispatch.access_open?)
   vendor_remark_lines = @quotation_proposal_vendor.vendor_remark.to_s.lines.map(&:strip).reject(&:blank?)
   default_cover_note = "Dear Sir / Madam,\n\nWe are pleased to submit our quotation for your kind consideration. Please find our best rates and commercial details below."
@@ -716,7 +717,7 @@
     });
   </script>
 
-  <%= form_with model: @quotation_proposal_vendor, url: quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token, direct_access: ("1" if direct_access_mode), verified: ("1" if direct_access_mode)), method: :patch, local: true, html: { id: "quotation_vendor_response_form" }, data: { vendor_quote_calc: true } do |form| %>
+  <%= form_with model: @quotation_proposal_vendor, url: quotation_vendor_qr_path(@quotation_proposal_vendor.qr_token, direct_access: ("1" if direct_access_mode), physical_entry: ("1" if params[:physical_entry] == "1"), verified: ("1" if direct_access_mode)), method: :patch, local: true, html: { id: "quotation_vendor_response_form" }, data: { vendor_quote_calc: true } do |form| %>
     <div class="vendor-quote-workspace">
       <div class="vendor-quote-shell">
         <%= render "document_branding", vendor_name: (@vendor_registration.firm_name.presence || @vendor_registration.display_name), stakeholder_category: @stakeholder_category %>
@@ -890,8 +891,8 @@
         <div class="app-detail-card vendor-quote-card">
           <div class="app-page-header app-subsection-header-tight vendor-quote-section-head">
             <div>
-              <h3>Upload Any Documents (Optional)</h3>
-              <p class="app-section-note mb-0">Attach supporting PDF or image files here.</p>
+              <h3><%= physical_entry_mode ? "Upload Scanned Physical Quotation" : "Upload Any Documents (Optional)" %></h3>
+              <p class="app-section-note mb-0"><%= physical_entry_mode ? "Attach the scanned physical quotation for record and verification." : "Attach supporting PDF or image files here." %></p>
             </div>
           </div>
           <div class="vendor-quote-inset">

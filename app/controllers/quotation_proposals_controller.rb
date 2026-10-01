@@ -3,13 +3,13 @@ class QuotationProposalsController < ApplicationController
 
   before_action :set_quotation_proposal, only: %i[
     show edit update destroy approve_committee return_committee
-    send_to_vendors score_vendor score_vendors select_vendor purchase_order send_purchase_order update_purchase_order_reply goods_receive update_goods_receive
+    send_to_vendors score_vendor score_vendors select_vendor purchase_order send_purchase_order update_purchase_order_reply goods_receive update_goods_receive reuse physical_quotation
     new_invoice_request_assets create_invoice_request_assets review_invoice_request assign_payment_references purchase_order_print quotation_print comparison_print
   ]
-  before_action :ensure_quotation_owner_access!, only: %i[edit update destroy send_to_vendors purchase_order purchase_order_print send_purchase_order goods_receive update_goods_receive new_invoice_request_assets create_invoice_request_assets review_invoice_request]
+  before_action :ensure_quotation_owner_access!, only: %i[edit update destroy send_to_vendors purchase_order purchase_order_print send_purchase_order goods_receive update_goods_receive new_invoice_request_assets create_invoice_request_assets review_invoice_request reuse physical_quotation]
   before_action :ensure_quotation_owner_access!, only: %i[assign_payment_references]
   before_action :ensure_quotation_change_allowed!, only: %i[edit update]
-  before_action :authorize_quotation_form_access!, only: %i[index new create edit update destroy send_for_approval send_to_vendors]
+  before_action :authorize_quotation_form_access!, only: %i[index new create edit update destroy send_for_approval send_to_vendors reuse physical_quotation]
   before_action :authorize_quotation_list_access!, only: %i[list]
   before_action :authorize_payment_advice_access!, only: %i[payment_advice update_payment_advice]
   before_action :authorize_quotation_view_access!, only: %i[show approve_committee return_committee quotation_print comparison_print]
@@ -137,18 +137,18 @@ class QuotationProposalsController < ApplicationController
     selected_criteria_ids = extract_vendor_selection_criterion_ids!(attrs)
     attrs.delete("quotation_proposal_items_attributes")
     attrs.delete(:quotation_proposal_items_attributes)
-    was_returned = @quotation_proposal.approval_request&.employee_return_pending?
+    approval_needs_restart = @quotation_proposal.approval_request&.status.in?(%w[pending returned])
     @selected_vendor_selection_criterion_ids = selected_criteria_ids
 
     updated = update_quotation_proposal_with_criteria(@quotation_proposal, attrs, item_attributes, selected_criteria_ids)
 
     if updated
-      if was_returned
+      if approval_needs_restart && @quotation_proposal.committee_approval_required?
         @quotation_proposal.rebuild_approval_request_steps!
         NotificationDispatcher.notify_pending_approval_steps(@quotation_proposal.approval_request)
       end
 
-      notice_message = if was_returned
+      notice_message = if approval_needs_restart && @quotation_proposal.committee_approval_required?
         "Quotation proposal updated and sent back for approval."
       else
         "Quotation proposal updated successfully."
@@ -165,6 +165,39 @@ class QuotationProposalsController < ApplicationController
   def destroy
     @quotation_proposal.destroy!
     redirect_to quotation_proposals_path, notice: "Quotation proposal deleted successfully.", status: :see_other
+  end
+
+  def physical_quotation
+    unless @quotation_proposal.committee_completed?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Committee approval is required before recording a physical quotation."
+      return
+    end
+
+    proposal_vendor = @quotation_proposal.quotation_proposal_vendors.find_by(id: params[:proposal_vendor_id])
+    if proposal_vendor.blank?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Please select a vendor before recording a physical quotation."
+      return
+    end
+
+    @quotation_proposal.update!(sent_to_vendors_at: Time.current) if @quotation_proposal.sent_to_vendors_at.blank?
+    proposal_vendor.ensure_qr_token!
+    redirect_to quotation_vendor_qr_path(proposal_vendor.qr_token, direct_access: 1, physical_entry: 1, verified: 1)
+  end
+
+  def reuse
+    unless @quotation_proposal.quotation_currently_usable?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "This quotation is no longer valid for reuse."
+      return
+    end
+
+    if request.post?
+      reused_proposal = build_reused_purchase_order!(@quotation_proposal, params.fetch(:quantities, {}).to_unsafe_h)
+      redirect_to purchase_order_quotation_proposal_path(reused_proposal), notice: "Quotation rates were reused and a purchase order draft is ready."
+    else
+      @reuse_vendor = selected_vendor_response_for(@quotation_proposal)
+    end
+  rescue ArgumentError, ActiveRecord::RecordInvalid => error
+    redirect_to reuse_quotation_proposal_path(@quotation_proposal), alert: error.message
   end
 
   def send_for_approval
@@ -891,6 +924,71 @@ class QuotationProposalsController < ApplicationController
   def handle_quotation_not_found
     redirect_to quotation_proposals_path, alert: "The requested quotation proposal could not be found."
   end
+  def selected_vendor_response_for(quotation_proposal)
+    quotation_proposal.quotation_proposal_vendors
+      .includes(vendor_items: :quotation_proposal_item)
+      .find_by(vendor_registration_id: quotation_proposal.selected_vendor_registration_id)
+  end
+
+  def build_reused_purchase_order!(source_quotation, raw_quantities)
+    source_vendor = selected_vendor_response_for(source_quotation)
+    raise ArgumentError, "The selected vendor quotation could not be found." unless source_vendor
+
+    source_items = source_quotation.quotation_proposal_items.order(:id).to_a
+    created = nil
+    created_items_by_source_id = {}
+
+    QuotationProposal.transaction do
+      created = QuotationProposal.new(
+        theme: source_quotation.theme,
+        user: current_user,
+        subject: "Purchase order created from reused quotation #{source_quotation.id}",
+        proposal_end_date: Date.current + 7.days,
+        remark: "Reused quotation ##{source_quotation.id}; only quantities were revised.",
+        procurement_amount_bucket: source_quotation.procurement_amount_bucket,
+        workflow_status: "vendor_selected",
+        committee_approval_required: false,
+        selected_vendor_registration: source_vendor.vendor_registration,
+        reused_from_quotation_proposal: source_quotation,
+        quotation_valid_until: source_quotation.quotation_valid_until
+      )
+
+      source_items.each do |source_item|
+        quantity = raw_quantities.fetch(source_item.id.to_s, source_item.quantity).to_d
+        raise ArgumentError, "Quantity for #{source_item.item_name} must be greater than zero." unless quantity.positive?
+        created_items_by_source_id[source_item.id] = created.quotation_proposal_items.build(
+          item_name: source_item.item_name,
+          unit_id: source_item.unit_id,
+          quantity: quantity,
+          max_rate: source_item.max_rate,
+          remark: source_item.remark
+        )
+      end
+
+      created.quotation_proposal_vendors.build(
+        vendor_registration: source_vendor.vendor_registration,
+        response_status: "responded",
+        vendor_reference_no: source_vendor.vendor_reference_no,
+        vendor_cover_note: source_vendor.vendor_cover_note,
+        vendor_remark: source_vendor.vendor_remark
+      )
+      created.save!
+
+      reused_vendor = created.quotation_proposal_vendors.first
+      source_vendor.vendor_items.includes(:quotation_proposal_item).each do |source_item|
+        reused_vendor.vendor_items.create!(
+          quotation_proposal_item: created_items_by_source_id.fetch(source_item.quotation_proposal_item_id),
+          quoted_rate: source_item.quoted_rate,
+          gst_percentage: source_item.gst_percentage,
+          remark: source_item.remark
+        )
+      end
+      created.refresh_response_status!
+    end
+
+    created
+  end
+
 
   def quotation_proposal_params
     permitted = params.require(:quotation_proposal).permit(
@@ -899,6 +997,7 @@ class QuotationProposalsController < ApplicationController
       :proposal_end_date,
       :remark,
       :procurement_amount_bucket,
+      :committee_approval_required,
       vendor_registration_ids: [],
       vendor_selection_criterion_ids: [],
       quotation_proposal_items_attributes: [:id, :item_name, :unit_id, :quantity, :max_rate, :remark, :_destroy],
@@ -1106,10 +1205,27 @@ class QuotationProposalsController < ApplicationController
       current_employee_master&.id
     ].compact.uniq
     @committee_members = EmployeeMaster.where.not(id: maker_employee_ids).order(:name)
+    @configured_committees_by_theme = configured_committees_by_theme(@themes)
+  end
+
+  # Predefined Quotation Committee per Head/Vertical, keyed by theme id so the
+  # form can show the mapped members instead of asking the maker to pick them.
+  def configured_committees_by_theme(themes)
+    proposal_owner = @quotation_proposal&.user || current_user
+
+    themes.each_with_object({}) do |theme, mapping|
+      members = QuotationProposal.configured_committee_members_for(theme, user: proposal_owner)
+      next if members.empty?
+
+      mapping[theme.id] = members.map.with_index(1) do |member, level|
+        { level: level, name: member.name, designation: member.designation.to_s }
+      end
+    end
   end
 
   def persist_quotation_proposal_with_criteria(quotation_proposal, selected_criteria_ids)
     QuotationProposal.transaction do
+      quotation_proposal.apply_configured_committee!
       quotation_proposal.save!
       quotation_proposal.sync_vendor_selection_criteria!(selected_criteria_ids)
     end
@@ -1121,7 +1237,10 @@ class QuotationProposalsController < ApplicationController
 
   def update_quotation_proposal_with_criteria(quotation_proposal, attrs, item_attributes, selected_criteria_ids)
     QuotationProposal.transaction do
-      quotation_proposal.update!(attrs)
+      quotation_proposal.assign_attributes(attrs)
+      quotation_proposal.apply_configured_committee!
+      quotation_proposal.save!
+      quotation_proposal.approval_request&.destroy! if quotation_proposal.committee_not_required?
       sync_quotation_items(quotation_proposal, item_attributes)
       quotation_proposal.sync_vendor_selection_criteria!(selected_criteria_ids)
     end
@@ -1416,6 +1535,11 @@ class QuotationProposalsController < ApplicationController
   end
 
   def start_quotation_approval_request!(quotation_proposal)
+    unless quotation_proposal.committee_approval_required?
+      quotation_proposal.send_to_vendors!
+      return true
+    end
+
     return false if quotation_proposal.approval_request.present?
 
     approval_request = quotation_proposal.bootstrap_approval_request_from_committee!
@@ -1428,6 +1552,8 @@ class QuotationProposalsController < ApplicationController
   end
 
   def authorize_committee_comparison_access!
+    return if @quotation_proposal.committee_not_required? && (admin_user? || @quotation_proposal.user_id == current_user.id)
+
     return if committee_scoring_allowed_for?(@quotation_proposal)
 
     redirect_to quotation_proposal_path(@quotation_proposal), alert: "Only committee members can score vendors and select the final vendor."

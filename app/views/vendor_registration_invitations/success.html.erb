@@ -1,8 +1,19 @@
+<% revised = @registration_revised %>
 <div class="app-detail-card">
   <div class="app-page-header">
     <div>
-      <h2>Registration Submitted</h2>
-      <p class="app-section-note mb-0">Your vendor registration has been submitted successfully and sent for approval.</p>
+      <h2><%= revised ? "Updated Details Submitted" : "Registration Submitted" %></h2>
+      <p class="app-section-note mb-0">
+        <% if revised %>
+          Your updated vendor details have been submitted successfully and sent for approval. The approved details stay active until the update is approved.
+        <% else %>
+          Your vendor registration has been submitted successfully and sent for approval.
+        <% end %>
+      </p>
     </div>
   </div>
+
+  <p class="app-section-note mb-0">
+    You can return to <%= link_to "this registration page", start_vendor_registration_invitation_path %> any time with the same mobile number to edit or add details. A fresh OTP will be sent for verification.
+  </p>
 </div>

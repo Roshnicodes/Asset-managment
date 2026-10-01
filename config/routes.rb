@@ -14,6 +14,7 @@ Rails.application.routes.draw do
   post "vr/:token/send-otp", to: "vendor_registration_invitations#send_otp", as: :send_vendor_registration_invitation_otp
   post "vr/:token/verify-otp", to: "vendor_registration_invitations#verify_otp", as: :verify_vendor_registration_invitation_otp
   post "vr/:token/register", to: "vendor_registration_invitations#register", as: :register_vendor_registration_invitation
+  patch "vr/:token/register", to: "vendor_registration_invitations#register"
   get "quotation-vendor-qr/:token", to: "quotation_vendor_qrs#show", as: :quotation_vendor_qr
   get "quotation-vendor-qr/:token/print", to: "quotation_vendor_qrs#print", as: :print_quotation_vendor_qr
   post "quotation-vendor-qr/:token/send-otp", to: "quotation_vendor_qrs#send_otp", as: :send_quotation_vendor_qr_otp
@@ -54,6 +55,9 @@ Rails.application.routes.draw do
       patch :return_committee
       patch :assign_payment_references
       post :send_to_vendors
+      get :reuse
+      post :reuse
+      post :physical_quotation
       get :purchase_order
       get :purchase_order_print
       get :quotation_print

@@ -36,7 +36,6 @@ class VendorRegistration < ApplicationRecord
             :company_status, :firm_profile, :business_description, presence: true
   validate :theme_selection_required
   validate :product_selection_required
-  validate :product_variety_selection_required
   validate :profile_descriptions_have_minimum_words
   validate :bank_details_required
   validate :aadhar_document_required_for_proprietor
@@ -44,6 +43,7 @@ class VendorRegistration < ApplicationRecord
   validates :pan_no, format: { with: PAN_NO_FORMAT, message: "must be a valid 10-character PAN number" }, allow_blank: true
   validates :email, format: { with: URI::MailTo::EMAIL_REGEXP, message: "must be a valid email address" }, allow_blank: true
   validates :mobile_no, format: { with: MOBILE_NO_FORMAT, message: "must be a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9" }, allow_blank: true
+  validates :mobile_no, uniqueness: { message: "is already linked to another vendor registration" }, allow_blank: true
   validates :pin_no, format: { with: PIN_NO_FORMAT, message: "must be a valid 6-digit PIN code" }, allow_blank: true
   validate :gst_no_required_for_company
   validate :msme_details_required_if_applicable
@@ -145,9 +145,6 @@ class VendorRegistration < ApplicationRecord
     errors.add(:product_ids, "must select at least one product") if product_ids.reject(&:blank?).blank?
   end
 
-  def product_variety_selection_required
-    errors.add(:product_variety_ids, "must select at least one product company") if product_variety_ids.reject(&:blank?).blank?
-  end
 
   def profile_descriptions_have_minimum_words
     validate_minimum_words(:firm_profile, "Firm profile")

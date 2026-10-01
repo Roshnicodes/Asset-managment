@@ -56,4 +56,5 @@ module ApprovalRequestsHelper
   def total_approvals_count
     pending_approvals_count + approved_approvals_count + returned_approvals_count + rejected_approvals_count
   end
+
 end

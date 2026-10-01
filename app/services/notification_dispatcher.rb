@@ -25,6 +25,20 @@ class NotificationDispatcher
     end
   end
 
+  def self.notify_pending_approval_reminder_steps(approval_request)
+    approval_request.approval_steps.where(status: "pending").order(:level).each do |approval_step|
+      user = User.find_by(email: approval_step.employee_master.email_id)
+      next unless user
+
+      Notification.create!(
+        user: user,
+        notifiable: approval_request,
+        title: "#{approval_request.form_name} - Approval Reminder",
+        message: "Reminder: #{approval_request.reference_label} is pending for your action: #{approval_step.current_action_label}."
+      )
+    end
+  end
+
   def self.notify_request_completed(approval_request, status:, actor:, remark: nil)
     users = approval_request.approval_steps.includes(:employee_master).map do |step|
       User.find_by(email: step.employee_master.email_id)

@@ -20,7 +20,7 @@ class ApprovalChannel < ApplicationRecord
     "Quotation Request",
     "Vendor Quotation Response"
   ].freeze
-  UI_FORM_NAMES = ["Vendor Registration"].freeze
+  UI_FORM_NAMES = ["Vendor Registration", "Quotation Proposal", "Quotation Request"].freeze
 
   APPROVAL_TYPES = ["Sequential", "Parallel"].freeze
   APPROVAL_ACTIONS = [

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_09_05_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_01_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -511,10 +511,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_05_090000) do
   end
 
   create_table "quotation_proposals", force: :cascade do |t|
+    t.boolean "committee_approval_required", default: true, null: false
     t.datetime "created_at", null: false
     t.string "procurement_amount_bucket", default: "above_10k", null: false
     t.date "proposal_end_date", null: false
+    t.date "quotation_valid_until"
     t.text "remark"
+    t.bigint "reused_from_quotation_proposal_id"
     t.bigint "selected_vendor_registration_id"
     t.datetime "sent_to_vendors_at"
     t.string "subject", null: false
@@ -522,6 +525,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_05_090000) do
     t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.string "workflow_status", default: "committee_pending", null: false
+    t.index ["reused_from_quotation_proposal_id"], name: "index_quotation_proposals_on_reused_from_quotation_proposal_id"
     t.index ["selected_vendor_registration_id"], name: "index_quotation_proposals_on_selected_vendor_registration_id"
     t.index ["theme_id"], name: "index_quotation_proposals_on_theme_id"
     t.index ["user_id"], name: "index_quotation_proposals_on_user_id"
@@ -749,6 +753,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_05_090000) do
     t.index ["block_id"], name: "index_vendor_registrations_on_block_id"
     t.index ["district_id"], name: "index_vendor_registrations_on_district_id"
     t.index ["firm_id"], name: "index_vendor_registrations_on_firm_id"
+    t.index ["mobile_no"], name: "index_vendor_registrations_on_mobile_no", unique: true
     t.index ["registration_type_id"], name: "index_vendor_registrations_on_registration_type_id"
     t.index ["stakeholder_category_id"], name: "index_vendor_registrations_on_stakeholder_category_id"
     t.index ["state_id"], name: "index_vendor_registrations_on_state_id"
@@ -833,6 +838,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_09_05_090000) do
   add_foreign_key "quotation_proposal_vendors", "employee_masters", column: "purchase_order_reply_updated_by_id"
   add_foreign_key "quotation_proposal_vendors", "quotation_proposals"
   add_foreign_key "quotation_proposal_vendors", "vendor_registrations"
+  add_foreign_key "quotation_proposals", "quotation_proposals", column: "reused_from_quotation_proposal_id"
   add_foreign_key "quotation_proposals", "themes"
   add_foreign_key "quotation_proposals", "users"
   add_foreign_key "quotation_proposals", "vendor_registrations", column: "selected_vendor_registration_id"

@@ -51,28 +51,21 @@ class VendorRegistrationInvitationsController < ApplicationController
 
   def public_lookup
     mobile_no = normalized_mobile_no(params[:mobile_no])
-    @invitation = VendorRegistrationInvitation
-      .where(mobile_no: mobile_no, vendor_registration_id: nil)
-      .order(created_at: :desc)
-      .first
-
-    if @invitation.blank?
-      flash.now[:alert] = "No active registration invite found for this mobile number. Please check the number or contact the team that shared the invite."
-      render :public_start, status: :unprocessable_entity
-      return
-    end
+    existing_registration = VendorRegistration.find_by(mobile_no: mobile_no)
+    @invitation = invitation_for_public_access(mobile_no, existing_registration)
 
     @invitation.send_new_otp!
-    redirect_to public_vendor_registration_invitation_path(@invitation.token, skip_auto_otp: 1), notice: "An OTP has been sent to your mobile number."
+    notice_message = if existing_registration.present?
+      "This mobile number is already registered. An OTP has been sent so you can update your vendor details."
+    else
+      "An OTP has been sent to your mobile number."
+    end
+    redirect_to public_vendor_registration_invitation_path(@invitation.token, skip_auto_otp: 1), notice: notice_message
   rescue VendorRegistrationInvitation::SmsDeliveryError => error
     redirect_to start_vendor_registration_invitation_path, alert: error.message
   end
 
   def public_show
-    if @invitation.vendor_registration.present?
-      render :success
-      return
-    end
 
     @invitation.mark_opened!
     prepare_public_registration_form if invitation_access_allowed?
@@ -97,10 +90,6 @@ class VendorRegistrationInvitationsController < ApplicationController
   end
 
   def register
-    if @invitation.vendor_registration.present?
-      render :success
-      return
-    end
 
     unless invitation_access_allowed?
       redirect_to public_vendor_registration_invitation_path(@invitation.token), alert: "Your OTP session has expired. Please request and verify a new OTP."
@@ -108,8 +97,10 @@ class VendorRegistrationInvitationsController < ApplicationController
     end
 
     permitted_params = vendor_registration_params
-    @vendor_registration = VendorRegistration.new(permitted_params.except(:document_uploads))
-    @vendor_registration.user = @invitation.user
+    existing_vendor = @invitation.vendor_registration.present?
+    @vendor_registration = @invitation.vendor_registration || VendorRegistration.new
+    @vendor_registration.assign_attributes(permitted_params.except(:document_uploads))
+    @vendor_registration.user ||= @invitation.user
     @vendor_registration.mobile_no = @invitation.mobile_no
     @vendor_registration.incoming_document_files = permitted_params[:document_uploads]
     @vendor_registration.submitted_at ||= Time.current
@@ -118,9 +109,14 @@ class VendorRegistrationInvitationsController < ApplicationController
     if @vendor_registration.valid?
       VendorRegistration.transaction do
         @vendor_registration.save!
-        ApprovalRequestBuilder.create_direct_finance_for_vendor_invitation!(@vendor_registration)
+        if existing_vendor && @vendor_registration.approval_request.present?
+          @vendor_registration.approval_request.restart_after_revision!
+        else
+          ApprovalRequestBuilder.create_direct_finance_for_vendor_invitation!(@vendor_registration)
+        end
         @invitation.update!(vendor_registration: @vendor_registration, status: "registered")
       end
+      @registration_revised = existing_vendor
       render :success
     else
       load_form_collections
@@ -136,6 +132,29 @@ class VendorRegistrationInvitationsController < ApplicationController
   end
 
   private
+
+  # One mobile number maps to exactly one vendor registration. A vendor that has
+  # already registered reuses the invitation linked to that registration so the
+  # OTP flow reopens their existing details for editing.
+  def invitation_for_public_access(mobile_no, existing_registration)
+    if existing_registration.present?
+      return VendorRegistrationInvitation
+        .where(vendor_registration_id: existing_registration.id)
+        .order(created_at: :desc)
+        .first || VendorRegistrationInvitation.create!(
+          mobile_no: mobile_no,
+          status: "registered",
+          vendor_registration: existing_registration,
+          user: existing_registration.user,
+          stakeholder_category_id: existing_registration.stakeholder_category_id
+        )
+    end
+
+    VendorRegistrationInvitation
+      .where(mobile_no: mobile_no, vendor_registration_id: nil)
+      .order(created_at: :desc)
+      .first || VendorRegistrationInvitation.create!(mobile_no: mobile_no, status: "draft")
+  end
 
   def authorize_vendor_registration_maker_access!
     return if vendor_registration_maker?
@@ -196,7 +215,7 @@ class VendorRegistrationInvitationsController < ApplicationController
   end
 
   def prepare_public_registration_form
-    @vendor_registration ||= VendorRegistration.new(mobile_no: @invitation.mobile_no, stakeholder_category: @invitation.stakeholder_category)
+    @vendor_registration ||= @invitation.vendor_registration || VendorRegistration.new(mobile_no: @invitation.mobile_no, stakeholder_category: @invitation.stakeholder_category)
     @vendor_registration.vendor_bank_masters.build if @vendor_registration.vendor_bank_masters.empty?
     load_form_collections
   end

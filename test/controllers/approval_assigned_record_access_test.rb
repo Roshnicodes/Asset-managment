@@ -40,7 +40,7 @@ class ApprovalAssignedRecordAccessTest < ActionDispatch::IntegrationTest
       email: "vendor.approval@example.com",
       firm_name: "Approval Vendor Firm",
       firm_type: "Company",
-      mobile_no: "9876543210",
+      mobile_no: "9811122233",
       pan_no: "ABCDE1234F",
       pin_no: "123456",
       stakeholder_category: @stakeholder_category,
