@@ -264,8 +264,9 @@ class VendorRegistrationsController < ApplicationController
       redirect_to vendor_registration_path(@vendor_registration), alert: "You are not authorized to edit this vendor registration."
     end
 
+    # Admins may still correct an approved registration; the maker may not.
     def ensure_vendor_registration_change_allowed!
-      return unless @vendor_registration.approval_locked?
+      return if admin_user? || !@vendor_registration.approval_locked?
 
       redirect_to vendor_registration_path(@vendor_registration),
                   alert: "Approved vendor registrations cannot be edited or deleted."
