@@ -17,8 +17,8 @@ class VendorRegistrationInvitationsController < ApplicationController
 
     if @invitation.save
       begin
-        @invitation.send_registration_link!
-        redirect_to vendor_registration_invitation_path(@invitation), notice: "Vendor registration SMS invite has been sent successfully."
+        maker_copy = @invitation.send_registration_link!
+        redirect_to vendor_registration_invitation_path(@invitation), invite_sent_flash("Vendor registration SMS invite has been sent successfully.", maker_copy)
       rescue VendorRegistrationInvitation::SmsDeliveryError => error
         redirect_to vendor_registration_invitation_path(@invitation), alert: error.message
       end
@@ -31,8 +31,8 @@ class VendorRegistrationInvitationsController < ApplicationController
   end
 
   def resend
-    @invitation.send_registration_link!
-    redirect_to vendor_registration_invitation_path(@invitation), notice: "Vendor registration SMS invite has been sent again."
+    maker_copy = @invitation.send_registration_link!
+    redirect_to vendor_registration_invitation_path(@invitation), invite_sent_flash("Vendor registration SMS invite has been sent again.", maker_copy)
   rescue VendorRegistrationInvitation::SmsDeliveryError => error
     redirect_to vendor_registration_invitation_path(@invitation), alert: error.message
   end
@@ -96,12 +96,16 @@ class VendorRegistrationInvitationsController < ApplicationController
       return
     end
 
-    permitted_params = vendor_registration_params
+    # The mobile number is never taken from the public form: it is the
+    # OTP-verified number for a new vendor and stays unchanged for an existing one.
+    permitted_params = vendor_registration_params.except(:mobile_no)
     existing_vendor = @invitation.vendor_registration.present?
     @vendor_registration = @invitation.vendor_registration || VendorRegistration.new
     @vendor_registration.assign_attributes(permitted_params.except(:document_uploads))
     @vendor_registration.user ||= @invitation.user
-    @vendor_registration.mobile_no = @invitation.mobile_no
+    # An existing registration keeps its registered number; a new one takes the
+    # number that was verified by OTP.
+    @vendor_registration.mobile_no = @invitation.mobile_no unless existing_vendor
     @vendor_registration.incoming_document_files = permitted_params[:document_uploads]
     @vendor_registration.submitted_at ||= Time.current
     @vendor_registration.submitted_ip ||= request.remote_ip
@@ -133,13 +137,26 @@ class VendorRegistrationInvitationsController < ApplicationController
 
   private
 
+  def invite_sent_flash(message, maker_copy)
+    case maker_copy
+    when :sent
+      { notice: "#{message} A copy of the link was also sent to your mobile number." }
+    when :failed
+      { alert: "#{message} The copy to your mobile number could not be sent." }
+    else
+      { alert: "#{message} No copy was sent to you because your mobile number is missing in Employee Master." }
+    end
+  end
+
   # One mobile number maps to exactly one vendor registration. A vendor that has
   # already registered reuses the invitation linked to that registration so the
   # OTP flow reopens their existing details for editing.
   def invitation_for_public_access(mobile_no, existing_registration)
     if existing_registration.present?
+      # Only reuse an invitation for this same number, so the OTP reaches the
+      # number the vendor typed and the registration keeps its own mobile.
       return VendorRegistrationInvitation
-        .where(vendor_registration_id: existing_registration.id)
+        .where(vendor_registration_id: existing_registration.id, mobile_no: mobile_no)
         .order(created_at: :desc)
         .first || VendorRegistrationInvitation.create!(
           mobile_no: mobile_no,

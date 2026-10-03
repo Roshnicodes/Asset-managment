@@ -32,6 +32,9 @@ class VendorRegistrationInvitation < ApplicationRecord
     update!(opened_at: Time.current, status: "opened") if opened_at.blank? || status == "sent"
   end
 
+  # Sends the link to the vendor and a copy to the maker who sent it, so the
+  # maker can track the same link. Returns :sent, :failed or :no_mobile for the
+  # maker copy; a maker failure never blocks the vendor invite.
   def send_registration_link!
     ensure_sms_friendly_token!
     delivered = QuotationVendorSmsGateway.send_vendor_registration_link(self)
@@ -42,6 +45,14 @@ class VendorRegistrationInvitation < ApplicationRecord
     end
 
     mark_sent!
+    send_maker_copy
+  end
+
+  def maker_mobile_no
+    employee = user&.employee_master ||
+      EmployeeMaster.find_by("LOWER(TRIM(email_id)) = ?", user&.email.to_s.strip.downcase.presence)
+    mobile = QuotationVendorSmsGateway.normalize_mobile_no(employee&.mobile_no)
+    QuotationVendorSmsGateway.valid_indian_mobile_no?(mobile) ? mobile : nil
   end
 
   def send_new_otp!
@@ -78,6 +89,17 @@ class VendorRegistrationInvitation < ApplicationRecord
   end
 
   private
+
+  def send_maker_copy
+    maker_mobile = maker_mobile_no
+    return :no_mobile if maker_mobile.blank?
+    return :sent if maker_mobile == mobile_no
+
+    QuotationVendorSmsGateway.send_vendor_registration_link(self, mobile_no: maker_mobile) ? :sent : :failed
+  rescue StandardError => error
+    Rails.logger.warn("Maker copy of vendor registration link failed for invitation #{id}: #{error.message}")
+    :failed
+  end
 
   def normalize_mobile_no
     digits = mobile_no.to_s.gsub(/\D+/, "")

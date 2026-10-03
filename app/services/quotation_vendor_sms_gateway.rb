@@ -93,10 +93,11 @@ class QuotationVendorSmsGateway
     )
   end
 
-  def self.send_vendor_registration_link(invitation)
+  # mobile_no lets the same DLT-approved message go to the maker as a copy.
+  def self.send_vendor_registration_link(invitation, mobile_no: invitation.mobile_no)
     config = vendor_registration_sms_config
     send_sms(
-      mobile_no: invitation.mobile_no,
+      mobile_no: mobile_no,
       message: vendor_registration_link_message(invitation, config: config),
       template_id: config[:vendor_registration_link_template_id],
       config: config
