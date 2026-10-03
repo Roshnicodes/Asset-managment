@@ -46,9 +46,9 @@ class VendorRegistrationsController < ApplicationController
       @vendor_registrations = base_scope.joins(:approval_request).distinct.order(created_at: :desc)
     else
       own_ids = base_scope.where(user_id: current_user.id).joins(:approval_request).select(:id)
-      involved_ids = if current_employee_master.present?
+      involved_ids = if current_approval_employee_ids.any?
         VendorRegistration.joins(approval_request: :approval_steps)
-          .where(approval_steps: { employee_master_id: current_employee_master.id })
+          .where(approval_steps: { employee_master_id: current_approval_employee_ids, status: ApprovalStep::REACHED_STATUSES })
           .select(:id)
       else
         VendorRegistration.none.select(:id)
@@ -274,7 +274,7 @@ class VendorRegistrationsController < ApplicationController
     def ensure_vendor_owner_or_admin_view_access!
       return if admin_user?
       return if @vendor_registration.user_id == current_user.id
-      return if @vendor_registration.approval_request&.approval_steps&.any? { |step| employee_matches_current_login?(step.employee_master) }
+      return if @vendor_registration.approval_request&.approval_steps&.any? { |step| step.reached? && employee_matches_current_login?(step.employee_master) }
 
       redirect_to list_vendor_registrations_path, alert: "You are not authorized to view this vendor registration."
     end

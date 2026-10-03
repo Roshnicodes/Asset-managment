@@ -19,6 +19,15 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     end
   end
 
+  test "production ASA links fall back to the ASA portal domain when no base url is configured" do
+    QuotationVendorSmsGateway.stub(:local_runtime_environment?, false) do
+      QuotationVendorSmsGateway.stub(:configured_base_url, nil) do
+        assert_equal "https://apurti.asaindia.org", QuotationVendorSmsGateway.base_url(config: { profile: :asa })
+        assert_equal QuotationVendorSmsGateway::DEFAULT_VENDOR_REGISTRATION_BASE_URL, QuotationVendorSmsGateway.base_url(config: { profile: :default })
+      end
+    end
+  end
+
   test "base_url uses route default url options when APP_BASE_URL is blank" do
     with_env("APP_BASE_URL" => nil) do
       with_route_default_url_options(host: "asa360.asaindia.org", protocol: "https") do

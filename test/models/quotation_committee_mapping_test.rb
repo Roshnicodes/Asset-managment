@@ -1,80 +1,91 @@
 require "test_helper"
 
-# Covers the predefined Quotation Committee mapped to a Head/Vertical, and the
-# Vertical Head's option to skip the committee entirely.
+# Covers the quotation committee policy: the maker picks the 1st member, the
+# 2nd is the COO (estimated value up to ₹10 lakh) or the Director (above), and
+# the 3rd is always the Programme Director – Finance.
 class QuotationCommitteeMappingTest < ActiveSupport::TestCase
   self.fixture_table_names = []
 
   setup do
-    @stakeholder_category = StakeholderCategory.create!(name: "Mapping Stakeholder")
-    @mapped_theme = Theme.create!(name: "Mapped Theme", stakeholder_category: @stakeholder_category)
-    @unmapped_theme = Theme.create!(name: "Unmapped Theme", stakeholder_category: @stakeholder_category)
+    @stakeholder_category = StakeholderCategory.create!(name: "Policy Stakeholder")
+    @theme = Theme.create!(name: "Policy Theme", stakeholder_category: @stakeholder_category)
 
-    @maker_employee = create_employee("Mapping Maker", "mapping.maker@example.com", "MAP-MAKER")
+    @maker_employee = create_employee("Policy Maker", "policy.maker@example.com", "POL-MAKER", "Program Manager")
     @maker_user = User.find_by!(email: @maker_employee.email_id)
-    @members = [
-      create_employee("Mapping Member One", "mapping.one@example.com", "MAP-ONE"),
-      create_employee("Mapping Member Two", "mapping.two@example.com", "MAP-TWO"),
-      create_employee("Mapping Member Three", "mapping.three@example.com", "MAP-THREE")
-    ]
-
-    create_committee_channel!(@mapped_theme, @members)
+    @first_member = create_employee("Policy First", "policy.first@example.com", "POL-FIRST", "Program Manager")
+    @coo = create_employee("Policy COO", "policy.coo@example.com", "POL-COO", "COO")
+    @director = create_employee("Policy Director", "policy.director@example.com", "POL-DIR", "Director")
+    @finance = create_employee("Policy Finance", "policy.finance@example.com", "POL-FIN", "Programme Director - Finance")
   end
 
-  test "the committee mapped to the head vertical is resolved from the theme" do
-    members = QuotationProposal.configured_committee_members_for(@mapped_theme, user: @maker_user)
-
-    assert_equal ["Mapping Member One", "Mapping Member Two", "Mapping Member Three"], members.map(&:name)
-  end
-
-  test "a proposal picks up the mapped committee without manual entry" do
-    quotation_proposal = build_proposal(theme: @mapped_theme)
+  test "value up to 10 lakh routes the 2nd member to the COO" do
+    quotation_proposal = build_proposal(quantity: 10, max_rate: 100_000)
 
     assert quotation_proposal.apply_configured_committee!
-    assert quotation_proposal.committee_from_configured_channel
-
-    applied = quotation_proposal.committee_steps.reject(&:marked_for_destruction?)
-    assert_equal [1, 2, 3], applied.map(&:level)
-    assert_equal @members.map(&:id), applied.map(&:employee_master_id)
+    assert_equal [@first_member, @coo, @finance].map(&:id), kept_member_ids(quotation_proposal)
   end
 
-  test "a theme without a mapping falls back to manual committee entry" do
-    quotation_proposal = build_proposal(theme: @unmapped_theme)
+  test "value above 10 lakh routes the 2nd member to the Director" do
+    quotation_proposal = build_proposal(quantity: 10, max_rate: 100_001)
+
+    assert quotation_proposal.apply_configured_committee!
+    assert_equal [@first_member, @director, @finance].map(&:id), kept_member_ids(quotation_proposal)
+  end
+
+  test "policy members overwrite crafted values for levels 2 and 3" do
+    quotation_proposal = build_proposal(quantity: 1, max_rate: 500)
+    quotation_proposal.committee_steps.build(level: 2, employee_master: @first_member, status: "waiting")
+    quotation_proposal.committee_steps.build(level: 4, employee_master: @director, status: "waiting")
+
+    assert quotation_proposal.apply_configured_committee!
+    assert_equal [@first_member, @coo, @finance].map(&:id), kept_member_ids(quotation_proposal)
+  end
+
+  test "the 1st member is mandatory" do
+    quotation_proposal = build_proposal(quantity: 1, max_rate: 500, first_member: nil)
 
     assert_not quotation_proposal.apply_configured_committee!
-    assert_not quotation_proposal.committee_from_configured_channel
-    assert_empty quotation_proposal.committee_steps.reject(&:marked_for_destruction?)
+    quotation_proposal.validate
+    assert_includes quotation_proposal.errors[:base], "Select the 1st Committee Member."
+  end
+
+  test "the 1st member cannot repeat a policy member" do
+    quotation_proposal = build_proposal(quantity: 1, max_rate: 500, first_member: @finance)
+
+    quotation_proposal.apply_configured_committee!
+    quotation_proposal.validate
+    assert_includes quotation_proposal.errors[:base], "Committee members must be unique."
+  end
+
+  test "policy directory exposes the configured members for the form" do
+    directory = QuotationProposal.committee_policy_directory
+
+    assert_equal 1_000_000, directory[:threshold]
+    assert_equal @coo.id, directory[:coo][:id]
+    assert_equal @director.id, directory[:director][:id]
+    assert_equal @finance.id, directory[:finance][:id]
   end
 
   test "sharing directly with the vendor drops the committee and skips its validations" do
-    quotation_proposal = build_proposal(theme: @mapped_theme, committee_approval_required: false)
-    quotation_proposal.committee_steps.build(employee_master: @members.first, level: 1, status: "waiting")
+    quotation_proposal = build_proposal(quantity: 1, max_rate: 500, committee_approval_required: false)
 
     assert quotation_proposal.apply_configured_committee!
     assert_empty quotation_proposal.committee_steps.reject(&:marked_for_destruction?)
-    assert quotation_proposal.committee_not_required?
     assert quotation_proposal.committee_completed?
 
     quotation_proposal.validate
     assert_empty quotation_proposal.errors[:base].grep(/Committee/)
   end
 
-  test "a mapped committee is not held to the manual minimum level rules" do
-    short_theme = Theme.create!(name: "Short Committee Theme", stakeholder_category: @stakeholder_category)
-    create_committee_channel!(short_theme, [@members.first])
-
-    quotation_proposal = build_proposal(theme: short_theme)
-    assert quotation_proposal.apply_configured_committee!
-
-    quotation_proposal.validate
-    assert_empty quotation_proposal.errors[:base].grep(/levels bina gap/)
-  end
-
   private
 
-  def create_employee(name, email, employee_code)
+  def kept_member_ids(quotation_proposal)
+    quotation_proposal.committee_steps.reject(&:marked_for_destruction?).sort_by(&:level).map(&:employee_master_id)
+  end
+
+  def create_employee(name, email, employee_code, designation)
     EmployeeMaster.create!(
-      designation: "Committee Member",
+      designation: designation,
       employee_code: employee_code,
       email_id: email,
       name: name,
@@ -83,35 +94,18 @@ class QuotationCommitteeMappingTest < ActiveSupport::TestCase
     )
   end
 
-  def create_committee_channel!(theme, members)
-    actions = ["L1 Approval", "L2 Approval", "L3 Approval"]
-    channel = ApprovalChannel.new(
-      approval_type: "Sequential",
-      form_name: "Quotation Proposal",
-      stakeholder_category: @stakeholder_category,
-      theme: theme
-    )
-    members.each_with_index do |member, index|
-      channel.approval_channel_steps.build(
-        current_action: actions[index],
-        previous_action: index.zero? ? "NA" : actions[index - 1],
-        step_number: index + 1,
-        to_responsible_user: member
-      )
-    end
-    channel.save!
-    channel
-  end
-
-  def build_proposal(theme:, committee_approval_required: true)
-    QuotationProposal.new(
+  def build_proposal(quantity:, max_rate:, first_member: @first_member, committee_approval_required: true)
+    quotation_proposal = QuotationProposal.new(
       committee_approval_required: committee_approval_required,
       procurement_amount_bucket: "above_10k",
       proposal_end_date: Date.current + 7.days,
-      remark: "Mapping remark",
-      subject: "Mapped committee quotation subject",
-      theme: theme,
+      remark: "Policy remark",
+      subject: "Committee policy quotation subject",
+      theme: @theme,
       user: @maker_user
     )
+    quotation_proposal.quotation_proposal_items.build(item_name: "Policy item", quantity: quantity, max_rate: max_rate)
+    quotation_proposal.committee_steps.build(level: 1, employee_master: first_member, status: "waiting") if first_member
+    quotation_proposal
   end
 end

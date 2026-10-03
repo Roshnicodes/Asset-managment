@@ -7,12 +7,12 @@
 <% sendable_vendor_registrations = @vendor_registrations.select { |vendor_registration| vendor_registration.approval_request.blank? } %>
 
 <div class="app-toolbar">
-  <div class="d-flex align-items-center gap-3" style="width:100%">
+  <div class="d-flex align-items-center gap-3 flex-wrap" style="width:100%">
     <div>
-      <h1 class="mb-0" style="white-space: nowrap;">Vendor Registration Form</h1>
+      <h1 class="mb-0">Vendor Registration Form</h1>
       <p class="app-section-note mb-0">Create vendor drafts, send them for approval, and track workflow remarks from one screen.</p>
     </div>
-    <div style="margin-left:auto; display:flex; gap:.5rem; align-items:center;">
+    <div style="margin-left:auto; display:flex; flex-wrap:wrap; gap:.5rem; align-items:center;">
       <%= link_to "Add Vendor Registration", new_vendor_registration_path, class: "app-primary-btn" %>
       <%= link_to "Send Registration Link", new_vendor_registration_invitation_path, class: "app-secondary-btn" %>
       <%= form_tag send_for_approval_vendor_registrations_path, method: :post, id: "send-approval-form", style: "display: inline;" do %>

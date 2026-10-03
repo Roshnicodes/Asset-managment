@@ -91,6 +91,39 @@ def committee_amount_at_or_below_threshold?
   amount.present? && amount <= COMMITTEE_AMOUNT_THRESHOLD
 end
 
+# Policy members looked up from Employee Master by designation. The form uses
+# this to show members 2 and 3 live while the maker enters item rates.
+def self.committee_policy_directory
+  serialize = ->(employee) { employee && { id: employee.id, name: employee.name, designation: employee.designation.to_s } }
+
+  {
+    threshold: COMMITTEE_AMOUNT_THRESHOLD.to_i,
+    coo: serialize.call(committee_member_with_designation("COO")),
+    director: serialize.call(committee_member_with_designation("Director")),
+    finance: serialize.call(programme_director_finance_member)
+  }
+end
+
+def self.committee_member_with_designation(designation)
+  aliases = { "coo" => ["coo", "chief operating officer"] }
+  names = aliases.fetch(designation.to_s.downcase, [designation.to_s.downcase])
+
+  EmployeeMaster
+    .where("LOWER(TRIM(designation)) IN (?)", names)
+    .order(:id)
+    .first
+end
+
+def self.programme_director_finance_member
+  EmployeeMaster
+    .where(<<~SQL.squish)
+      LOWER(TRIM(designation)) LIKE '%programme%director%finance%'
+      OR LOWER(TRIM(designation)) LIKE '%program%director%finance%'
+    SQL
+    .order(:id)
+    .first || EmployeeMaster.where("LOWER(TRIM(designation)) = ?", "senior manager finance").order(:id).first
+end
+
 def committee_policy_member(level)
   case level.to_i
   when 2
@@ -666,21 +699,11 @@ def upsert_committee_policy_steps!
 end
 
 def committee_member_with_designation(designation)
-  EmployeeMaster
-    .where("LOWER(TRIM(designation)) = ?", designation.to_s.downcase)
-    .order(:id)
-    .first
+  self.class.committee_member_with_designation(designation)
 end
 
 def programme_director_finance_member
-  EmployeeMaster
-    .where(<<~SQL.squish)
-      LOWER(TRIM(designation)) LIKE '%programme%director%finance%'
-      OR LOWER(TRIM(designation)) LIKE '%program%director%finance%'
-      OR LOWER(TRIM(designation)) = 'senior manager finance'
-    SQL
-    .order(:id)
-    .first
+  self.class.programme_director_finance_member
 end
 
   def committee_approver_ids

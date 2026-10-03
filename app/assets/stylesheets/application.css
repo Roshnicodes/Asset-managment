@@ -1004,7 +1004,7 @@ body.auth-page-body {
 }
 
 .app-rfp-form .app-subsection-header {
-  margin: 0.35rem 0 -0.45rem;
+  margin: 0.35rem 0 0.75rem;
   padding: 0.1rem 0 0;
 }
 
@@ -8842,4 +8842,201 @@ body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-navbar {
 .app-table th.is-truncated,
 .app-table .is-truncated {
   cursor: help;
+}
+
+/* --------------------------------------------------------------------------
+   Small laptop refinements
+   Form cells hold inputs, hints and errors, so they must wrap rather than be
+   clipped to an ellipsis like read-only list values.
+   -------------------------------------------------------------------------- */
+
+.app-table tbody td:has(input, select, textarea, .app-form-field),
+.app-table tbody td:has(input, select, textarea, .app-form-field) .app-field-hint {
+  max-width: none;
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+}
+
+.app-field-hint {
+  white-space: normal;
+}
+
+@media (max-width: 767px) {
+  .app-rfp-form-table .app-rfp-table-label {
+    width: auto;
+    white-space: normal;
+  }
+}
+
+/* Small laptops (992-1199px wide): a slimmer sidebar gives the working area
+   room for tables and forms. */
+@media screen and (min-width: 992px) and (max-width: 1199px) {
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-shell {
+    grid-template-columns: 232px minmax(0, 1fr) !important;
+    gap: 0.6rem !important;
+    padding: 0.6rem !important;
+  }
+}
+
+/* Short screens (768px-high laptops, zoomed browsers): slimmer header, and
+   paged forms scroll with the page instead of inside a tiny nested pane. */
+@media screen and (min-width: 992px) and (max-height: 820px) {
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-navbar {
+    height: 68px !important;
+    min-height: 68px !important;
+    padding: 0.3rem 1rem !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-logo-img {
+    max-height: 52px !important;
+    max-width: 180px !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-navbar .app-avatar-img {
+    width: 48px !important;
+    height: 48px !important;
+    border-width: 3px !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-shell {
+    inset: 68px 0 0 0 !important;
+    height: calc(100vh - 68px) !important;
+    padding: 0.6rem !important;
+    gap: 0.6rem !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-shell > .app-sidebar {
+    padding: 0.75rem 0.7rem !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content > form[data-ui-form-pager],
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content > form[data-ui-form-pager] > .app-static-paged-form,
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content > form.app-rfp-form,
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-static-paged-form {
+    flex: 0 0 auto !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-static-page {
+    flex: 0 0 auto !important;
+    overflow: visible !important;
+    padding-right: 0 !important;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-static-paged-form .app-rfp-table-wrap {
+    max-height: none;
+  }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-static-pager-nav {
+    position: sticky !important;
+    bottom: -0.75rem !important;
+    z-index: 5 !important;
+    padding-bottom: 0.75rem !important;
+    box-shadow: 0 -12px 18px -16px rgba(6, 79, 69, 0.4) !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Tablet and phone
+   -------------------------------------------------------------------------- */
+
+.app-sidebar-toggle {
+  display: none;
+}
+
+/* Column headings are short labels: never break them letter by letter. */
+.app-table thead th {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+@media (max-width: 991px) {
+  .app-sidebar-toggle {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    width: 42px;
+    height: 42px;
+    margin-right: 0.6rem;
+    padding: 0 10px;
+    border: 1px solid var(--border-soft, #dce8e2);
+    border-radius: 12px;
+    background: #fff;
+    cursor: pointer;
+  }
+
+  .app-sidebar-toggle span {
+    display: block;
+    height: 2px;
+    border-radius: 2px;
+    background: #0f5f52;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+
+  body.app-sidebar-open .app-sidebar-toggle span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+  body.app-sidebar-open .app-sidebar-toggle span:nth-child(2) { opacity: 0; }
+  body.app-sidebar-open .app-sidebar-toggle span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+  body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-shell > .app-sidebar {
+    display: none;
+  }
+
+  body.app-sidebar-open:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-shell > .app-sidebar {
+    display: block;
+    max-height: calc(100vh - 110px);
+    box-shadow: 0 18px 40px rgba(6, 79, 69, 0.16);
+  }
+
+  /* Wide tables scroll sideways inside their card instead of crushing
+     columns until every heading wraps one letter per line. */
+  .app-content .app-table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app-table:not(.app-rfp-form-table):not(.app-committee-policy-table) {
+    table-layout: auto;
+  }
+
+  .app-table:not(.app-rfp-form-table):not(.app-committee-policy-table) thead th {
+    white-space: nowrap;
+  }
+
+  .app-table:not(.app-rfp-form-table):not(.app-committee-policy-table) tbody td {
+    min-width: 7rem;
+    overflow-wrap: break-word;
+  }
+
+  .app-table tbody td.app-row-actions,
+  .app-table tbody td:has(input[type="checkbox"]) {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .app-list-control-search,
+  .app-list-controls .app-list-control-search form.app-table-search {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+  }
+
+  .app-table-search {
+    min-width: 0;
+  }
+
+  .app-table-search .app-table-search-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .app-table-search .app-table-search-btn {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }
 }

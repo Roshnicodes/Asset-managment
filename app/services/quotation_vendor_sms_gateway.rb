@@ -22,6 +22,8 @@ class QuotationVendorSmsGateway
   DEFAULT_VENDOR_REGISTRATION_OTP_TEMPLATE_ID = "1707177944234142889".freeze
   DEFAULT_VENDOR_REGISTRATION_BASE_URL = "http://apurti.ploughmanagro.com".freeze
   DEFAULT_VENDOR_REGISTRATION_CTA_URL = "http://apurti.ploughmanagro.com/vr?".freeze
+  # ASA vendors open their links on ASA's own portal domain.
+  ASA_DEFAULT_BASE_URL = "https://apurti.asaindia.org".freeze
   DEVELOPMENT_BASE_URL = "http://127.0.0.1:3000".freeze
   ASA_LINK_TEMPLATE_ID = "1707177512006405172".freeze
   ASA_OTP_TEMPLATE_ID = "1707177528687356932".freeze
@@ -499,7 +501,11 @@ class QuotationVendorSmsGateway
   end
 
   def self.base_url(config: nil)
-    configured_base_url(config: config).presence || (local_runtime_environment? ? DEVELOPMENT_BASE_URL : DEFAULT_VENDOR_REGISTRATION_BASE_URL)
+    configured_base_url(config: config).presence || (local_runtime_environment? ? DEVELOPMENT_BASE_URL : default_base_url_for(config))
+  end
+
+  def self.default_base_url_for(config)
+    config&.fetch(:profile, nil) == :asa ? ASA_DEFAULT_BASE_URL : DEFAULT_VENDOR_REGISTRATION_BASE_URL
   end
 
   def self.quotation_reference_for(dispatch)

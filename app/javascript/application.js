@@ -493,18 +493,6 @@ const setupFormDraftAutosave = () => {
       })
     }
 
-    const committeePrefix = "quotation_proposal[committee_steps_attributes]"
-    const committeeList = form.querySelector("[data-quotation-committee-list]")
-    const committeeTemplate = form.querySelector("[data-quotation-committee-template]")
-
-    if (committeeList && committeeTemplate) {
-      keysForNestedAttributes(values, committeePrefix).forEach((key) => {
-        if (nestedKeyMarkedForDestroy(values, committeePrefix, key)) return
-        if (formHasNestedKey(form, committeePrefix, key)) return
-
-        committeeList.insertAdjacentHTML("beforeend", committeeTemplate.innerHTML.replace(/NEW_COMMITTEE_STEP/g, key))
-      })
-    }
   }
 
   const applyValues = (form, values) => {
@@ -1292,216 +1280,166 @@ const setupQuotationProposalForm = () => {
   document.querySelectorAll("[data-quotation-committee]").forEach((container) => {
     if (container.dataset.ready === "true") return
 
-    const list = container.querySelector("[data-quotation-committee-list]")
-    const template = container.querySelector("[data-quotation-committee-template]")
-    const addButton = container.querySelector("[data-add-committee-step]")
-    const minimumMembers = Number(container.dataset.minCommitteeMembers || "2")
     const form = container.closest("[data-quotation-validation-form]")
     const approvalRoute = form?.querySelector("[name='quotation_proposal[committee_approval_required]']")
     const committeeRequired = () => approvalRoute?.value !== "false"
-    const themeField = form?.querySelector("#quotation_proposal_theme_id")
     const skippedNotice = container.querySelector("[data-quotation-committee-skipped]")
-    const configuredBlock = container.querySelector("[data-quotation-committee-configured]")
-    const configuredThemeLabel = container.querySelector("[data-quotation-committee-configured-theme]")
-    const configuredList = container.querySelector("[data-quotation-committee-configured-list]")
-    const manualBlock = container.querySelector("[data-quotation-committee-manual]")
-    let configuredCommittees = {}
+    const policyBlock = container.querySelector("[data-quotation-committee-policy-block]")
+    const amountNode = container.querySelector("[data-committee-amount]")
+    const searchField = container.querySelector("[data-committee-member-search]")
+    const idField = container.querySelector("[data-committee-member-id]")
+    const memberOptions = searchField?.list ? Array.from(searchField.list.options) : []
+    let policy = {}
     try {
-      configuredCommittees = JSON.parse(container.dataset.configuredCommittees || "{}")
+      policy = JSON.parse(container.dataset.committeePolicy || "{}")
     } catch (error) {
-      configuredCommittees = {}
+      policy = {}
     }
-    if (!list || !template || !addButton) return
+    if (!searchField || !idField) return
 
-    const configuredMembers = () => {
-      if (!committeeRequired()) return null
-      const themeId = themeField?.value
-      if (!themeId) return null
-      const members = configuredCommittees[themeId]
-      return members && members.length ? members : null
-    }
+    const threshold = Number(policy.threshold || 1000000)
+    const rupees = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 })
 
-    const committeeMode = () => {
-      if (!committeeRequired()) return "skipped"
-      return configuredMembers() ? "configured" : "manual"
-    }
+    // Same rule as QuotationProposal#estimated_procurement_amount: every kept
+    // item needs a quantity and max rate before the value can be known.
+    const estimatedAmount = () => {
+      const rows = Array.from(form?.querySelectorAll("[data-quotation-item-row]") || []).filter((row) => {
+        const destroyField = row.querySelector("[data-quotation-item-destroy]")
+        return row.style.display !== "none" && (!destroyField || destroyField.value !== "1")
+      })
+      if (!rows.length) return null
 
-    const manualCommitteeRequired = () => committeeMode() === "manual"
-
-    const renderConfiguredCommittee = (members) => {
-      if (configuredThemeLabel) {
-        const themeOption = themeField?.selectedOptions?.[0]
-        configuredThemeLabel.textContent = themeOption?.textContent?.trim() || "the selected Head/Vertical"
+      let total = 0
+      for (const row of rows) {
+        const quantity = row.querySelector("[name$='[quantity]']")?.value
+        const maxRate = row.querySelector("[name$='[max_rate]']")?.value
+        if (quantity === "" || quantity == null || maxRate === "" || maxRate == null) return null
+        total += Number(quantity) * Number(maxRate)
       }
-      if (!configuredList) return
-      configuredList.textContent = ""
-      members.forEach((member) => {
-        const row = document.createElement("tr")
-        const levelCell = document.createElement("td")
-        levelCell.className = "app-rfp-table-cell app-rfp-table-cell--level"
-        levelCell.textContent = `Committee Member ${member.level}`
-        const nameCell = document.createElement("td")
-        nameCell.className = "app-rfp-table-cell"
-        nameCell.textContent = member.designation ? `${member.name} (${member.designation})` : member.name
-        row.append(levelCell, nameCell)
-        configuredList.append(row)
-      })
+      return Number.isFinite(total) ? total : null
     }
 
-    const syncCommitteeMode = () => {
-      const mode = committeeMode()
-      if (skippedNotice) skippedNotice.hidden = mode !== "skipped"
-      if (configuredBlock) configuredBlock.hidden = mode !== "configured"
-      if (manualBlock) manualBlock.hidden = mode !== "manual"
-      if (mode === "configured") renderConfiguredCommittee(configuredMembers())
+    const policyMembers = () => {
+      const amount = estimatedAmount()
+      const upToThreshold = amount !== null && amount <= threshold
+      return {
+        amount,
+        2: upToThreshold
+          ? { role: "COO (up to ₹10 lakh)", member: policy.coo }
+          : { role: amount === null ? "Director (above ₹10 lakh) – COO if value is up to ₹10 lakh" : "Director (above ₹10 lakh)", member: policy.director },
+        3: { role: "Programme Director – Finance", member: policy.finance }
+      }
     }
 
-    const activeRows = () =>
-      Array.from(list.querySelectorAll("[data-quotation-committee-row]")).filter((row) => {
-        const destroyField = row.querySelector("[data-committee-destroy]")
-        return !destroyField || destroyField.value !== "1"
+    const renderPolicy = () => {
+      const required = committeeRequired()
+      if (skippedNotice) skippedNotice.hidden = required
+      if (policyBlock) policyBlock.hidden = !required
+
+      const members = policyMembers()
+      if (amountNode) {
+        amountNode.textContent = members.amount === null ? "Add item quantity and max rate" : rupees.format(members.amount)
+      }
+
+      ;[2, 3].forEach((level) => {
+        const node = container.querySelector(`[data-committee-policy-member="${level}"]`)
+        if (!node) return
+        const { role, member } = members[level]
+        node.querySelector("[data-committee-policy-role]").textContent = role
+        const nameNode = node.querySelector("[data-committee-policy-name]")
+        nameNode.textContent = member ? member.name : "Not configured in Employee Master"
+        nameNode.classList.toggle("is-missing", !member)
       })
-
-    const syncCommitteeRows = () => {
-      syncCommitteeMode()
-      const rows = activeRows()
-      const needsCommittee = manualCommitteeRequired()
-      const selectedMemberIds = rows
-        .map((row) => row.querySelector("[data-committee-member-select]")?.value)
-        .filter((value) => value)
-
-      rows.forEach((row, index) => {
-        const level = index + 1
-        const label = row.querySelector("[data-committee-label]")
-        const levelField = row.querySelector("[data-committee-level]")
-        const removeButton = row.querySelector("[data-remove-committee-step]")
-        const selectField = row.querySelector("[data-committee-member-select]")
-        const requiredLevel = level <= 3
-
-        if (label) label.textContent = `Committee Member ${level}`
-        if (levelField) levelField.value = level
-        if (selectField) {
-          selectField.required = needsCommittee && requiredLevel
-          selectField.dataset.validationLabel = `Committee Member ${level}`
-          Array.from(selectField.querySelectorAll("option")).forEach((option) => {
-            if (!option.value) return
-
-            const selectedElsewhere = selectedMemberIds.includes(option.value) && option.value !== selectField.value
-            option.disabled = selectedElsewhere
-            option.hidden = selectedElsewhere
-          })
-        }
-        if (removeButton) removeButton.disabled = !needsCommittee || requiredLevel || rows.length <= minimumMembers
-      })
+      return members
     }
 
-    const showCommitteeFieldError = (selectField, message) => {
-      const wrapper = selectField?.closest(".app-form-field")
+    const normalizeName = (value) => value.replace(/\s+/g, " ").trim().toLowerCase()
+    const matchedOption = () => {
+      const typed = normalizeName(searchField.value)
+      if (!typed) return null
+      return memberOptions.find((option) => normalizeName(option.value) === typed) || null
+    }
+
+    const syncSelectedMember = () => {
+      const option = matchedOption()
+      idField.value = option ? option.dataset.id : ""
+    }
+
+    const fillSearchFromId = () => {
+      if (!idField.value || searchField.value.trim()) return
+      const option = memberOptions.find((candidate) => candidate.dataset.id === String(idField.value))
+      if (option) searchField.value = option.value
+    }
+
+    const setError = (message) => {
+      const wrapper = searchField.closest(".app-form-field")
       const errorNode = wrapper?.querySelector("[data-field-error='true']")
-      if (wrapper) wrapper.classList.add("has-error")
+      wrapper?.classList.toggle("has-error", Boolean(message))
       if (errorNode) {
-        errorNode.textContent = message
-        errorNode.classList.add("is-visible")
+        errorNode.textContent = message || ""
+        errorNode.classList.toggle("is-visible", Boolean(message))
       }
     }
 
-    const clearCommitteeFieldError = (selectField) => {
-      const wrapper = selectField?.closest(".app-form-field")
-      const errorNode = wrapper?.querySelector("[data-field-error='true']")
-      if (wrapper) wrapper.classList.remove("has-error")
-      if (errorNode) {
-        errorNode.textContent = ""
-        errorNode.classList.remove("is-visible")
-      }
-    }
-
-    const validateCommittee = () => {
-      if (!manualCommitteeRequired()) {
-        activeRows().forEach((row) => clearCommitteeFieldError(row.querySelector("[data-committee-member-select]")))
+    const validateCommittee = ({ showEmpty = false } = {}) => {
+      const members = renderPolicy()
+      if (!committeeRequired()) {
+        setError("")
         return true
       }
 
-      const rows = activeRows()
-      let isValid = rows.length >= 3
-      const selectedCounts = {}
-
-      rows.forEach((row) => {
-        const selectField = row.querySelector("[data-committee-member-select]")
-        if (!selectField?.value) return
-
-        selectedCounts[selectField.value] = (selectedCounts[selectField.value] || 0) + 1
-      })
-
-      rows.forEach((row, index) => {
-        const selectField = row.querySelector("[data-committee-member-select]")
-
-        if (!selectField) {
-          isValid = false
-          return
+      if (!idField.value) {
+        const typed = searchField.value.trim()
+        if (typed || showEmpty) {
+          setError(typed ? "Pick a name from the suggestions list." : "1st Committee Member is required.")
+          return false
         }
-
-        if (!selectField.value && index < 3) {
-          showCommitteeFieldError(selectField, `Committee Member ${index + 1} is required.`)
-          isValid = false
-        } else if (selectedCounts[selectField.value] > 1) {
-          showCommitteeFieldError(selectField, "Committee member must be unique.")
-          isValid = false
-        } else {
-          clearCommitteeFieldError(selectField)
-        }
-      })
-
-      return isValid
-    }
-
-    addButton.addEventListener("click", () => {
-      const uniqueKey = `${Date.now()}-${Math.floor(Math.random() * 1000)}`
-      const html = template.innerHTML.replace(/NEW_COMMITTEE_STEP/g, uniqueKey)
-      list.insertAdjacentHTML("beforeend", html)
-      syncCommitteeRows()
-      validateCommittee()
-    })
-
-    container.addEventListener("click", (event) => {
-      const removeButton = event.target.closest("[data-remove-committee-step]")
-      if (!removeButton) return
-
-      if (removeButton.disabled || activeRows().length <= minimumMembers) return
-
-      const row = removeButton.closest("[data-quotation-committee-row]")
-      if (!row) return
-
-      const destroyField = row.querySelector("[data-committee-destroy]")
-      if (destroyField) {
-        destroyField.value = "1"
-        row.style.display = "none"
-      } else {
-        row.remove()
+        setError("")
+        return true
       }
 
-      syncCommitteeRows()
+      const policyIds = [members[2].member?.id, members[3].member?.id].filter(Boolean).map(String)
+      if (policyIds.includes(String(idField.value))) {
+        setError("This person is already a mandatory committee member. Choose someone else.")
+        return false
+      }
+
+      setError("")
+      return true
+    }
+
+    searchField.addEventListener("input", () => {
+      syncSelectedMember()
+      validateCommittee()
+    })
+    searchField.addEventListener("change", () => {
+      syncSelectedMember()
+      validateCommittee()
+    })
+    searchField.addEventListener("blur", () => validateCommittee())
+    idField.addEventListener("change", () => {
+      fillSearchFromId()
       validateCommittee()
     })
 
-    container.addEventListener("change", (event) => {
-      if (!event.target.matches("[data-committee-member-select]")) return
-      syncCommitteeRows()
-      validateCommittee()
+    form?.addEventListener("input", (event) => {
+      if (event.target.matches("[name$='[quantity]'], [name$='[max_rate]']")) renderPolicy()
     })
-
+    form?.addEventListener("click", (event) => {
+      if (event.target.closest("[data-remove-quotation-item], [data-add-quotation-item]")) setTimeout(renderPolicy, 0)
+    })
     form?.addEventListener("submit", (event) => {
-      if (!validateCommittee()) event.preventDefault()
+      if (!validateCommittee({ showEmpty: true })) {
+        event.preventDefault()
+        const step5 = document.getElementById("quotation-step-5")
+        if (step5) step5.checked = true
+        searchField.focus()
+      }
     })
-    approvalRoute?.addEventListener("change", () => {
-      syncCommitteeRows()
-      validateCommittee()
-    })
-    themeField?.addEventListener("change", () => {
-      syncCommitteeRows()
-      validateCommittee()
-    })
+    approvalRoute?.addEventListener("change", () => validateCommittee())
 
-    syncCommitteeRows()
+    fillSearchFromId()
+    renderPolicy()
     container.dataset.ready = "true"
   })
 
@@ -1886,8 +1824,25 @@ const setupQuotationShowDetails = () => {
 // native tooltip so the full value is one hover away, and re-check on resize
 // because the clipping depends on the column width.
 const setupTruncatedCellTooltips = () => {
+  // Fixed-layout list tables split the card width evenly, so on a small laptop
+  // a dozen columns shrink until even dates are cut off. Give each column a
+  // readable minimum; the table wrapper scrolls sideways when it needs more.
+  document.querySelectorAll(".app-table-wrap table.app-table").forEach((table) => {
+    if (table.dataset.minWidthReady === "true") return
+    table.dataset.minWidthReady = "true"
+    if (table.querySelector("tbody input:not([type='checkbox']):not([type='hidden']):not([type='submit']), tbody select, tbody textarea")) return
+
+    const columnCount = table.querySelector("thead tr")?.children.length || 0
+    if (columnCount < 5) return
+
+    const existingMinWidth = parseFloat(window.getComputedStyle(table).minWidth) || 0
+    table.style.minWidth = `${Math.max(columnCount * 118, existingMinWidth)}px`
+  })
+
   const applyTooltips = () => {
     document.querySelectorAll(".app-table td, .app-table th").forEach((cell) => {
+      if (cell.querySelector("input, select, textarea, button, .app-form-field")) return
+
       const target = cell.querySelector("[data-truncate-target]") || cell
       const full = target.textContent.trim()
 
@@ -2008,6 +1963,36 @@ window.addEventListener("pageshow", (event) => {
 
   if (restoredFromHistory) window.location.reload()
 })
+
+// Below the desktop breakpoint the sidebar collapses behind the navbar menu
+// button. Delegated once so it survives Turbo page swaps.
+if (!window.__sidebarToggleBound) {
+  window.__sidebarToggleBound = true
+
+  const setSidebarOpen = (open) => {
+    document.body.classList.toggle("app-sidebar-open", open)
+    document.querySelectorAll("[data-sidebar-toggle]").forEach((button) => {
+      button.setAttribute("aria-expanded", String(open))
+      button.setAttribute("aria-label", open ? "Close menu" : "Open menu")
+    })
+  }
+
+  document.addEventListener("click", (event) => {
+    if (event.target.closest("[data-sidebar-toggle]")) {
+      setSidebarOpen(!document.body.classList.contains("app-sidebar-open"))
+      return
+    }
+
+    // Following a menu link closes the menu on small screens.
+    if (event.target.closest(".app-sidebar a[href]:not([data-bs-toggle])")) setSidebarOpen(false)
+  })
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") setSidebarOpen(false)
+  })
+
+  document.addEventListener("turbo:load", () => setSidebarOpen(false))
+}
 
 document.addEventListener("turbo:load", scheduleAppInitializers)
 document.addEventListener("DOMContentLoaded", scheduleAppInitializers)

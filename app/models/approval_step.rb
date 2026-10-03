@@ -4,8 +4,19 @@ class ApprovalStep < ApplicationRecord
   belongs_to :from_user, class_name: "EmployeeMaster", optional: true
 
   STATUSES = %w[waiting pending approved returned rejected].freeze
+  # A step is "reached" once the request has arrived at that approver: it is
+  # pending on them now, or they already acted on it. Steps still "waiting"
+  # belong to approvers the request has not reached yet, so those approvers
+  # must not see the request in their lists.
+  REACHED_STATUSES = %w[pending approved returned rejected].freeze
+
+  scope :reached, -> { where(status: REACHED_STATUSES) }
 
   validates :status, inclusion: { in: STATUSES }
+
+  def reached?
+    status.in?(REACHED_STATUSES)
+  end
 
   def action_label
     "#{employee_master.name} (#{employee_master.designation.presence || 'Employee'})"

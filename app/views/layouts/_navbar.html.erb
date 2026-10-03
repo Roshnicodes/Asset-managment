@@ -1,4 +1,9 @@
 <nav class="navbar app-navbar px-4 py-2">
+  <% if user_signed_in? %>
+    <button type="button" class="app-sidebar-toggle" data-sidebar-toggle aria-label="Open menu" aria-expanded="false" aria-controls="app-sidebar">
+      <span></span><span></span><span></span>
+    </button>
+  <% end %>
   <a class="app-brand" href="<%= root_path %>">
     <%= image_tag navbar_logo_source, alt: navbar_logo_alt, class: "app-logo-img" %>
   </a>

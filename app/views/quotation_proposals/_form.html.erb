@@ -26,6 +26,24 @@
   .app-rfp-committee-table .app-rfp-cell-field textarea { border-radius: 10px; }
   .app-rfp-items-table .app-rfp-table-cell--action .app-action-button,
   .app-rfp-committee-table .app-rfp-table-cell--action .app-action-button { width: 100%; }
+  .app-committee-amount { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: .2rem 1rem; margin-bottom: 1rem; padding: .9rem 1.1rem; border: 1px solid #cfe3d8; border-radius: 14px; background: linear-gradient(135deg, #f3faf6, #ffffff); }
+  .app-committee-amount__label { color: #4f6b62; font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+  .app-committee-amount__value { color: #064f45; font-size: 1.2rem; font-weight: 800; text-align: right; }
+  .app-committee-amount__hint { grid-column: 1 / -1; color: #6b7f78; font-size: .8rem; }
+  .app-committee-policy-table .app-committee-remark { color: #4f6b62; font-size: .88rem; vertical-align: middle; }
+  .app-committee-mandatory { display: inline-flex; padding: .25rem .6rem; border-radius: 999px; background: #fff4e5; color: #9a5b00; font-size: .78rem; font-weight: 700; }
+  .app-committee-policy-member { display: flex; flex-direction: column; gap: .15rem; }
+  .app-committee-policy-member__role { color: #4f6b62; font-size: .8rem; font-weight: 700; }
+  .app-committee-policy-member__name { color: #0f2f29; font-weight: 700; }
+  .app-committee-policy-member__name.is-missing { color: #b42318; }
+  @media (max-width: 767px) {
+    .app-committee-amount { grid-template-columns: 1fr; }
+    .app-committee-amount__value { text-align: left; }
+    .app-committee-policy-table thead { display: none; }
+    .app-committee-policy-table, .app-committee-policy-table tbody, .app-committee-policy-table tr, .app-committee-policy-table td { display: block; width: 100% !important; }
+    .app-committee-policy-table tr { border-bottom: 1px solid #edf3ef; }
+    .app-committee-policy-table tbody tr + tr td { border-top: 0; }
+  }
   .app-static-pager-nav { flex: 0 0 auto !important; margin-top: 1rem !important; padding-top: 1rem !important; border-top: 1px solid #e2ece6 !important; background: rgba(255,255,255,.98) !important; }
   .app-static-pager-row { display: none !important; align-items: center !important; justify-content: space-between !important; gap: .8rem !important; flex-wrap: wrap !important; }
   .app-static-pager-status { color: var(--brand-deep) !important; font-weight: 800 !important; }
@@ -99,7 +117,11 @@
             <th scope="row" class="app-rfp-table-label">Approval Route</th>
             <td class="app-rfp-table-value">
               <div class="app-form-field app-rfp-cell-field">
-                <% if vertical_head? %>
+                <% if quotation_proposal.persisted? && quotation_proposal.approval_locked? %>
+                  <%= form.hidden_field :committee_approval_required, value: quotation_proposal.committee_approval_required? %>
+                  <strong><%= quotation_proposal.committee_approval_required? ? "Committee Approval Required" : "Share Directly With Vendor" %></strong>
+                  <small class="app-field-hint">Approved proposal: the approval route cannot be changed.</small>
+                <% elsif vertical_head? %>
                   <%= form.label :committee_approval_required, "Approval Route", class: "visually-hidden" %>
                   <%= form.select :committee_approval_required, [["Committee Approval Required", "true"], ["Share Directly With Vendor", "false"]], {}, class: "form-control" %>
                   <small class="app-field-hint">Vertical Head can decide whether this request must go to the committee.</small>
@@ -333,65 +355,133 @@
       <div>
         <h3>Approval Committee</h3>
         <p class="app-section-note mb-0">
-          A predefined Quotation Committee mapped to the selected Head/Vertical is used automatically. Members are entered manually only when no mapping exists.
+          Every committee has three members. You choose the 1st member; the 2nd and 3rd are mandatory for all purchases and are applied automatically from the procurement policy.
         </p>
       </div>
     </div>
 
+    <% if quotation_proposal.persisted? && quotation_proposal.approval_locked? %>
+    <div class="app-rfp-section-panel">
+      <div class="app-rfp-notice app-section-note">
+        This proposal is already approved. You can correct its details, but the approval committee below is locked and will not change.
+      </div>
+      <div class="app-rfp-table-wrap" data-table-search="false" data-table-pagination="false">
+        <table class="table app-table app-rfp-committee-table app-committee-policy-table">
+          <thead>
+            <tr>
+              <th style="width: 170px;">Committee Member</th>
+              <th>Member</th>
+              <th style="width: 220px;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% quotation_proposal.committee_steps.reject(&:new_record?).sort_by(&:level).each do |step| %>
+              <tr>
+                <td class="app-rfp-table-cell app-rfp-table-cell--level" data-label="Committee Member"><strong><%= step.level.to_i.ordinalize %> Member</strong></td>
+                <td class="app-rfp-table-cell" data-label="Member">
+                  <div class="app-committee-policy-member">
+                    <span class="app-committee-policy-member__role"><%= step.employee_master&.designation %></span>
+                    <span class="app-committee-policy-member__name"><%= step.employee_master&.name %></span>
+                  </div>
+                </td>
+                <td class="app-rfp-table-cell app-committee-remark" data-label="Status"><%= step.status.to_s.humanize %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <% else %>
+    <% policy = @committee_policy || {} %>
+    <% first_committee_step = quotation_proposal.committee_steps.reject(&:marked_for_destruction?).find { |step| step.level.to_i == 1 } || quotation_proposal.committee_steps.build(level: 1, status: "waiting") %>
     <div class="app-rfp-section-panel"
          data-quotation-committee
-         data-min-committee-members="<%= QuotationProposal::MIN_COMMITTEE_MEMBERS %>"
-         data-configured-committees="<%= (@configured_committees_by_theme || {}).to_json %>">
+         data-committee-policy="<%= policy.to_json %>">
       <div class="app-rfp-notice app-section-note" data-quotation-committee-skipped hidden>
         Committee approval is not required for this request. The quotation link will be shared directly with the selected vendors after saving.
       </div>
 
-      <div data-quotation-committee-configured hidden>
-        <p class="app-section-note">
-          Predefined Quotation Committee for <strong data-quotation-committee-configured-theme></strong>. These members are applied automatically &mdash; no manual entry is needed.
-        </p>
+      <div data-quotation-committee-policy-block>
+        <div class="app-committee-amount" aria-live="polite">
+          <span class="app-committee-amount__label">Estimated request value</span>
+          <strong class="app-committee-amount__value" data-committee-amount>Add item quantity and max rate</strong>
+          <span class="app-committee-amount__hint">Quantity &times; Max Rate of all items. Up to ₹10 lakh goes to the COO, above ₹10 lakh to the Director.</span>
+        </div>
+
         <div class="app-rfp-table-wrap" data-table-search="false" data-table-pagination="false">
-          <table class="table app-table app-rfp-committee-table">
+          <table class="table app-table app-rfp-committee-table app-committee-policy-table">
             <thead>
               <tr>
-                <th style="width: 180px;">Level</th>
-                <th>Committee Member</th>
+                <th style="width: 170px;">Committee Member</th>
+                <th>Member</th>
+                <th style="width: 220px;">Remarks</th>
               </tr>
             </thead>
-            <tbody data-quotation-committee-configured-list></tbody>
+            <tbody>
+              <%= form.fields_for :committee_steps, first_committee_step do |committee_form| %>
+                <% step_errors = (committee_form.object.errors[:employee_master] + committee_form.object.errors[:employee_master_id]).uniq %>
+                <% selected_member = @committee_members.detect { |member| member.id == committee_form.object.employee_master_id } %>
+                <tr data-quotation-committee-row>
+                  <td class="app-rfp-table-cell app-rfp-table-cell--level" data-label="Committee Member">
+                    <%= committee_form.hidden_field :id if committee_form.object.persisted? %>
+                    <%= committee_form.hidden_field :level, value: 1 %>
+                    <strong>1<sup>st</sup> Member</strong>
+                  </td>
+                  <td class="app-rfp-table-cell" data-label="Member">
+                    <div class="app-form-field app-rfp-cell-field <%= "has-error" if step_errors.any? %>">
+                      <label class="visually-hidden" for="committee-member-search">1st Committee Member</label>
+                      <%= committee_form.hidden_field :employee_master_id, data: { committee_member_id: true } %>
+                      <input type="text"
+                             id="committee-member-search"
+                             class="form-control"
+                             list="committee-member-options"
+                             autocomplete="off"
+                             placeholder="Type a name to search employees"
+                             value="<%= selected_member ? "#{selected_member.name}#{" (#{selected_member.designation})" if selected_member.designation.present?}" : "" %>"
+                             data-committee-member-search
+                             data-validation-label="1st Committee Member">
+                      <datalist id="committee-member-options">
+                        <% @committee_members.each do |member| %>
+                          <option value="<%= member.designation.present? ? "#{member.name} (#{member.designation})" : member.name %>" data-id="<%= member.id %>"></option>
+                        <% end %>
+                      </datalist>
+                      <small class="app-field-hint">Start typing and pick the employee from the suggestions.</small>
+                      <% step_errors.each do |message| %>
+                        <div class="app-form-error"><%= message %></div>
+                      <% end %>
+                      <div class="app-form-error app-form-error-client" data-field-error="true"></div>
+                    </div>
+                  </td>
+                  <td class="app-rfp-table-cell app-committee-remark" data-label="Remarks">Chosen by the maker</td>
+                </tr>
+              <% end %>
+              <tr>
+                <td class="app-rfp-table-cell app-rfp-table-cell--level" data-label="Committee Member"><strong>2<sup>nd</sup> Member</strong></td>
+                <td class="app-rfp-table-cell" data-label="Member">
+                  <div class="app-committee-policy-member" data-committee-policy-member="2">
+                    <span class="app-committee-policy-member__role" data-committee-policy-role>COO (up to ₹10 lakh) or Director (above ₹10 lakh)</span>
+                    <span class="app-committee-policy-member__name" data-committee-policy-name></span>
+                  </div>
+                </td>
+                <td class="app-rfp-table-cell app-committee-remark" data-label="Remarks"><span class="app-committee-mandatory">Mandatory for all purchases</span></td>
+              </tr>
+              <tr>
+                <td class="app-rfp-table-cell app-rfp-table-cell--level" data-label="Committee Member"><strong>3<sup>rd</sup> Member</strong></td>
+                <td class="app-rfp-table-cell" data-label="Member">
+                  <div class="app-committee-policy-member" data-committee-policy-member="3">
+                    <span class="app-committee-policy-member__role" data-committee-policy-role>Programme Director – Finance</span>
+                    <span class="app-committee-policy-member__name" data-committee-policy-name></span>
+                  </div>
+                </td>
+                <td class="app-rfp-table-cell app-committee-remark" data-label="Remarks"><span class="app-committee-mandatory">Mandatory for all purchases</span></td>
+              </tr>
+            </tbody>
           </table>
         </div>
       </div>
-
-      <div data-quotation-committee-manual>
-      <div class="app-rfp-table-wrap" data-table-search="false" data-table-pagination="false">
-        <table class="table app-table app-rfp-committee-table">
-          <thead>
-            <tr>
-              <th style="width: 180px;">Level</th>
-              <th>Committee Member</th>
-              <th style="width: 140px;">Action</th>
-            </tr>
-          </thead>
-          <tbody data-quotation-committee-list>
-        <%= form.fields_for :committee_steps, quotation_proposal.committee_steps.sort_by(&:level) do |committee_form| %>
-          <%= render "committee_step_fields", form: committee_form %>
-        <% end %>
-          </tbody>
-        </table>
-      </div>
-
-      <template data-quotation-committee-template>
-        <%= form.fields_for :committee_steps, QuotationProposalCommitteeStep.new(status: "waiting"), child_index: "NEW_COMMITTEE_STEP" do |committee_form| %>
-          <%= render "committee_step_fields", form: committee_form %>
-        <% end %>
-      </template>
-
-      <div class="app-quotation-toolbar">
-        <button type="button" class="app-secondary-btn app-secondary-btn-soft" data-add-committee-step>Add Committee Member</button>
-      </div>
-      </div>
     </div>
+
+    <% end %>
 
     <div class="app-form-actions">
       <%= form.submit "Save Request for Proposal", class: "app-form-submit" %>

@@ -258,13 +258,13 @@ class ApplicationController < ActionController::Base
       return false unless action_name == "show"
 
       approval_request_for_record(VendorRegistration, params[:id])&.approval_steps&.any? do |step|
-        employee_matches_current_login?(step.employee_master)
+        step.reached? && employee_matches_current_login?(step.employee_master)
       end || false
     when "quotation_proposals"
       return false unless action_name.in?(%w[show quotation_print comparison_print])
 
       approval_request_for_record(QuotationProposal, params[:id])&.approval_steps&.any? do |step|
-        employee_matches_current_login?(step.employee_master)
+        step.reached? && employee_matches_current_login?(step.employee_master)
       end || false
     else
       false

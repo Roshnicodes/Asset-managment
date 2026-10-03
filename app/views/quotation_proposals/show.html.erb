@@ -16,7 +16,7 @@
   criteria_based_scoring = selected_criteria_selections.any?
   direct_response_mode = @quotation_proposal.below_10k?
   proposal_items_count = @quotation_proposal.quotation_proposal_items.size
-  show_edit_action = owner_or_admin && (current_user == @quotation_proposal.user ? editable_by_owner : true)
+  show_edit_action = admin_user? || (current_user == @quotation_proposal.user && editable_by_owner)
   show_start_approval_action = owner_or_admin && @quotation_proposal.approval_request.blank? && @quotation_proposal.sent_to_vendors_at.blank? && !@quotation_proposal.committee_completed?
   show_send_vendor_action = creator_can_dispatch && @quotation_proposal.committee_completed? && !@quotation_proposal.vendor_responses_received?
   print_actions_present = true

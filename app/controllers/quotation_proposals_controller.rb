@@ -29,14 +29,14 @@ class QuotationProposalsController < ApplicationController
       own_ids = own_quotation_scope.select(:id)
       involved_ids = if actor_ids.any?
         QuotationProposal.joins(approval_request: :approval_steps)
-          .where(approval_steps: { employee_master_id: actor_ids })
+          .where(approval_steps: { employee_master_id: actor_ids, status: ApprovalStep::REACHED_STATUSES })
           .select(:id)
       else
         QuotationProposal.none.select(:id)
       end
       committee_ids = if actor_ids.any?
         QuotationProposal.joins(:committee_steps)
-          .where(quotation_proposal_committee_steps: { employee_master_id: actor_ids })
+          .where(quotation_proposal_committee_steps: { employee_master_id: actor_ids, status: ApprovalStep::REACHED_STATUSES })
           .select(:id)
       else
         QuotationProposal.none.select(:id)
@@ -139,6 +139,15 @@ class QuotationProposalsController < ApplicationController
     attrs.delete(:quotation_proposal_items_attributes)
     approval_needs_restart = @quotation_proposal.approval_request&.status.in?(%w[pending returned])
     @selected_vendor_selection_criterion_ids = selected_criteria_ids
+
+    # An admin may correct an approved proposal, but the committee that already
+    # approved it and the approval route stay exactly as they were.
+    if @quotation_proposal.approval_locked?
+      %w[committee_steps_attributes committee_approval_required].each do |key|
+        attrs.delete(key)
+        attrs.delete(key.to_sym)
+      end
+    end
 
     updated = update_quotation_proposal_with_criteria(@quotation_proposal, attrs, item_attributes, selected_criteria_ids)
 
@@ -1154,10 +1163,17 @@ class QuotationProposalsController < ApplicationController
   def authorize_quotation_view_access!
     return if admin_user?
     return if @quotation_proposal.user_id == current_user.id
-    return if @quotation_proposal.committee_user?(current_user)
-    return if @quotation_proposal.approval_request&.approval_steps&.any? { |step| employee_matches_current_login?(step.employee_master) }
+    return if quotation_reached_current_approver?(@quotation_proposal)
 
     redirect_to root_path, alert: "You are not authorized to view this Quotation Proposal."
+  end
+
+  # Committee members can open a proposal only once it has reached them
+  # (their step is pending or already actioned), not while it is still a draft
+  # or waiting on an earlier level.
+  def quotation_reached_current_approver?(quotation_proposal)
+    steps = quotation_proposal.approval_request&.approval_steps.presence || quotation_proposal.committee_steps
+    steps.any? { |step| step.status.in?(ApprovalStep::REACHED_STATUSES) && employee_matches_current_login?(step.employee_master) }
   end
 
   def ensure_quotation_owner_access!
@@ -1207,22 +1223,7 @@ class QuotationProposalsController < ApplicationController
       current_employee_master&.id
     ].compact.uniq
     @committee_members = EmployeeMaster.where.not(id: maker_employee_ids).order(:name)
-    @configured_committees_by_theme = configured_committees_by_theme(@themes)
-  end
-
-  # Predefined Quotation Committee per Head/Vertical, keyed by theme id so the
-  # form can show the mapped members instead of asking the maker to pick them.
-  def configured_committees_by_theme(themes)
-    proposal_owner = @quotation_proposal&.user || current_user
-
-    themes.each_with_object({}) do |theme, mapping|
-      members = QuotationProposal.configured_committee_members_for(theme, user: proposal_owner)
-      next if members.empty?
-
-      mapping[theme.id] = members.map.with_index(1) do |member, level|
-        { level: level, name: member.name, designation: member.designation.to_s }
-      end
-    end
+    @committee_policy = QuotationProposal.committee_policy_directory
   end
 
   def persist_quotation_proposal_with_criteria(quotation_proposal, selected_criteria_ids)
@@ -1240,7 +1241,7 @@ class QuotationProposalsController < ApplicationController
   def update_quotation_proposal_with_criteria(quotation_proposal, attrs, item_attributes, selected_criteria_ids)
     QuotationProposal.transaction do
       quotation_proposal.assign_attributes(attrs)
-      quotation_proposal.apply_configured_committee!
+      quotation_proposal.apply_configured_committee! unless quotation_proposal.approval_locked?
       quotation_proposal.save!
       quotation_proposal.approval_request&.destroy! if quotation_proposal.committee_not_required?
       sync_quotation_items(quotation_proposal, item_attributes)
@@ -1519,14 +1520,12 @@ class QuotationProposalsController < ApplicationController
     end
   end
 
+  # Only the 1st member is chosen by the maker; members 2 and 3 are applied
+  # from the procurement policy when the proposal is saved.
   def build_committee_steps(quotation_proposal)
-    existing_levels = quotation_proposal.committee_steps.reject(&:marked_for_destruction?).map(&:level)
+    return if quotation_proposal.committee_steps.reject(&:marked_for_destruction?).any? { |step| step.level.to_i == 1 }
 
-    (1..QuotationProposal::DEFAULT_COMMITTEE_MEMBERS).each do |level|
-      next if existing_levels.include?(level)
-
-      quotation_proposal.committee_steps.build(level: level, status: "waiting")
-    end
+    quotation_proposal.committee_steps.build(level: 1, status: "waiting")
   end
 
   def sync_quotation_approval_requests!

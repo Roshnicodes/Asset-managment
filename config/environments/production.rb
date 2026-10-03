@@ -106,6 +106,7 @@ Rails.application.configure do
   # Do not dump schema after migrations.
   config.active_record.dump_schema_after_migration = false
   config.hosts << "apurti.ploughmanagro.com"
+  config.hosts << "apurti.asaindia.org"
   config.hosts << "168.144.88.192"
 
   # Only use :id for inspections in production.

@@ -14,25 +14,35 @@ class ApprovalRequestsController < ApplicationController
     base_requests = base_requests.where(form_name: @form_name) if @form_name.present?
     
     unless is_admin
-      base_requests = actor_ids.any? ? base_requests.joins(:approval_steps).where(approval_steps: { employee_master_id: actor_ids }) : ApprovalRequest.none
+      # Only requests that have actually reached this approver: pending on them
+      # now, or already actioned by them. Steps still "waiting" (an earlier
+      # level has not acted yet) must not surface the request.
+      base_requests = if actor_ids.any?
+        base_requests.joins(:approval_steps)
+          .where(approval_steps: { employee_master_id: actor_ids, status: ApprovalStep::REACHED_STATUSES })
+          .distinct
+      else
+        ApprovalRequest.none
+      end
+    end
+
+    actionable_requests = if is_admin
+      base_requests.where(status: "pending")
+    else
+      base_requests.where(status: "pending", approval_steps: { status: "pending" })
     end
 
     @pending_approval_requests = ApprovalRequest.none
     @processed_approval_requests = ApprovalRequest.none
 
     case @status
-    when "pending"
-      @pending_approval_requests = is_admin ? base_requests.where(status: "pending") : base_requests.where(approval_steps: { status: "pending" })
-      @processed_approval_requests = ApprovalRequest.none
     when "approved", "returned", "rejected"
-      @pending_approval_requests = ApprovalRequest.none
       @processed_approval_requests = base_requests.where(status: @status)
     when "all"
-      @pending_approval_requests = is_admin ? base_requests.where(status: "pending").distinct : base_requests.where(approval_steps: { status: "pending" }).distinct
-      @processed_approval_requests = base_requests.where.not(status: "pending").distinct
+      @pending_approval_requests = actionable_requests
+      @processed_approval_requests = base_requests.where.not(status: "pending")
     else
-      @pending_approval_requests = is_admin ? base_requests.where(status: "pending") : base_requests.where(approval_steps: { status: "pending" })
-      @processed_approval_requests = ApprovalRequest.none
+      @pending_approval_requests = actionable_requests
     end
   end
 
