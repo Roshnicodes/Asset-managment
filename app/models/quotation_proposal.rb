@@ -1,8 +1,9 @@
 class QuotationProposal < ApplicationRecord
   class VendorDispatchError < StandardError; end
-  MIN_COMMITTEE_MEMBERS = 2
+  MIN_COMMITTEE_MEMBERS = 3
   REQUIRED_COMMITTEE_LEVELS = [1, 2, 3].freeze
-  DEFAULT_COMMITTEE_MEMBERS = 4
+  DEFAULT_COMMITTEE_MEMBERS = 3
+  COMMITTEE_AMOUNT_THRESHOLD = BigDecimal("1000000")
   PROCUREMENT_AMOUNT_BUCKETS = %w[above_10k below_10k].freeze
   MIN_SUBJECT_WORDS = 5
   MAX_SUBJECT_WORDS = 20
@@ -18,9 +19,10 @@ class QuotationProposal < ApplicationRecord
     rejected
   ].freeze
 
-  # Set when the committee rows were built from the predefined Head/Vertical
-  # mapping instead of being entered by the maker.
-  attr_accessor :committee_from_configured_channel
+  # The quotation committee has one maker-selected member and two members
+  # determined by the procurement policy. This transient flag lets the model
+  # distinguish that controlled structure from the old free-form rows.
+  attr_accessor :committee_from_policy, :committee_policy_errors
 
   belongs_to :theme
   belongs_to :user, optional: true
@@ -74,57 +76,67 @@ class QuotationProposal < ApplicationRecord
     !committee_approval_required?
   end
 
-  def configured_committee_channel
-    return unless committee_approval_required?
+# Estimated request value is calculated from the item quantity and the
+# internal max rate. It is used before vendors respond, which is when the
+# committee must be chosen.
+def estimated_procurement_amount
+  items = quotation_proposal_items.reject(&:marked_for_destruction?)
+  return if items.empty? || items.any? { |item| item.quantity.blank? || item.max_rate.blank? }
 
-    COMMITTEE_CHANNEL_FORM_NAMES.each do |form_name|
-      channel = ApprovalRequestBuilder.approval_channel_for(self, form_name: form_name)
-      return channel if channel&.flow_steps&.any?
-    end
+  items.sum { |item| item.quantity.to_d * item.max_rate.to_d }
+end
 
-    nil
+def committee_amount_at_or_below_threshold?
+  amount = estimated_procurement_amount
+  amount.present? && amount <= COMMITTEE_AMOUNT_THRESHOLD
+end
+
+def committee_policy_member(level)
+  case level.to_i
+  when 2
+    committee_amount_at_or_below_threshold? ? committee_member_with_designation("COO") : committee_member_with_designation("Director")
+  when 3
+    programme_director_finance_member
+  end
+end
+
+def committee_policy_member_label(level)
+  case level.to_i
+  when 1 then "Maker-selected member"
+  when 2 then committee_amount_at_or_below_threshold? ? "COO (up to ₹10 lakh)" : "Director (above ₹10 lakh)"
+  when 3 then "Programme Director – Finance"
+  else "Committee Member #{level}"
+  end
+end
+
+def committee_amount_label
+  amount = estimated_procurement_amount
+  return "Add item quantity and max rate to calculate" if amount.blank?
+
+  "₹#{amount.to_fs(:delimited, precision: 2)} estimated request value"
+end
+
+# Prepares the three controlled rows for rendering without persisting them.
+# Member 1 remains editable; member 2 and 3 are always overwritten when the
+# proposal is saved so a crafted form submission cannot bypass the policy.
+def prepare_committee_policy_steps!
+  return clear_committee_steps_for_direct_dispatch! if committee_not_required?
+
+  self.committee_from_policy = true
+  self.committee_policy_errors = []
+  upsert_committee_policy_steps!
+end
+
+# Kept as a compatibility wrapper for the existing controller workflow.
+def apply_configured_committee!
+  if committee_not_required?
+    clear_committee_steps_for_direct_dispatch!
+    return true
   end
 
-  # Members of the predefined committee mapped to this proposal's Head/Vertical.
-  def configured_committee_members
-    channel = configured_committee_channel
-    return [] if channel.blank?
-
-    channel.flow_steps.map(&:to_responsible_user).compact
-  end
-
-  def self.configured_committee_members_for(theme, user: nil)
-    return [] if theme.blank?
-
-    probe = new(theme: theme, user: user)
-    probe.configured_committee_members
-  end
-
-
-  # Approval channels configured for a Head/Vertical (stakeholder) or Theme are
-  # the source of truth for the predefined quotation committee. Manual rows are
-  # retained only until that mapping is configured.
-  def apply_configured_committee!
-    if committee_not_required?
-      committee_steps.each(&:mark_for_destruction)
-      self.committee_from_configured_channel = false
-      return true
-    end
-
-    configured_members = configured_committee_members
-    if configured_members.empty?
-      self.committee_from_configured_channel = false
-      return false
-    end
-
-    committee_steps.each(&:mark_for_destruction)
-    configured_members.each_with_index do |member, index|
-      committee_steps.build(employee_master: member, level: index + 1, status: "waiting")
-    end
-    self.committee_from_configured_channel = true
-    true
-  end
-
+  prepare_committee_policy_steps!
+  committee_policy_errors.blank?
+end
 
   def display_name
     subject
@@ -619,6 +631,58 @@ class QuotationProposal < ApplicationRecord
       .detect { |channel| channel.flow_steps.any? }
   end
 
+def clear_committee_steps_for_direct_dispatch!
+  committee_steps.each(&:mark_for_destruction)
+  self.committee_from_policy = false
+  self.committee_policy_errors = []
+end
+
+def upsert_committee_policy_steps!
+  active_steps = committee_steps.reject(&:marked_for_destruction?)
+  selected_first_member = active_steps.find { |step| step.level.to_i == 1 }&.employee_master
+  required_members = {
+    1 => selected_first_member,
+    2 => committee_policy_member(2),
+    3 => committee_policy_member(3)
+  }
+
+  self.committee_policy_errors = []
+  committee_policy_errors << "Select the 1st Committee Member." if required_members[1].blank?
+  committee_policy_errors << "COO/Director is not configured in Employee Master." if required_members[2].blank?
+  committee_policy_errors << "Programme Director – Finance is not configured in Employee Master." if required_members[3].blank?
+
+  active_steps.each do |step|
+    step.mark_for_destruction unless required_members.key?(step.level.to_i)
+  end
+
+  required_members.each do |level, member|
+    next if member.blank?
+
+    step = active_steps.find { |candidate| candidate.level.to_i == level } ||
+      committee_steps.build(level: level, status: "waiting")
+    step.assign_attributes(employee_master: member, level: level)
+    step.status = "waiting" if step.status.blank?
+  end
+end
+
+def committee_member_with_designation(designation)
+  EmployeeMaster
+    .where("LOWER(TRIM(designation)) = ?", designation.to_s.downcase)
+    .order(:id)
+    .first
+end
+
+def programme_director_finance_member
+  EmployeeMaster
+    .where(<<~SQL.squish)
+      LOWER(TRIM(designation)) LIKE '%programme%director%finance%'
+      OR LOWER(TRIM(designation)) LIKE '%program%director%finance%'
+      OR LOWER(TRIM(designation)) = 'senior manager finance'
+    SQL
+    .order(:id)
+    .first
+end
+
   def committee_approver_ids
     if approval_request.present?
       approval_request.approval_steps.pluck(:employee_master_id)
@@ -729,8 +793,9 @@ class QuotationProposal < ApplicationRecord
 
     kept_steps = committee_steps.reject(&:marked_for_destruction?)
 
-    if committee_from_configured_channel
-      errors.add(:base, "Selected Head/Vertical ke liye predefined Quotation Committee me koi member nahi mila.") if kept_steps.empty?
+    if committee_from_policy
+      Array(committee_policy_errors).each { |message| errors.add(:base, message) }
+      errors.add(:base, "The required committee members could not be prepared.") if kept_steps.empty? && committee_policy_errors.blank?
       return
     end
 
@@ -760,8 +825,8 @@ class QuotationProposal < ApplicationRecord
     committee_member_ids = committee_steps.reject(&:marked_for_destruction?).map(&:employee_master_id).compact
     return unless committee_member_ids.include?(maker_employee.id)
 
-    if committee_from_configured_channel
-      errors.add(:base, "Selected Head/Vertical ki predefined Quotation Committee me aap hi maker hain. Please admin se committee mapping update karwayein.")
+    if committee_from_policy
+      errors.add(:base, "Maker cannot be part of the approval committee.")
       return
     end
 

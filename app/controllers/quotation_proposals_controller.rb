@@ -1096,6 +1096,8 @@ class QuotationProposalsController < ApplicationController
   def quotation_scope
     QuotationProposal.includes(
       :theme,
+      :user,
+      :quotation_proposal_items,
       :vendor_registrations,
       { committee_steps: :employee_master },
       { quotation_proposal_vendors: [:vendor_registration, :committee_member_scores, { vendor_items: { quotation_proposal_item: :unit } }] },
@@ -1165,7 +1167,7 @@ class QuotationProposalsController < ApplicationController
   end
 
   def ensure_quotation_change_allowed!
-    return unless @quotation_proposal.approval_locked?
+    return if admin_user? || !@quotation_proposal.approval_locked?
 
     redirect_to quotation_proposal_path(@quotation_proposal),
                 alert: "Approved quotation proposals cannot be edited or deleted."

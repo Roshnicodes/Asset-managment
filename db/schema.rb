@@ -753,7 +753,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_01_090000) do
     t.index ["block_id"], name: "index_vendor_registrations_on_block_id"
     t.index ["district_id"], name: "index_vendor_registrations_on_district_id"
     t.index ["firm_id"], name: "index_vendor_registrations_on_firm_id"
-    t.index ["mobile_no"], name: "index_vendor_registrations_on_mobile_no", unique: true
+    t.index ["mobile_no"], name: "index_vendor_registrations_on_mobile_no"
     t.index ["registration_type_id"], name: "index_vendor_registrations_on_registration_type_id"
     t.index ["stakeholder_category_id"], name: "index_vendor_registrations_on_stakeholder_category_id"
     t.index ["state_id"], name: "index_vendor_registrations_on_state_id"

@@ -274,6 +274,28 @@
     <%= link_to "Back", quotation_proposals_path, class: "app-back-link quotation-proposal-show__back-link" %>
   </div>
 
+  <% stage = quotation_stage(@quotation_proposal) %>
+  <div class="quotation-stage-strip <%= "quotation-stage-strip--mine" if stage.mine %> <%= "quotation-stage-strip--done" if stage.complete? %>">
+    <div class="quotation-stage-strip__main">
+      <span class="quotation-stage-strip__label"><%= stage.complete? ? "Completed" : "Currently at" %></span>
+      <strong class="quotation-stage-strip__stage"><%= stage.label %></strong>
+      <% if stage.progress %>
+        <span class="quotation-stage-progress"><%= stage.progress %> done</span>
+      <% end %>
+    </div>
+    <div class="quotation-stage-strip__who">
+      <% if stage.complete? %>
+        Nothing is pending on this request.
+      <% elsif stage.mine %>
+        <span class="quotation-stage-strip__cta">Action needed from you</span>
+      <% elsif stage.waiting? %>
+        Waiting on <strong><%= stage.actor_names %></strong>
+      <% else %>
+        In progress.
+      <% end %>
+    </div>
+  </div>
+
   <div class="app-detail-actions app-detail-actions-spread quotation-proposal-show__status-bar <%= "quotation-proposal-show__status-bar--single" unless status_actions_present %>">
     <div class="d-flex align-items-center gap-2 flex-wrap">
       <span class="badge border <%= workflow_class %> fw-semibold px-3 py-2" style="font-size: 0.9rem;">
@@ -451,13 +473,19 @@
         <h3 style="margin-bottom: 0.25rem;">Vendor Links & Tracking</h3>
         <p class="app-section-note mb-0">Share each vendor link below. The maker can use this quotation page as the tracking link.</p>
       </div>
-      <%= link_to "Maker Tracking", quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn" %>
+      <button type="button" class="app-secondary-btn" data-copy-text="<%= quotation_proposal_url(@quotation_proposal) %>">Copy Maker Tracking Link</button>
     </div>
     <div class="d-flex flex-column gap-2">
       <% @quotation_proposal.quotation_proposal_vendors.includes(:vendor_registration, :vendor_dispatch).each do |proposal_vendor| %>
         <div class="d-flex align-items-center gap-2 flex-wrap">
           <strong><%= proposal_vendor.vendor_registration.display_name %></strong>
-          <%= link_to "Vendor Quotation Link", quotation_vendor_qr_path(proposal_vendor.qr_token), class: "app-secondary-btn", target: "_blank", rel: "noopener" %>
+          <%# A vendor only has a link once the request has been dispatched to them. %>
+          <% if proposal_vendor.qr_token.present? %>
+            <%= link_to "Open Vendor Link", quotation_vendor_qr_path(proposal_vendor.qr_token), class: "app-secondary-btn", target: "_blank", rel: "noopener" %>
+            <button type="button" class="app-secondary-btn" data-copy-text="<%= quotation_vendor_qr_url(proposal_vendor.qr_token) %>">Copy Vendor Link</button>
+          <% else %>
+            <span class="app-section-note mb-0">Link is created when the request is sent to this vendor.</span>
+          <% end %>
           <span class="badge border bg-light text-dark">Link status: <%= proposal_vendor.vendor_dispatch&.status.to_s.humanize.presence || "Ready" %></span>
           <span class="badge border bg-light text-dark">Response: <%= proposal_vendor.response_status.humanize %></span>
         </div>

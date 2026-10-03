@@ -56,6 +56,58 @@ class CommitteeScoringBadgeTest < ActionDispatch::IntegrationTest
     assert_select "span.text-bg-danger", text: "Your scoring is pending", count: 0
   end
 
+  test "the list badges and lifts the row for the member who still has to score" do
+    @member_pending.update!(user_type: "Admin")
+    sign_in @pending_user
+
+    get list_quotation_proposals_url
+
+    assert_response :success
+    assert_select "tr.quotation-row-pending", count: 1
+    assert_select "tr.quotation-row-pending span.text-bg-danger", text: "Scoring pending"
+  end
+
+  test "the list stays plain for a member who has already scored" do
+    @member_done.update!(user_type: "Admin")
+    sign_in @done_user
+
+    get list_quotation_proposals_url
+
+    assert_response :success
+    assert_select "tr.quotation-row-pending", count: 0
+    assert_select "span.text-bg-danger", text: "Scoring pending", count: 0
+  end
+
+  test "the sidebar itself alerts, so pending work is visible without opening anything" do
+    sign_in @pending_user
+
+    get quotation_proposal_url(@quotation_proposal)
+
+    assert_response :success
+    assert_select "a.nav-link.app-nav-link-alert span.app-link-label", text: "Committee Scoring"
+    assert_select "a.nav-link.app-nav-link-alert span.badge.app-nav-badge-live", text: "1"
+  end
+
+  test "the sidebar stays calm for a member with nothing pending" do
+    sign_in @done_user
+
+    get quotation_proposal_url(@quotation_proposal)
+
+    assert_response :success
+    assert_select "a.nav-link.app-nav-link-alert", count: 0
+    assert_select ".app-nav-badge-live", count: 0
+  end
+
+  test "the list tells the pending member to act and lifts the row" do
+    sign_in @pending_user
+
+    get quotation_proposal_url(@quotation_proposal)
+
+    assert_response :success
+    assert_select ".quotation-stage-strip--mine"
+    assert_select ".quotation-stage-strip__cta", text: "Action needed from you"
+  end
+
   private
 
   def create_employee(name, email, employee_code)

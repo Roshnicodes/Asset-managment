@@ -2,6 +2,11 @@ require "test_helper"
 require "ostruct"
 
 class QuotationProposalTest < ActiveSupport::TestCase
+  # The gateway keeps its last error in a thread local, and the dispatch failure
+  # message appends it. Clear it so an earlier test's SMS failure cannot leak
+  # into the message these tests assert on.
+  setup { QuotationVendorSmsGateway.send(:clear_last_error_message) }
+
   DispatchStub = Struct.new(
     :vendor_name,
     :mobile_no,

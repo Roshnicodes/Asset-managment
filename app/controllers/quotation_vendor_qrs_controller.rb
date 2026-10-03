@@ -124,8 +124,13 @@ class QuotationVendorQrsController < ApplicationController
       end
       @quotation_proposal.refresh_response_status!
       NotificationDispatcher.notify_quotation_vendor_response_received(@quotation_proposal, @quotation_proposal_vendor)
-      if @quotation_proposal.below_10k? && direct_maker_access_allowed?
-        redirect_to quotation_proposal_path(@quotation_proposal), notice: "Quotation details have been submitted and approved successfully."
+      if direct_maker_access_allowed?
+        maker_notice = if @quotation_proposal.below_10k?
+          "Quotation details have been submitted and approved successfully."
+        else
+          "Physical quotation details have been recorded successfully."
+        end
+        redirect_to quotation_proposal_path(@quotation_proposal), notice: maker_notice
       else
         redirect_to print_quotation_vendor_qr_path(params[:token]), notice: "Your quotation response has been submitted successfully. You can now print or save it as a PDF."
       end
@@ -174,8 +179,10 @@ class QuotationVendorQrsController < ApplicationController
 
   def ensure_vendor_response_open!
     return true if @quotation_proposal.sent_to_vendors_at.present?
+    return true if @quotation_vendor_dispatch.sent_at.present? && @quotation_proposal.committee_completed?
 
-    redirect_to quotation_vendor_qr_path(params[:token]), alert: "This quotation is not open for vendor response yet."
+    flash.now[:alert] = "This quotation is not open for vendor response yet."
+    render :invalid_link, status: :unprocessable_entity
     false
   end
 
@@ -210,11 +217,18 @@ class QuotationVendorQrsController < ApplicationController
   end
 
   def direct_maker_access_allowed?
-    return false unless @quotation_proposal.below_10k? || params[:physical_entry] == "1"
     return false unless params[:direct_access] == "1"
     return false unless current_user.present?
+    return false unless @quotation_proposal.below_10k? || physical_quotation_entry_allowed?
 
     admin_user? || current_user == @quotation_proposal.user
+  end
+
+  # A maker may key in a physical quotation on the vendor's behalf, but only
+  # once the committee has cleared the request - the same gate the
+  # physical_quotation action applies before sending the maker here.
+  def physical_quotation_entry_allowed?
+    params[:physical_entry] == "1" && @quotation_proposal.committee_completed?
   end
 
   def vendor_access_allowed?

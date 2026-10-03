@@ -76,7 +76,76 @@ class QuotationPendingHelperTest < ActionView::TestCase
     assert_nil quotation_pending_label(@quotation_proposal)
   end
 
+  test "everyone related sees the same stage, only the actor is told to act" do
+    build_approval_request!(status: "pending", step_status: "pending")
+
+    @current_user = @maker_user
+    @current_approval_employee_ids = [@maker_employee.id]
+    maker_view = quotation_stage(@quotation_proposal)
+    assert_equal "Committee approval", maker_view.label
+    assert_equal ["Pending Approver"], maker_view.actors
+    assert_not maker_view.mine, "the maker is told who holds it, not to act"
+
+    reset_stage_cache
+    @current_user = nil
+    @current_approval_employee_ids = [@approver_employee.id]
+    approver_view = quotation_stage(@quotation_proposal)
+    assert_equal "Committee approval", approver_view.label
+    assert approver_view.mine, "the approver is the one who has to act"
+  end
+
+  test "scoring stage reports how many members are done and who is left" do
+    build_approval_request!(status: "approved", step_status: "approved")
+    add_responded_vendor!
+    @current_approval_employee_ids = [@maker_employee.id]
+    @current_user = @maker_user
+
+    stage = quotation_stage(@quotation_proposal)
+    assert_equal "Committee scoring", stage.label
+    assert_equal "1/2", stage.progress
+    assert_equal ["Pending Scorer"], stage.actors
+    assert_not stage.mine
+  end
+
+  test "a returned request points back at the maker" do
+    build_approval_request!(status: "returned", step_status: "returned", return_mode: "employee")
+    @current_user = @maker_user
+    @current_approval_employee_ids = [@maker_employee.id]
+
+    stage = quotation_stage(@quotation_proposal)
+    assert_equal "Correction by maker", stage.label
+    assert stage.mine
+  end
+
+  test "a selected vendor closes the stage for everyone" do
+    build_approval_request!(status: "approved", step_status: "approved")
+    proposal_vendor = add_responded_vendor!
+    @quotation_proposal.update_columns(selected_vendor_registration_id: proposal_vendor.vendor_registration_id)
+    @current_approval_employee_ids = [@scorer_employee.id]
+
+    stage = quotation_stage(@quotation_proposal.reload)
+    assert stage.complete?
+    assert_not stage.mine
+    assert_equal "Vendor selected", stage.label
+  end
+
+  test "a request still waiting on vendors names the vendors, not a person" do
+    build_approval_request!(status: "approved", step_status: "approved")
+    add_pending_vendor!
+    @quotation_proposal.update_columns(sent_to_vendors_at: Time.current)
+    @current_approval_employee_ids = [@scorer_employee.id]
+
+    stage = quotation_stage(@quotation_proposal.reload)
+    assert_equal "Vendor quotation", stage.label
+    assert_equal ["Pending Helper Vendor"], stage.actors
+    assert_not stage.mine, "nobody inside the office is blocking this"
+  end
+
   private
+
+  def reset_stage_cache
+    remove_instance_variable(:@quotation_stage_cache) if instance_variable_defined?(:@quotation_stage_cache)
+  end
 
   def create_employee(name, email, employee_code)
     EmployeeMaster.create!(
@@ -116,7 +185,12 @@ class QuotationPendingHelperTest < ActionView::TestCase
     quotation_proposal
   end
 
-  def add_responded_vendor!
+  def add_pending_vendor!
+    @quotation_proposal.quotation_proposal_vendors.create!(vendor_registration: build_vendor_registration!)
+  end
+
+  def build_vendor_registration!
+    @vendor_sequence = @vendor_sequence.to_i + 1
     vendor_registration = VendorRegistration.new(
       address: "Pending helper address",
       block: @block,
@@ -125,11 +199,11 @@ class QuotationPendingHelperTest < ActionView::TestCase
       contact_person_designation: "Manager",
       contact_person_name: "Contact Person",
       district: @district,
-      email: "vendor.pending@example.com",
+      email: "vendor.pending#{@vendor_sequence}@example.com",
       firm_name: "Pending Helper Vendor Firm",
       firm_type: "Company",
-      mobile_no: "9700000022",
-      pan_no: "ABCDE8765F",
+      mobile_no: "97000000#{20 + @vendor_sequence}",
+      pan_no: "ABCDE876#{@vendor_sequence}F",
       pin_no: "123459",
       stakeholder_category: @stakeholder_category,
       state: @state,
@@ -139,11 +213,15 @@ class QuotationPendingHelperTest < ActionView::TestCase
       vendor_name: "Pending Helper Vendor"
     )
     vendor_registration.save!(validate: false)
+    vendor_registration
+  end
 
+  def add_responded_vendor!
+    @quotation_proposal.update_columns(sent_to_vendors_at: Time.current)
     proposal_vendor = @quotation_proposal.quotation_proposal_vendors.create!(
       responded_at: Time.current,
       response_status: "responded",
-      vendor_registration: vendor_registration
+      vendor_registration: build_vendor_registration!
     )
     proposal_vendor.vendor_items.create!(gst_percentage: 5, quotation_proposal_item: @item, quoted_rate: 90)
     # The approver has already scored; the scorer has not.

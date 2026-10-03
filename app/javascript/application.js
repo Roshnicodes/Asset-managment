@@ -1299,7 +1299,62 @@ const setupQuotationProposalForm = () => {
     const form = container.closest("[data-quotation-validation-form]")
     const approvalRoute = form?.querySelector("[name='quotation_proposal[committee_approval_required]']")
     const committeeRequired = () => approvalRoute?.value !== "false"
+    const themeField = form?.querySelector("#quotation_proposal_theme_id")
+    const skippedNotice = container.querySelector("[data-quotation-committee-skipped]")
+    const configuredBlock = container.querySelector("[data-quotation-committee-configured]")
+    const configuredThemeLabel = container.querySelector("[data-quotation-committee-configured-theme]")
+    const configuredList = container.querySelector("[data-quotation-committee-configured-list]")
+    const manualBlock = container.querySelector("[data-quotation-committee-manual]")
+    let configuredCommittees = {}
+    try {
+      configuredCommittees = JSON.parse(container.dataset.configuredCommittees || "{}")
+    } catch (error) {
+      configuredCommittees = {}
+    }
     if (!list || !template || !addButton) return
+
+    const configuredMembers = () => {
+      if (!committeeRequired()) return null
+      const themeId = themeField?.value
+      if (!themeId) return null
+      const members = configuredCommittees[themeId]
+      return members && members.length ? members : null
+    }
+
+    const committeeMode = () => {
+      if (!committeeRequired()) return "skipped"
+      return configuredMembers() ? "configured" : "manual"
+    }
+
+    const manualCommitteeRequired = () => committeeMode() === "manual"
+
+    const renderConfiguredCommittee = (members) => {
+      if (configuredThemeLabel) {
+        const themeOption = themeField?.selectedOptions?.[0]
+        configuredThemeLabel.textContent = themeOption?.textContent?.trim() || "the selected Head/Vertical"
+      }
+      if (!configuredList) return
+      configuredList.textContent = ""
+      members.forEach((member) => {
+        const row = document.createElement("tr")
+        const levelCell = document.createElement("td")
+        levelCell.className = "app-rfp-table-cell app-rfp-table-cell--level"
+        levelCell.textContent = `Committee Member ${member.level}`
+        const nameCell = document.createElement("td")
+        nameCell.className = "app-rfp-table-cell"
+        nameCell.textContent = member.designation ? `${member.name} (${member.designation})` : member.name
+        row.append(levelCell, nameCell)
+        configuredList.append(row)
+      })
+    }
+
+    const syncCommitteeMode = () => {
+      const mode = committeeMode()
+      if (skippedNotice) skippedNotice.hidden = mode !== "skipped"
+      if (configuredBlock) configuredBlock.hidden = mode !== "configured"
+      if (manualBlock) manualBlock.hidden = mode !== "manual"
+      if (mode === "configured") renderConfiguredCommittee(configuredMembers())
+    }
 
     const activeRows = () =>
       Array.from(list.querySelectorAll("[data-quotation-committee-row]")).filter((row) => {
@@ -1308,8 +1363,9 @@ const setupQuotationProposalForm = () => {
       })
 
     const syncCommitteeRows = () => {
+      syncCommitteeMode()
       const rows = activeRows()
-      const needsCommittee = committeeRequired()
+      const needsCommittee = manualCommitteeRequired()
       const selectedMemberIds = rows
         .map((row) => row.querySelector("[data-committee-member-select]")?.value)
         .filter((value) => value)
@@ -1360,7 +1416,7 @@ const setupQuotationProposalForm = () => {
     }
 
     const validateCommittee = () => {
-      if (!committeeRequired()) {
+      if (!manualCommitteeRequired()) {
         activeRows().forEach((row) => clearCommitteeFieldError(row.querySelector("[data-committee-member-select]")))
         return true
       }
@@ -1437,6 +1493,10 @@ const setupQuotationProposalForm = () => {
       if (!validateCommittee()) event.preventDefault()
     })
     approvalRoute?.addEventListener("change", () => {
+      syncCommitteeRows()
+      validateCommittee()
+    })
+    themeField?.addEventListener("change", () => {
       syncCommitteeRows()
       validateCommittee()
     })
@@ -1822,6 +1882,81 @@ const setupQuotationShowDetails = () => {
   })
 }
 
+// Narrow table cells clip their text to an ellipsis. Give every clipped cell a
+// native tooltip so the full value is one hover away, and re-check on resize
+// because the clipping depends on the column width.
+const setupTruncatedCellTooltips = () => {
+  const applyTooltips = () => {
+    document.querySelectorAll(".app-table td, .app-table th").forEach((cell) => {
+      const target = cell.querySelector("[data-truncate-target]") || cell
+      const full = target.textContent.trim()
+
+      if (!full) {
+        target.removeAttribute("title")
+        return
+      }
+
+      const clipped = target.scrollWidth > target.clientWidth + 1 || target.scrollHeight > target.clientHeight + 1
+      if (clipped) {
+        if (target.getAttribute("title") !== full) target.setAttribute("title", full)
+        target.classList.add("is-truncated")
+      } else if (target.dataset.keepTitle !== "true") {
+        target.removeAttribute("title")
+        target.classList.remove("is-truncated")
+      }
+    })
+  }
+
+  applyTooltips()
+
+  if (window.__truncationTooltipsBound) return
+  window.__truncationTooltipsBound = true
+
+  let resizeTimer = null
+  window.addEventListener("resize", () => {
+    window.clearTimeout(resizeTimer)
+    resizeTimer = window.setTimeout(applyTooltips, 150)
+  })
+}
+
+const setupCopyLinkButtons = () => {
+  document.querySelectorAll("[data-copy-text]").forEach((button) => {
+    if (button.dataset.copyReady === "true") return
+    button.dataset.copyReady = "true"
+
+    const originalLabel = button.textContent
+    button.addEventListener("click", async () => {
+      const value = button.dataset.copyText
+      if (!value) return
+
+      let copied = false
+      try {
+        await navigator.clipboard.writeText(value)
+        copied = true
+      } catch (error) {
+        const scratch = document.createElement("textarea")
+        scratch.value = value
+        scratch.setAttribute("readonly", "readonly")
+        scratch.style.position = "fixed"
+        scratch.style.opacity = "0"
+        document.body.appendChild(scratch)
+        scratch.select()
+        try {
+          copied = document.execCommand("copy")
+        } catch (fallbackError) {
+          copied = false
+        }
+        document.body.removeChild(scratch)
+      }
+
+      button.textContent = copied ? "Copied" : "Press Ctrl+C"
+      window.setTimeout(() => {
+        button.textContent = originalLabel
+      }, 2000)
+    })
+  })
+}
+
 const setupAutoDismissFlash = () => {
   document.querySelectorAll("[data-auto-dismiss-flash='true']").forEach((flash) => {
     if (flash.dataset.autoDismissReady === "true") return
@@ -1854,6 +1989,8 @@ const runAppInitializers = () => {
   setupProductBatchForm()
   setupPasswordVisibility()
   setupQuotationShowDetails()
+  setupTruncatedCellTooltips()
+  setupCopyLinkButtons()
   setupAutoDismissFlash()
   setupFormPagination()
   setupPageSectionPagination()

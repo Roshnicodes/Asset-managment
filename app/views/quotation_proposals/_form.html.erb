@@ -100,7 +100,7 @@
             <td class="app-rfp-table-value">
               <div class="app-form-field app-rfp-cell-field">
                 <% if vertical_head? %>
-                  <%= form.label :committee_approval_required, "Approval Route" %>
+                  <%= form.label :committee_approval_required, "Approval Route", class: "visually-hidden" %>
                   <%= form.select :committee_approval_required, [["Committee Approval Required", "true"], ["Share Directly With Vendor", "false"]], {}, class: "form-control" %>
                   <small class="app-field-hint">Vertical Head can decide whether this request must go to the committee.</small>
                 <% else %>
