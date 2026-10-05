@@ -829,11 +829,19 @@ end
   end
 
   def must_have_at_least_one_vendor
-    errors.add(:base, "Select at least one vendor.") if vendor_registrations.blank?
+    vendor_count = selected_vendor_count
+    errors.add(:base, "Select at least one vendor.") if vendor_count.zero?
     return unless below_10k?
-    return unless vendor_registrations.size > 1
+    return unless vendor_count > 1
 
     errors.add(:base, "Below 10K me sirf ek vendor select kiya ja sakta hai.")
+  end
+
+  # Vendors picked in the form arrive as vendor_registrations, while a reused
+  # quotation builds quotation_proposal_vendors directly; count either.
+  def selected_vendor_count
+    built_vendor_ids = quotation_proposal_vendors.target.select(&:new_record?).map(&:vendor_registration_id)
+    (vendor_registrations.map(&:id) + built_vendor_ids).compact.uniq.size
   end
 
   def must_have_at_least_one_item
