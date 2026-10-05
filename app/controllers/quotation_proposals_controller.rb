@@ -1201,6 +1201,7 @@ class QuotationProposalsController < ApplicationController
     QuotationProposal.includes(
       :theme,
       :user,
+      :thematic_head,
       :quotation_proposal_items,
       :vendor_registrations,
       { committee_steps: :employee_master },

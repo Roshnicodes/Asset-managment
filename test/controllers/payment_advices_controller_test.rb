@@ -61,4 +61,24 @@ class PaymentAdvicesControllerTest < ActionDispatch::IntegrationTest
     assert_equal ["new.vendor@example.com"], ActionMailer::Base.deliveries.last.to
     assert_equal "new.vendor@example.com", @payment_advice.reload.payee_email
   end
+
+  test "send mail goes through the ASA mail service when it is configured" do
+    sent_to = nil
+    ok = Struct.new(:code, :body, :message) { def is_a?(klass) = klass == Net::HTTPSuccess || super }.new("200", "{}", "OK")
+    ENV["PAYMENT_ADVICE_MAIL_RELAY_URL"] = "https://krai.asaindia.org/"
+    ENV["PAYMENT_ADVICE_MAIL_RELAY_SECRET"] = "test-shared-secret"
+
+    PaymentAdviceMailRelay.stub(:get, ->(uri) { sent_to = URI.decode_www_form(uri.query).to_h["payee_email"]; ok }) do
+      assert_no_difference -> { ActionMailer::Base.deliveries.size } do
+        post send_mail_payment_advice_path(@payment_advice), as: :json
+      end
+    end
+
+    assert_response :success
+    assert_equal "old.vendor@example.com", sent_to
+    assert_equal "Payment advice sent to old.vendor@example.com.", response.parsed_body["message"]
+  ensure
+    ENV.delete("PAYMENT_ADVICE_MAIL_RELAY_URL")
+    ENV.delete("PAYMENT_ADVICE_MAIL_RELAY_SECRET")
+  end
 end

@@ -17,14 +17,20 @@ module Api
           return
         end
 
-        unless PaymentAdviceMailer.payment_advice_delivery_configured?
+        # Without SMTP the mail goes out through the ASA mail service.
+        relay = PaymentAdviceMailRelay.enabled?
+        unless relay || PaymentAdviceMailer.payment_advice_delivery_configured?
           render json: { error: "SMTP is not configured. Please add SMTP_ADDRESS in server environment or Rails credentials." }, status: :unprocessable_entity
           return
         end
 
-        PaymentAdviceMailer.with(payment_advice: payment_advice).payment_advice.deliver_now
+        if relay
+          PaymentAdviceMailRelay.deliver!(payment_advice)
+        else
+          PaymentAdviceMailer.with(payment_advice: payment_advice).payment_advice.deliver_now
+        end
         render json: {
-          message: mail_success_message(payment_advice),
+          message: relay ? "Payment advice sent to #{payment_advice.payee_email}." : mail_success_message(payment_advice),
           payment_advice: payment_advice_payload(payment_advice)
         }, status: payment_advice.previously_new_record? ? :created : :ok
       rescue StandardError => e

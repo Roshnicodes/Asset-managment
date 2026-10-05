@@ -358,63 +358,61 @@
   </div>
 
   <% if thematic_head_pending %>
-    <div class="app-form-card quotation-thematic-head-card" style="margin-bottom: 1.5rem;">
-      <div class="app-page-header app-subsection-header-tight">
+    <section class="th-decision">
+      <header class="th-decision__head">
         <div>
-          <h3 style="margin-bottom: 0.35rem;">Thematic Head Decision</h3>
-          <p class="app-section-note mb-0">
-            <% if thematic_head_viewer %>
-              Pick the 1st committee member and choose the route. With Committee: the committee approves the request before it goes to the vendors. Without Committee: the link goes to the vendors right away and the committee reviews their quotations.
-            <% else %>
-              Waiting for <strong><%= @quotation_proposal.thematic_head&.name %></strong> to decide whether committee approval is required.
-            <% end %>
-          </p>
+          <h3 class="th-decision__title">Thematic Head Decision</h3>
+          <% unless thematic_head_viewer %>
+            <p class="th-decision__waiting">Waiting for <strong><%= @quotation_proposal.thematic_head&.name %></strong></p>
+          <% end %>
         </div>
-      </div>
+        <span class="th-decision__badge <%= "is-mine" if thematic_head_viewer %>"><%= thematic_head_viewer ? "Your decision" : "Pending" %></span>
+      </header>
+
       <% if thematic_head_viewer %>
-        <%= form_with url: thematic_head_decision_quotation_proposal_path(@quotation_proposal), method: :post, local: true, class: "quotation-thematic-head-form" do %>
-          <div class="quotation-thematic-head-option">
-            <h4>Committee</h4>
-            <p class="app-section-note">Choose the 1st committee member. The 2nd and 3rd members are mandatory for all purchases and are applied from the procurement policy. This committee reviews the vendor quotations in both cases.</p>
-            <datalist id="thematic-head-committee-options">
-              <% Array(@thematic_head_committee_candidates).each do |member| %>
-                <option value="<%= member.designation.present? ? "#{member.name} (#{member.designation})" : member.name %>" data-id="<%= member.id %>"></option>
-              <% end %>
-            </datalist>
-            <div class="app-form-field" data-employee-picker>
-              <label for="committee-first-member">1st Committee Member</label>
-              <%= hidden_field_tag :first_member_id, "", id: "committee-first-member-id", data: { employee_picker_id: true } %>
-              <input type="text" id="committee-first-member" class="form-control" list="thematic-head-committee-options"
-                     autocomplete="off" required placeholder="Type a name to search employees" data-employee-picker-search>
-              <div class="app-form-error app-form-error-client" data-field-error="true"></div>
+        <%= form_with url: thematic_head_decision_quotation_proposal_path(@quotation_proposal), method: :post, local: true, class: "th-decision__form" do %>
+          <div class="th-members">
+            <div class="th-member th-member--pick" data-employee-picker>
+              <span class="th-member__level">1</span>
+              <div class="th-member__body">
+                <label class="th-member__role" for="committee-first-member">1st Member · Choose</label>
+                <datalist id="thematic-head-committee-options">
+                  <% Array(@thematic_head_committee_candidates).each do |member| %>
+                    <option value="<%= member.designation.present? ? "#{member.name} (#{member.designation})" : member.name %>" data-id="<%= member.id %>"></option>
+                  <% end %>
+                </datalist>
+                <%= hidden_field_tag :first_member_id, "", id: "committee-first-member-id", data: { employee_picker_id: true } %>
+                <input type="text" id="committee-first-member" class="form-control th-member__input" list="thematic-head-committee-options"
+                       autocomplete="off" required placeholder="Search employee…" data-employee-picker-search>
+                <div class="app-form-error app-form-error-client" data-field-error="true"></div>
+              </div>
             </div>
-            <ul class="quotation-thematic-head-policy">
-              <% (@thematic_head_policy_members || {}).each do |level, (label, member)| %>
-                <li>
-                  <span><%= level.ordinalize %> Member · <%= label %></span>
-                  <strong class="<%= "is-missing" if member.blank? %>"><%= member&.name || "Not configured in Employee Master" %></strong>
-                </li>
-              <% end %>
-            </ul>
+            <% (@thematic_head_policy_members || {}).each do |level, (label, member)| %>
+              <div class="th-member">
+                <span class="th-member__level"><%= level %></span>
+                <div class="th-member__body">
+                  <span class="th-member__role"><%= label %></span>
+                  <strong class="th-member__name <%= "is-missing" if member.blank? %>"><%= member&.name || "Not in Employee Master" %></strong>
+                </div>
+              </div>
+            <% end %>
           </div>
 
-          <div class="quotation-thematic-head-options">
-            <div class="quotation-thematic-head-option">
-              <h4>With Committee</h4>
-              <p class="app-section-note">The committee approves this request first; after approval the quotation link goes to the vendors.</p>
-              <%= button_tag "With Committee", type: "submit", name: "decision", value: "committee", class: "app-form-submit",
-                             data: { turbo_confirm: "Send this request to the committee for approval first?" } %>
-            </div>
-            <div class="quotation-thematic-head-option">
-              <h4>Without Committee</h4>
-              <p class="app-section-note">No approval before sending: the quotation link goes to the vendors right away. The committee reviews the vendor quotations when they arrive.</p>
-              <%= button_tag "Without Committee", type: "submit", name: "decision", value: "direct", class: "app-secondary-btn",
-                             data: { turbo_confirm: "Send the quotation link to the vendors now, without approval first?" } %>
-            </div>
+          <div class="th-routes">
+            <%= button_tag type: "submit", name: "decision", value: "committee", class: "th-route th-route--committee",
+                           data: { turbo_confirm: "Send to the committee for approval first?" } do %>
+              <span class="th-route__icon">✓</span>
+              <span class="th-route__text"><strong>With Committee</strong><small>Approval first</small></span>
+            <% end %>
+            <%= button_tag type: "submit", name: "decision", value: "direct", class: "th-route th-route--direct",
+                           data: { turbo_confirm: "Send the quotation link to the vendors now?" } do %>
+              <span class="th-route__icon">➜</span>
+              <span class="th-route__text"><strong>Without Committee</strong><small>Send to vendors now</small></span>
+            <% end %>
           </div>
         <% end %>
       <% end %>
-    </div>
+    </section>
   <% end %>
 
   <% if approval_request&.employee_return_pending? %>
@@ -443,7 +441,6 @@
     <div class="quotation-proposal-show__overview-head">
       <div>
         <h3>Proposal Overview</h3>
-        <p>Key proposal, workflow, vendor, and selection details</p>
       </div>
       <span><%= @quotation_proposal.vendor_registrations.size %> Vendors</span>
     </div>
@@ -535,7 +532,6 @@
     <div class="app-page-header app-subsection-header-tight">
       <div>
         <h3 style="margin-bottom: 0.25rem;">Vendor Links & Tracking</h3>
-        <p class="app-section-note mb-0">Share each vendor link below. The maker can use this quotation page as the tracking link.</p>
       </div>
       <button type="button" class="app-secondary-btn" data-copy-text="<%= quotation_proposal_url(@quotation_proposal) %>">Copy Maker Tracking Link</button>
     </div>
@@ -707,7 +703,6 @@
     <div class="app-page-header app-subsection-header-tight">
       <div>
         <h3 style="margin-bottom: 0.25rem;">Select Vendor</h3>
-        <p class="app-section-note mb-0">Committee approval is not required for this request. Select the preferred vendor to create the purchase order.</p>
       </div>
     </div>
     <div class="d-flex flex-wrap gap-2">

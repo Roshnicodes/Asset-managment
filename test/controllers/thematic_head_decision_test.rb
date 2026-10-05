@@ -45,11 +45,11 @@ class ThematicHeadDecisionTest < ActionDispatch::IntegrationTest
 
     get quotation_proposal_url(@quotation_proposal)
     assert_response :success
-    assert_select "button[name=decision][value=committee]", text: "With Committee"
-    assert_select "button[name=decision][value=direct]", text: "Without Committee"
+    assert_select "button[name=decision][value=committee]", text: /With Committee/
+    assert_select "button[name=decision][value=direct]", text: /Without Committee/
     assert_select "input[data-employee-picker-search][list=thematic-head-committee-options]", count: 1
-    assert_select ".quotation-thematic-head-policy li", text: /Policy COO/
-    assert_select ".quotation-thematic-head-policy li", text: /Policy Finance/
+    assert_select ".th-member", text: /Policy COO/
+    assert_select ".th-member", text: /Policy Finance/
 
     post thematic_head_decision_quotation_proposal_url(@quotation_proposal),
          params: { decision: "committee", first_member_id: @first_member.id }

@@ -64,7 +64,7 @@
       <div class="app-page-header app-subsection-header-tight">
         <div>
           <h3 style="margin-bottom: 0.35rem;">Returned To Employee</h3>
-          <p class="app-section-note mb-0">Review the return remark, update the quotation, and save to restart the same approval chain.</p>
+          <p class="app-section-note mb-0">Update and save to send it back for approval.</p>
         </div>
       </div>
 
@@ -127,7 +127,7 @@
                     <% if quotation_proposal.thematic_head_decision.present? %>
                       Decided: <%= quotation_proposal.thematic_head_decision == "committee" ? "With Committee" : "Without Committee (direct to vendor)" %>.
                     <% end %>
-                    The Thematic Head cannot be changed after the decision.
+                    Locked after the decision.
                   </small>
                 <% else %>
                   <% selected_head = quotation_proposal.thematic_head %>
@@ -147,7 +147,7 @@
                       <option value="<%= member.designation.present? ? "#{member.name} (#{member.designation})" : member.name %>" data-id="<%= member.id %>"></option>
                     <% end %>
                   </datalist>
-                  <small class="app-field-hint">Optional. Select a Thematic Head to let them decide With Committee or Without Committee. Leave blank to build the committee yourself (Step 5) and start committee approval as usual.</small>
+                  <small class="app-field-hint">Optional. Leave blank to choose the committee yourself.</small>
                 <% end %>
                 <% head_errors.each do |message| %>
                   <div class="app-form-error">Thematic Head <%= message %></div>
@@ -232,7 +232,7 @@
     <div class="app-page-header app-subsection-header">
       <div>
         <h3>Select Vendors</h3>
-        <p class="app-section-note mb-0" data-vendor-selection-note>After you select a theme, only vendors registered for that theme appear here.</p>
+        <p class="app-section-note mb-0" data-vendor-selection-note>Vendors of the selected theme.</p>
       </div>
     </div>
 
@@ -284,7 +284,7 @@
     <div class="app-page-header app-subsection-header">
       <div>
         <h3>Proposal Items</h3>
-        <p class="app-section-note mb-0">Add each required item with clear item-wise details. You can add more rows below.</p>
+        <p class="app-section-note mb-0">Add one row per item.</p>
       </div>
     </div>
 
@@ -328,9 +328,7 @@
     <div class="app-page-header app-subsection-header app-subsection-header-spacious">
       <div>
         <h3>Vendor Selection Criteria</h3>
-        <p class="app-section-note mb-0">
-          Choose the criteria that the committee should use for vendor comparison. If no criteria are selected, the existing manual score flow remains available.
-        </p>
+        <p class="app-section-note mb-0">Optional. Used by the committee to compare vendors.</p>
       </div>
     </div>
 
@@ -380,10 +378,7 @@
     <div class="app-page-header app-subsection-header app-subsection-header-spacious">
       <div>
         <h3>Approval Committee</h3>
-        <p class="app-section-note mb-0">
-          Every committee has three members: the 1st is chosen, the 2nd (COO up to ₹10 lakh, Director above) and 3rd (Programme Director – Finance) are mandatory and applied from the procurement policy.
-          If you select a Thematic Head, the head chooses the 1st member and the route; otherwise you choose the 1st member here.
-        </p>
+        <p class="app-section-note mb-0">Choose the 1st member; the 2nd and 3rd are added automatically.</p>
       </div>
     </div>
 
@@ -428,8 +423,7 @@
     <% else %>
     <div class="app-rfp-section-panel" data-thematic-head-committee-note <%= "hidden" unless head_chosen %>>
       <div class="app-rfp-notice app-section-note">
-        A Thematic Head is selected. After saving, use <strong>Send to Thematic Head</strong>: the head picks the 1st committee member and chooses
-        <strong>With Committee</strong> (approval before the vendors) or <strong>Without Committee</strong> (link to the vendors right away; the committee reviews their quotations).
+        The Thematic Head will choose the committee after you save and use <strong>Send to Thematic Head</strong>.
       </div>
     </div>
     <% policy = @committee_policy || {} %>
@@ -446,7 +440,7 @@
         <div class="app-committee-amount" aria-live="polite">
           <span class="app-committee-amount__label">Estimated request value</span>
           <strong class="app-committee-amount__value" data-committee-amount>Add item quantity and max rate</strong>
-          <span class="app-committee-amount__hint">Quantity &times; Max Rate of all items. Up to ₹10 lakh goes to the COO, above ₹10 lakh to the Director.</span>
+          <span class="app-committee-amount__hint">Up to ₹10 lakh: COO · above: Director</span>
         </div>
 
         <div class="app-rfp-table-wrap" data-table-search="false" data-table-pagination="false">
@@ -486,7 +480,7 @@
                           <option value="<%= member.designation.present? ? "#{member.name} (#{member.designation})" : member.name %>" data-id="<%= member.id %>"></option>
                         <% end %>
                       </datalist>
-                      <small class="app-field-hint">Start typing and pick the employee from the suggestions.</small>
+
                       <% step_errors.each do |message| %>
                         <div class="app-form-error"><%= message %></div>
                       <% end %>

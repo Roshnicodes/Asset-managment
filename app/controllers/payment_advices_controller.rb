@@ -34,6 +34,13 @@ class PaymentAdvicesController < ApplicationController
       return
     end
 
+    # Without SMTP the mail goes out through the ASA mail service.
+    if PaymentAdviceMailRelay.enabled?
+      PaymentAdviceMailRelay.deliver!(@payment_advice)
+      render json: { message: "Payment advice sent to #{@payment_advice.payee_email}." }
+      return
+    end
+
     unless PaymentAdviceMailer.payment_advice_delivery_configured?
       render json: { error: "SMTP is not configured. Please add SMTP_ADDRESS in server environment or Rails credentials." }, status: :unprocessable_entity
       return

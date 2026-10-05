@@ -995,7 +995,7 @@ const setupQuotationProposalForm = () => {
 
       if (criteriaSelectedPreview) {
         if (selectedCount === 0) {
-          criteriaSelectedPreview.textContent = "No criteria selected yet. The committee can still use manual scoring if you leave this blank."
+          criteriaSelectedPreview.textContent = "No criteria selected."
         } else {
           const previewLabels = selectedLabels.slice(0, 3)
           const remainingCount = selectedLabels.length - previewLabels.length
@@ -1059,8 +1059,8 @@ const setupQuotationProposalForm = () => {
       if (label) label.textContent = selected.length > 0 ? "" : "Select vendors"
       if (selectionNote) {
         selectionNote.textContent = singleVendorMode()
-          ? "Only one vendor can be selected for Below 10K quotations."
-          : "After you select a theme, only vendors registered for that theme appear here."
+          ? "Below 10K: one vendor only."
+          : "Vendors of the selected theme."
       }
 
       if (selectedWrap) {
