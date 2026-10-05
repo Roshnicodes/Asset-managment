@@ -49,10 +49,7 @@ class VendorRegistrationInvitation < ApplicationRecord
   end
 
   def maker_mobile_no
-    employee = user&.employee_master ||
-      EmployeeMaster.find_by("LOWER(TRIM(email_id)) = ?", user&.email.to_s.strip.downcase.presence)
-    mobile = QuotationVendorSmsGateway.normalize_mobile_no(employee&.mobile_no)
-    QuotationVendorSmsGateway.valid_indian_mobile_no?(mobile) ? mobile : nil
+    QuotationVendorSmsGateway.maker_mobile_no_for(user)
   end
 
   def send_new_otp!

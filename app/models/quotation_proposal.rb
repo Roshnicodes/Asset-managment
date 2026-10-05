@@ -24,6 +24,10 @@ class QuotationProposal < ApplicationRecord
   # distinguish that controlled structure from the old free-form rows.
   attr_accessor :committee_from_policy, :committee_policy_errors
 
+  # Outcome of the maker's SMS copy of the vendor links after send_to_vendors!:
+  # :sent, :partial, :failed, :no_mobile, or nil when no link SMS went out.
+  attr_reader :maker_link_copy_status
+
   belongs_to :theme
   belongs_to :user, optional: true
   belongs_to :reused_from_quotation_proposal, class_name: "QuotationProposal", optional: true
@@ -355,12 +359,15 @@ end
       return
     end
 
+    maker_copy_results = []
     quotation_proposal_vendors.includes(:vendor_registration).find_each do |proposal_vendor|
       dispatch = proposal_vendor.dispatch_record!
       ensure_vendor_dispatch_ready!(dispatch)
 
       sent = QuotationVendorSmsGateway.send_vendor_link(dispatch)
       raise VendorDispatchError, vendor_dispatch_failure_message(dispatch) unless sent
+
+      maker_copy_results << send_maker_link_copy(dispatch)
 
       dispatch.update!(
         sent_at: Time.current,
@@ -370,6 +377,7 @@ end
         otp_verified_at: nil
       )
     end
+    @maker_link_copy_status = summarize_maker_link_copies(maker_copy_results)
     update!(sent_to_vendors_at: Time.current)
     refresh_response_status!
   end
@@ -613,6 +621,28 @@ end
   end
 
   private
+
+  # Sends the maker the same link SMS the vendor received, so the maker can
+  # track it. A failed copy never stops the vendor dispatch.
+  def send_maker_link_copy(dispatch)
+    maker_mobile = QuotationVendorSmsGateway.maker_mobile_no_for(user)
+    return :no_mobile if maker_mobile.blank?
+    return :sent if maker_mobile == QuotationVendorSmsGateway.normalize_mobile_no(dispatch.mobile_no)
+
+    QuotationVendorSmsGateway.send_vendor_link(dispatch, mobile_no: maker_mobile) ? :sent : :failed
+  rescue StandardError => error
+    Rails.logger.warn("Maker copy of quotation link failed for proposal #{id}: #{error.message}")
+    :failed
+  end
+
+  def summarize_maker_link_copies(results)
+    return if results.empty?
+    return :no_mobile if results.all?(:no_mobile)
+    return :sent if results.all?(:sent)
+    return :failed if results.none?(:sent)
+
+    :partial
+  end
 
   def ensure_vendor_dispatch_ready!(dispatch)
     return if dispatch.mobile_no.present?

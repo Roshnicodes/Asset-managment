@@ -32,10 +32,11 @@ class QuotationVendorSmsGateway
   ASA_INVOICE_OTP_TEMPLATE_ID = "1707177675358503792".freeze
   ASA_SENDER = "ACTFSA".freeze
 
-  def self.send_vendor_link(dispatch)
+  # mobile_no lets the same DLT-approved message go to the maker as a copy.
+  def self.send_vendor_link(dispatch, mobile_no: dispatch.mobile_no)
     config = sms_config_for(dispatch)
     send_sms(
-      mobile_no: dispatch.mobile_no,
+      mobile_no: mobile_no,
       message: vendor_link_message(dispatch, config: config),
       template_id: config[:quotation_link_template_id],
       config: config
@@ -177,8 +178,10 @@ class QuotationVendorSmsGateway
     "#{base_url(config: config)}/gr/#{token}"
   end
 
+  # The DLT-approved SMS link format is /p?t=TOKEN; a /gr/ link is dropped by
+  # the operator. The /p page forwards invoice tokens to the invoice upload page.
   def self.goods_receive_invoice_sms_link_for_config(token, config:)
-    goods_receive_invoice_link_for_config(token, config: config)
+    purchase_order_sms_link_for_config(token, config: config)
   end
 
   def self.vendor_link_message(dispatch, config:)
@@ -546,6 +549,17 @@ class QuotationVendorSmsGateway
     digits = digits.delete_prefix("0") if digits.length == 11 && digits.start_with?("0")
     digits = digits.delete_prefix("91") if digits.length == 12 && digits.start_with?("91")
     digits
+  end
+
+  # Mobile number of the app user (maker) from Employee Master, used to send
+  # them a copy of the links shared with vendors. Nil when missing or invalid.
+  def self.maker_mobile_no_for(user)
+    return if user.blank?
+
+    employee = user.employee_master ||
+      EmployeeMaster.find_by("LOWER(TRIM(email_id)) = ?", user.email.to_s.strip.downcase)
+    mobile = normalize_mobile_no(employee&.mobile_no)
+    valid_indian_mobile_no?(mobile) ? mobile : nil
   end
 
   def self.valid_indian_mobile_no?(mobile_no)

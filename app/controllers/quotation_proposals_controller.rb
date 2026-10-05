@@ -287,7 +287,17 @@ class QuotationProposalsController < ApplicationController
         redirect_to quotation_proposal_path(@quotation_proposal), alert: "No vendor is available for direct response."
       end
     else
-      redirect_to quotation_proposal_path(@quotation_proposal), notice: "The quotation request has been sent to the selected vendors."
+      message = "The quotation request has been sent to the selected vendors."
+      case @quotation_proposal.maker_link_copy_status
+      when :sent
+        redirect_to quotation_proposal_path(@quotation_proposal), notice: "#{message} A copy of each vendor link was also sent to the maker's mobile number."
+      when :partial, :failed
+        redirect_to quotation_proposal_path(@quotation_proposal), alert: "#{message} Some link copies to the maker's mobile number could not be sent."
+      when :no_mobile
+        redirect_to quotation_proposal_path(@quotation_proposal), alert: "#{message} No copy was sent to the maker because the maker's mobile number is missing in Employee Master."
+      else
+        redirect_to quotation_proposal_path(@quotation_proposal), notice: message
+      end
     end
   rescue QuotationProposal::VendorDispatchError => error
     redirect_to quotation_proposal_path(@quotation_proposal), alert: error.message
