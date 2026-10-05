@@ -58,7 +58,6 @@ class QuotationProposal < ApplicationRecord
   validates :subject, :proposal_end_date, :remark, :theme, presence: true
   validates :workflow_status, inclusion: { in: WORKFLOW_STATUSES }
   validates :procurement_amount_bucket, inclusion: { in: PROCUREMENT_AMOUNT_BUCKETS }
-  validates :thematic_head, presence: { message: "must be selected" }, on: :create, unless: :reused_from_quotation_proposal_id?
   validates :thematic_head_decision, inclusion: { in: THEMATIC_HEAD_DECISIONS }, allow_nil: true
   validate :subject_has_minimum_words
   validate :must_have_at_least_one_vendor
@@ -106,28 +105,23 @@ class QuotationProposal < ApplicationRecord
     refresh_response_status!
   end
 
-  # Records the Thematic Head's choice. "committee" uses the 1st member the
-  # head picked plus the policy members (COO/Director and Programme Director –
-  # Finance); "direct" drops the committee so the request goes to the vendors.
+  # Records the Thematic Head's choice. Both routes build the committee from
+  # the 1st member the head picked plus the policy members (COO/Director and
+  # Programme Director – Finance), because the committee also scores the
+  # vendor responses. "committee" approves the request before it goes to the
+  # vendors; "direct" sends it to the vendors without that first approval.
   def record_thematic_head_decision!(decision, first_member_id: nil)
     raise ArgumentError, "Unknown decision" unless decision.in?(THEMATIC_HEAD_DECISIONS)
 
-    if decision == "committee"
-      record_committee_decision!(first_member_id)
-    else
-      transaction do
-        committee_steps.destroy_all
-        update_columns(
-          thematic_head_decision: "direct",
-          thematic_head_decided_at: Time.current,
-          committee_approval_required: false,
-          updated_at: Time.current
-        )
-      end
-    end
-
+    record_committee_decision!(first_member_id, decision)
     association(:committee_steps).reset
     refresh_response_status!
+  end
+
+  # True when a committee will score the vendor responses. Only old requests
+  # shared directly without any committee let the maker pick the vendor.
+  def committee_reviews_responses?
+    committee_steps.exists?
   end
 
   def vendor_dispatch_allowed_for_thematic_head?(employee_ids)
@@ -224,14 +218,13 @@ end
 
 # Kept as a compatibility wrapper for the existing controller workflow.
 def apply_configured_committee!
+  # With a Thematic Head the head builds the committee (for both routes).
+  return true if thematic_head_selects_committee?
+
   if committee_not_required?
     clear_committee_steps_for_direct_dispatch!
     return true
   end
-
-  # With a Thematic Head the committee is chosen by that head, not by policy.
-  # New requests always go through a Thematic Head.
-  return true if thematic_head_selects_committee? || new_record?
 
   prepare_committee_policy_steps!
   committee_policy_errors.blank?
@@ -708,15 +701,16 @@ end
     :partial
   end
 
-  def record_committee_decision!(first_member_id)
+  def record_committee_decision!(first_member_id, decision)
     first_member = EmployeeMaster.find_by(id: first_member_id.presence)
     raise ArgumentError, "Please pick the 1st Committee Member from the suggestions list." if first_member.blank?
 
     committee_steps.each(&:mark_for_destruction)
     committee_steps.build(level: 1, employee_master: first_member, status: "waiting")
+    # Validate as a full committee for both routes, then record the route.
     assign_attributes(
       committee_approval_required: true,
-      thematic_head_decision: "committee",
+      thematic_head_decision: decision,
       thematic_head_decided_at: Time.current
     )
     prepare_committee_policy_steps!
@@ -726,7 +720,10 @@ end
       raise ArgumentError, message
     end
 
-    save!
+    transaction do
+      save!
+      update_columns(committee_approval_required: false) if decision == "direct"
+    end
   rescue ActiveRecord::RecordInvalid
     message = errors.full_messages.to_sentence
     reload
@@ -941,7 +938,7 @@ end
   def must_have_all_committee_levels
     return unless committee_approval_required?
     # The committee is chosen later by the Thematic Head.
-    return if (thematic_head_selects_committee? || new_record?) && thematic_head_decision != "committee"
+    return if thematic_head_selects_committee? && thematic_head_decision.blank?
 
     kept_steps = committee_steps.reject(&:marked_for_destruction?)
 

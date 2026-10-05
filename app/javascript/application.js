@@ -1288,6 +1288,10 @@ const setupQuotationProposalForm = () => {
     const amountNode = container.querySelector("[data-committee-amount]")
     const searchField = container.querySelector("[data-committee-member-search]")
     const idField = container.querySelector("[data-committee-member-id]")
+    // With a Thematic Head selected, the head builds the committee instead.
+    const headIdField = form?.querySelector("[name='quotation_proposal[thematic_head_id]']")
+    const headNote = form?.querySelector("[data-thematic-head-committee-note]")
+    const headChosen = () => Boolean(headIdField?.value)
     const memberOptions = searchField?.list ? Array.from(searchField.list.options) : []
     let policy = {}
     try {
@@ -1333,6 +1337,8 @@ const setupQuotationProposalForm = () => {
 
     const renderPolicy = () => {
       const required = committeeRequired()
+      container.hidden = headChosen()
+      if (headNote) headNote.hidden = !headChosen()
       if (skippedNotice) skippedNotice.hidden = required
       if (policyBlock) policyBlock.hidden = !required
 
@@ -1383,7 +1389,7 @@ const setupQuotationProposalForm = () => {
 
     const validateCommittee = ({ showEmpty = false } = {}) => {
       const members = renderPolicy()
-      if (!committeeRequired()) {
+      if (!committeeRequired() || headChosen()) {
         setError("")
         return true
       }
@@ -1424,6 +1430,7 @@ const setupQuotationProposalForm = () => {
 
     form?.addEventListener("input", (event) => {
       if (event.target.matches("[name$='[quantity]'], [name$='[max_rate]']")) renderPolicy()
+      if (event.target.matches("#thematic-head-search")) validateCommittee()
     })
     form?.addEventListener("click", (event) => {
       if (event.target.closest("[data-remove-quotation-item], [data-add-quotation-item]")) setTimeout(renderPolicy, 0)

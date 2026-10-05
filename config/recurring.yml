@@ -17,4 +17,4 @@ production:
   pending_approval_reminders:
     class: PendingApprovalReminderJob
     queue: default
-    schedule: at 9am every day
+    schedule: "0 9 * * * Asia/Kolkata" # 9:00 AM India time (the server clock is UTC)

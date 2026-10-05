@@ -37,8 +37,9 @@ class QuotationProposalsController < ApplicationController
         QuotationProposal.none.select(:id)
       end
       committee_ids = if actor_ids.any?
-        QuotationProposal.joins(:committee_steps)
-          .where(quotation_proposal_committee_steps: { employee_master_id: actor_ids, status: ApprovalStep::REACHED_STATUSES })
+        committee_scope = QuotationProposal.joins(:committee_steps).where(quotation_proposal_committee_steps: { employee_master_id: actor_ids })
+        committee_scope.where(quotation_proposal_committee_steps: { status: ApprovalStep::REACHED_STATUSES })
+          .or(committee_scope.where.not(sent_to_vendors_at: nil))
           .select(:id)
       else
         QuotationProposal.none.select(:id)
@@ -132,6 +133,7 @@ class QuotationProposalsController < ApplicationController
     selected_criteria_ids = extract_vendor_selection_criterion_ids!(attrs)
     attrs.delete("quotation_proposal_items_attributes")
     attrs.delete(:quotation_proposal_items_attributes)
+    drop_committee_rows_for_thematic_head!(attrs, nil)
 
     @quotation_proposal = QuotationProposal.new(attrs)
     @quotation_proposal.user = current_user
@@ -154,6 +156,7 @@ class QuotationProposalsController < ApplicationController
     selected_criteria_ids = extract_vendor_selection_criterion_ids!(attrs)
     attrs.delete("quotation_proposal_items_attributes")
     attrs.delete(:quotation_proposal_items_attributes)
+    drop_committee_rows_for_thematic_head!(attrs, @quotation_proposal)
     approval_needs_restart = @quotation_proposal.approval_request&.status.in?(%w[pending returned])
     previous_thematic_head_id = @quotation_proposal.thematic_head_id
     @selected_vendor_selection_criterion_ids = selected_criteria_ids
@@ -307,12 +310,13 @@ class QuotationProposalsController < ApplicationController
       return
     end
 
-    # Without Committee: the quotation link goes to the vendors right away.
+    # Without Committee: no approval before sending; the quotation link goes
+    # to the vendors right away and the committee scores the responses later.
     @quotation_proposal.send_to_vendors!
     notice = if @quotation_proposal.below_10k?
-      "Without Committee selected. The maker can now fill the direct quotation form."
+      "Without Committee selected. The maker can now fill the direct quotation form. The committee will review the response."
     else
-      "Without Committee selected. The quotation link has been sent to the vendors."
+      "Without Committee selected. The quotation link has been sent to the vendors. The committee will review their responses."
     end
     redirect_to quotation_proposal_path(@quotation_proposal), notice: notice
   rescue ArgumentError => error
@@ -1265,7 +1269,10 @@ class QuotationProposalsController < ApplicationController
   # or waiting on an earlier level.
   def quotation_reached_current_approver?(quotation_proposal)
     steps = quotation_proposal.approval_request&.approval_steps.presence || quotation_proposal.committee_steps
-    steps.any? { |step| step.status.in?(ApprovalStep::REACHED_STATUSES) && employee_matches_current_login?(step.employee_master) }
+    # Once sent to the vendors the committee reviews the responses, even when
+    # it did not approve the request first (Without Committee).
+    sent = quotation_proposal.sent_to_vendors_at.present?
+    steps.any? { |step| (sent || step.status.in?(ApprovalStep::REACHED_STATUSES)) && employee_matches_current_login?(step.employee_master) }
   end
 
   # The maker (or an admin) sends the quotation to the vendors; after a
@@ -1275,6 +1282,16 @@ class QuotationProposalsController < ApplicationController
     return if @quotation_proposal.vendor_dispatch_allowed_for_thematic_head?(current_approval_employee_ids)
 
     redirect_to quotation_proposal_path(@quotation_proposal), alert: "Only the maker or the Thematic Head can send this quotation to the vendors."
+  end
+
+  # When a Thematic Head is chosen the head builds the committee, so committee
+  # rows posted from the maker's form are ignored.
+  def drop_committee_rows_for_thematic_head!(attrs, quotation_proposal)
+    head_id = attrs.key?("thematic_head_id") ? attrs["thematic_head_id"] : quotation_proposal&.thematic_head_id
+    return if head_id.blank?
+
+    attrs.delete("committee_steps_attributes")
+    attrs.delete(:committee_steps_attributes)
   end
 
   def authorize_thematic_head!
@@ -1660,7 +1677,9 @@ class QuotationProposalsController < ApplicationController
   end
 
   def authorize_committee_comparison_access!
-    return if @quotation_proposal.committee_not_required? && (admin_user? || @quotation_proposal.user_id == current_user.id)
+    # Only a request with no committee at all lets the maker pick the vendor.
+    no_committee = @quotation_proposal.committee_not_required? && !@quotation_proposal.committee_reviews_responses?
+    return if no_committee && (admin_user? || @quotation_proposal.user_id == current_user.id)
 
     return if committee_scoring_allowed_for?(@quotation_proposal)
 

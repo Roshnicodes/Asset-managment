@@ -116,7 +116,7 @@
           <tr>
             <th scope="row" class="app-rfp-table-label">Thematic Head</th>
             <td class="app-rfp-table-value">
-              <% head_locked = quotation_proposal.thematic_head_decision.present? || quotation_proposal.approval_locked? %>
+              <% head_locked = quotation_proposal.thematic_head_decision.present? || quotation_proposal.approval_locked? || quotation_proposal.approval_request.present? %>
               <% head_errors = quotation_proposal.errors[:thematic_head] %>
               <div class="app-form-field app-rfp-cell-field <%= "has-error" if head_errors.any? %>" data-employee-picker>
                 <%# Not editable by the maker; the route is decided by the Thematic Head. Kept so the committee step can show the current route. %>
@@ -138,7 +138,6 @@
                          class="form-control"
                          list="thematic-head-options"
                          autocomplete="off"
-                         <%= "required" if quotation_proposal.new_record? || quotation_proposal.thematic_head_id.present? %>
                          placeholder="Type a name to search employees"
                          value="<%= selected_head ? "#{selected_head.name}#{" (#{selected_head.designation})" if selected_head.designation.present?}" : "" %>"
                          data-employee-picker-search
@@ -148,7 +147,7 @@
                       <option value="<%= member.designation.present? ? "#{member.name} (#{member.designation})" : member.name %>" data-id="<%= member.id %>"></option>
                     <% end %>
                   </datalist>
-                  <small class="app-field-hint">The Thematic Head decides whether this request needs committee approval or goes directly to the vendors.</small>
+                  <small class="app-field-hint">Optional. Select a Thematic Head to let them decide With Committee or Without Committee. Leave blank to build the committee yourself (Step 5) and start committee approval as usual.</small>
                 <% end %>
                 <% head_errors.each do |message| %>
                   <div class="app-form-error">Thematic Head <%= message %></div>
@@ -376,31 +375,23 @@
     </div>
 
     <div class="app-static-page quotation-page-5">
-    <% thematic_head_flow = quotation_proposal.new_record? || quotation_proposal.thematic_head_id.present? %>
+    <% head_decided = quotation_proposal.thematic_head_id.present? && quotation_proposal.thematic_head_decision.present? %>
+    <% head_chosen = quotation_proposal.thematic_head_id.present? %>
     <div class="app-page-header app-subsection-header app-subsection-header-spacious">
       <div>
         <h3>Approval Committee</h3>
         <p class="app-section-note mb-0">
-          <% if thematic_head_flow %>
-            The Thematic Head decides whether this request needs committee approval. With Committee, the head picks the 1st member; the 2nd (COO up to ₹10 lakh, Director above) and 3rd (Programme Director – Finance) are applied from the procurement policy.
-          <% else %>
-            Every committee has three members: you choose the 1st member; the 2nd and 3rd are mandatory for all purchases and are applied automatically from the procurement policy.
-          <% end %>
+          Every committee has three members: the 1st is chosen, the 2nd (COO up to ₹10 lakh, Director above) and 3rd (Programme Director – Finance) are mandatory and applied from the procurement policy.
+          If you select a Thematic Head, the head chooses the 1st member and the route; otherwise you choose the 1st member here.
         </p>
       </div>
     </div>
 
-    <% if thematic_head_flow && !quotation_proposal.approval_locked? %>
+    <% if head_decided && !quotation_proposal.approval_locked? %>
     <div class="app-rfp-section-panel">
       <div class="app-rfp-notice app-section-note">
-        <% if quotation_proposal.thematic_head_decision == "committee" %>
-          The Thematic Head chose <strong>With Committee</strong>. Committee:
-          <%= quotation_proposal.committee_steps.sort_by(&:level).filter_map { |step| step.employee_master&.name }.join(", ").presence || "-" %>.
-        <% elsif quotation_proposal.thematic_head_decision == "direct" %>
-          The Thematic Head chose <strong>Without Committee</strong>. The quotation link was sent directly to the vendors.
-        <% else %>
-          After saving, use <strong>Send to Thematic Head</strong>. The Thematic Head will choose <strong>With Committee</strong> (and pick the 1st member) or <strong>Without Committee</strong> (the link goes to the vendors right away).
-        <% end %>
+        The Thematic Head chose <strong><%= quotation_proposal.thematic_head_decision == "committee" ? "With Committee" : "Without Committee" %></strong>. Committee:
+        <%= quotation_proposal.committee_steps.sort_by(&:level).filter_map { |step| step.employee_master&.name }.join(", ").presence || "-" %>.
       </div>
     </div>
     <% elsif quotation_proposal.persisted? && quotation_proposal.approval_locked? %>
@@ -435,13 +426,20 @@
       </div>
     </div>
     <% else %>
+    <div class="app-rfp-section-panel" data-thematic-head-committee-note <%= "hidden" unless head_chosen %>>
+      <div class="app-rfp-notice app-section-note">
+        A Thematic Head is selected. After saving, use <strong>Send to Thematic Head</strong>: the head picks the 1st committee member and chooses
+        <strong>With Committee</strong> (approval before the vendors) or <strong>Without Committee</strong> (link to the vendors right away; the committee reviews their quotations).
+      </div>
+    </div>
     <% policy = @committee_policy || {} %>
     <% first_committee_step = quotation_proposal.committee_steps.reject(&:marked_for_destruction?).find { |step| step.level.to_i == 1 } || quotation_proposal.committee_steps.build(level: 1, status: "waiting") %>
     <div class="app-rfp-section-panel"
          data-quotation-committee
-         data-committee-policy="<%= policy.to_json %>">
+         data-committee-policy="<%= policy.to_json %>"
+         <%= "hidden" if head_chosen %>>
       <div class="app-rfp-notice app-section-note" data-quotation-committee-skipped hidden>
-        The Thematic Head chose Without Committee for this request, so no committee is needed. The quotation link goes directly to the selected vendors.
+        Committee approval is not required for this request. The quotation link goes directly to the selected vendors.
       </div>
 
       <div data-quotation-committee-policy-block>

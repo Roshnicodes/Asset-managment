@@ -9099,3 +9099,9 @@ body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-navbar {
 .quotation-thematic-head-policy strong.is-missing {
   color: #b42318;
 }
+
+/* Panels toggled with the hidden attribute (e.g. committee vs Thematic Head
+   note on the quotation form) must disappear despite their display: grid. */
+.app-rfp-section-panel[hidden] {
+  display: none !important;
+}

@@ -67,8 +67,18 @@ class QuotationCommitteeMappingTest < ActiveSupport::TestCase
     assert_equal @finance.id, directory[:finance][:id]
   end
 
-  test "a new quotation leaves the committee to the Thematic Head" do
+  test "a new quotation without a Thematic Head gets the policy committee" do
     quotation_proposal = QuotationProposal.new(theme: @theme, user: @maker_user, committee_approval_required: true)
+    quotation_proposal.quotation_proposal_items.build(item_name: "Policy item", quantity: 1, max_rate: 500)
+    quotation_proposal.committee_steps.build(level: 1, employee_master: @first_member, status: "waiting")
+
+    assert quotation_proposal.apply_configured_committee!
+    assert_equal [@first_member, @coo, @finance].map(&:id), kept_member_ids(quotation_proposal)
+  end
+
+  test "a quotation with a Thematic Head leaves the committee to the head" do
+    head = create_employee("Policy Head", "policy.head@example.com", "POL-HEAD", "Program Manager")
+    quotation_proposal = QuotationProposal.new(theme: @theme, user: @maker_user, committee_approval_required: true, thematic_head: head)
     quotation_proposal.committee_steps.build(level: 1, employee_master: @first_member, status: "waiting")
 
     assert quotation_proposal.apply_configured_committee!
@@ -113,9 +123,6 @@ class QuotationCommitteeMappingTest < ActiveSupport::TestCase
       theme: @theme,
       user: @maker_user
     )
-    # The policy applies to existing quotations that have no Thematic Head; new
-    # requests get their committee from the Thematic Head instead.
-    quotation_proposal.save!(validate: false)
     quotation_proposal.quotation_proposal_items.build(item_name: "Policy item", quantity: quantity, max_rate: max_rate)
     quotation_proposal.committee_steps.build(level: 1, employee_master: first_member, status: "waiting") if first_member
     quotation_proposal

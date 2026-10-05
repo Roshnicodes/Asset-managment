@@ -264,6 +264,7 @@ class ApplicationController < ActionController::Base
       return false unless action_name.in?(%w[show quotation_print comparison_print thematic_head_decision send_to_vendors])
       return true if thematic_head_for_quotation?(params[:id])
       return false if action_name.in?(%w[thematic_head_decision send_to_vendors])
+      return true if committee_member_of_sent_quotation?(params[:id])
 
       approval_request_for_record(QuotationProposal, params[:id])&.approval_steps&.any? do |step|
         step.reached? && employee_matches_current_login?(step.employee_master)
@@ -280,6 +281,15 @@ class ApplicationController < ActionController::Base
     quotation_proposal.present? &&
       quotation_proposal.thematic_head_requested_at.present? &&
       quotation_proposal.thematic_head?(current_approval_employee_ids)
+  end
+
+  # Committee members review a quotation once it reaches the vendors, also
+  # when the Thematic Head sent it Without Committee approval first.
+  def committee_member_of_sent_quotation?(record_id)
+    quotation_proposal = QuotationProposal.find_by(id: record_id)
+    return false if quotation_proposal.blank? || quotation_proposal.sent_to_vendors_at.blank?
+
+    quotation_proposal.committee_steps.where(employee_master_id: current_approval_employee_ids).exists?
   end
 
   def approval_request_for_record(record_class, record_id)

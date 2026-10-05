@@ -364,7 +364,7 @@
           <h3 style="margin-bottom: 0.35rem;">Thematic Head Decision</h3>
           <p class="app-section-note mb-0">
             <% if thematic_head_viewer %>
-              Decide how this request should proceed. With Committee sends it for committee approval; Without Committee sends the quotation link to the vendors right away.
+              Pick the 1st committee member and choose the route. With Committee: the committee approves the request before it goes to the vendors. Without Committee: the link goes to the vendors right away and the committee reviews their quotations.
             <% else %>
               Waiting for <strong><%= @quotation_proposal.thematic_head&.name %></strong> to decide whether committee approval is required.
             <% end %>
@@ -372,11 +372,10 @@
         </div>
       </div>
       <% if thematic_head_viewer %>
-        <div class="quotation-thematic-head-options">
-          <%= form_with url: thematic_head_decision_quotation_proposal_path(@quotation_proposal), method: :post, local: true, class: "quotation-thematic-head-option" do %>
-            <%= hidden_field_tag :decision, "committee" %>
-            <h4>With Committee</h4>
-            <p class="app-section-note">Choose the 1st committee member. The 2nd and 3rd members are mandatory for all purchases and are applied from the procurement policy.</p>
+        <%= form_with url: thematic_head_decision_quotation_proposal_path(@quotation_proposal), method: :post, local: true, class: "quotation-thematic-head-form" do %>
+          <div class="quotation-thematic-head-option">
+            <h4>Committee</h4>
+            <p class="app-section-note">Choose the 1st committee member. The 2nd and 3rd members are mandatory for all purchases and are applied from the procurement policy. This committee reviews the vendor quotations in both cases.</p>
             <datalist id="thematic-head-committee-options">
               <% Array(@thematic_head_committee_candidates).each do |member| %>
                 <option value="<%= member.designation.present? ? "#{member.name} (#{member.designation})" : member.name %>" data-id="<%= member.id %>"></option>
@@ -397,17 +396,23 @@
                 </li>
               <% end %>
             </ul>
-            <%= submit_tag "Send to Committee", class: "app-form-submit", data: { turbo_confirm: "Send this request to the selected committee for approval?" } %>
-          <% end %>
-
-          <div class="quotation-thematic-head-option">
-            <h4>Without Committee</h4>
-            <p class="app-section-note">No committee approval. The quotation link is sent to the vendors immediately.</p>
-            <%= button_to "Without Committee", thematic_head_decision_quotation_proposal_path(@quotation_proposal, decision: "direct"),
-                          method: :post, class: "app-secondary-btn",
-                          form: { data: { turbo_confirm: "Skip the committee and send the quotation link to the vendors now?" } } %>
           </div>
-        </div>
+
+          <div class="quotation-thematic-head-options">
+            <div class="quotation-thematic-head-option">
+              <h4>With Committee</h4>
+              <p class="app-section-note">The committee approves this request first; after approval the quotation link goes to the vendors.</p>
+              <%= button_tag "With Committee", type: "submit", name: "decision", value: "committee", class: "app-form-submit",
+                             data: { turbo_confirm: "Send this request to the committee for approval first?" } %>
+            </div>
+            <div class="quotation-thematic-head-option">
+              <h4>Without Committee</h4>
+              <p class="app-section-note">No approval before sending: the quotation link goes to the vendors right away. The committee reviews the vendor quotations when they arrive.</p>
+              <%= button_tag "Without Committee", type: "submit", name: "decision", value: "direct", class: "app-secondary-btn",
+                             data: { turbo_confirm: "Send the quotation link to the vendors now, without approval first?" } %>
+            </div>
+          </div>
+        <% end %>
       <% end %>
     </div>
   <% end %>
@@ -697,7 +702,7 @@
   </div>
 <% end %>
 
-<% if @quotation_proposal.vendor_responses_received? && @quotation_proposal.committee_not_required? && creator_can_dispatch %>
+<% if @quotation_proposal.vendor_responses_received? && @quotation_proposal.committee_not_required? && !@quotation_proposal.committee_reviews_responses? && creator_can_dispatch %>
   <div class="app-detail-card app-stack-gap-lg">
     <div class="app-page-header app-subsection-header-tight">
       <div>
