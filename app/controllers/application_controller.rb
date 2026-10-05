@@ -64,6 +64,11 @@ class ApplicationController < ActionController::Base
     destroy destroy_selected edit import reset_login_password sync_logins update update_all
   ].freeze
 
+  # Makers revise their own quotation requests and vendor registrations (for
+  # example after a committee return). These controllers check ownership and
+  # the approval lock themselves, so edit/update is not admin-only there.
+  OWNER_EDITABLE_CONTROLLERS = %w[quotation_proposals vendor_registrations].freeze
+
   # Changes to the importmap will invalidate the etag for HTML responses
   stale_when_importmap_changes
 
@@ -233,7 +238,8 @@ class ApplicationController < ActionController::Base
     return if menu_identifier.blank?
     return if admin_user?
 
-    if controller_name == "menu_permissions" || RBAC_ADMIN_ONLY_ACTIONS.include?(action_name)
+    owner_edit = controller_name.in?(OWNER_EDITABLE_CONTROLLERS) && action_name.in?(%w[edit update])
+    if controller_name == "menu_permissions" || (RBAC_ADMIN_ONLY_ACTIONS.include?(action_name) && !owner_edit)
       redirect_to root_path, alert: "Only admin can edit or delete records."
       return
     end

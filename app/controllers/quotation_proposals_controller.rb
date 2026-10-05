@@ -1100,9 +1100,13 @@ class QuotationProposalsController < ApplicationController
       committee_steps_attributes: [:id, :level, :employee_master_id, :remark, :status, :_destroy]
     )
 
-    permitted[:vendor_registration_ids] = Array(permitted[:vendor_registration_ids]).reject(&:blank?)
+    # Only touch the vendor list when the form sent it, so a partial update can
+    # never silently remove every vendor.
+    permitted[:vendor_registration_ids] = Array(permitted[:vendor_registration_ids]).reject(&:blank?) if permitted.key?(:vendor_registration_ids)
     permitted[:vendor_selection_criterion_ids] = Array(permitted[:vendor_selection_criterion_ids]).reject(&:blank?)
-    permitted[:committee_steps_attributes] = normalize_nested_collection(permitted[:committee_steps_attributes])
+    if permitted.key?(:committee_steps_attributes)
+      permitted[:committee_steps_attributes] = normalize_nested_collection(permitted[:committee_steps_attributes])
+    end
     permitted
   end
 
