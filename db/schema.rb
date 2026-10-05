@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_01_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_05_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -521,12 +521,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_01_090000) do
     t.bigint "selected_vendor_registration_id"
     t.datetime "sent_to_vendors_at"
     t.string "subject", null: false
+    t.datetime "thematic_head_decided_at"
+    t.string "thematic_head_decision"
+    t.bigint "thematic_head_id"
+    t.datetime "thematic_head_requested_at"
     t.bigint "theme_id", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.string "workflow_status", default: "committee_pending", null: false
     t.index ["reused_from_quotation_proposal_id"], name: "index_quotation_proposals_on_reused_from_quotation_proposal_id"
     t.index ["selected_vendor_registration_id"], name: "index_quotation_proposals_on_selected_vendor_registration_id"
+    t.index ["thematic_head_id"], name: "index_quotation_proposals_on_thematic_head_id"
     t.index ["theme_id"], name: "index_quotation_proposals_on_theme_id"
     t.index ["user_id"], name: "index_quotation_proposals_on_user_id"
   end
@@ -838,6 +843,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_01_090000) do
   add_foreign_key "quotation_proposal_vendors", "employee_masters", column: "purchase_order_reply_updated_by_id"
   add_foreign_key "quotation_proposal_vendors", "quotation_proposals"
   add_foreign_key "quotation_proposal_vendors", "vendor_registrations"
+  add_foreign_key "quotation_proposals", "employee_masters", column: "thematic_head_id"
   add_foreign_key "quotation_proposals", "quotation_proposals", column: "reused_from_quotation_proposal_id"
   add_foreign_key "quotation_proposals", "themes"
   add_foreign_key "quotation_proposals", "users"

@@ -2,18 +2,20 @@ class QuotationProposalsController < ApplicationController
   rescue_from ActiveRecord::RecordNotFound, with: :handle_quotation_not_found
 
   before_action :set_quotation_proposal, only: %i[
-    show edit update destroy approve_committee return_committee
+    show edit update destroy approve_committee return_committee thematic_head_decision
     send_to_vendors score_vendor score_vendors select_vendor purchase_order send_purchase_order update_purchase_order_reply goods_receive update_goods_receive reuse physical_quotation
     new_invoice_request_assets create_invoice_request_assets review_invoice_request assign_payment_references purchase_order_print quotation_print comparison_print
   ]
-  before_action :ensure_quotation_owner_access!, only: %i[edit update destroy send_to_vendors purchase_order purchase_order_print send_purchase_order goods_receive update_goods_receive new_invoice_request_assets create_invoice_request_assets review_invoice_request reuse physical_quotation]
+  before_action :ensure_quotation_owner_access!, only: %i[edit update destroy purchase_order purchase_order_print send_purchase_order goods_receive update_goods_receive new_invoice_request_assets create_invoice_request_assets review_invoice_request reuse physical_quotation]
   before_action :ensure_quotation_owner_access!, only: %i[assign_payment_references]
   before_action :ensure_quotation_change_allowed!, only: %i[edit update]
-  before_action :authorize_quotation_form_access!, only: %i[index new create edit update destroy send_for_approval send_to_vendors reuse physical_quotation]
+  before_action :authorize_quotation_form_access!, only: %i[index new create edit update destroy send_for_approval reuse physical_quotation]
+  before_action :authorize_vendor_dispatch!, only: %i[send_to_vendors]
   before_action :authorize_quotation_list_access!, only: %i[list]
   before_action :authorize_payment_advice_access!, only: %i[payment_advice update_payment_advice]
   before_action :authorize_quotation_view_access!, only: %i[show approve_committee return_committee quotation_print comparison_print]
   before_action :authorize_committee_comparison_access!, only: %i[score_vendor score_vendors select_vendor]
+  before_action :authorize_thematic_head!, only: %i[thematic_head_decision]
 
   def index
     @quotation_proposals = own_quotation_scope.order(created_at: :desc)
@@ -42,9 +44,16 @@ class QuotationProposalsController < ApplicationController
         QuotationProposal.none.select(:id)
       end
 
+      thematic_head_ids = if actor_ids.any?
+        QuotationProposal.where(thematic_head_id: actor_ids).where.not(thematic_head_requested_at: nil).select(:id)
+      else
+        QuotationProposal.none.select(:id)
+      end
+
       @quotation_proposals = quotation_scope.where(id: own_ids)
         .or(quotation_scope.where(id: involved_ids))
         .or(quotation_scope.where(id: committee_ids))
+        .or(quotation_scope.where(id: thematic_head_ids))
         .distinct
         .order(created_at: :desc)
     end
@@ -76,6 +85,14 @@ class QuotationProposalsController < ApplicationController
     @committee_scoring_allowed = committee_scoring_allowed_for?(@quotation_proposal)
     @committee_score_members = @quotation_proposal.committee_steps.includes(:employee_master).map(&:employee_master).compact
     @committee_member_count = @committee_score_members.size
+    if @quotation_proposal.awaiting_thematic_head_decision? && @quotation_proposal.thematic_head?(current_approval_employee_ids)
+      maker_employee_id = @quotation_proposal.user&.employee_master&.id
+      @thematic_head_committee_candidates = EmployeeMaster.where.not(id: maker_employee_id).order(:name)
+      @thematic_head_policy_members = {
+        2 => [@quotation_proposal.committee_policy_member_label(2), @quotation_proposal.committee_policy_member(2)],
+        3 => [@quotation_proposal.committee_policy_member_label(3), @quotation_proposal.committee_policy_member(3)]
+      }
+    end
     @selected_vendor_response = QuotationProposalVendor
       .includes(
         :vendor_registration,
@@ -138,6 +155,7 @@ class QuotationProposalsController < ApplicationController
     attrs.delete("quotation_proposal_items_attributes")
     attrs.delete(:quotation_proposal_items_attributes)
     approval_needs_restart = @quotation_proposal.approval_request&.status.in?(%w[pending returned])
+    previous_thematic_head_id = @quotation_proposal.thematic_head_id
     @selected_vendor_selection_criterion_ids = selected_criteria_ids
 
     # An admin may correct an approved proposal, but the committee that already
@@ -152,6 +170,10 @@ class QuotationProposalsController < ApplicationController
     updated = update_quotation_proposal_with_criteria(@quotation_proposal, attrs, item_attributes, selected_criteria_ids)
 
     if updated
+      if @quotation_proposal.awaiting_thematic_head_decision? && @quotation_proposal.thematic_head_id != previous_thematic_head_id
+        NotificationDispatcher.notify_thematic_head_decision_requested(@quotation_proposal)
+      end
+
       if approval_needs_restart && @quotation_proposal.committee_approval_required?
         @quotation_proposal.rebuild_approval_request_steps!
         NotificationDispatcher.notify_pending_approval_steps(@quotation_proposal.approval_request)
@@ -223,9 +245,20 @@ class QuotationProposalsController < ApplicationController
 
     sent_count = 0
     failed_count = 0
+    head_count = 0
 
     QuotationProposal.where(id: proposal_ids).find_each do |quotation_proposal|
       next unless quotation_proposal.user_id == current_user.id
+
+      # The Thematic Head decides the route before any committee or vendor step.
+      if quotation_proposal.thematic_head_decision_required?
+        unless quotation_proposal.awaiting_thematic_head_decision?
+          quotation_proposal.request_thematic_head_decision!
+          NotificationDispatcher.notify_thematic_head_decision_requested(quotation_proposal)
+        end
+        head_count += 1
+        next
+      end
 
       if start_quotation_approval_request!(quotation_proposal)
         sent_count += 1
@@ -236,6 +269,11 @@ class QuotationProposalsController < ApplicationController
 
     redirect_target = params[:id].present? ? quotation_proposal_path(params[:id]) : list_quotation_proposals_path
 
+    if head_count.positive? && sent_count.zero? && failed_count.zero?
+      redirect_to redirect_target, notice: "Quotation proposal sent to the Thematic Head to decide whether committee approval is required."
+      return
+    end
+
     if sent_count.positive? && failed_count.zero?
       redirect_to redirect_target, notice: "Quotation proposal approval started successfully."
     elsif sent_count.positive?
@@ -243,6 +281,45 @@ class QuotationProposalsController < ApplicationController
     else
       redirect_to redirect_target, alert: "No approval request was created. Please check the quotation approval channel mapping."
     end
+  end
+
+  def thematic_head_decision
+    unless @quotation_proposal.awaiting_thematic_head_decision?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "This quotation is not waiting for a Thematic Head decision."
+      return
+    end
+
+    decision = params[:decision].to_s
+    unless decision.in?(QuotationProposal::THEMATIC_HEAD_DECISIONS)
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Please choose With Committee or Without Committee."
+      return
+    end
+
+    @quotation_proposal.record_thematic_head_decision!(decision, first_member_id: params[:first_member_id])
+    NotificationDispatcher.notify_thematic_head_decided(@quotation_proposal)
+
+    if decision == "committee"
+      if start_quotation_approval_request!(@quotation_proposal)
+        redirect_to quotation_proposal_path(@quotation_proposal), notice: "Sent to the committee for approval."
+      else
+        redirect_to quotation_proposal_path(@quotation_proposal), alert: "Committee approval could not be started. Please check the committee members."
+      end
+      return
+    end
+
+    # Without Committee: the quotation link goes to the vendors right away.
+    @quotation_proposal.send_to_vendors!
+    notice = if @quotation_proposal.below_10k?
+      "Without Committee selected. The maker can now fill the direct quotation form."
+    else
+      "Without Committee selected. The quotation link has been sent to the vendors."
+    end
+    redirect_to quotation_proposal_path(@quotation_proposal), notice: notice
+  rescue ArgumentError => error
+    redirect_to quotation_proposal_path(@quotation_proposal), alert: error.message
+  rescue QuotationProposal::VendorDispatchError => error
+    redirect_to quotation_proposal_path(@quotation_proposal),
+                alert: "Without Committee saved, but the vendor SMS failed: #{error.message} Use Send To Vendor to try again."
   end
 
   def approve_committee
@@ -1016,7 +1093,7 @@ class QuotationProposalsController < ApplicationController
       :proposal_end_date,
       :remark,
       :procurement_amount_bucket,
-      :committee_approval_required,
+      :thematic_head_id,
       vendor_registration_ids: [],
       vendor_selection_criterion_ids: [],
       quotation_proposal_items_attributes: [:id, :item_name, :unit_id, :quantity, :max_rate, :remark, :_destroy],
@@ -1174,6 +1251,7 @@ class QuotationProposalsController < ApplicationController
     return if admin_user?
     return if @quotation_proposal.user_id == current_user.id
     return if quotation_reached_current_approver?(@quotation_proposal)
+    return if @quotation_proposal.thematic_head_requested_at.present? && @quotation_proposal.thematic_head?(current_approval_employee_ids)
 
     redirect_to root_path, alert: "You are not authorized to view this Quotation Proposal."
   end
@@ -1184,6 +1262,21 @@ class QuotationProposalsController < ApplicationController
   def quotation_reached_current_approver?(quotation_proposal)
     steps = quotation_proposal.approval_request&.approval_steps.presence || quotation_proposal.committee_steps
     steps.any? { |step| step.status.in?(ApprovalStep::REACHED_STATUSES) && employee_matches_current_login?(step.employee_master) }
+  end
+
+  # The maker (or an admin) sends the quotation to the vendors; after a
+  # Without Committee decision the Thematic Head may send it too.
+  def authorize_vendor_dispatch!
+    return if admin_user? || @quotation_proposal.user_id == current_user.id
+    return if @quotation_proposal.vendor_dispatch_allowed_for_thematic_head?(current_approval_employee_ids)
+
+    redirect_to quotation_proposal_path(@quotation_proposal), alert: "Only the maker or the Thematic Head can send this quotation to the vendors."
+  end
+
+  def authorize_thematic_head!
+    return if @quotation_proposal.thematic_head?(current_approval_employee_ids)
+
+    redirect_to quotation_proposal_path(@quotation_proposal), alert: "Only the selected Thematic Head can make this decision."
   end
 
   def ensure_quotation_owner_access!

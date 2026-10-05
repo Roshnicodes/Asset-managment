@@ -83,6 +83,31 @@ class NotificationDispatcher
     )
   end
 
+  def self.notify_thematic_head_decision_requested(quotation_proposal)
+    head = quotation_proposal.thematic_head
+    user = head && User.find_by(email: head.email_id.to_s.strip.downcase)
+    return unless user
+
+    Notification.create!(
+      user: user,
+      notifiable: quotation_proposal,
+      title: "Quotation Proposal - Thematic Head Decision",
+      message: "#{quotation_proposal.subject} is waiting for your decision: send it With Committee approval or Without Committee directly to the vendors."
+    )
+  end
+
+  def self.notify_thematic_head_decided(quotation_proposal)
+    return unless quotation_proposal.user
+
+    route = quotation_proposal.thematic_head_decision == "committee" ? "With Committee (sent for committee approval)" : "Without Committee (sent directly to the vendors)"
+    Notification.create!(
+      user: quotation_proposal.user,
+      notifiable: quotation_proposal,
+      title: "Quotation Proposal - Thematic Head Decision",
+      message: "#{quotation_proposal.thematic_head&.name} chose #{route} for #{quotation_proposal.subject}."
+    )
+  end
+
   def self.notify_quotation_committee_step(quotation_proposal, committee_step, previous_step: nil)
     return unless committee_step
 

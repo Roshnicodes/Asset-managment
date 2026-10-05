@@ -1823,6 +1823,50 @@ const setupQuotationShowDetails = () => {
 // Narrow table cells clip their text to an ellipsis. Give every clipped cell a
 // native tooltip so the full value is one hover away, and re-check on resize
 // because the clipping depends on the column width.
+// Type-to-search employee field: the visible input shows "Name (Designation)"
+// from a datalist and the hidden field carries the chosen employee id.
+const setupEmployeePickers = () => {
+  document.querySelectorAll("[data-employee-picker]").forEach((wrapper) => {
+    if (wrapper.dataset.pickerReady === "true") return
+    const searchField = wrapper.querySelector("[data-employee-picker-search]")
+    const idField = wrapper.querySelector("[data-employee-picker-id]")
+    if (!searchField || !idField) return
+    wrapper.dataset.pickerReady = "true"
+
+    const options = searchField.list ? Array.from(searchField.list.options) : []
+    const normalize = (value) => value.replace(/\s+/g, " ").trim().toLowerCase()
+    const errorNode = wrapper.querySelector("[data-field-error='true']")
+
+    const sync = () => {
+      const typed = normalize(searchField.value)
+      const match = typed ? options.find((option) => normalize(option.value) === typed) : null
+      idField.value = match ? match.dataset.id : ""
+      const invalid = typed !== "" && !match
+      searchField.setCustomValidity(invalid ? "Pick a name from the suggestions list." : "")
+      wrapper.classList.toggle("has-error", invalid)
+      if (errorNode) {
+        errorNode.textContent = invalid ? "Pick a name from the suggestions list." : ""
+        errorNode.classList.toggle("is-visible", invalid)
+      }
+    }
+
+    if (idField.value && !searchField.value.trim()) {
+      const option = options.find((candidate) => candidate.dataset.id === String(idField.value))
+      if (option) searchField.value = option.value
+    }
+
+    searchField.addEventListener("input", sync)
+    searchField.addEventListener("change", sync)
+    idField.addEventListener("change", () => {
+      if (idField.value && !searchField.value.trim()) {
+        const option = options.find((candidate) => candidate.dataset.id === String(idField.value))
+        if (option) searchField.value = option.value
+      }
+    })
+    if (searchField.value.trim()) sync()
+  })
+}
+
 const setupTruncatedCellTooltips = () => {
   // Fixed-layout list tables split the card width evenly, so on a small laptop
   // a dozen columns shrink until even dates are cut off. Give each column a
@@ -1944,6 +1988,7 @@ const runAppInitializers = () => {
   setupProductBatchForm()
   setupPasswordVisibility()
   setupQuotationShowDetails()
+  setupEmployeePickers()
   setupTruncatedCellTooltips()
   setupCopyLinkButtons()
   setupAutoDismissFlash()

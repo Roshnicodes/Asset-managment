@@ -80,7 +80,6 @@ class ApplicationController < ActionController::Base
   helper_method :can_manage_rbac_menu_records?
   helper_method :vendor_registration_maker?
   helper_method :quotation_proposal_maker?
-  helper_method :vertical_head?
 
   def current_employee_master
     return @current_employee_master if defined?(@current_employee_master)
@@ -187,11 +186,6 @@ class ApplicationController < ActionController::Base
   def quotation_proposal_maker?
     approval_form_maker?(["Quotation Proposal", "Quotation Request", "Vendor Registration"])
   end
-  def vertical_head?
-    return true if admin_user?
-
-    current_employee_master&.designation.to_s.match?(/\b(vertical|department)?\s*head\b/i)
-  end
 
 
   private
@@ -261,7 +255,9 @@ class ApplicationController < ActionController::Base
         step.reached? && employee_matches_current_login?(step.employee_master)
       end || false
     when "quotation_proposals"
-      return false unless action_name.in?(%w[show quotation_print comparison_print])
+      return false unless action_name.in?(%w[show quotation_print comparison_print thematic_head_decision send_to_vendors])
+      return true if thematic_head_for_quotation?(params[:id])
+      return false if action_name.in?(%w[thematic_head_decision send_to_vendors])
 
       approval_request_for_record(QuotationProposal, params[:id])&.approval_steps&.any? do |step|
         step.reached? && employee_matches_current_login?(step.employee_master)
@@ -269,6 +265,15 @@ class ApplicationController < ActionController::Base
     else
       false
     end
+  end
+
+  # The Thematic Head a maker sent the quotation to may open it and decide its
+  # route even without quotation menu rights.
+  def thematic_head_for_quotation?(record_id)
+    quotation_proposal = QuotationProposal.find_by(id: record_id)
+    quotation_proposal.present? &&
+      quotation_proposal.thematic_head_requested_at.present? &&
+      quotation_proposal.thematic_head?(current_approval_employee_ids)
   end
 
   def approval_request_for_record(record_class, record_id)

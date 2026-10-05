@@ -9040,3 +9040,62 @@ body:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-navbar {
     min-width: 0 !important;
   }
 }
+
+/* Thematic Head decision: the two routes side by side, stacked on phones. */
+.quotation-thematic-head-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.quotation-thematic-head-option {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #dce8e2;
+  border-radius: 14px;
+  background: #fbfdfc;
+}
+
+.quotation-thematic-head-option h4 {
+  margin: 0;
+  color: #064f45;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.quotation-thematic-head-option .app-section-note {
+  margin: 0;
+}
+
+.quotation-thematic-head-option .app-form-submit,
+.quotation-thematic-head-option form .app-secondary-btn {
+  align-self: flex-start;
+}
+
+.quotation-thematic-head-policy {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.quotation-thematic-head-policy li {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0.7rem;
+  border-radius: 10px;
+  background: #f3faf6;
+}
+
+.quotation-thematic-head-policy span {
+  color: #4f6b62;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.quotation-thematic-head-policy strong.is-missing {
+  color: #b42318;
+}

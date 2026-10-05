@@ -51,6 +51,7 @@ Rails.application.routes.draw do
     end
     member do
       post :send_for_approval
+      post :thematic_head_decision
       patch :approve_committee
       patch :return_committee
       patch :assign_payment_references

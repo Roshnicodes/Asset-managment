@@ -9,7 +9,10 @@ class QuotationProposal < ApplicationRecord
   MAX_SUBJECT_WORDS = 20
   COMMITTEE_CHANNEL_FORM_NAMES = ["Quotation Proposal", "Quotation Request"].freeze
 
+  THEMATIC_HEAD_DECISIONS = %w[committee direct].freeze
+
   WORKFLOW_STATUSES = %w[
+    thematic_head_pending
     committee_pending
     committee_approved
     sent_to_vendors
@@ -32,6 +35,9 @@ class QuotationProposal < ApplicationRecord
   belongs_to :user, optional: true
   belongs_to :reused_from_quotation_proposal, class_name: "QuotationProposal", optional: true
   belongs_to :selected_vendor_registration, class_name: "VendorRegistration", optional: true
+  # The Thematic Head chosen by the maker decides whether the request needs
+  # committee approval or goes straight to the vendors.
+  belongs_to :thematic_head, class_name: "EmployeeMaster", optional: true
 
   has_many :reused_quotation_proposals,
            class_name: "QuotationProposal",
@@ -52,6 +58,8 @@ class QuotationProposal < ApplicationRecord
   validates :subject, :proposal_end_date, :remark, :theme, presence: true
   validates :workflow_status, inclusion: { in: WORKFLOW_STATUSES }
   validates :procurement_amount_bucket, inclusion: { in: PROCUREMENT_AMOUNT_BUCKETS }
+  validates :thematic_head, presence: { message: "must be selected" }, on: :create, unless: :reused_from_quotation_proposal_id?
+  validates :thematic_head_decision, inclusion: { in: THEMATIC_HEAD_DECISIONS }, allow_nil: true
   validate :subject_has_minimum_words
   validate :must_have_at_least_one_vendor
   validate :must_have_at_least_one_item
@@ -74,6 +82,56 @@ class QuotationProposal < ApplicationRecord
 
   def committee_approval_required?
     committee_approval_required != false
+  end
+
+  # Quotations sent through a Thematic Head get their committee from the head.
+  def thematic_head_selects_committee?
+    thematic_head_id.present?
+  end
+
+  def thematic_head_decision_required?
+    thematic_head_id.present? && thematic_head_decision.blank?
+  end
+
+  def awaiting_thematic_head_decision?
+    thematic_head_decision_required? && thematic_head_requested_at.present?
+  end
+
+  def thematic_head?(employee_ids)
+    thematic_head_id.present? && Array(employee_ids).include?(thematic_head_id)
+  end
+
+  def request_thematic_head_decision!
+    update_columns(thematic_head_requested_at: Time.current, updated_at: Time.current)
+    refresh_response_status!
+  end
+
+  # Records the Thematic Head's choice. "committee" uses the 1st member the
+  # head picked plus the policy members (COO/Director and Programme Director –
+  # Finance); "direct" drops the committee so the request goes to the vendors.
+  def record_thematic_head_decision!(decision, first_member_id: nil)
+    raise ArgumentError, "Unknown decision" unless decision.in?(THEMATIC_HEAD_DECISIONS)
+
+    if decision == "committee"
+      record_committee_decision!(first_member_id)
+    else
+      transaction do
+        committee_steps.destroy_all
+        update_columns(
+          thematic_head_decision: "direct",
+          thematic_head_decided_at: Time.current,
+          committee_approval_required: false,
+          updated_at: Time.current
+        )
+      end
+    end
+
+    association(:committee_steps).reset
+    refresh_response_status!
+  end
+
+  def vendor_dispatch_allowed_for_thematic_head?(employee_ids)
+    thematic_head_decision == "direct" && thematic_head?(employee_ids)
   end
 
   def committee_not_required?
@@ -170,6 +228,10 @@ def apply_configured_committee!
     clear_committee_steps_for_direct_dispatch!
     return true
   end
+
+  # With a Thematic Head the committee is chosen by that head, not by policy.
+  # New requests always go through a Thematic Head.
+  return true if thematic_head_selects_committee? || new_record?
 
   prepare_committee_policy_steps!
   committee_policy_errors.blank?
@@ -418,6 +480,8 @@ end
   def refresh_response_status!
     new_status = if selected_vendor_registration_id.present?
       "vendor_selected"
+    elsif awaiting_thematic_head_decision?
+      "thematic_head_pending"
     elsif quotation_proposal_vendors.responded.exists?
       "responses_received"
     elsif sent_to_vendors_at.present?
@@ -644,6 +708,31 @@ end
     :partial
   end
 
+  def record_committee_decision!(first_member_id)
+    first_member = EmployeeMaster.find_by(id: first_member_id.presence)
+    raise ArgumentError, "Please pick the 1st Committee Member from the suggestions list." if first_member.blank?
+
+    committee_steps.each(&:mark_for_destruction)
+    committee_steps.build(level: 1, employee_master: first_member, status: "waiting")
+    assign_attributes(
+      committee_approval_required: true,
+      thematic_head_decision: "committee",
+      thematic_head_decided_at: Time.current
+    )
+    prepare_committee_policy_steps!
+    if committee_policy_errors.any?
+      message = committee_policy_errors.to_sentence
+      reload
+      raise ArgumentError, message
+    end
+
+    save!
+  rescue ActiveRecord::RecordInvalid
+    message = errors.full_messages.to_sentence
+    reload
+    raise ArgumentError, message
+  end
+
   def ensure_vendor_dispatch_ready!(dispatch)
     return if dispatch.mobile_no.present?
 
@@ -851,6 +940,8 @@ end
 
   def must_have_all_committee_levels
     return unless committee_approval_required?
+    # The committee is chosen later by the Thematic Head.
+    return if (thematic_head_selects_committee? || new_record?) && thematic_head_decision != "committee"
 
     kept_steps = committee_steps.reject(&:marked_for_destruction?)
 

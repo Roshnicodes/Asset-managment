@@ -1,8 +1,9 @@
 require "test_helper"
 
-# Covers the quotation committee policy: the maker picks the 1st member, the
-# 2nd is the COO (estimated value up to ₹10 lakh) or the Director (above), and
-# the 3rd is always the Programme Director – Finance.
+# Covers the committee policy for existing quotations without a Thematic Head:
+# the maker picks the 1st member, the 2nd is the COO (estimated value up to
+# ₹10 lakh) or the Director (above), and the 3rd is always the Programme
+# Director – Finance.
 class QuotationCommitteeMappingTest < ActiveSupport::TestCase
   self.fixture_table_names = []
 
@@ -66,6 +67,14 @@ class QuotationCommitteeMappingTest < ActiveSupport::TestCase
     assert_equal @finance.id, directory[:finance][:id]
   end
 
+  test "a new quotation leaves the committee to the Thematic Head" do
+    quotation_proposal = QuotationProposal.new(theme: @theme, user: @maker_user, committee_approval_required: true)
+    quotation_proposal.committee_steps.build(level: 1, employee_master: @first_member, status: "waiting")
+
+    assert quotation_proposal.apply_configured_committee!
+    assert_equal [@first_member.id], quotation_proposal.committee_steps.map(&:employee_master_id)
+  end
+
   test "sharing directly with the vendor drops the committee and skips its validations" do
     quotation_proposal = build_proposal(quantity: 1, max_rate: 500, committee_approval_required: false)
 
@@ -104,6 +113,9 @@ class QuotationCommitteeMappingTest < ActiveSupport::TestCase
       theme: @theme,
       user: @maker_user
     )
+    # The policy applies to existing quotations that have no Thematic Head; new
+    # requests get their committee from the Thematic Head instead.
+    quotation_proposal.save!(validate: false)
     quotation_proposal.quotation_proposal_items.build(item_name: "Policy item", quantity: quantity, max_rate: max_rate)
     quotation_proposal.committee_steps.build(level: 1, employee_master: first_member, status: "waiting") if first_member
     quotation_proposal

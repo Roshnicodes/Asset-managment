@@ -30,6 +30,14 @@ module QuotationPendingHelper
     employee_ids = current_approval_employee_ids
     approval_request = proposal.approval_request
 
+    if proposal.awaiting_thematic_head_decision?
+      return QuotationStage.new(
+        kind: :thematic_head, label: "Thematic Head decision",
+        actors: [proposal.thematic_head&.name].compact,
+        mine: proposal.thematic_head?(employee_ids)
+      )
+    end
+
     if approval_request&.employee_return_pending?
       return QuotationStage.new(
         kind: :returned, label: "Correction by maker",
@@ -121,6 +129,7 @@ module QuotationPendingHelper
 
     actions = {}
     actions.merge!(quotation_approval_pending_ids.index_with(:approval))
+    actions.merge!(quotation_thematic_head_pending_ids.index_with(:approval))
     actions.merge!(quotation_returned_to_maker_ids.index_with(:returned))
     actions.merge!(pending_committee_scoring_proposals.map(&:id).index_with(:scoring))
 
@@ -180,6 +189,16 @@ module QuotationPendingHelper
       .where(approval_steps: { employee_master_id: employee_ids, status: "pending" })
       .distinct
       .pluck(:approvable_id)
+  end
+
+  def quotation_thematic_head_pending_ids
+    employee_ids = current_approval_employee_ids
+    return [] if employee_ids.blank?
+
+    QuotationProposal
+      .where(thematic_head_id: employee_ids, thematic_head_decision: nil)
+      .where.not(thematic_head_requested_at: nil)
+      .pluck(:id)
   end
 
   def quotation_returned_to_maker_ids

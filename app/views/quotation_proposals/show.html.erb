@@ -17,8 +17,12 @@
   direct_response_mode = @quotation_proposal.below_10k?
   proposal_items_count = @quotation_proposal.quotation_proposal_items.size
   show_edit_action = admin_user? || (current_user == @quotation_proposal.user && editable_by_owner)
-  show_start_approval_action = owner_or_admin && @quotation_proposal.approval_request.blank? && @quotation_proposal.sent_to_vendors_at.blank? && !@quotation_proposal.committee_completed?
-  show_send_vendor_action = creator_can_dispatch && @quotation_proposal.committee_completed? && !@quotation_proposal.vendor_responses_received?
+  show_start_approval_action = owner_or_admin && @quotation_proposal.approval_request.blank? && @quotation_proposal.sent_to_vendors_at.blank? && !@quotation_proposal.committee_completed? && !@quotation_proposal.awaiting_thematic_head_decision?
+  thematic_head_pending = @quotation_proposal.awaiting_thematic_head_decision?
+  thematic_head_viewer = thematic_head_pending && @quotation_proposal.thematic_head?(current_approval_employee_ids)
+  start_approval_label = @quotation_proposal.thematic_head_decision_required? ? "Send to Thematic Head" : "Start Committee Approval"
+  thematic_head_can_dispatch = @quotation_proposal.vendor_dispatch_allowed_for_thematic_head?(current_approval_employee_ids)
+  show_send_vendor_action = (creator_can_dispatch || thematic_head_can_dispatch) && @quotation_proposal.committee_completed? && !@quotation_proposal.vendor_responses_received?
   print_actions_present = true
   status_actions_present = show_edit_action || show_start_approval_action || show_send_vendor_action || print_actions_present
   trail_should_open = approver_view || pending_approval_count.positive? || committee_trail_steps.size <= 2
@@ -329,7 +333,7 @@
         <%= link_to "Edit", edit_quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn" %>
       <% end %>
       <% if show_start_approval_action %>
-        <%= button_to "Start Committee Approval", send_for_approval_quotation_proposal_path(@quotation_proposal), method: :post, class: "app-secondary-btn" %>
+        <%= button_to start_approval_label, send_for_approval_quotation_proposal_path(@quotation_proposal), method: :post, class: "app-secondary-btn" %>
       <% end %>
       <% if show_send_vendor_action %>
         <% send_button_label = if direct_response_mode
@@ -352,6 +356,61 @@
       </div>
     <% end %>
   </div>
+
+  <% if thematic_head_pending %>
+    <div class="app-form-card quotation-thematic-head-card" style="margin-bottom: 1.5rem;">
+      <div class="app-page-header app-subsection-header-tight">
+        <div>
+          <h3 style="margin-bottom: 0.35rem;">Thematic Head Decision</h3>
+          <p class="app-section-note mb-0">
+            <% if thematic_head_viewer %>
+              Decide how this request should proceed. With Committee sends it for committee approval; Without Committee sends the quotation link to the vendors right away.
+            <% else %>
+              Waiting for <strong><%= @quotation_proposal.thematic_head&.name %></strong> to decide whether committee approval is required.
+            <% end %>
+          </p>
+        </div>
+      </div>
+      <% if thematic_head_viewer %>
+        <div class="quotation-thematic-head-options">
+          <%= form_with url: thematic_head_decision_quotation_proposal_path(@quotation_proposal), method: :post, local: true, class: "quotation-thematic-head-option" do %>
+            <%= hidden_field_tag :decision, "committee" %>
+            <h4>With Committee</h4>
+            <p class="app-section-note">Choose the 1st committee member. The 2nd and 3rd members are mandatory for all purchases and are applied from the procurement policy.</p>
+            <datalist id="thematic-head-committee-options">
+              <% Array(@thematic_head_committee_candidates).each do |member| %>
+                <option value="<%= member.designation.present? ? "#{member.name} (#{member.designation})" : member.name %>" data-id="<%= member.id %>"></option>
+              <% end %>
+            </datalist>
+            <div class="app-form-field" data-employee-picker>
+              <label for="committee-first-member">1st Committee Member</label>
+              <%= hidden_field_tag :first_member_id, "", id: "committee-first-member-id", data: { employee_picker_id: true } %>
+              <input type="text" id="committee-first-member" class="form-control" list="thematic-head-committee-options"
+                     autocomplete="off" required placeholder="Type a name to search employees" data-employee-picker-search>
+              <div class="app-form-error app-form-error-client" data-field-error="true"></div>
+            </div>
+            <ul class="quotation-thematic-head-policy">
+              <% (@thematic_head_policy_members || {}).each do |level, (label, member)| %>
+                <li>
+                  <span><%= level.ordinalize %> Member · <%= label %></span>
+                  <strong class="<%= "is-missing" if member.blank? %>"><%= member&.name || "Not configured in Employee Master" %></strong>
+                </li>
+              <% end %>
+            </ul>
+            <%= submit_tag "Send to Committee", class: "app-form-submit", data: { turbo_confirm: "Send this request to the selected committee for approval?" } %>
+          <% end %>
+
+          <div class="quotation-thematic-head-option">
+            <h4>Without Committee</h4>
+            <p class="app-section-note">No committee approval. The quotation link is sent to the vendors immediately.</p>
+            <%= button_to "Without Committee", thematic_head_decision_quotation_proposal_path(@quotation_proposal, decision: "direct"),
+                          method: :post, class: "app-secondary-btn",
+                          form: { data: { turbo_confirm: "Skip the committee and send the quotation link to the vendors now?" } } %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
 
   <% if approval_request&.employee_return_pending? %>
     <div class="app-form-card" style="margin-bottom: 2rem;">
