@@ -457,7 +457,7 @@
             <th scope="row">Subject</th>
             <td><%= @quotation_proposal.subject %></td>
             <th scope="row">Theme</th>
-            <td><%= @quotation_proposal.theme.name %></td>
+            <td><%= @quotation_proposal.theme.name %><% if @quotation_proposal.activity_product.present? %> · <span class="badge border bg-success bg-opacity-10 text-success" title="Activity">Activity: <%= @quotation_proposal.activity_product.name %></span><% end %></td>
           </tr>
           <tr>
             <th scope="row">Proposal End Date</th>

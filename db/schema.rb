@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_06_110000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_07_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -525,6 +525,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_06_110000) do
   end
 
   create_table "quotation_proposals", force: :cascade do |t|
+    t.bigint "activity_product_id"
     t.boolean "committee_approval_required", default: true, null: false
     t.datetime "created_at", null: false
     t.string "procurement_amount_bucket", default: "above_10k", null: false
@@ -545,6 +546,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_06_110000) do
     t.bigint "user_id"
     t.boolean "vendor_rule_enforced", default: false, null: false
     t.string "workflow_status", default: "committee_pending", null: false
+    t.index ["activity_product_id"], name: "index_quotation_proposals_on_activity_product_id"
     t.index ["created_at"], name: "index_quotation_proposals_on_created_at"
     t.index ["reused_from_quotation_proposal_id"], name: "index_quotation_proposals_on_reused_from_quotation_proposal_id"
     t.index ["selected_vendor_registration_id"], name: "index_quotation_proposals_on_selected_vendor_registration_id"
@@ -863,6 +865,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_06_110000) do
   add_foreign_key "quotation_proposal_vendors", "quotation_proposals"
   add_foreign_key "quotation_proposal_vendors", "vendor_registrations"
   add_foreign_key "quotation_proposals", "employee_masters", column: "thematic_head_id"
+  add_foreign_key "quotation_proposals", "products", column: "activity_product_id"
   add_foreign_key "quotation_proposals", "quotation_proposals", column: "reused_from_quotation_proposal_id"
   add_foreign_key "quotation_proposals", "themes"
   add_foreign_key "quotation_proposals", "users"

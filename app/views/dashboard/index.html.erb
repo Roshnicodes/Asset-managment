@@ -184,30 +184,59 @@
       <% end %>
     </div>
 
-    <div class="dash-panel">
-      <div class="dash-panel__head">
-        <h2><span class="dash-panel__icon dash-panel__icon--blue"><%= app_icon(:bell, size: 18) %></span> Notifications</h2>
-        <%= link_to "View all →", notifications_path, class: "dash-link" %>
+    <div class="dash-stack">
+      <div class="dash-panel">
+        <div class="dash-panel__head">
+          <h2><span class="dash-panel__icon dash-panel__icon--orange"><%= app_icon(:clock, size: 18) %></span> Upcoming Deadlines</h2>
+          <%= link_to "View all →", quotation_proposals_path, class: "dash-link" %>
+        </div>
+        <% if @deadlines.any? %>
+          <ul class="dash-notes">
+            <% @deadlines.each do |quotation| %>
+              <% days = (quotation.proposal_end_date - @today).to_i %>
+              <% tone = days <= 2 ? "red" : (days <= 7 ? "amber" : "green") %>
+              <li>
+                <%= link_to quotation_proposal_path(quotation), class: "dash-notes__row" do %>
+                  <span class="dash-deadline dash-deadline--<%= tone %>"><strong><%= quotation.proposal_end_date.strftime("%d") %></strong><small><%= quotation.proposal_end_date.strftime("%b") %></small></span>
+                  <span class="dash-notes__text">
+                    <strong><%= quotation.subject %></strong>
+                    <small><%= format("QTN-%03d", quotation.id) %> · <%= quotation.theme&.name %></small>
+                  </span>
+                  <span class="dash-status-pill dash-status-pill--<%= tone %>"><%= days.zero? ? "Today" : "#{days} #{days == 1 ? 'day' : 'days'} left" %></span>
+                <% end %>
+              </li>
+            <% end %>
+          </ul>
+        <% else %>
+          <p class="dash-muted">No quotation closes in the next 14 days.</p>
+        <% end %>
       </div>
-      <% if @notifications.any? %>
-        <ul class="dash-notes">
-          <% @notifications.each do |notification| %>
-            <% icon, tone = dashboard_notification_style(notification) %>
-            <li>
-              <%= link_to notification_target_path(notification), class: "dash-notes__row" do %>
-                <span class="dash-notes__icon dash-notes__icon--<%= tone %>"><%= app_icon(icon, size: 18) %></span>
-                <span class="dash-notes__text">
-                  <strong><%= notification.title %></strong>
-                  <small><%= time_ago_in_words(notification.created_at) %> ago</small>
-                </span>
-                <% if notification.status == "unread" %><i class="dash-notes__dot dash-dot-<%= tone %>" title="Unread"></i><% end %>
-              <% end %>
-            </li>
-          <% end %>
-        </ul>
-      <% else %>
-        <p class="dash-muted">No notifications yet.</p>
-      <% end %>
+
+      <div class="dash-panel">
+        <div class="dash-panel__head">
+          <h2><span class="dash-panel__icon dash-panel__icon--blue"><%= app_icon(:bell, size: 18) %></span> Notifications</h2>
+          <%= link_to "View all →", notifications_path, class: "dash-link" %>
+        </div>
+        <% if @notifications.any? %>
+          <ul class="dash-notes">
+            <% @notifications.each do |notification| %>
+              <% icon, tone = dashboard_notification_style(notification) %>
+              <li>
+                <%= link_to notification_target_path(notification), class: "dash-notes__row" do %>
+                  <span class="dash-notes__icon dash-notes__icon--<%= tone %>"><%= app_icon(icon, size: 18) %></span>
+                  <span class="dash-notes__text">
+                    <strong><%= notification.title %></strong>
+                    <small><%= time_ago_in_words(notification.created_at) %> ago</small>
+                  </span>
+                  <% if notification.status == "unread" %><i class="dash-notes__dot dash-dot-<%= tone %>" title="Unread"></i><% end %>
+                <% end %>
+              </li>
+            <% end %>
+          </ul>
+        <% else %>
+          <p class="dash-muted">No notifications yet.</p>
+        <% end %>
+      </div>
     </div>
   </section>
 </div>

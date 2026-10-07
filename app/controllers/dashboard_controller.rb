@@ -22,6 +22,11 @@ class DashboardController < ApplicationController
                                         .order(created_at: :desc).limit(RECENT_LIMIT)
     @recent_vendor_registrations = vendor_scope.includes(:approval_request).order(created_at: :desc).limit(RECENT_LIMIT)
     @notifications = current_user.notifications.order(created_at: :desc).limit(RECENT_LIMIT)
+    today = Time.current.in_time_zone("Asia/Kolkata").to_date
+    @deadlines = quotation_scope.includes(:theme)
+                                .where(proposal_end_date: today..(today + 14.days), selected_vendor_registration_id: nil)
+                                .order(:proposal_end_date).limit(RECENT_LIMIT)
+    @today = today
   end
 
   # Header search: quotations, vendor registrations and products the user can open.

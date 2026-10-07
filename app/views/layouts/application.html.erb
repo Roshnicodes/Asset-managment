@@ -117,7 +117,8 @@
   <% end %>
 </head>
 
-<% procurement_page = %w[vendor_registrations vendor_registration_invitations quotation_proposals procurement_settings].include?(controller_name) %>
+<%# Every signed-in page shares the app design (app-procure); login pages keep their own. %>
+<% procurement_page = !devise_controller? %>
 <body class="<%= devise_controller? ? 'auth-page-body' : 'app-fixed-shell' %><%= ' app-procure' if procurement_page %>">
 
 <% unless devise_controller? %>

@@ -149,6 +149,7 @@ module UserManualContent
           steps: [
             "Click Request for Proposal on the Dashboard, or open Quotation Proposal > Request for Proposal.",
             "Step 1 - Quotation Details: choose Quotation Value (Above 10K or Below 10K), Thematic Head (optional), Theme, Quotation Subject (5 to 20 words), Proposal Ending Date and Proposal Remark.",
+            "WRD theme only: after choosing WRD an Activity dropdown appears with the WRD products (Stop Dam, Farm Pond, Doha...). Choose the activity; in Step 3 the Item Name becomes a text box where you type the items of that activity yourself.",
             "Step 2 - Select Vendors: open the vendor list and tick the vendors. Only approved vendors of the selected theme are shown. See section 06 for how many vendors are needed.",
             "Step 3 - Proposal Items: for each item choose Item Name and Unit, and enter Quantity, Max Rate and Remark. Click Add Item for more rows. Max Rate is internal and is not shown to vendors.",
             "Step 4 - Selection Criteria (optional): pick the criteria the committee will use to score vendors.",
@@ -453,6 +454,7 @@ module UserManualContent
           steps: [
             "Dashboard पर Request for Proposal दबाएं, या Quotation Proposal > Request for Proposal खोलें.",
             "Step 1 - Quotation Details: Quotation Value (Above 10K या Below 10K), Thematic Head (optional), Theme, Quotation Subject (5 से 20 शब्द), Proposal Ending Date और Proposal Remark भरें.",
+            "सिर्फ WRD theme: WRD चुनते ही Activity dropdown आता है जिसमें WRD के products होते हैं (Stop Dam, Farm Pond, Doha...). Activity चुनें; Step 3 में Item Name एक text box बन जाता है जिसमें उस activity के items आप खुद लिखते हैं.",
             "Step 2 - Select Vendors: vendor list खोलकर vendors tick करें. सिर्फ चुने गए theme के approved vendors दिखते हैं. कितने vendors चाहिए, भाग 06 देखें.",
             "Step 3 - Proposal Items: हर item के लिए Item Name और Unit चुनें, Quantity, Max Rate और Remark भरें. और rows के लिए Add Item दबाएं. Max Rate internal है, vendor को नहीं दिखता.",
             "Step 4 - Selection Criteria (optional): committee जिन criteria पर vendors को marks देगी वो चुनें.",

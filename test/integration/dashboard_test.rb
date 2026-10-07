@@ -61,6 +61,8 @@ class DashboardTest < ActionDispatch::IntegrationTest
     assert_select ".dash-kpi", minimum: 1
     assert_select "svg.dash-chart"
 
+    assert_select ".dash-stack .dash-status-pill", text: /days left/
+
     get app_search_url(q: "dashboard test")
     assert_response :success
     assert_select ".dash-notes strong", text: /Dashboard test quotation/

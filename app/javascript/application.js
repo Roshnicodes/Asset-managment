@@ -792,6 +792,159 @@ const setupSearchableSelects = (root = document) => {
   }
 }
 
+// WRD theme: an Activity dropdown (the theme's products) appears and the
+// items are typed by the maker instead of being picked from the catalogue.
+// Every other theme keeps the item dropdown exactly as before.
+const setupWrdActivity = () => {
+  document.querySelectorAll("[data-quotation-validation-form]").forEach((form) => {
+    const themeSelect = form.querySelector("#quotation_proposal_theme_id")
+    const activityRow = form.querySelector("[data-quotation-activity-row]")
+    const activitySelect = form.querySelector("[data-quotation-activity]")
+    if (!themeSelect || !activityRow || !activitySelect || form.dataset.wrdReady === "true") return
+    form.dataset.wrdReady = "true"
+
+    const datalist = form.querySelector("#wrd-item-suggestions")
+    let suggestions = {}
+    try { suggestions = JSON.parse(form.querySelector("[data-wrd-item-suggestions]")?.textContent || "{}") } catch (_error) { suggestions = {} }
+
+    const isWrd = () => themeSelect.selectedOptions[0]?.dataset.wrd === "true"
+
+    const setRowMode = (row, wrd) => {
+      const select = row.querySelector("[data-proposal-item-name]")
+      const custom = row.querySelector("[data-proposal-item-custom]")
+      if (!select || !custom) return
+      if (wrd) {
+        if (!custom.value.trim() && select.value) custom.value = select.value
+        custom.disabled = false
+        custom.hidden = false
+        custom.required = true
+        select.disabled = true
+        select.required = false
+        select.hidden = true
+      } else {
+        const typed = custom.value.trim()
+        if (typed && !Array.from(select.options).some((option) => option.value === typed)) {
+          select.add(new Option(typed, typed))
+        }
+        if (typed) select.value = typed
+        select.disabled = false
+        select.required = true
+        select.hidden = false
+        custom.disabled = true
+        custom.required = false
+        custom.hidden = true
+      }
+    }
+
+    const refreshSuggestions = () => {
+      if (!datalist) return
+      const names = suggestions[activitySelect.value] || []
+      datalist.innerHTML = names.map((name) => `<option value="${String(name).replace(/"/g, "&quot;")}"></option>`).join("")
+    }
+
+    const apply = () => {
+      const wrd = isWrd()
+      activityRow.hidden = !wrd
+      activitySelect.disabled = !wrd
+      activitySelect.required = wrd
+      if (wrd) {
+        Array.from(activitySelect.options).forEach((option) => {
+          if (!option.value) return
+          option.hidden = option.dataset.themeId !== themeSelect.value
+          option.disabled = option.hidden
+        })
+        if (activitySelect.selectedOptions[0]?.disabled) activitySelect.value = ""
+      } else {
+        activitySelect.value = ""
+      }
+      form.querySelectorAll("[data-quotation-item-row]").forEach((row) => setRowMode(row, wrd))
+      refreshSuggestions()
+    }
+
+    themeSelect.addEventListener("change", apply)
+    activitySelect.addEventListener("change", refreshSuggestions)
+    // Rows added with "Add Item" follow the current mode.
+    form.addEventListener("click", (event) => {
+      if (event.target.closest("[data-add-quotation-item]")) setTimeout(apply, 0)
+    })
+    apply()
+  })
+}
+
+// Header card on every page (reference design): the menu's icon in a tile,
+// the page title and the number of records; row "Edit | Delete" links become
+// buttons. Pages with their own header (dashboard, approvals, vendor details)
+// are left alone.
+const setupPageHeadCards = () => {
+  if (!document.body.classList.contains("app-procure")) return
+  const content = document.querySelector(".app-content")
+  if (!content || content.querySelector(".dash, .appr, .user-manual-page, .vd-header")) return
+
+  const head = content.querySelector(":scope > .app-toolbar, :scope > .app-page-header, :scope > .app-hero-card, :scope > * > .app-toolbar, :scope > * > .app-page-header, :scope > * > .app-hero-card")
+  if (head && head.dataset.headCard !== "true") {
+    head.dataset.headCard = "true"
+    head.classList.add("app-head-card")
+    const title = head.querySelector("h1, h2")
+    // The highlighted menu, or the menu whose link starts the current address
+    // (e.g. /employee_masters for /employee_masters/new).
+    const path = window.location.pathname
+    const menuLinks = Array.from(document.querySelectorAll(".app-sidebar a[href^='/']"))
+    const bestMatch = menuLinks
+      .filter((link) => { const href = link.getAttribute("href").split("?")[0]; return href !== "/" && (path === href || path.startsWith(`${href}/`)) })
+      .sort((a, b) => b.getAttribute("href").length - a.getAttribute("href").length)[0]
+    const activeIcon = document.querySelector(".app-sidebar .is-active svg, .app-sidebar .active svg") || bestMatch?.querySelector("svg")
+    if (title && !head.querySelector(".app-head-card__icon")) {
+      const tile = document.createElement("span")
+      tile.className = "app-head-card__icon"
+      tile.setAttribute("aria-hidden", "true")
+      // Pages without their own menu get a neutral document icon.
+      const fallback = document.createElementNS("http://www.w3.org/2000/svg", "svg")
+      fallback.setAttribute("viewBox", "0 0 24 24")
+      fallback.setAttribute("fill", "none")
+      fallback.setAttribute("stroke", "currentColor")
+      fallback.setAttribute("stroke-width", "2")
+      fallback.setAttribute("stroke-linecap", "round")
+      fallback.setAttribute("stroke-linejoin", "round")
+      fallback.innerHTML = '<path d="M7 4h8l4 4v12H7z"/><path d="M15 4v4h4M10 13h6M10 17h6"/>'
+      const icon = activeIcon ? activeIcon.cloneNode(true) : fallback
+      icon.setAttribute("width", "26")
+      icon.setAttribute("height", "26")
+      tile.appendChild(icon)
+      const block = title.parentElement === head ? title : title.closest(".app-head-card > *")
+      block.insertAdjacentElement("beforebegin", tile)
+      head.classList.add("has-icon")
+    }
+
+    // Title block on the left, the first button/link after it pushed right.
+    const titleBlock = title ? (title.parentElement === head ? title : title.closest(".app-head-card > *")) : null
+    if (titleBlock) {
+      titleBlock.classList.add("app-head-card__title")
+      let next = titleBlock.nextElementSibling
+      while (next && next.classList.contains("app-head-card__count")) next = next.nextElementSibling
+      next?.classList.add("app-head-card__push")
+    }
+
+    // "165 records" next to the title, from the pager or the table rows.
+    const pagerText = Array.from(content.querySelectorAll(".app-table-pagination, .app-pagination, [class*='pagination']"))
+      .map((node) => node.textContent).find((text) => /of\s+\d+/.test(text))
+    const total = pagerText ? Number(pagerText.match(/of\s+(\d+)/)[1]) : content.querySelector(".app-table-wrap tbody") ? content.querySelectorAll(".app-table-wrap tbody tr").length : null
+    if (title && total !== null && content.querySelector(".app-table-wrap") && !head.querySelector(".app-head-card__count")) {
+      const chip = document.createElement("span")
+      chip.className = "app-head-card__count"
+      chip.textContent = `${total} ${total === 1 ? "record" : "records"}`
+      title.insertAdjacentElement("afterend", chip)
+    }
+  }
+
+  content.querySelectorAll(".app-row-actions").forEach((cell) => {
+    if (cell.dataset.actionsTidy === "true") return
+    cell.dataset.actionsTidy = "true"
+    Array.from(cell.childNodes).forEach((node) => {
+      if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() === "|") node.textContent = " "
+    })
+  })
+}
+
 const setupFormPagination = () => {
   document.querySelectorAll("[data-ui-form-pager='true']").forEach((form) => {
     if (form.dataset.uiFormPagerReady === "true") return
@@ -2623,7 +2776,9 @@ const runAppInitializers = () => {
   setupEmployeePickers()
   setupStaticPagerValidation()
   setupProcurementFormFields()
+  setupWrdActivity()
   setupSearchableSelects()
+  setupPageHeadCards()
   setupTruncatedCellTooltips()
   setupCopyLinkButtons()
   setupAutoDismissFlash()

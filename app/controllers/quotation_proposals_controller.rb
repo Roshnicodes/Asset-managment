@@ -1101,6 +1101,7 @@ class QuotationProposalsController < ApplicationController
       :procurement_amount_bucket,
       :thematic_head_id,
       :single_vendor_justification,
+      :activity_product_id,
       vendor_registration_ids: [],
       vendor_selection_criterion_ids: [],
       quotation_proposal_items_attributes: [:id, :item_name, :unit_id, :quantity, :max_rate, :remark, :_destroy],

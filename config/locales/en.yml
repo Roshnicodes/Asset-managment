@@ -33,3 +33,4 @@ en:
     attributes:
       quotation_proposal:
         single_vendor_justification: "Logic Note"
+        activity_product: "Activity"

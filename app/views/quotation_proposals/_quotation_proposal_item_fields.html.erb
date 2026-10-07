@@ -6,7 +6,10 @@
     <%= form.hidden_field :_destroy, value: "false", data: { quotation_item_destroy: true } %>
     <div class="app-form-field app-rfp-cell-field <%= "has-error" if form.object.errors[:item_name].any? %>">
       <%= form.label :item_name, "Item Name", class: "visually-hidden" %>
-      <select name="<%= form.field_name(:item_name) %>" id="<%= form.field_id(:item_name) %>" required data-validation-label="Item Name" data-proposal-item-name="true">
+      <% wrd_mode = @quotation_proposal&.theme&.wrd? %>
+      <%# WRD: the maker types the item under the chosen Activity (only one of these two fields is enabled) %>
+      <input type="text" name="<%= form.field_name(:item_name) %>" id="<%= form.field_id(:item_name) %>_custom" value="<%= current_item_name %>" placeholder="Type the item" list="wrd-item-suggestions" autocomplete="off" data-validation-label="Item Name" data-proposal-item-custom <%= wrd_mode ? "required" : "disabled hidden" %>>
+      <select name="<%= form.field_name(:item_name) %>" id="<%= form.field_id(:item_name) %>" <%= wrd_mode ? "disabled hidden" : "required" %> data-validation-label="Item Name" data-proposal-item-name="true">
         <option value="">Select item</option>
         <optgroup label="Products">
           <% @products.each do |product| %>

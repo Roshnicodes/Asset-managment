@@ -12043,3 +12043,231 @@ select.app-combo__native {
     padding-right: 0.55rem !important;
   }
 }
+
+/* WRD: typed item names fill their column */
+[data-quotation-items] td input[data-proposal-item-custom] {
+  width: 100%;
+  min-width: 0;
+}
+
+/* ==========================================================================
+   All pages: header card, row actions, toolbars (reference design)
+   ========================================================================== */
+.app-procure .app-head-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-bottom: 0.9rem !important;
+  padding: 0.85rem 1.1rem !important;
+  border: 1px solid #e7edf3 !important;
+  border-radius: 16px !important;
+  background: linear-gradient(120deg, #ffffff 55%, #f3faf6 100%) !important;
+  box-shadow: 0 6px 20px rgba(18, 38, 58, 0.05) !important;
+}
+
+.app-procure .app-head-card.app-hero-card {
+  padding: 1rem 1.2rem !important;
+}
+
+.app-procure .app-head-card__icon {
+  display: inline-flex;
+  flex: 0 0 48px;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: #e3f6ec;
+  color: #14996b;
+}
+
+.app-procure .app-head-card__icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+/* the icon tile replaces the green bar before the title */
+.app-procure .app-head-card.has-icon h1::before,
+.app-procure .app-head-card.has-icon h2::before,
+.app-procure .app-head-card.has-icon > div > h1:first-child::before,
+.app-procure .app-head-card.has-icon > div > h2:first-child::before {
+  display: none !important;
+}
+
+.app-procure .app-head-card h1,
+.app-procure .app-head-card h2 {
+  margin: 0 !important;
+  color: #12263a !important;
+  font-size: 1.45rem !important;
+  font-weight: 800 !important;
+}
+
+.app-procure .app-head-card__count {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.6rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: #e8f0fd;
+  color: #1d5bbf;
+  font-size: 0.78rem;
+  font-weight: 700;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.app-procure .app-head-card {
+  justify-content: flex-start !important;
+}
+
+.app-procure .app-head-card h1,
+.app-procure .app-head-card h2 {
+  text-align: left !important;
+}
+
+.app-procure .app-head-card > .app-head-card__title {
+  min-width: 0;
+}
+
+/* buttons/links after the title go to the right */
+.app-procure .app-head-card > .app-head-card__push {
+  margin-left: auto !important;
+}
+
+/* Row actions: Edit / View / Delete as small buttons */
+.app-procure .app-row-actions {
+  white-space: normal !important;
+}
+
+.app-procure .app-row-actions > a,
+.app-procure .app-row-actions > form,
+.app-procure .app-row-actions > button {
+  vertical-align: middle;
+}
+
+.app-procure .app-row-actions > form.button_to,
+.app-procure .app-row-actions > form {
+  display: inline-block !important;
+}
+
+.app-procure .app-row-actions > a:not(.app-action-icon):not(.app-secondary-btn):not(.app-primary-btn),
+.app-procure .app-row-actions > form > button:not(.app-action-icon),
+.app-procure .app-row-actions > button:not(.app-action-icon):not(.appr-more) {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0.1rem 0.15rem;
+  padding: 0.28rem 0.7rem !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: #e8f0fd !important;
+  color: #1d5bbf !important;
+  font-size: 0.8rem !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  text-decoration: none !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  box-shadow: none !important;
+  cursor: pointer;
+}
+
+.app-procure .app-row-actions > a[href$="/edit"]:not(.app-action-icon) {
+  background: #fff4dc !important;
+  color: #8a5a00 !important;
+}
+
+.app-procure .app-row-actions > a[href$="/edit"]:not(.app-action-icon)::before {
+  content: "✎";
+}
+
+.app-procure .app-row-actions .app-delete-button:not(.app-action-icon),
+.app-procure .app-row-actions > form > button.app-delete-button {
+  background: #fde7ee !important;
+  color: #b4234a !important;
+}
+
+.app-procure .app-row-actions .app-delete-button:not(.app-action-icon)::before {
+  content: "🗑";
+  font-size: 0.75rem;
+}
+
+.app-procure .app-row-actions > form,
+.app-procure .app-row-actions form.button_to {
+  display: inline-block;
+  margin: 0;
+}
+
+/* Upload / bulk delete / search toolbars above tables */
+.app-procure .app-list-controls,
+.app-procure .app-table-search {
+  gap: 0.5rem;
+}
+
+.app-procure .app-list-controls input[type="file"] {
+  max-width: 230px;
+  padding: 0.3rem;
+  border: 1px dashed #b9d6c8;
+  border-radius: 10px;
+  background: #fbfdfc;
+}
+
+.app-procure .app-table-search-input {
+  min-height: 40px;
+  border: 1px solid #e7edf3 !important;
+  border-radius: 10px !important;
+}
+
+.app-procure .app-table-pagination {
+  color: #6b7a8c;
+  font-size: 0.84rem;
+}
+
+.app-procure .app-head-card.app-hero-card {
+  flex-direction: row !important;
+  align-items: center !important;
+}
+
+/* Dashboard: right column with deadlines and notifications */
+.dash-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.dash-panel__icon--orange { background: #fff1dd; color: #f39a1e; }
+
+.dash-deadline {
+  display: inline-flex;
+  flex: 0 0 42px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  border-radius: 10px;
+  background: #e3f6ec;
+  color: #0f7a55;
+  line-height: 1;
+}
+
+.dash-deadline strong { font-size: 1rem; font-weight: 800; }
+.dash-deadline small { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; }
+.dash-deadline--amber { background: #fff4dc; color: #8a5a00; }
+.dash-deadline--red { background: #fde7ee; color: #b4234a; }
+
+.dash-range .app-combo {
+  width: 170px;
+}
+
+.dash-range .app-combo__input {
+  min-height: 34px !important;
+  padding: 0.2rem 2rem 0.2rem 0.7rem !important;
+  border: 1px solid #e7edf3 !important;
+  border-radius: 9px !important;
+  background-color: #ffffff !important;
+  color: #12263a !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+}

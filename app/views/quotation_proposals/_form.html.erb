@@ -166,7 +166,7 @@
                                   @themes.map do |theme|
                                     stakeholder_name = theme.stakeholder_category&.name.to_s.strip.presence
                                     theme_label = stakeholder_name.present? ? "#{theme.name} (#{stakeholder_name})" : theme.name
-                                    [theme_label, theme.id, { "data-stakeholder-id": theme.stakeholder_category_id }]
+                                    [theme_label, theme.id, { "data-stakeholder-id": theme.stakeholder_category_id, "data-wrd": theme.wrd? }]
                                   end,
                                   quotation_proposal.theme_id
                                 ),
@@ -177,6 +177,29 @@
                 <% end %>
                 <div class="app-form-error app-form-error-client" data-field-error="true"></div>
               </div>
+            </td>
+          </tr>
+
+          <% wrd_products = @products.select { |product| product.theme&.wrd? } %>
+          <% wrd_mode = quotation_proposal.theme&.wrd? %>
+          <tr data-quotation-activity-row <%= "hidden" unless wrd_mode %>>
+            <th scope="row" class="app-rfp-table-label">Activity</th>
+            <td class="app-rfp-table-value">
+              <div class="app-form-field app-rfp-cell-field <%= "has-error" if field_errors.call(:activity_product).any? %>">
+                <%= form.label :activity_product_id, "Activity", class: "visually-hidden" %>
+                <select name="quotation_proposal[activity_product_id]" id="quotation_proposal_activity_product_id" data-validation-label="Activity" data-quotation-activity <%= "required" if wrd_mode %> <%= "disabled" unless wrd_mode %>>
+                  <option value="">Select activity</option>
+                  <% wrd_products.each do |product| %>
+                    <option value="<%= product.id %>" data-theme-id="<%= product.theme_id %>" <%= "selected" if quotation_proposal.activity_product_id == product.id %>><%= product.name %></option>
+                  <% end %>
+                </select>
+                <% field_errors.call(:activity_product).each do |message| %>
+                  <div class="app-form-error"><%= message %></div>
+                <% end %>
+                <div class="app-form-error app-form-error-client" data-field-error="true"></div>
+                <small class="app-field-hint">WRD: choose the activity, then type the items under it in Proposal Items.</small>
+              </div>
+              <script type="application/json" data-wrd-item-suggestions><%= raw(wrd_products.to_h { |product| [product.id, @product_varieties.select { |variety| variety.product_id == product.id }.map(&:name)] }.to_json) %></script>
             </td>
           </tr>
 
@@ -321,6 +344,8 @@
           </tbody>
         </table>
       </div>
+
+      <datalist id="wrd-item-suggestions"></datalist>
 
       <template data-quotation-item-template>
         <%= form.fields_for :quotation_proposal_items, QuotationProposalItem.new, child_index: "NEW_ITEM" do |item_form| %>

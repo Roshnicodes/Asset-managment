@@ -41,6 +41,7 @@ class QuotationProposal < ApplicationRecord
   # The Thematic Head chosen by the maker decides whether the request needs
   # committee approval or goes straight to the vendors.
   belongs_to :thematic_head, class_name: "EmployeeMaster", optional: true
+  belongs_to :activity_product, class_name: "Product", optional: true
 
   has_many :reused_quotation_proposals,
            class_name: "QuotationProposal",
@@ -73,6 +74,8 @@ class QuotationProposal < ApplicationRecord
 
   after_commit :sync_vendor_item_rows, on: %i[create update]
   before_validation :skip_thematic_head_for_single_vendor
+  before_validation :clear_activity_unless_wrd
+  validate :wrd_activity_rule
 
   def subject_has_minimum_words
     return if subject.blank?
@@ -745,6 +748,26 @@ end
     committee_steps.each(&:mark_for_destruction)
     committee_steps.build(level: 1, employee_master: approver, status: "waiting") if approver
     committee_policy_errors.blank?
+  end
+
+  def wrd_theme?
+    theme&.wrd? || false
+  end
+
+  # Only WRD requests keep an Activity.
+  def clear_activity_unless_wrd
+    self.activity_product_id = nil unless wrd_theme?
+  end
+
+  # New WRD requests need an Activity of the WRD theme; older ones keep working.
+  def wrd_activity_rule
+    return unless wrd_theme?
+
+    if activity_product.blank?
+      errors.add(:activity_product, "must be selected for WRD") if new_record?
+    elsif activity_product.theme_id != theme_id
+      errors.add(:activity_product, "must be a product of the WRD theme")
+    end
   end
 
   def vendor_count_rule
