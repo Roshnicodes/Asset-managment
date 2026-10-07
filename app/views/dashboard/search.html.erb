@@ -1,0 +1,60 @@
+<div class="dash">
+  <section class="dash-top">
+    <%= form_with url: app_search_path, method: :get, local: true, class: "dash-search", role: "search" do %>
+      <span class="dash-search__icon"><%= app_icon(:search, size: 18) %></span>
+      <input type="search" name="q" value="<%= @query %>" placeholder="Search quotations, vendors, products..." aria-label="Search" autofocus autocomplete="off">
+      <kbd>Enter</kbd>
+    <% end %>
+    <%= link_to "← Dashboard", root_path, class: "dash-link" %>
+  </section>
+
+  <% if @query.length < 2 %>
+    <p class="dash-muted">Type at least 2 letters to search.</p>
+  <% elsif @quotations.empty? && @vendors.empty? && @products.empty? %>
+    <div class="dash-panel"><p class="dash-muted">Nothing found for "<%= @query %>".</p></div>
+  <% else %>
+    <section class="dash-bottom">
+      <% if @quotations.any? %>
+        <div class="dash-panel">
+          <div class="dash-panel__head"><h2><span class="dash-panel__icon dash-panel__icon--blue"><%= app_icon(:document, size: 18) %></span> Quotations (<%= @quotations.size %>)</h2></div>
+          <ul class="dash-notes">
+            <% @quotations.each do |quotation| %>
+              <li><%= link_to quotation_proposal_path(quotation), class: "dash-notes__row" do %>
+                <span class="dash-notes__icon dash-notes__icon--blue"><%= app_icon(:document, size: 18) %></span>
+                <span class="dash-notes__text"><strong><%= format("QTN-%03d", quotation.id) %> · <%= quotation.subject %></strong><small><%= quotation.theme&.name %> · <%= quotation.created_at.in_time_zone("Asia/Kolkata").strftime("%d-%m-%Y") %></small></span>
+              <% end %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <% if @vendors.any? %>
+        <div class="dash-panel">
+          <div class="dash-panel__head"><h2><span class="dash-panel__icon dash-panel__icon--blue"><%= app_icon(:people, size: 18) %></span> Vendors (<%= @vendors.size %>)</h2></div>
+          <ul class="dash-notes">
+            <% @vendors.each do |vendor| %>
+              <li><%= link_to vendor_registration_path(vendor), class: "dash-notes__row" do %>
+                <span class="dash-notes__icon dash-notes__icon--green"><%= app_icon(:people, size: 18) %></span>
+                <span class="dash-notes__text"><strong><%= format("VEN-%03d", vendor.id) %> · <%= vendor.vendor_name.presence || vendor.firm_name %></strong><small><%= vendor.firm_name %> · <%= vendor.mobile_no %></small></span>
+              <% end %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <% if @products.any? %>
+        <div class="dash-panel">
+          <div class="dash-panel__head"><h2><span class="dash-panel__icon dash-panel__icon--purple"><%= app_icon(:product, size: 18) %></span> Products (<%= @products.size %>)</h2></div>
+          <ul class="dash-notes">
+            <% @products.each do |product| %>
+              <li><%= link_to products_path, class: "dash-notes__row" do %>
+                <span class="dash-notes__icon dash-notes__icon--purple"><%= app_icon(:product, size: 18) %></span>
+                <span class="dash-notes__text"><strong><%= product.name %></strong></span>
+              <% end %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+    </section>
+  <% end %>
+</div>

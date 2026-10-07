@@ -1,0 +1,26 @@
+<div class="app-page-header">
+  <h2>Procurement Settings</h2>
+</div>
+
+<div class="app-form-card procurement-settings">
+  <h3>Single-vendor approval</h3>
+  <p class="app-section-note">Above 10K with only one vendor (Logic Note): who approves the request. Applies to new requests; requests already created keep their approver.</p>
+
+  <%= form_with url: procurement_settings_path, method: :patch, local: true do %>
+    <div class="procurement-settings__options">
+      <% AppSetting::SINGLE_VENDOR_APPROVER_OPTIONS.each do |option| %>
+        <% member = QuotationProposal.committee_member_with_designation(option) %>
+        <label class="procurement-settings__option">
+          <%= radio_button_tag :single_vendor_approver, option, @single_vendor_approver == option %>
+          <span>
+            <strong><%= option %></strong><%= " (default)" if option == AppSetting::SINGLE_VENDOR_APPROVER_DEFAULT %>
+            <small><%= member ? member.name : "Not set in Employee Master" %></small>
+          </span>
+        </label>
+      <% end %>
+    </div>
+    <div class="app-form-actions">
+      <%= submit_tag "Save", class: "app-primary-btn" %>
+    </div>
+  <% end %>
+</div>

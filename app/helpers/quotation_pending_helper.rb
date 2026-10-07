@@ -90,7 +90,7 @@ module QuotationPendingHelper
       )
     end
 
-    unless proposal.below_10k?
+    unless proposal.below_10k? || proposal.single_vendor?
       members = proposal.committee_steps.filter_map(&:employee_master)
       yet_to_score = members.reject do |member|
         responded.all? do |vendor|
@@ -212,7 +212,7 @@ module QuotationPendingHelper
   end
 
   def committee_scoring_pending_for?(quotation_proposal, employee_ids)
-    return false if quotation_proposal.below_10k?
+    return false if quotation_proposal.below_10k? || quotation_proposal.single_vendor?
     return false unless quotation_proposal.all_max_rates_present?
 
     responded_vendors = quotation_proposal.quotation_proposal_vendors.select { |vendor| vendor.response_status == "responded" }

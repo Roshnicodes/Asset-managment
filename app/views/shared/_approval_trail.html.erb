@@ -1,0 +1,18 @@
+<%# Compact approval trail for list tables: one line per approver with a status
+    pill; the full detail is in the row's tooltip.
+    locals: steps (approval or committee steps), started (approval begun?) %>
+<ul class="ql-trail">
+  <% steps.each do |step| %>
+    <% step_status = started ? (step.respond_to?(:effective_status) ? step.effective_status : step.status) : "waiting" %>
+    <% step_label = started ? (step.respond_to?(:effective_status_label) ? step.effective_status_label : step.status.to_s.humanize) : "Not started" %>
+    <% action_label = step.respond_to?(:current_action_label) ? step.current_action_label : WorkflowLevelNaming.humanize_action_label("L#{step.level} Approval") %>
+    <% show_status = !step.respond_to?(:show_status_in_trail?) || step.show_status_in_trail? %>
+    <li class="ql-trail__step is-<%= step_status %>" title="<%= step.employee_master&.name %> (<%= action_label %>)<%= ": #{step_label}" if show_status %>">
+      <span class="ql-trail__dot"></span>
+      <span class="ql-trail__name"><%= step.employee_master&.name %></span>
+      <% if show_status %>
+        <span class="ql-trail__status"><%= step_label %></span>
+      <% end %>
+    </li>
+  <% end %>
+</ul>

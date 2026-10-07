@@ -1,71 +1,226 @@
-<div class="dashboard-page" data-controller="dashboard-live">
-  <section class="dashboard-hero">
-    <div class="dashboard-hero-copy">
-      <span class="dashboard-kicker">Command Center</span>
-      <h1>Welcome to Accelerated Procurement Unified Realtime Transaction Interface</h1>
-      <p>Monitor setup, location mapping, product structures, and vendor workflows from one dynamic workspace.</p>
-
-      <div class="dashboard-quick-actions">
-        <% @quick_actions.each do |action| %>
-          <%= link_to action[:label], action[:path], class: "dashboard-action-pill" %>
-        <% end %>
-      </div>
-    </div>
-
-    <div class="dashboard-live-card">
-      <p class="dashboard-live-label">Today</p>
-      <h2 data-dashboard-live-target="greeting">Good day</h2>
-      <p class="dashboard-live-time" data-dashboard-live-target="clock">--:--</p>
-      <p class="dashboard-live-meta">Stay aligned with approvals, assets, and vendor operations.</p>
-    </div>
-  </section>
-
-  <section class="dashboard-stats-grid">
-    <% @dashboard_stats.each do |stat| %>
-      <%= link_to stat[:path], class: "dashboard-stat-card dashboard-stat-card--#{stat[:tone]}" do %>
-        <span class="dashboard-stat-label"><%= stat[:label] %></span>
-        <strong class="dashboard-stat-value"><%= stat[:value] %></strong>
-        <span class="dashboard-stat-link">View module</span>
-      <% end %>
+<% now = Time.current.in_time_zone("Asia/Kolkata") %>
+<% initials = @employee&.name.to_s.split.first(2).map { |part| part[0] }.join.upcase.presence || "U" %>
+<div class="dash" data-controller="dashboard-live">
+  <section class="dash-top">
+    <%= form_with url: app_search_path, method: :get, local: true, class: "dash-search", role: "search" do %>
+      <span class="dash-search__icon"><%= app_icon(:search, size: 18) %></span>
+      <input type="search" name="q" placeholder="Search quotations, vendors, products..." aria-label="Search" data-dash-search autocomplete="off">
+      <kbd>Ctrl + K</kbd>
     <% end %>
+    <div class="dash-clock">
+      <span class="dash-clock__icon"><%= app_icon(:clock, size: 20) %></span>
+      <span>
+        <strong data-dashboard-live-target="clock"><%= now.strftime("%I:%M %p") %></strong>
+        <small><%= now.strftime("%a, %d %b %Y") %></small>
+      </span>
+    </div>
+    <div class="dash-user">
+      <span class="dash-user__avatar"><%= initials %></span>
+      <span>
+        <strong><span data-dashboard-live-target="greeting"><%= @greeting %></span>, <%= @employee&.name.to_s.split.first.presence || "there" %></strong>
+        <small><%= [@employee&.designation.presence, (@admin ? "Admin" : nil)].compact.uniq(&:downcase).join(" · ") %></small>
+      </span>
+    </div>
   </section>
 
-  <section class="dashboard-content-grid">
-    <div class="dashboard-panel dashboard-panel-wide">
-      <div class="dashboard-panel-header">
-        <div>
-          <p class="dashboard-panel-eyebrow">Workflow Areas</p>
-          <h2>Key Modules</h2>
-        </div>
-      </div>
+  <% if @summary_cards.any? %>
+    <section class="dash-kpis">
+      <% @summary_cards.each_with_index do |card, index| %>
+        <%= link_to card[:path], class: "dash-kpi dash-kpi--#{card[:tone]}" do %>
+          <span class="dash-kpi__head">
+            <span class="dash-kpi__icon"><%= app_icon(card[:icon], size: 26) %></span>
+            <span class="dash-kpi__title">
+              <span class="dash-kpi__name">
+                <span><%= card[:title] %></span>
+                <span class="dash-kpi__trend" title="Growth in the last 30 days"><%= dashboard_trend_label(card[:trend]) %></span>
+              </span>
+              <span class="dash-kpi__value">
+                <strong><%= card[:total] %></strong>
+                <%= dashboard_sparkline(card[:chart_values], color: card[:color], id: "spark-#{index}") %>
+              </span>
+            </span>
+          </span>
+          <span class="dash-kpi__parts">
+            <% card[:parts].each do |label, value, tone| %>
+              <span><i class="dash-dot-<%= tone %>"></i><b><%= value %></b> <%= label %></span>
+            <% end %>
+          </span>
+        <% end %>
+      <% end %>
+    </section>
+  <% end %>
 
-      <div class="dashboard-module-grid">
-        <% @dashboard_sections.each do |section| %>
-          <div class="dashboard-module-card">
-            <h3><%= section[:title] %></h3>
-            <p><%= section[:description] %></p>
-            <%= link_to section[:cta], section[:path], class: "dashboard-inline-link" %>
-          </div>
+  <% if @tasks.any? %>
+    <section class="dash-action-strip" aria-label="Needs your action">
+      <span class="dash-action-strip__title"><%= app_icon(:bell, size: 18) %> Needs your action <b><%= @tasks.sum { |task| task[:count] } %></b></span>
+      <% @tasks.each do |task| %>
+        <%= link_to task[:path], class: "dash-task-chip dash-task-chip--#{task[:tone]}" do %>
+          <b><%= task[:count] %></b> <%= task[:label] %> <span aria-hidden="true">→</span>
+        <% end %>
+      <% end %>
+    </section>
+  <% else %>
+    <section class="dash-action-strip dash-action-strip--done" aria-label="Needs your action">
+      <span class="dash-action-strip__title"><%= app_icon(:bell, size: 18) %> All caught up</span>
+      <span class="dash-muted">Nothing is waiting on you right now.</span>
+    </section>
+  <% end %>
+
+  <section class="dash-middle">
+    <div class="dash-panel dash-panel--overview">
+      <div class="dash-panel__head">
+        <h2><span class="dash-panel__icon dash-panel__icon--purple"><%= app_icon(:chart, size: 18) %></span> Procurement Overview</h2>
+        <%= form_with url: root_path, method: :get, local: true, class: "dash-range" do %>
+          <select name="months" aria-label="Period" onchange="this.form.submit()">
+            <option value="6" <%= "selected" if @months_back == 6 %>>Last 6 Months</option>
+            <option value="12" <%= "selected" if @months_back == 12 %>>Last 12 Months</option>
+          </select>
         <% end %>
       </div>
+      <% if @overview_series.any? %>
+        <%= dashboard_line_chart(@overview_series, @month_labels) %>
+        <div class="dash-legend">
+          <% @overview_series.each do |series| %>
+            <span><i style="background: <%= series[:color] %>"></i><%= series[:label] %></span>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="dash-muted">No activity to show yet.</p>
+      <% end %>
     </div>
 
-    <div class="dashboard-panel">
-      <div class="dashboard-panel-header">
-        <div>
-          <p class="dashboard-panel-eyebrow">System Health</p>
-          <h2>Live Summary</h2>
-        </div>
+    <div class="dash-panel dash-panel--status">
+      <div class="dash-panel__head">
+        <h2><span class="dash-panel__icon dash-panel__icon--blue"><%= app_icon(:pie, size: 18) %></span> Status Distribution</h2>
       </div>
+      <% status_total = @status_segments.sum { |segment| segment[:value] } %>
+      <div class="dash-status">
+        <%= dashboard_donut(@status_segments) %>
+        <ul class="dash-status__list">
+          <% @status_segments.each do |segment| %>
+            <% next if segment[:value].zero? && %w[Returned Rejected].include?(segment[:label]) %>
+            <li>
+              <i style="background: <%= segment[:color] %>"></i>
+              <span><%= segment[:label] %></span>
+              <b><%= segment[:value] %></b>
+              <small>(<%= status_total.zero? ? 0 : (segment[:value] * 100.0 / status_total).round %>%)</small>
+            </li>
+          <% end %>
+        </ul>
+      </div>
+      <p class="dash-panel__foot">Vendor registrations and quotations</p>
+    </div>
 
-      <div class="dashboard-health-stack">
-        <% @health_cards.each do |card| %>
-          <%= link_to card[:path], class: "dashboard-health-card" do %>
-            <span><%= card[:label] %></span>
-            <strong><%= card[:value] %></strong>
+    <div class="dash-panel dash-panel--actions">
+      <div class="dash-panel__head">
+        <h2><span class="dash-panel__icon dash-panel__icon--blue"><%= app_icon(:bolt, size: 18) %></span> Quick Actions</h2>
+      </div>
+      <div class="dash-quick">
+        <% @quick_actions.each do |action| %>
+          <%= link_to action[:path], class: "dash-quick__tile dash-quick__tile--#{action[:tone]}" do %>
+            <%= app_icon(action[:icon], size: 26) %>
+            <span><%= action[:label] %></span>
           <% end %>
         <% end %>
       </div>
     </div>
   </section>
+
+  <section class="dash-bottom">
+    <div class="dash-panel">
+      <div class="dash-panel__head">
+        <h2><span class="dash-panel__icon dash-panel__icon--blue"><%= app_icon(:document, size: 18) %></span> <%= @admin ? "Recent Quotations" : "My Recent Quotations" %></h2>
+        <%= link_to "View all →", quotation_proposals_path, class: "dash-link" %>
+      </div>
+      <% if @recent_quotations.any? %>
+        <div class="dash-table-wrap">
+          <table class="dash-table">
+            <thead><tr><th>#</th><th>Subject</th><th>Department</th><th>Date</th><th>Status</th></tr></thead>
+            <tbody>
+              <% @recent_quotations.each do |quotation| %>
+                <% stage = quotation_stage(quotation) %>
+                <tr>
+                  <td class="dash-table__id"><%= link_to format("QTN-%03d", quotation.id), quotation_proposal_path(quotation) %></td>
+                  <td class="dash-table__main"><%= link_to quotation.subject, quotation_proposal_path(quotation), title: quotation.subject %></td>
+                  <td class="dash-table__dept" title="<%= quotation.theme&.name %>"><%= quotation.theme&.name %></td>
+                  <td class="dash-table__date"><%= quotation.created_at.in_time_zone("Asia/Kolkata").strftime("%d-%m-%Y") %></td>
+                  <td><span class="dash-status-pill dash-status-pill--<%= dashboard_stage_tone(stage) %>"><%= stage.label %></span></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <p class="dash-muted">No quotations yet.</p>
+      <% end %>
+    </div>
+
+    <div class="dash-panel">
+      <div class="dash-panel__head">
+        <h2><span class="dash-panel__icon dash-panel__icon--blue"><%= app_icon(:people, size: 18) %></span> <%= @admin ? "Recent Vendor Registrations" : "My Vendor Registrations" %></h2>
+        <%= link_to "View all →", vendor_registrations_path, class: "dash-link" %>
+      </div>
+      <% if @recent_vendor_registrations.any? %>
+        <div class="dash-table-wrap">
+          <table class="dash-table">
+            <thead><tr><th>#</th><th>Vendor Name</th><th>Registration Date</th><th>Status</th></tr></thead>
+            <tbody>
+              <% @recent_vendor_registrations.each do |vendor| %>
+                <% status = vendor.approval_request&.status || "not_sent" %>
+                <% tone = { "approved" => "green", "pending" => "blue", "returned" => "orange", "rejected" => "red" }.fetch(status, "slate") %>
+                <% vendor_label = vendor.vendor_name.presence || vendor.firm_name %>
+                <tr>
+                  <td class="dash-table__id"><%= link_to format("VEN-%03d", vendor.id), vendor_registration_path(vendor) %></td>
+                  <td class="dash-table__main"><%= link_to vendor_label, vendor_registration_path(vendor), title: vendor_label %></td>
+                  <td class="dash-table__date"><%= vendor.created_at.in_time_zone("Asia/Kolkata").strftime("%d-%m-%Y") %></td>
+                  <td><span class="dash-status-pill dash-status-pill--<%= tone %>"><%= status == "not_sent" ? "Not sent" : (status == "pending" ? "In approval" : status.humanize) %></span></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <p class="dash-muted">No vendor registrations yet.</p>
+      <% end %>
+    </div>
+
+    <div class="dash-panel">
+      <div class="dash-panel__head">
+        <h2><span class="dash-panel__icon dash-panel__icon--blue"><%= app_icon(:bell, size: 18) %></span> Notifications</h2>
+        <%= link_to "View all →", notifications_path, class: "dash-link" %>
+      </div>
+      <% if @notifications.any? %>
+        <ul class="dash-notes">
+          <% @notifications.each do |notification| %>
+            <% icon, tone = dashboard_notification_style(notification) %>
+            <li>
+              <%= link_to notification_target_path(notification), class: "dash-notes__row" do %>
+                <span class="dash-notes__icon dash-notes__icon--<%= tone %>"><%= app_icon(icon, size: 18) %></span>
+                <span class="dash-notes__text">
+                  <strong><%= notification.title %></strong>
+                  <small><%= time_ago_in_words(notification.created_at) %> ago</small>
+                </span>
+                <% if notification.status == "unread" %><i class="dash-notes__dot dash-dot-<%= tone %>" title="Unread"></i><% end %>
+              <% end %>
+            </li>
+          <% end %>
+        </ul>
+      <% else %>
+        <p class="dash-muted">No notifications yet.</p>
+      <% end %>
+    </div>
+  </section>
 </div>
+
+<script>
+  (() => {
+    if (window.dashSearchShortcut) return
+    window.dashSearchShortcut = true
+    document.addEventListener("keydown", (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        const field = document.querySelector("[data-dash-search]")
+        if (field) { event.preventDefault(); field.focus() }
+      }
+    })
+  })()
+</script>

@@ -15,7 +15,7 @@ class UserManualsControllerTest < ActionDispatch::IntegrationTest
     get user_manual_url
 
     assert_response :success
-    assert_includes response.body, "Asset Management User Manual"
+    assert_includes response.body, "Apurti User Manual"
     assert_includes response.body, "Vendor Registration"
     assert_includes response.body, "User Manual"
     assert_includes response.body, "Download PDF"
@@ -28,8 +28,8 @@ class UserManualsControllerTest < ActionDispatch::IntegrationTest
     get user_manual_url(lang: "hi")
 
     assert_response :success
-    assert_includes response.body, "एसेट मैनेजमेंट यूजर मैनुअल"
-    assert_includes response.body, "Manual खोलना और Language बदलना"
+    assert_includes response.body, "अपूर्ति यूज़र मैनुअल"
+    assert_includes response.body, "Login और आपका Dashboard"
   end
 
   test "authenticated user can download manual pdf in english and hindi" do

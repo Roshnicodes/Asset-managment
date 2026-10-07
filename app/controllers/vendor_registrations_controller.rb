@@ -294,9 +294,10 @@ class VendorRegistrationsController < ApplicationController
     end
 
     def sync_vendor_approval_requests!
+      # Approved/rejected requests are final, so only open workflows are re-synced.
       ApprovalRequest.sync_scope!(
         ApprovalRequest.includes(:approval_channel, :approvable, :approval_steps)
-          .where(form_name: "Vendor Registration")
+          .where(form_name: "Vendor Registration").active_workflow
       )
     end
 

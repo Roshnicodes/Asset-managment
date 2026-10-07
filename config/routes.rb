@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  resource :procurement_settings, only: [:show, :update]
+  get "search", to: "dashboard#search", as: :app_search
   get "favicon.ico", to: redirect("/favicon.svg")
   get "q", to: "quotation_vendor_qrs#show"
   get "q/:token", to: "quotation_vendor_qrs#show", as: :short_quotation_vendor_qr

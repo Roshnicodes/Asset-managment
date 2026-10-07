@@ -20,7 +20,13 @@
   show_start_approval_action = owner_or_admin && @quotation_proposal.approval_request.blank? && @quotation_proposal.sent_to_vendors_at.blank? && !@quotation_proposal.committee_completed? && !@quotation_proposal.awaiting_thematic_head_decision?
   thematic_head_pending = @quotation_proposal.awaiting_thematic_head_decision?
   thematic_head_viewer = thematic_head_pending && @quotation_proposal.thematic_head?(current_approval_employee_ids)
-  start_approval_label = @quotation_proposal.thematic_head_decision_required? ? "Send to Thematic Head" : "Start Committee Approval"
+  start_approval_label = if @quotation_proposal.single_vendor?
+    "Send to #{@quotation_proposal.single_vendor_approver_label}"
+  elsif @quotation_proposal.thematic_head_decision_required?
+    "Send to Thematic Head"
+  else
+    "Start Committee Approval"
+  end
   thematic_head_can_dispatch = @quotation_proposal.vendor_dispatch_allowed_for_thematic_head?(current_approval_employee_ids)
   show_send_vendor_action = (creator_can_dispatch || thematic_head_can_dispatch) && @quotation_proposal.committee_completed? && !@quotation_proposal.vendor_responses_received?
   print_actions_present = true
@@ -145,7 +151,7 @@
 
   .quotation-proposal-show__overview-table {
     width: 100% !important;
-    min-width: 980px !important;
+    min-width: 0 !important;
     margin: 0 !important;
     border-collapse: separate !important;
     border-spacing: 0 !important;
@@ -487,6 +493,12 @@
               </div>
             </td>
           </tr>
+          <% if @quotation_proposal.single_vendor? %>
+            <tr>
+              <th scope="row">Logic Note</th>
+              <td colspan="3"><%= simple_format(@quotation_proposal.single_vendor_justification.presence || "-") %></td>
+            </tr>
+          <% end %>
           <% if selected_criteria_selections.any? %>
             <tr>
               <th scope="row">Vendor Selection Criteria</th>
@@ -717,7 +729,7 @@
   </div>
 <% end %>
 
-<% if @quotation_proposal.vendor_responses_received? && !direct_response_mode && @quotation_proposal.all_max_rates_present? %>
+<% if @quotation_proposal.vendor_responses_received? && !direct_response_mode && !@quotation_proposal.single_vendor? && @quotation_proposal.all_max_rates_present? %>
   <div class="app-detail-card app-stack-gap-lg">
     <div class="app-page-header app-subsection-header-tight">
       <div>
@@ -778,7 +790,7 @@
     <% end %>
     <%= form_with url: score_vendors_quotation_proposal_path(@quotation_proposal), method: :patch, local: true do %>
       <div class="app-table-wrap" style="overflow: auto;">
-        <table class="table app-table" style="min-width: <%= 320 + (comparison_vendors.size * 280) %>px;">
+        <table class="table app-table" style="min-width: <%= 200 + (comparison_vendors.size * 220) %>px;">
         <thead>
           <tr>
             <th class="quotation-proposal-show__comparison-sticky quotation-proposal-show__comparison-sticky--head" style="min-width: 240px;">Compare Field</th>

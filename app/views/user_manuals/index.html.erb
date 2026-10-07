@@ -101,6 +101,30 @@
     <% end %>
   </section>
 
+
+  <!-- Who should read what -->
+  <% if @manual_copy[:role_guide].present? %>
+    <section class="um-role-guide" aria-label="<%= @manual_copy[:role_guide_title] %>">
+      <h3 class="um-role-guide__title"><%= @manual_copy[:role_guide_title] %></h3>
+      <div class="um-role-guide__grid">
+        <% section_titles = @manual_copy[:sections].to_h { |section| [section[:id], section] } %>
+        <% @manual_copy[:role_guide].each do |guide| %>
+          <div class="um-role-card">
+            <strong><%= guide[:role] %></strong>
+            <p><%= guide[:body] %></p>
+            <div class="um-role-card__links">
+              <% guide[:sections].each do |section_id| %>
+                <% section = section_titles[section_id] %>
+                <% next unless section %>
+                <a href="#<%= section_id %>" title="<%= section[:title] %>"><%= section[:number] %> <%= section[:title].truncate(26) %></a>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </section>
+  <% end %>
+
   <!-- Main Layout: Navigation + Sections -->
   <div class="user-manual-main-layout">
     <!-- Sticky Table of Contents -->
@@ -111,7 +135,7 @@
             <svg class="um-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
             <%= @manual_copy[:contents_label] %>
           </h3>
-          <span class="um-toc-count"><%= @manual_copy[:sections].length %> <%= is_hindi ? "भाग" : "parts" %></span>
+          <span class="um-toc-count"><%= @manual_copy[:sections].length + [@manual_copy[:statuses], @manual_copy[:faqs]].count(&:present?) %> <%= is_hindi ? "भाग" : "parts" %></span>
         </div>
 
         <div class="um-toc-search-wrap">
@@ -130,6 +154,18 @@
               <span class="um-toc-title"><%= section[:title] %></span>
             </a>
           <% end %>
+          <% if @manual_copy[:statuses].present? %>
+            <a href="#statuses" class="um-toc-link" data-section-id="statuses">
+              <span class="um-toc-num">?</span>
+              <span class="um-toc-title"><%= @manual_copy[:statuses_title] %></span>
+            </a>
+          <% end %>
+          <% if @manual_copy[:faqs].present? %>
+            <a href="#faq" class="um-toc-link" data-section-id="faq">
+              <span class="um-toc-num">!</span>
+              <span class="um-toc-title"><%= @manual_copy[:faq_title] %></span>
+            </a>
+          <% end %>
         </nav>
       </div>
     </aside>
@@ -143,6 +179,9 @@
               <span class="um-section-badge"><%= section[:number] %></span>
               <h2><%= section[:title] %></h2>
             </div>
+            <% if section[:role].present? %>
+              <span class="um-role-chip"><%= @manual_copy[:role_label] %>: <strong><%= section[:role] %></strong></span>
+            <% end %>
             <span class="um-step-badge">
               <%= section[:steps].length %> <%= is_hindi ? "स्टेप्स" : "Steps" %>
             </span>
@@ -152,10 +191,17 @@
             <!-- Steps List -->
             <div class="um-steps-wrapper">
               <ol class="um-steps-list">
+                <% marked_steps = section[:steps].any? { |step| step.match?(/\A[①-⑨]/) } %>
                 <% section[:steps].each_with_index do |step, s_idx| %>
+                  <% mark = step[/\A[①-⑨]/] %>
                   <li class="um-step-row">
-                    <span class="um-step-marker"><%= s_idx + 1 %></span>
-                    <div class="um-step-detail"><%= step %></div>
+                    <% if mark %>
+                      <span class="um-step-marker um-step-marker--screen" title="Number on the screen"><%= mark.ord - "①".ord + 1 %></span>
+                      <div class="um-step-detail"><%= step.delete_prefix(mark).strip %></div>
+                    <% else %>
+                      <span class="um-step-marker<%= " um-step-marker--plain" if marked_steps %>"><%= marked_steps ? "•" : s_idx + 1 %></span>
+                      <div class="um-step-detail"><%= step %></div>
+                    <% end %>
                   </li>
                 <% end %>
               </ol>
@@ -178,7 +224,7 @@
             <% if section[:screenshots].present? %>
               <div class="um-screenshots-wrapper">
                 <% section[:screenshots].each_with_index do |screenshot, index| %>
-                  <% image_uri = manual_asset_data_uri(screenshot[:image]) || screenshot[:image] %>
+                  <% image_uri = asset_path(screenshot[:image]) %>
                   <figure class="um-screenshot-card">
                     <a href="<%= image_uri %>" target="_blank" rel="noopener noreferrer" class="um-screenshot-frame" title="<%= is_hindi ? 'फुल साइज़ इमेज नए टैब में देखें' : 'Open full image in new tab' %>">
                       <div class="um-screenshot-topbar">
@@ -204,6 +250,45 @@
                 <% end %>
                 <p class="um-screenshot-guide-note"><%= @manual_copy[:screenshot_note] %></p>
               </div>
+            <% end %>
+          </div>
+        </article>
+      <% end %>
+
+
+      <% if @manual_copy[:statuses].present? %>
+        <article class="user-manual-card" id="statuses" data-title="<%= @manual_copy[:statuses_title].downcase %>">
+          <header class="um-card-header">
+            <div class="um-card-title-group">
+              <span class="um-section-badge">?</span>
+              <h2><%= @manual_copy[:statuses_title] %></h2>
+            </div>
+          </header>
+          <div class="um-status-grid">
+            <% @manual_copy[:statuses].each do |label, meaning, tone| %>
+              <div class="um-status-row">
+                <span class="um-status-pill um-status-pill--<%= tone %>"><%= label %></span>
+                <span><%= meaning %></span>
+              </div>
+            <% end %>
+          </div>
+        </article>
+      <% end %>
+
+      <% if @manual_copy[:faqs].present? %>
+        <article class="user-manual-card" id="faq" data-title="<%= @manual_copy[:faq_title].downcase %>">
+          <header class="um-card-header">
+            <div class="um-card-title-group">
+              <span class="um-section-badge">!</span>
+              <h2><%= @manual_copy[:faq_title] %></h2>
+            </div>
+          </header>
+          <div class="um-faq">
+            <% @manual_copy[:faqs].each do |question, answer| %>
+              <details class="um-faq__item">
+                <summary><%= question %></summary>
+                <p><%= answer %></p>
+              </details>
             <% end %>
           </div>
         </article>

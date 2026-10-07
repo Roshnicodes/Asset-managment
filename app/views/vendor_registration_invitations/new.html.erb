@@ -28,7 +28,6 @@
     <div class="app-form-field">
       <%= form.label :mobile_no, "Vendor Mobile No" %>
       <%= form.telephone_field :mobile_no, required: true, maxlength: 10, minlength: 10, pattern: "[6-9][0-9]{9}", inputmode: "numeric", autocomplete: "tel", data: { numeric_input: true } %>
-      <p class="app-section-note">The vendor will receive the registration link on this mobile number and must verify OTP before submitting the form.</p>
     </div>
 
     <div class="app-form-actions">

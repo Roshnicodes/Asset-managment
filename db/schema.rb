@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_05_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_06_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -50,6 +50,14 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_05_090000) do
     t.datetime "updated_at", null: false
     t.index ["asset_id"], name: "index_allocations_on_asset_id"
     t.index ["to_id"], name: "index_allocations_on_to_id"
+  end
+
+  create_table "app_settings", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "key", null: false
+    t.datetime "updated_at", null: false
+    t.text "value"
+    t.index ["key"], name: "index_app_settings_on_key", unique: true
   end
 
   create_table "approval_channel_steps", force: :cascade do |t|
@@ -101,6 +109,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_05_090000) do
     t.datetime "updated_at", null: false
     t.index ["approvable_type", "approvable_id"], name: "index_approval_requests_on_approvable"
     t.index ["approval_channel_id"], name: "index_approval_requests_on_approval_channel_id"
+    t.index ["status"], name: "index_approval_requests_on_status"
   end
 
   create_table "approval_steps", force: :cascade do |t|
@@ -115,7 +124,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_05_090000) do
     t.text "remark"
     t.string "status", default: "waiting", null: false
     t.datetime "updated_at", null: false
+    t.index ["approval_request_id", "level"], name: "index_approval_steps_on_approval_request_id_and_level"
     t.index ["approval_request_id"], name: "index_approval_steps_on_approval_request_id"
+    t.index ["employee_master_id", "status"], name: "index_approval_steps_on_employee_master_id_and_status"
     t.index ["employee_master_id"], name: "index_approval_steps_on_employee_master_id"
     t.index ["from_user_id"], name: "index_approval_steps_on_from_user_id"
   end
@@ -209,6 +220,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_05_090000) do
     t.datetime "updated_at", null: false
     t.string "user_type"
     t.string "village"
+    t.index "lower(TRIM(BOTH FROM email_id))", name: "index_employee_masters_on_lower_trim_email_id"
     t.index ["block_id"], name: "index_employee_masters_on_block_id"
     t.index ["district_id"], name: "index_employee_masters_on_district_id"
     t.index ["employee_code"], name: "index_employee_masters_on_employee_code", unique: true
@@ -253,6 +265,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_05_090000) do
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["notifiable_type", "notifiable_id"], name: "index_notifications_on_notifiable"
+    t.index ["user_id", "status"], name: "index_notifications_on_user_id_and_status"
     t.index ["user_id"], name: "index_notifications_on_user_id"
   end
 
@@ -349,6 +362,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_05_090000) do
     t.text "remark"
     t.string "status", default: "pending", null: false
     t.datetime "updated_at", null: false
+    t.index ["employee_master_id", "status"], name: "index_qp_committee_steps_on_employee_and_status"
     t.index ["employee_master_id"], name: "index_quotation_proposal_committee_steps_on_employee_master_id"
     t.index ["quotation_proposal_id", "level"], name: "idx_qp_committee_steps_on_proposal_and_level", unique: true
     t.index ["quotation_proposal_id"], name: "idx_on_quotation_proposal_id_134499ac03"
@@ -520,6 +534,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_05_090000) do
     t.bigint "reused_from_quotation_proposal_id"
     t.bigint "selected_vendor_registration_id"
     t.datetime "sent_to_vendors_at"
+    t.text "single_vendor_justification"
     t.string "subject", null: false
     t.datetime "thematic_head_decided_at"
     t.string "thematic_head_decision"
@@ -528,7 +543,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_05_090000) do
     t.bigint "theme_id", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id"
+    t.boolean "vendor_rule_enforced", default: false, null: false
     t.string "workflow_status", default: "committee_pending", null: false
+    t.index ["created_at"], name: "index_quotation_proposals_on_created_at"
     t.index ["reused_from_quotation_proposal_id"], name: "index_quotation_proposals_on_reused_from_quotation_proposal_id"
     t.index ["selected_vendor_registration_id"], name: "index_quotation_proposals_on_selected_vendor_registration_id"
     t.index ["thematic_head_id"], name: "index_quotation_proposals_on_thematic_head_id"
@@ -695,6 +712,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_05_090000) do
     t.bigint "vendor_registration_id"
     t.index ["mobile_no"], name: "index_vendor_registration_invitations_on_mobile_no"
     t.index ["stakeholder_category_id"], name: "idx_on_stakeholder_category_id_eb1673a822"
+    t.index ["status"], name: "index_vendor_registration_invitations_on_status"
     t.index ["token"], name: "index_vendor_registration_invitations_on_token", unique: true
     t.index ["user_id"], name: "index_vendor_registration_invitations_on_user_id"
     t.index ["vendor_registration_id"], name: "idx_on_vendor_registration_id_7326b11eaa"
@@ -756,6 +774,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_05_090000) do
     t.bigint "user_id"
     t.string "vendor_name"
     t.index ["block_id"], name: "index_vendor_registrations_on_block_id"
+    t.index ["created_at"], name: "index_vendor_registrations_on_created_at"
     t.index ["district_id"], name: "index_vendor_registrations_on_district_id"
     t.index ["firm_id"], name: "index_vendor_registrations_on_firm_id"
     t.index ["mobile_no"], name: "index_vendor_registrations_on_mobile_no"

@@ -2,6 +2,33 @@
   .sticky-top { position: sticky; top: 0; z-index: 100; }
   .app-table thead th { background: #f8fcf9 !important; border-bottom: 2px solid #eef3ef !important; }
   .quotation-list-table-wrap { max-height: none; overflow-x: auto; overflow-y: visible; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+  .quotation-index-table .qi-col-view { width: 58px; }
+  .quotation-index-table .qi-col-subject { width: 200px; }
+  .quotation-index-table .qi-col-theme { width: 120px; }
+  .quotation-index-table .qi-col-vendors { width: 150px; }
+  .quotation-index-table .qi-col-date { width: 104px; }
+  .quotation-index-table .qi-col-items { width: 62px; }
+  .quotation-index-table .qi-col-status { width: 150px; }
+  .quotation-index-table .qi-col-remark { width: 140px; }
+  .quotation-index-table .qi-col-trail { width: 240px; }
+  .quotation-index-table .qi-col-created { width: 130px; }
+  .quotation-index-table .qi-col-action { width: 92px; }
+  @media (max-width: 1500px) {
+    .quotation-index-table .qi-col-subject { width: 170px; }
+    .quotation-index-table .qi-col-vendors { width: 130px; }
+    .quotation-index-table .qi-col-trail { width: 200px; }
+  }
+  /* 1280-1400 px laptops: Subject takes the space that is left */
+  @media (max-width: 1400px) {
+    .quotation-index-table .qi-col-view { width: 50px; }
+    .quotation-index-table .qi-col-subject { width: auto; }
+    .quotation-index-table .qi-col-theme { width: 105px; }
+    .quotation-index-table .qi-col-vendors { width: 115px; }
+    .quotation-index-table .qi-col-date { width: 96px; }
+    .quotation-index-table .qi-col-status { width: 130px; }
+    .quotation-index-table .qi-col-trail { width: 180px; }
+    .quotation-index-table .qi-col-action { width: 84px; }
+  }
 </style>
 
 <div class="app-toolbar">
@@ -18,37 +45,41 @@
 </div>
 
 <div class="app-table-wrap quotation-list-table-wrap" data-page-size="10" data-search-placeholder="Search quotation proposals...">
-  <table class="table app-table">
+  <table class="table app-table app-list-table quotation-index-table" data-min-width-ready="true">
     <thead class="sticky-top">
       <tr>
-        <th></th>
-        <th>View</th>
-        <th>Subject</th>
-        <th>Theme</th>
-        <th>Vendors</th>
-        <th>End Date</th>
-        <th>Items</th>
-        <th>Workflow Status</th>
-        <th>Latest Remark</th>
-        <th>Committee Trail</th>
-        <th>Created By</th>
-        <th>Action</th>
+        <th class="qi-col-view">View</th>
+        <th class="qi-col-subject">Subject</th>
+        <th class="qi-col-theme">Theme</th>
+        <th class="qi-col-vendors">Vendors</th>
+        <th class="qi-col-date">End Date</th>
+        <th class="qi-col-items ql-optional">Items</th>
+        <th class="qi-col-status">Status</th>
+        <th class="qi-col-remark ql-optional">Latest Remark</th>
+        <th class="qi-col-trail">Committee Trail</th>
+        <th class="qi-col-created ql-optional">Created By</th>
+        <th class="qi-col-action">Action</th>
       </tr>
     </thead>
     <tbody>
       <% @quotation_proposals.each do |quotation_proposal| %>
         <tr>
-          <td></td>
           <td>
             <%= link_to quotation_proposal_path(quotation_proposal), class: "app-action-icon text-primary", title: "View" do %>
               <%= app_icon(:eye, size: 18) %>
             <% end %>
           </td>
-          <td><%= quotation_proposal.subject %></td>
-          <td><%= quotation_proposal.theme.name %></td>
-          <td><%= quotation_proposal.vendor_registrations.map(&:display_name).join(", ") %></td>
+          <td><span class="ql-clamp-2 fw-semibold" title="<%= quotation_proposal.subject %>"><%= quotation_proposal.subject %></span></td>
+          <td><span class="ql-clamp-2"><%= quotation_proposal.theme.name %></span></td>
+          <% vendor_names = quotation_proposal.vendor_registrations.map(&:display_name) %>
+          <td>
+            <span class="ql-vendors" title="<%= vendor_names.join(", ") %>">
+              <span class="ql-clamp-2"><%= vendor_names.first || "-" %></span>
+              <% if vendor_names.size > 1 %><span class="ql-more">+<%= vendor_names.size - 1 %></span><% end %>
+            </span>
+          </td>
           <td><%= quotation_proposal.proposal_end_date.strftime("%d-%m-%Y") %></td>
-          <td><%= quotation_proposal.quotation_proposal_items.size %></td>
+          <td class="ql-optional"><%= quotation_proposal.quotation_proposal_items.size %></td>
           <td>
             <% status_class = case quotation_proposal.workflow_status
                when 'vendor_selected' then 'bg-success bg-opacity-10 text-success border-success'
@@ -63,44 +94,20 @@
               <%= quotation_proposal.workflow_status.humanize %>
             </span>
           </td>
-          <td><%= quotation_proposal.approval_request&.latest_remark.presence || quotation_proposal.committee_steps.where.not(remark: [nil, ""]).order(actioned_at: :desc).pick(:remark).presence || "-" %></td>
+          <% latest_remark = quotation_proposal.approval_request&.latest_remark.presence || quotation_proposal.committee_steps.where.not(remark: [nil, ""]).order(actioned_at: :desc).pick(:remark).presence %>
+          <td class="ql-optional"><span class="ql-remark" title="<%= latest_remark %>"><%= latest_remark || "-" %></span></td>
           <td>
-            <div class="d-flex flex-column gap-1" style="min-width: 250px;">
-              <% approval_started = quotation_proposal.approval_request.present? %>
-              <% trail_steps = quotation_proposal.approval_request&.trail_steps || quotation_proposal.committee_steps %>
-              <% if trail_steps.any? %>
-                <% trail_steps.each do |step| %>
-                  <% step_status = if approval_started
-                       step.respond_to?(:effective_status) ? step.effective_status : step.status
-                     else
-                       "waiting"
-                     end %>
-                  <% step_label = if approval_started
-                       step.respond_to?(:effective_status_label) ? step.effective_status_label : step.status_label
-                     else
-                       "Not Started"
-                     end %>
-                  <div class="d-flex align-items-center gap-2 small lh-sm">
-                    <% dot_class = case step_status
-                       when 'approved' then 'text-success'
-                       when 'returned' then 'text-warning'
-                       when 'rejected' then 'text-danger'
-                       when 'pending' then 'text-info'
-                       else 'text-muted opacity-50'
-                       end %>
-                    <span class="<%= dot_class %>" style="font-size: 1.2rem;">●</span>
-                    <div class="text-truncate" style="max-width: 240px;">
-                      <span class="fw-bold">L<%= step.level %> - <%= step.employee_master.name %></span>
-                      <span class="<%= dot_class %> fw-semibold">: <%= step_label %></span>
-                    </div>
-                  </div>
-                <% end %>
-              <% else %>
-                <span class="text-muted">-</span>
-              <% end %>
-            </div>
+            <% trail_steps = quotation_proposal.approval_request&.trail_steps || quotation_proposal.committee_steps %>
+            <% if trail_steps.any? %>
+              <%= render "shared/approval_trail", steps: trail_steps, started: quotation_proposal.approval_request.present? %>
+            <% elsif quotation_proposal.awaiting_thematic_head_decision? %>
+              <span class="ql-head-badge">With Thematic Head</span>
+            <% else %>
+              <span class="text-muted">-</span>
+            <% end %>
           </td>
-          <td><%= quotation_proposal.user&.email || "-" %></td>
+          <% creator = quotation_proposal.user %>
+          <td class="ql-optional"><span class="ql-clamp-2" title="<%= creator&.email %>"><%= creator&.employee_master&.name.presence || creator&.email || "-" %></span></td>
           <td class="app-row-actions">
             <div class="d-flex align-items-center gap-2">
               <% if admin_user? || (quotation_proposal.user_id == current_user.id && !quotation_proposal.approval_locked?) %>

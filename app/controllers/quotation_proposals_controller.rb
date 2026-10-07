@@ -137,6 +137,8 @@ class QuotationProposalsController < ApplicationController
 
     @quotation_proposal = QuotationProposal.new(attrs)
     @quotation_proposal.user = current_user
+    # Requests created from now on follow the vendor-count rule.
+    @quotation_proposal.vendor_rule_enforced = true
     build_quotation_items(@quotation_proposal, item_attributes)
     @selected_vendor_selection_criterion_ids = selected_criteria_ids
 
@@ -1098,6 +1100,7 @@ class QuotationProposalsController < ApplicationController
       :remark,
       :procurement_amount_bucket,
       :thematic_head_id,
+      :single_vendor_justification,
       vendor_registration_ids: [],
       vendor_selection_criterion_ids: [],
       quotation_proposal_items_attributes: [:id, :item_name, :unit_id, :quantity, :max_rate, :remark, :_destroy],
@@ -1223,19 +1226,15 @@ class QuotationProposalsController < ApplicationController
     employee = current_employee_master
     return false unless employee
 
-    role_permissions = MenuPermission.where(
-      stakeholder_category_id: employee.stakeholder_category_id,
-      designation: employee.designation
-    )
-    return false if role_permissions.empty?
+    return false if role_menu_permissions.empty?
 
     if identifier == "quotation_proposal_main"
-      return true if role_permissions.find_by(menu_identifier: "quotation_proposal_form")&.can_view?
-      return true if role_permissions.find_by(menu_identifier: "quotation_proposal_list")&.can_view?
+      return true if role_menu_viewable?("quotation_proposal_form")
+      return true if role_menu_viewable?("quotation_proposal_list")
       return true if finance_queue_access?
     end
 
-    role_permissions.find_by(menu_identifier: identifier)&.can_view? || false
+    role_menu_viewable?(identifier)
   end
 
   def authorize_quotation_form_access!
@@ -1654,9 +1653,11 @@ class QuotationProposalsController < ApplicationController
   end
 
   def sync_quotation_approval_requests!
+    # Approved/rejected requests are final; each later event refreshes its own
+    # record, so only open workflows are re-synced when a list is opened.
     ApprovalRequest.sync_scope!(
       ApprovalRequest.includes(:approval_channel, :approvable, :approval_steps)
-        .where(form_name: ["Quotation Proposal", "Quotation Request"])
+        .where(form_name: ["Quotation Proposal", "Quotation Request"]).active_workflow
     )
   end
 

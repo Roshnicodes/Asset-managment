@@ -5,6 +5,9 @@ class QuotationProposal < ApplicationRecord
   DEFAULT_COMMITTEE_MEMBERS = 3
   COMMITTEE_AMOUNT_THRESHOLD = BigDecimal("1000000")
   PROCUREMENT_AMOUNT_BUCKETS = %w[above_10k below_10k].freeze
+  # Above 10K: at least this many vendors, or a single vendor with a note.
+  MIN_COMPETITIVE_VENDORS = 3
+  MIN_LOGIC_NOTE_WORDS = 50
   MIN_SUBJECT_WORDS = 5
   MAX_SUBJECT_WORDS = 20
   COMMITTEE_CHANNEL_FORM_NAMES = ["Quotation Proposal", "Quotation Request"].freeze
@@ -60,6 +63,7 @@ class QuotationProposal < ApplicationRecord
   validates :procurement_amount_bucket, inclusion: { in: PROCUREMENT_AMOUNT_BUCKETS }
   validates :thematic_head_decision, inclusion: { in: THEMATIC_HEAD_DECISIONS }, allow_nil: true
   validate :subject_has_minimum_words
+  validate :vendor_count_rule
   validate :must_have_at_least_one_vendor
   validate :must_have_at_least_one_item
   validate :must_have_all_committee_levels
@@ -68,6 +72,7 @@ class QuotationProposal < ApplicationRecord
   validate :selected_vendors_must_match_stakeholder
 
   after_commit :sync_vendor_item_rows, on: %i[create update]
+  before_validation :skip_thematic_head_for_single_vendor
 
   def subject_has_minimum_words
     return if subject.blank?
@@ -78,9 +83,25 @@ class QuotationProposal < ApplicationRecord
     errors.add(:subject, "must be between #{MIN_SUBJECT_WORDS} and #{MAX_SUBJECT_WORDS} words")
   end
 
-
   def committee_approval_required?
     committee_approval_required != false
+  end
+
+  # A single-vendor request (Above 10K, created under the vendor rule) is
+  # approved by the Director alone and needs no committee scoring.
+  def single_vendor?
+    vendor_rule_enforced? && above_10k? && !reused_from_quotation_proposal_id? && selected_vendor_count == 1
+  end
+
+  # Shown on buttons and notes ("Send to Director" / "Send to COO"): the
+  # approver already on the request, else the current setting.
+  def single_vendor_approver_label
+    approver = committee_steps.reject(&:marked_for_destruction?).min_by { |step| step.level.to_i }&.employee_master
+    coo_names = ["coo", "chief operating officer"]
+    return "COO" if approver && coo_names.include?(approver.designation.to_s.strip.downcase)
+    return "Director" if approver
+
+    AppSetting.single_vendor_approver_designation
   end
 
   # Quotations sent through a Thematic Head get their committee from the head.
@@ -218,6 +239,8 @@ end
 
 # Kept as a compatibility wrapper for the existing controller workflow.
 def apply_configured_committee!
+  return apply_director_only_committee! if single_vendor?
+
   # With a Thematic Head the head builds the committee (for both routes).
   return true if thematic_head_selects_committee?
 
@@ -656,6 +679,8 @@ end
   end
 
   def sync_vendor_rankings_and_selection!
+    return sync_single_vendor_selection! if single_vendor?
+
     recalculate_vendor_rankings!
 
     ranked_vendor = committee_scoring_complete? ? quotation_proposal_vendors.find_by(rank_position: 1) : nil
@@ -678,6 +703,64 @@ end
   end
 
   private
+
+  # The only vendor is selected once it responds; there is no committee scoring.
+  def sync_single_vendor_selection!
+    responded_vendor = quotation_proposal_vendors.responded.first
+    selectable_vendor = responded_vendor&.vendor_registration
+    selectable_vendor = nil unless vendor_matches_stakeholder?(selectable_vendor)
+
+    quotation_proposal_vendors.update_all(selected: false, rank_position: nil)
+    if responded_vendor.present? && selectable_vendor.present?
+      responded_vendor.update_columns(selected: true, rank_position: 1)
+      sync_selected_vendor_registration!(selectable_vendor)
+    elsif selected_vendor_registration_id.present?
+      sync_selected_vendor_registration!(nil)
+    end
+
+    refresh_response_status!
+    association(:quotation_proposal_vendors).reset
+    association(:selected_vendor_registration).reset
+    responded_vendor
+  end
+
+  # A single-vendor request goes straight to the Director, so a Thematic Head
+  # chosen in the form is ignored until the head has decided.
+  def skip_thematic_head_for_single_vendor
+    return unless single_vendor? && thematic_head_decision.blank?
+
+    self.thematic_head_id = nil
+    self.thematic_head_requested_at = nil
+  end
+
+  # Single vendor: one approver only - the Director by default, or the COO
+  # when the admin has chosen that in Procurement Settings.
+  def apply_director_only_committee!
+    designation = AppSetting.single_vendor_approver_designation
+    approver = committee_member_with_designation(designation)
+    self.committee_from_policy = false
+    self.committee_policy_errors = approver ? [] : ["#{designation} is not configured in Employee Master."]
+    self.committee_approval_required = true
+
+    committee_steps.each(&:mark_for_destruction)
+    committee_steps.build(level: 1, employee_master: approver, status: "waiting") if approver
+    committee_policy_errors.blank?
+  end
+
+  def vendor_count_rule
+    return unless vendor_rule_enforced? && above_10k? && !reused_from_quotation_proposal_id?
+
+    count = selected_vendor_count
+    if count.between?(2, MIN_COMPETITIVE_VENDORS - 1)
+      errors.add(:base, "Select at least #{MIN_COMPETITIVE_VENDORS} vendors, or a single vendor with a Logic Note.")
+    elsif count == 1 && single_vendor_justification.to_s.strip.blank?
+      errors.add(:single_vendor_justification, "is required when only one vendor is selected")
+    elsif count == 1 && single_vendor_justification.to_s.scan(/\b[[:alnum:]]+\b/).size < MIN_LOGIC_NOTE_WORDS
+      errors.add(:single_vendor_justification, "must be at least #{MIN_LOGIC_NOTE_WORDS} words")
+    elsif count == 1 && single_vendor_justification.to_s.match?(/\[[^\]]*\]/)
+      errors.add(:single_vendor_justification, "still has [ ] placeholders from the format; replace them with the real details")
+    end
+  end
 
   # Sends the maker the same link SMS the vendor received, so the maker can
   # track it. A failed copy never stops the vendor dispatch.
@@ -937,6 +1020,13 @@ end
 
   def must_have_all_committee_levels
     return unless committee_approval_required?
+
+    if single_vendor?
+      Array(committee_policy_errors).each { |message| errors.add(:base, message) }
+      kept = committee_steps.reject(&:marked_for_destruction?)
+      errors.add(:base, "A single-vendor request is approved by the Director only.") if committee_policy_errors.blank? && kept.size != 1
+      return
+    end
     # The committee is chosen later by the Thematic Head.
     return if thematic_head_selects_committee? && thematic_head_decision.blank?
 

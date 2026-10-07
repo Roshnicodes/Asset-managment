@@ -8,7 +8,6 @@
   <header class="quotation-proposal-show__invoice-card-header">
     <div>
       <h5 class="quotation-proposal-show__invoice-card-title">Invoice Request <%= invoice_request.id %></h5>
-      <p class="app-section-note mb-0">Invoice review, finance, and asset trail for this request.</p>
     </div>
 
     <div class="quotation-proposal-show__invoice-badges">
@@ -149,7 +148,6 @@
     <div class="quotation-proposal-show__invoice-section-head">
       <div>
         <div class="quotation-proposal-show__invoice-section-title">Uploaded Invoice Files</div>
-        <p class="app-section-note mb-0">Download vendor-uploaded files for this request.</p>
       </div>
       <% if invoice_request.vendor_invoices.attached? %>
         <span class="badge border bg-light text-dark"><%= total_invoices_count %> file<%= "s" unless total_invoices_count == 1 %></span>
@@ -190,7 +188,6 @@
       <div class="quotation-proposal-show__invoice-section-head">
         <div>
           <div class="quotation-proposal-show__invoice-section-title">Created Assets</div>
-          <p class="app-section-note mb-0">Asset records created from this invoice request.</p>
         </div>
         <div class="quotation-proposal-show__tag-list quotation-proposal-show__tag-list--compact">
           <% assets_by_name.each do |asset_name, grouped_assets| %>

@@ -26,7 +26,7 @@ class ApplicationHelperTest < ActionView::TestCase
       stakeholder_category: stakeholder
     )
 
-    assert_match %r{\A/rails/active_storage/blobs/redirect/}, navbar_logo_source
+    assert_match %r{\A/rails/active_storage/blobs/proxy/}, navbar_logo_source
     assert_match %r{/pgpl\.jpeg\z}, navbar_logo_source
     assert_equal "PGPL Logo", navbar_logo_alt
   end

@@ -1,0 +1,64 @@
+<%# Sample Logic Note shown from the "i" button next to the Logic Note field.
+    "Use this format" builds the same note in the field from the details already
+    filled in this Request for Proposal (subject, theme, items, vendor, date) and
+    leaves [ ] placeholders only for what the maker has to explain.
+    locals: approver ("Director" or "COO", from Procurement Settings) %>
+<% approver = local_assigns[:approver].presence || "Director" %>
+<div class="logic-note-help" id="logic-note-help" data-logic-note-help hidden>
+  <div class="logic-note-help__head">
+    <strong>Logic Note format (example)</strong>
+    <div class="logic-note-help__actions">
+      <button type="button" class="app-secondary-btn" data-logic-note-use>Use this format</button>
+      <button type="button" class="logic-note-help__close" data-logic-note-close aria-label="Close format">&times;</button>
+    </div>
+  </div>
+
+  <div class="logic-note-help__sample">
+    <p class="logic-note-help__title">LOGIC NOTE<br><span>Procurement of Laptops for IT Department</span></p>
+    <p class="logic-note-help__meta">Request for Proposal | Quotation Value: Above 10K | Single Vendor | Approval: <%= approver %></p>
+
+    <h5>1. Requirement</h5>
+    <p>The IT Department needs 2 laptops for the new field data officers who record vendor registrations, quotations and goods receipts in Apurti. The present systems are shared and cannot be spared for field visits.</p>
+
+    <h5>2. Item-wise Requirement &amp; Estimated Cost</h5>
+    <table>
+      <thead><tr><th>Item</th><th>Qty</th><th>Max Rate (Rs.)</th><th>Amount (Rs.)</th><th>Remark</th></tr></thead>
+      <tbody><tr><td>Laptop (i5, 16 GB RAM)</td><td>2</td><td>50,000</td><td>1,00,000</td><td>One per field data officer</td></tr></tbody>
+    </table>
+
+    <h5>3. Reason for a Single Vendor</h5>
+    <p>Shivam Office Systems is the only authorised dealer for this model registered with us in the district and gives on-site warranty service. Quotations from 3 vendors are not possible for this configuration within the required time.</p>
+
+    <h5>4. Vendor Details</h5>
+    <p>Shivam Office Systems is an approved vendor in Apurti for the IT Department theme and has supplied similar items to the organisation before.</p>
+
+    <h5>5. Delivery &amp; Payment Terms</h5>
+    <p>Delivery at the office within 15 days of the Purchase Order. Payment after goods receive and invoice verification.</p>
+
+    <h5>6. Declaration</h5>
+    <p>The amounts above are based on the internal max rate; the final value will be as per the vendor's quotation. The Purchase Order will be issued after the <%= approver %>'s approval.</p>
+  </div>
+
+  <template data-logic-note-template>LOGIC NOTE
+Procurement of {{subject}}
+Request for Proposal | Theme: {{theme}} | Quotation Value: Above 10K | Single Vendor | Approval: <%= approver %>
+
+1. Requirement
+[Why this material is needed, who will use it and where.]
+
+2. Item-wise Requirement & Estimated Cost
+{{items}}
+Estimated total (as per max rate): Rs. {{total}}
+
+3. Reason for a Single Vendor
+[Why quotations from at least 3 vendors are not possible, e.g. only authorised dealer, proprietary item, only supplier in the area, urgency.]
+
+4. Vendor Details
+{{vendor}} - [why this vendor is suitable, e.g. approved vendor, past supply, service support.]
+
+5. Delivery & Payment Terms
+Delivery by {{end_date}} - [delivery location, installation, payment after goods receive and invoice verification.]
+
+6. Declaration
+The amounts above are based on the internal max rate; the final value will be as per the vendor's quotation. The Purchase Order will be issued after the <%= approver %>'s approval.</template>
+</div>

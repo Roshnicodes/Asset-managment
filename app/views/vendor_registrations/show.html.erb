@@ -24,7 +24,6 @@
   <% if approver_view %>
     <div class="app-form-card vendor-approval-action-card">
       <h3>Pending Approval Action (<%= current_step.current_action %>)</h3>
-      <p class="app-section-note">Only the current pending approver can take action here. Higher levels can return to the previous approver or to the employee. If returned to the employee, the record can be edited and resubmitted through the same approval channel.</p>
 
       <div class="vendor-approval-action-buttons">
         <%= render "approval_requests/approve_modal",

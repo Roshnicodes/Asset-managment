@@ -275,7 +275,15 @@
     .pdf-shot strong {
       color: #07483f;
     }
-  </style>
+    .pdf-section-role { margin: 2px 0 0; color: #0f6b55; font-size: 11px; font-weight: 700; }
+  .pdf-roles, .pdf-extra { margin: 14px 0; }
+  .pdf-roles h2, .pdf-extra h2 { margin: 0 0 8px; color: #0b3d33; font-size: 16px; }
+  .pdf-roles table, .pdf-extra table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+  .pdf-roles th, .pdf-extra th { width: 30%; padding: 6px 8px; border: 1px solid #dce7dd; background: #edf7f1; color: #0b3d33; text-align: left; vertical-align: top; }
+  .pdf-roles td, .pdf-extra td { padding: 6px 8px; border: 1px solid #dce7dd; color: #26372e; vertical-align: top; }
+  .pdf-roles small { color: #0f6b55; font-weight: 700; }
+    .pdf-steps--marked { list-style: none; padding-left: 4px; }
+</style>
 </head>
 <body>
   <% stakeholder_name = @manual_stakeholder&.name.presence || "ASA / PAPL / PGPL" %>
@@ -315,6 +323,22 @@
       <% end %>
     </section>
 
+
+    <% if @manual_copy[:role_guide].present? %>
+      <section class="pdf-roles">
+        <h2><%= @manual_copy[:role_guide_title] %></h2>
+        <% section_numbers = @manual_copy[:sections].to_h { |section| [section[:id], "#{section[:number]} #{section[:title]}"] } %>
+        <table>
+          <% @manual_copy[:role_guide].each do |guide| %>
+            <tr>
+              <th><%= guide[:role] %></th>
+              <td><%= guide[:body] %><br><small><%= guide[:sections].filter_map { |id| section_numbers[id] }.join(" · ") %></small></td>
+            </tr>
+          <% end %>
+        </table>
+      </section>
+    <% end %>
+
     <section class="pdf-toc">
       <h2><%= @manual_copy[:contents_label] %></h2>
       <ol>
@@ -328,14 +352,15 @@
       <article class="pdf-section">
         <div class="pdf-section-head">
           <div class="pdf-section-number"><span class="pdf-number"><%= section[:number] %></span></div>
-          <div class="pdf-section-title"><h2><%= section[:title] %></h2></div>
+          <div class="pdf-section-title"><h2><%= section[:title] %></h2><% if section[:role].present? %><p class="pdf-section-role"><%= @manual_copy[:role_label] %>: <%= section[:role] %></p><% end %></div>
         </div>
 
-        <ol class="pdf-steps">
+        <% marked_steps = section[:steps].any? { |step| step.match?(/\A[①-⑨]/) } %>
+        <<%= marked_steps ? "ul" : "ol" %> class="pdf-steps<%= " pdf-steps--marked" if marked_steps %>">
           <% section[:steps].each do |step| %>
             <li><%= step %></li>
           <% end %>
-        </ol>
+        </<%= marked_steps ? "ul" : "ol" %>>
 
         <div class="pdf-note">
           <strong><%= @manual_copy[:note_label] %>:</strong>
@@ -355,6 +380,28 @@
             </figcaption>
           </figure>
         <% end %>
+      </article>
+    <% end %>
+
+    <% if @manual_copy[:statuses].present? %>
+      <article class="pdf-section pdf-extra">
+        <h2><%= @manual_copy[:statuses_title] %></h2>
+        <table>
+          <% @manual_copy[:statuses].each do |label, meaning, _tone| %>
+            <tr><th><%= label %></th><td><%= meaning %></td></tr>
+          <% end %>
+        </table>
+      </article>
+    <% end %>
+
+    <% if @manual_copy[:faqs].present? %>
+      <article class="pdf-section pdf-extra">
+        <h2><%= @manual_copy[:faq_title] %></h2>
+        <table>
+          <% @manual_copy[:faqs].each do |question, answer| %>
+            <tr><th><%= question %></th><td><%= answer %></td></tr>
+          <% end %>
+        </table>
       </article>
     <% end %>
   </main>

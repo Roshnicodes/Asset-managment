@@ -85,6 +85,9 @@ class ApplicationController < ActionController::Base
   helper_method :can_manage_rbac_menu_records?
   helper_method :vendor_registration_maker?
   helper_method :quotation_proposal_maker?
+  helper_method :role_menu_permissions
+  helper_method :role_menu_any_viewable?
+  helper_method :role_menu_viewable?
 
   def current_employee_master
     return @current_employee_master if defined?(@current_employee_master)
@@ -99,7 +102,33 @@ class ApplicationController < ActionController::Base
   def unread_notifications_count
     return 0 unless current_user
 
-    current_user.notifications.where(status: "unread").count
+    @unread_notifications_count ||= current_user.notifications.where(status: "unread").count
+  end
+
+  # Menu permission rows of the logged-in employee's role, loaded once per
+  # request (the sidebar checks many menus on every page).
+  def role_menu_permissions
+    return @role_menu_permissions if defined?(@role_menu_permissions)
+
+    employee = current_employee_master
+    @role_menu_permissions =
+      if employee
+        MenuPermission.where(stakeholder_category_id: employee.stakeholder_category_id, designation: employee.designation)
+                      .order(:id).pluck(:menu_identifier, :can_view)
+      else
+        []
+      end
+  end
+
+  # true when any of the given menus is viewable for the role.
+  def role_menu_any_viewable?(identifiers)
+    identifiers = Array(identifiers)
+    role_menu_permissions.any? { |menu_identifier, can_view| can_view && identifiers.include?(menu_identifier) }
+  end
+
+  # The role's permission row for one menu (first row, like find_by).
+  def role_menu_viewable?(identifier)
+    role_menu_permissions.find { |menu_identifier, _| menu_identifier == identifier }&.last == true
   end
 
   def current_login_email
@@ -321,27 +350,23 @@ class ApplicationController < ActionController::Base
     employee = current_employee_master
     return false unless employee
 
-    role_permissions = MenuPermission.where(
-      stakeholder_category_id: employee.stakeholder_category_id,
-      designation: employee.designation
-    )
-    return false if role_permissions.empty?
+    return false if role_menu_permissions.empty?
 
     case identifier
     when "office_category_main"
-      role_permissions.where(menu_identifier: %w[office_category_master office_category_name office_pmu office_fco office_to], can_view: true).exists?
+      role_menu_any_viewable?(%w[office_category_master office_category_name office_pmu office_fco office_to])
     when "office_category_master"
-      role_permissions.where(menu_identifier: %w[office_category_master office_pmu office_fco office_to], can_view: true).exists?
+      role_menu_any_viewable?(%w[office_category_master office_pmu office_fco office_to])
     when "office_category_name"
-      role_permissions.where(menu_identifier: %w[office_category_name office_pmu office_fco office_to], can_view: true).exists?
+      role_menu_any_viewable?(%w[office_category_name office_pmu office_fco office_to])
     when "vendor_registration_main"
-      role_permissions.where(menu_identifier: %w[vendor_registration vendor_registration_list], can_view: true).exists?
+      role_menu_any_viewable?(%w[vendor_registration vendor_registration_list])
     when "quotation_proposal_main"
-      role_permissions.where(menu_identifier: %w[quotation_proposal_form quotation_proposal_list], can_view: true).exists? || finance_queue_access?
+      role_menu_any_viewable?(%w[quotation_proposal_form quotation_proposal_list]) || finance_queue_access?
     when "assets"
-      role_permissions.where(menu_identifier: %w[assets quotation_proposal_form quotation_proposal_list], can_view: true).exists?
+      role_menu_any_viewable?(%w[assets quotation_proposal_form quotation_proposal_list])
     else
-      role_permissions.find_by(menu_identifier: identifier)&.can_view? || false
+      role_menu_viewable?(identifier)
     end
   end
 

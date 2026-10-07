@@ -186,7 +186,6 @@
               <div class="app-form-field app-rfp-cell-field <%= "has-error" if field_errors.call(:subject).any? %>">
                 <%= form.label :subject, "Quotation Subject", class: "visually-hidden" %>
                 <%= form.text_field :subject, required: true, data: { validation_label: "Quotation Subject", min_words: 5, max_words: 20 } %>
-                <small class="app-field-hint">Use between 5 and 20 words.</small>
                 <% field_errors.call(:subject).each do |message| %>
                   <div class="app-form-error"><%= message %></div>
                 <% end %>
@@ -267,6 +266,21 @@
         </div>
       </div>
       <div class="app-form-error app-form-error-client" data-vendor-selection-error="true"></div>
+      <% justification_errors = quotation_proposal.errors[:single_vendor_justification] %>
+      <% single_vendor_approver = quotation_proposal.single_vendor? ? quotation_proposal.single_vendor_approver_label : AppSetting.single_vendor_approver_designation %>
+      <div class="app-form-field app-single-vendor-note <%= "has-error" if justification_errors.any? %>" data-single-vendor-justification <%= "hidden" unless quotation_proposal.single_vendor? %>>
+        <div class="logic-note-label">
+          <%= form.label :single_vendor_justification, "Logic Note" %>
+          <button type="button" class="logic-note-info" data-logic-note-toggle aria-controls="logic-note-help" aria-expanded="false" title="See the Logic Note format">i</button>
+        </div>
+        <%= render "logic_note_format", approver: single_vendor_approver %>
+        <%= form.text_area :single_vendor_justification, rows: 8, placeholder: "Write the Logic Note (at least #{QuotationProposal::MIN_LOGIC_NOTE_WORDS} words). Click i to see the format.", data: { validation_label: "Logic Note", min_words: QuotationProposal::MIN_LOGIC_NOTE_WORDS, logic_note_field: true } %>
+        <small class="app-field-hint"><span data-logic-note-count>0</span> / <%= QuotationProposal::MIN_LOGIC_NOTE_WORDS %> words minimum · Approved by the <%= single_vendor_approver %> only, without committee scoring.</small>
+        <% justification_errors.each do |message| %>
+          <div class="app-form-error">Logic Note <%= message %></div>
+        <% end %>
+        <div class="app-form-error app-form-error-client" data-field-error="true"></div>
+      </div>
       <% if quotation_proposal.vendor_registrations.any? %>
         <p class="app-section-note mb-0" style="margin-top: 0.65rem;">
           Selected vendors:
@@ -284,7 +298,6 @@
     <div class="app-page-header app-subsection-header">
       <div>
         <h3>Proposal Items</h3>
-        <p class="app-section-note mb-0">Add one row per item.</p>
       </div>
     </div>
 
@@ -382,6 +395,13 @@
       </div>
     </div>
 
+    <% single_vendor_approver_member = QuotationProposal.committee_member_with_designation(single_vendor_approver) %>
+    <div class="app-rfp-section-panel" data-single-vendor-committee-note <%= "hidden" unless quotation_proposal.single_vendor? %>>
+      <div class="app-rfp-notice app-section-note">
+        One vendor selected: approval by the <strong><%= single_vendor_approver %></strong> only<%= single_vendor_approver_member ? " (#{single_vendor_approver_member.name})" : "" %>. No committee scoring.
+      </div>
+    </div>
+
     <% if head_decided && !quotation_proposal.approval_locked? %>
     <div class="app-rfp-section-panel">
       <div class="app-rfp-notice app-section-note">
@@ -421,7 +441,7 @@
       </div>
     </div>
     <% else %>
-    <div class="app-rfp-section-panel" data-thematic-head-committee-note <%= "hidden" unless head_chosen %>>
+    <div class="app-rfp-section-panel" data-thematic-head-committee-note <%= "hidden" unless head_chosen && !quotation_proposal.single_vendor? %>>
       <div class="app-rfp-notice app-section-note">
         The Thematic Head will choose the committee after you save and use <strong>Send to Thematic Head</strong>.
       </div>
@@ -431,7 +451,7 @@
     <div class="app-rfp-section-panel"
          data-quotation-committee
          data-committee-policy="<%= policy.to_json %>"
-         <%= "hidden" if head_chosen %>>
+         <%= "hidden" if head_chosen || quotation_proposal.single_vendor? %>>
       <div class="app-rfp-notice app-section-note" data-quotation-committee-skipped hidden>
         Committee approval is not required for this request. The quotation link goes directly to the selected vendors.
       </div>

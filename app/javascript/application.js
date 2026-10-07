@@ -283,6 +283,515 @@ const setupTablePagination = () => {
   })
 }
 
+// Extra checks a step must pass that plain HTML validation cannot express
+// (vendor count, committee member). Each runs only for the step holding it.
+const registerStepValidator = (form, element, validate) => {
+  if (!form || !element) return
+  form.appStepValidators ||= []
+  form.appStepValidators.push({ element, validate })
+}
+
+// Step guard for the radio-driven paged forms (Vendor Registration, Request
+// for Proposal): "Next" only moves on when the current step is valid, and a
+// submit jumps back to the first step that still has an error.
+const setupStaticPagerValidation = () => {
+  document.querySelectorAll("form").forEach((form) => {
+    if (form.dataset.stepGuardReady === "true") return
+    const toggles = Array.from(form.querySelectorAll(".app-static-page-toggle"))
+    const pages = Array.from(form.querySelectorAll(".app-static-page"))
+    if (toggles.length < 2 || toggles.length !== pages.length) return
+    form.dataset.stepGuardReady = "true"
+
+    const fieldSelector = "input:not([type='hidden']):not([type='radio'].app-static-page-toggle), select, textarea"
+    const isShown = (element) => !element.closest("[hidden], template") && element.type !== "hidden"
+    const wordCount = (value) => (value.match(/\b[\w]+\b/g) || []).length
+
+    const errorNodeFor = (field) => field.closest(".app-form-field")?.querySelector("[data-field-error='true']")
+
+    const messageFor = (field) => {
+      const label = field.dataset.validationLabel || field.getAttribute("aria-label") ||
+        field.closest(".app-form-field")?.querySelector("label")?.textContent?.trim() || "This field"
+      const value = (field.value || "").trim()
+      const minWords = parseInt(field.dataset.minWords || "0", 10)
+      const maxWords = parseInt(field.dataset.maxWords || "0", 10)
+
+      if (field.validity && !field.validity.valid) {
+        if (field.validity.valueMissing) return field.type === "file" ? `${label} must be uploaded.` : `${label} is required.`
+        if (field.validity.customError) return field.validationMessage
+        if (field.validity.typeMismatch || field.validity.patternMismatch) return field.title || `Enter a valid ${label.toLowerCase()}.`
+        if (field.validity.rangeUnderflow) return `${label} must be at least ${field.min}.`
+        if (field.validity.tooShort) return `${label} must be at least ${field.minLength} characters.`
+        return field.validationMessage || `${label} is invalid.`
+      }
+      if (minWords > 0 && value && wordCount(value) < minWords) return `${label} must be at least ${minWords} words.`
+      if (maxWords > 0 && value && wordCount(value) > maxWords) return `${label} must not exceed ${maxWords} words.`
+      return ""
+    }
+
+    const showError = (field, message) => {
+      const wrapper = field.closest(".app-form-field")
+      const node = errorNodeFor(field)
+      wrapper?.classList.add("has-error")
+      if (node) {
+        node.textContent = message
+        node.classList.add("is-visible")
+      }
+    }
+
+    // Returns the first field that fails, after marking every failing field.
+    const validatePage = (page) => {
+      let firstInvalid = null
+      page.querySelectorAll(fieldSelector).forEach((field) => {
+        if (field.disabled || !isShown(field)) return
+        const message = messageFor(field)
+        if (!message) return
+        showError(field, message)
+        firstInvalid ||= field
+      })
+
+      // Checkbox groups (e.g. Theme / Product) need at least one choice.
+      page.querySelectorAll("[data-checkbox-group='true']").forEach((group) => {
+        if (!isShown(group)) return
+        const boxes = Array.from(group.querySelectorAll("input[type='checkbox']"))
+        if (boxes.length === 0 || boxes.some((box) => box.checked)) return
+        const node = group.querySelector("[data-field-error='true']")
+        group.classList.add("has-error")
+        if (node) {
+          node.textContent = `Select at least one ${(group.dataset.checkboxGroupLabel || "option").toLowerCase()}.`
+          node.classList.add("is-visible")
+        }
+        firstInvalid ||= boxes[0]
+      })
+
+      ;(form.appStepValidators || []).forEach(({ element, validate }) => {
+        if (!page.contains(element) || !isShown(element)) return
+        if (validate() === false) firstInvalid ||= element.querySelector(fieldSelector) || element
+      })
+      return firstInvalid
+    }
+
+    // Visual stepper built from the existing "Step N of M - Title" labels. Each
+    // step is a <label for=…>, so moving forward through it is guarded too.
+    const stepTitles = pages.map((_, index) => {
+      const row = Array.from(form.querySelectorAll(".app-static-pager-status"))[index]
+      const text = row?.textContent?.trim() || ""
+      return text.includes(" - ") ? text.split(" - ").slice(1).join(" - ") : `Step ${index + 1}`
+    })
+    const stepper = document.createElement("ol")
+    stepper.className = "app-form-stepper"
+    stepper.setAttribute("aria-label", "Form steps")
+    stepper.innerHTML = stepTitles.map((title, index) => `
+      <li class="app-form-stepper__item">
+        <label for="${toggles[index].id}" class="app-form-stepper__step">
+          <span class="app-form-stepper__dot">${index + 1}</span>
+          <span class="app-form-stepper__title">${title.replace(/[<>&]/g, "")}</span>
+        </label>
+      </li>`).join("")
+    pages[0].parentNode.insertBefore(stepper, pages[0])
+
+    const syncStepper = () => {
+      const active = toggles.findIndex((toggle) => toggle.checked)
+      stepper.querySelectorAll(".app-form-stepper__item").forEach((item, index) => {
+        item.classList.toggle("is-active", index === active)
+        item.classList.toggle("is-done", index < active)
+        // Narrow screens scroll the stepper: keep the current step in view.
+        if (index === active && stepper.scrollWidth > stepper.clientWidth) {
+          stepper.scrollLeft = item.offsetLeft - (stepper.clientWidth - item.offsetWidth) / 2
+        }
+      })
+    }
+    toggles.forEach((toggle) => toggle.addEventListener("change", syncStepper))
+    syncStepper()
+
+    // The submit button of the last step goes into the bottom bar, next to Previous.
+    const lastRowActions = Array.from(form.querySelectorAll(".app-static-pager-row"))[pages.length - 1]?.querySelector(".app-static-pager-actions")
+    const submitActions = pages[pages.length - 1].querySelector(":scope > .app-form-actions")
+    if (lastRowActions && submitActions) {
+      Array.from(submitActions.children).forEach((child) => lastRowActions.appendChild(child))
+      submitActions.remove()
+    }
+    enhancePagedFormFields(form)
+
+    const currentIndex = () => toggles.findIndex((toggle) => toggle.checked)
+    const goTo = (index) => {
+      toggles[index].checked = true
+      toggles[index].dispatchEvent(new Event("change", { bubbles: true }))
+    }
+    const focusInvalid = (element) => {
+      element.scrollIntoView({ block: "center", behavior: "smooth" })
+      if (typeof element.focus === "function") element.focus({ preventScroll: true })
+    }
+
+    // Clear a step-guard message as soon as the field is corrected.
+    form.addEventListener("input", (event) => clearIfValid(event.target))
+    form.addEventListener("change", (event) => clearIfValid(event.target))
+    function clearIfValid(field) {
+      if (!(field instanceof HTMLElement)) return
+      const group = field.closest("[data-checkbox-group='true']")
+      if (group) {
+        if (Array.from(group.querySelectorAll("input[type='checkbox']")).some((box) => box.checked)) {
+          group.classList.remove("has-error")
+          group.querySelector("[data-field-error='true']")?.classList.remove("is-visible")
+        }
+        return
+      }
+      if (!field.matches?.(fieldSelector) || messageFor(field)) return
+      field.closest(".app-form-field")?.classList.remove("has-error")
+      const node = errorNodeFor(field)
+      if (node) {
+        node.textContent = ""
+        node.classList.remove("is-visible")
+      }
+    }
+
+    form.addEventListener("click", (event) => {
+      // Only a real user click moves between steps through this guard.
+      if (!event.isTrusted) return
+      const label = event.target.closest("label[for]")
+      if (!label) return
+      const target = toggles.findIndex((toggle) => toggle.id === label.htmlFor)
+      const current = currentIndex()
+      if (target < 0 || current < 0 || target <= current) return
+
+      for (let index = current; index < target; index += 1) {
+        const invalid = validatePage(pages[index])
+        if (invalid) {
+          event.preventDefault()
+          if (index !== current) goTo(index)
+          focusInvalid(invalid)
+          return
+        }
+      }
+    }, true)
+
+    form.addEventListener("submit", (event) => {
+      for (let index = 0; index < pages.length; index += 1) {
+        const invalid = validatePage(pages[index])
+        if (invalid) {
+          event.preventDefault()
+          event.stopImmediatePropagation()
+          goTo(index)
+          focusInvalid(invalid)
+          return
+        }
+      }
+    }, true)
+  })
+}
+
+// Icons shown in front of form fields, picked from the field's name.
+const FIELD_ICONS = {
+  mail: '<path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/>',
+  phone: '<path d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .57 3.6 1 1 0 0 1-.25 1z"/>',
+  document: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
+  pin: '<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',
+  map: '<path d="m3 6 6-2 6 2 6-2v14l-6 2-6-2-6 2z"/><path d="M9 4v14M15 6v14"/>',
+  hash: '<path d="M5 9h14M5 15h14M10 3 8 21M16 3l-2 18"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/>',
+  message: '<path d="M4 5h16v11H8l-4 4z"/>',
+  grid: '<rect x="4" y="4" width="7" height="7" rx="1"/><rect x="13" y="4" width="7" height="7" rx="1"/><rect x="4" y="13" width="7" height="7" rx="1"/><rect x="13" y="13" width="7" height="7" rx="1"/>',
+  rupee: '<path d="M7 5h10M7 9h10M14 5c2.5 0 3 4 0 4H8l7 10"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+  bank: '<path d="m3 10 9-6 9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18"/>',
+  building: '<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2"/>'
+}
+
+const fieldIconFor = (control, labelText) => {
+  // Use the attribute part of "model[attribute]" so the model name does not decide the icon.
+  const attribute = (control.name || "").match(/\[([^\]]+)\](?:\[\])?$/)?.[1] || control.name || ""
+  const key = `${attribute} ${labelText}`.toLowerCase()
+  const rules = [
+    [/email/, "mail"], [/mobile|phone/, "phone"], [/thematic[ _]head|search/, "search"],
+    [/date/, "calendar"], [/pin_no|pin code|pincode/, "hash"], [/address/, "pin"],
+    [/state|district|block/, "map"], [/ifsc|account/, "hash"], [/bank/, "bank"],
+    [/gst|pan|registration|document|msme/, "document"], [/designation/, "briefcase"],
+    [/subject/, "document"], [/remark|description|profile|note/, "message"],
+    [/theme|stakeholder|category/, "grid"], [/bucket|value|amount|rate/, "rupee"],
+    [/firm_type|firm type/, "building"], [/firm|company/, "building"], [/name|person/, "user"]
+  ]
+  const match = rules.find(([pattern]) => pattern.test(key))
+  return match ? match[1] : null
+}
+
+// Visual polish for the paged forms: an icon in front of each field, a red
+// mark on required labels and a word counter where a word limit applies.
+// Fields inside the item / committee tables are left as they are.
+const enhancePagedFormFields = (form) => {
+  if (form.dataset.fieldsEnhanced === "true") return
+  form.dataset.fieldsEnhanced = "true"
+
+  form.querySelectorAll(".app-form-field").forEach((field) => {
+    if (field.closest("table:not(.app-rfp-form-table)")) return
+    const control = Array.from(field.querySelectorAll("input, select, textarea")).find((element) => {
+      if (element.closest(".app-field-icon, .app-multiselect-dropdown, [data-logic-note-help]")) return false
+      if (element.tagName === "INPUT" && /^(hidden|checkbox|radio|file|submit|button)$/.test(element.type)) return false
+      return true
+    })
+    if (!control) return
+
+    const label = field.querySelector("label:not(.visually-hidden)") || field.closest("tr")?.querySelector("th")
+    const labelText = label?.textContent?.trim() || ""
+    if (control.required && label && !label.classList.contains("is-required")) label.classList.add("is-required")
+
+    const icon = fieldIconFor(control, labelText)
+    if (icon && control.tagName !== "TEXTAREA") {
+      const wrapper = document.createElement("div")
+      wrapper.className = "app-field-icon"
+      wrapper.innerHTML = `<span class="app-field-icon__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${FIELD_ICONS[icon]}</svg></span>`
+      control.parentNode.insertBefore(wrapper, control)
+      wrapper.appendChild(control)
+    }
+
+    const maxWords = parseInt(control.dataset.maxWords || "0", 10)
+    if (maxWords > 0 && !field.querySelector("[data-word-counter]")) {
+      const counter = document.createElement("span")
+      counter.className = "app-word-counter"
+      counter.dataset.wordCounter = "true"
+      const update = () => {
+        const count = (control.value.match(/\b[\w]+\b/g) || []).length
+        counter.textContent = `${count}/${maxWords} words`
+        counter.classList.toggle("is-over", count > maxWords)
+      }
+      const anchor = control.closest(".app-field-icon") || control
+      anchor.insertAdjacentElement("afterend", counter)
+      control.addEventListener("input", update)
+      update()
+    }
+  })
+
+  // "Step 1 of 5 - Quotation Details" -> two lines
+  form.querySelectorAll(".app-static-pager-status").forEach((status) => {
+    if (status.dataset.split === "true") return
+    const [step, ...rest] = status.textContent.trim().split(" - ")
+    status.dataset.split = "true"
+    status.innerHTML = `<strong>${step.replace(/[<>&]/g, "")}</strong>${rest.length ? `<small>${rest.join(" - ").replace(/[<>&]/g, "")}</small>` : ""}`
+  })
+}
+
+// The same field polish on every form of the vendor registration and
+// quotation pages (single-page forms included).
+const setupProcurementFormFields = () => {
+  if (!document.body.classList.contains("app-procure")) return
+  document.querySelectorAll(".app-content form").forEach((form) => enhancePagedFormFields(form))
+}
+
+// Searchable dropdowns: every single-choice <select> gets a box you can type
+// in to filter its options. The real <select> stays in the form (hidden) and
+// keeps its value, events and validation, so all existing code still works.
+const SEARCHABLE_SELECT_SKIP = "[multiple], [size]:not([size='0']):not([size='1']), [data-native-select], .app-static-page-toggle"
+
+const enhanceSearchableSelect = (select) => {
+  if (select.dataset.searchableReady === "true" || select.matches(SEARCHABLE_SELECT_SKIP)) return
+  if (select.closest("[data-native-selects], .dataTables_length")) return
+  select.dataset.searchableReady = "true"
+
+  const combo = document.createElement("div")
+  combo.className = "app-combo"
+  const input = document.createElement("input")
+  input.type = "text"
+  input.className = `${select.className} app-combo__input`.trim()
+  input.setAttribute("role", "combobox")
+  input.setAttribute("aria-expanded", "false")
+  input.setAttribute("aria-autocomplete", "list")
+  input.autocomplete = "off"
+  const label = select.id ? document.querySelector(`label[for="${CSS.escape(select.id)}"]`) : null
+  if (label) {
+    input.id = `${select.id}__search`
+    label.htmlFor = input.id
+  } else if (select.getAttribute("aria-label")) {
+    input.setAttribute("aria-label", select.getAttribute("aria-label"))
+  }
+  combo.appendChild(input)
+  select.insertAdjacentElement("afterend", combo)
+  select.classList.add("app-combo__native")
+  select.tabIndex = -1
+
+  const list = document.createElement("ul")
+  list.className = "app-combo__list"
+  list.setAttribute("role", "listbox")
+  list.hidden = true
+  document.body.appendChild(list)
+
+  let matches = []
+  let active = -1
+  let open = false
+
+  const optionsNow = () => Array.from(select.options).filter((option) => !option.hidden)
+  const placeholderOption = () => Array.from(select.options).find((option) => option.value === "")
+  const selectedText = () => {
+    const option = select.selectedOptions[0]
+    return option && option.value !== "" ? option.textContent.trim() : ""
+  }
+
+  const sync = () => {
+    if (!open) input.value = selectedText()
+    input.placeholder = placeholderOption()?.textContent.trim() || "Select"
+    input.disabled = select.disabled
+    combo.classList.toggle("is-disabled", select.disabled)
+    combo.hidden = select.hidden
+  }
+
+  const position = () => {
+    const rect = input.getBoundingClientRect()
+    const below = window.innerHeight - rect.bottom
+    const height = Math.min(300, list.scrollHeight || 300)
+    list.style.left = `${Math.max(4, rect.left)}px`
+    list.style.width = `${Math.max(rect.width, 180)}px`
+    if (below < height + 12 && rect.top > below) {
+      list.style.top = ""
+      list.style.bottom = `${window.innerHeight - rect.top + 4}px`
+    } else {
+      list.style.bottom = ""
+      list.style.top = `${rect.bottom + 4}px`
+    }
+  }
+
+  const escapeHtml = (text) => text.replace(/[&<>"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[char]))
+
+  const render = () => {
+    const query = open && input.dataset.typed === "true" ? input.value.trim().toLowerCase() : ""
+    const words = query.split(/\s+/).filter(Boolean)
+    matches = optionsNow().filter((option) => {
+      if (option.value === "" && words.length) return false
+      const text = option.textContent.toLowerCase()
+      return words.every((word) => text.includes(word))
+    })
+    const shown = matches.slice(0, 300)
+    if (active >= shown.length) active = shown.length - 1
+    list.innerHTML = shown.length
+      ? shown.map((option, index) => {
+          let text = escapeHtml(option.textContent.trim())
+          words.forEach((word) => {
+            text = text.replace(new RegExp(`(${word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "ig"), "<mark>$1</mark>")
+          })
+          const classes = ["app-combo__option"]
+          if (index === active) classes.push("is-active")
+          if (option.selected && option.value !== "") classes.push("is-selected")
+          if (option.disabled) classes.push("is-disabled")
+          if (option.value === "") classes.push("is-placeholder")
+          return `<li class="${classes.join(" ")}" role="option" data-index="${index}" aria-selected="${option.selected}">${text}</li>`
+        }).join("") + (matches.length > shown.length ? `<li class="app-combo__more">Type to narrow ${matches.length - shown.length} more…</li>` : "")
+      : `<li class="app-combo__empty">No match found</li>`
+    position()
+    list.querySelector(".is-active")?.scrollIntoView({ block: "nearest" })
+  }
+
+  const openList = () => {
+    if (select.disabled || open) return
+    open = true
+    input.dataset.typed = "false"
+    active = Math.max(0, optionsNow().filter((option) => !option.hidden).findIndex((option) => option.selected && option.value !== ""))
+    list.hidden = false
+    input.setAttribute("aria-expanded", "true")
+    combo.classList.add("is-open")
+    render()
+    input.select()
+  }
+
+  const closeList = () => {
+    if (!open) return
+    open = false
+    list.hidden = true
+    input.setAttribute("aria-expanded", "false")
+    combo.classList.remove("is-open")
+    input.dataset.typed = "false"
+    input.value = selectedText()
+  }
+
+  const choose = (option) => {
+    if (!option || option.disabled) return
+    const changed = select.value !== option.value
+    select.value = option.value
+    closeList()
+    if (changed) {
+      select.dispatchEvent(new Event("input", { bubbles: true }))
+      select.dispatchEvent(new Event("change", { bubbles: true }))
+    }
+  }
+
+  input.addEventListener("focus", openList)
+  input.addEventListener("click", openList)
+  input.addEventListener("input", () => {
+    if (!open) openList()
+    input.dataset.typed = "true"
+    active = 0
+    render()
+  })
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault()
+      if (!open) return openList()
+      const count = Math.min(matches.length, 300)
+      if (!count) return
+      active = (active + (event.key === "ArrowDown" ? 1 : -1) + count) % count
+      render()
+    } else if (event.key === "Enter") {
+      if (!open) return
+      event.preventDefault()
+      choose(matches[active])
+    } else if (event.key === "Escape") {
+      if (open) { event.preventDefault(); closeList() }
+    } else if (event.key === "Tab") {
+      if (open && input.dataset.typed === "true" && matches.length === 1) choose(matches[0])
+      closeList()
+    }
+  })
+  input.addEventListener("blur", () => setTimeout(() => {
+    if (document.activeElement !== input) closeList()
+  }, 120))
+  list.addEventListener("mousedown", (event) => {
+    event.preventDefault()
+    const item = event.target.closest("[data-index]")
+    if (item) choose(matches[Number(item.dataset.index)])
+  })
+
+  // The hidden select may still receive focus (e.g. from the step check).
+  select.addEventListener("focus", () => input.focus())
+  select.addEventListener("change", sync)
+  select.form?.addEventListener("reset", () => setTimeout(sync, 0))
+
+  // Code that sets select.value directly does not fire events: watch it too.
+  ;["value", "selectedIndex"].forEach((property) => {
+    const descriptor = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, property)
+    Object.defineProperty(select, property, {
+      configurable: true,
+      get() { return descriptor.get.call(this) },
+      set(value) { descriptor.set.call(this, value); sync() }
+    })
+  })
+  new MutationObserver(() => { sync(); if (open) render() })
+    .observe(select, { childList: true, subtree: true, attributes: true, attributeFilter: ["disabled", "hidden", "selected"] })
+
+  const reposition = () => { if (open) position() }
+  window.addEventListener("resize", reposition)
+  document.addEventListener("scroll", (event) => {
+    if (open && !list.contains(event.target)) closeList()
+  }, true)
+  document.addEventListener("turbo:before-cache", () => { closeList(); list.remove() }, { once: true })
+
+  sync()
+}
+
+const setupSearchableSelects = (root = document) => {
+  root.querySelectorAll("select").forEach(enhanceSearchableSelect)
+
+  if (!window.appSearchableSelectObserver) {
+    let pending = false
+    window.appSearchableSelectObserver = new MutationObserver((mutations) => {
+      if (pending) return
+      if (!mutations.some((mutation) => Array.from(mutation.addedNodes).some((node) => node.nodeType === 1 && (node.matches("select") || node.querySelector?.("select"))))) return
+      pending = true
+      requestAnimationFrame(() => {
+        pending = false
+        document.querySelectorAll("select:not([data-searchable-ready])").forEach(enhanceSearchableSelect)
+      })
+    })
+    window.appSearchableSelectObserver.observe(document.body, { childList: true, subtree: true })
+  }
+}
+
 const setupFormPagination = () => {
   document.querySelectorAll("[data-ui-form-pager='true']").forEach((form) => {
     if (form.dataset.uiFormPagerReady === "true") return
@@ -512,8 +1021,15 @@ const setupFormDraftAutosave = () => {
         field.value = savedValues[0] || ""
       }
 
-      field.dispatchEvent(new Event("input", { bubbles: true }))
-      field.dispatchEvent(new Event("change", { bubbles: true }))
+      // Validators skip these events: a restored draft must not show errors
+      // before the user has done anything.
+      form.dataset.draftRestoring = "true"
+      try {
+        field.dispatchEvent(new Event("input", { bubbles: true }))
+        field.dispatchEvent(new Event("change", { bubbles: true }))
+      } finally {
+        delete form.dataset.draftRestoring
+      }
     })
   }
 
@@ -856,6 +1372,7 @@ const setupQuotationProposalForm = () => {
 
     const validateField = (input) => {
       if (!input || input.disabled || input.type === "hidden") return true
+      if (form.dataset.draftRestoring === "true") return true
 
       clearFieldError(input)
 
@@ -1292,6 +1809,13 @@ const setupQuotationProposalForm = () => {
     const headIdField = form?.querySelector("[name='quotation_proposal[thematic_head_id]']")
     const headNote = form?.querySelector("[data-thematic-head-committee-note]")
     const headChosen = () => Boolean(headIdField?.value)
+    // One vendor (Above 10K): approved by the Director only, no committee step.
+    const singleVendorNote = form?.querySelector("[data-single-vendor-committee-note]")
+    const singleVendor = () => {
+      const bucket = form?.querySelector("#quotation_proposal_procurement_amount_bucket")?.value
+      const checked = form ? form.querySelectorAll(".quotation-vendor-checkbox:checked").length : 0
+      return bucket !== "below_10k" && checked === 1
+    }
     const memberOptions = searchField?.list ? Array.from(searchField.list.options) : []
     let policy = {}
     try {
@@ -1337,8 +1861,9 @@ const setupQuotationProposalForm = () => {
 
     const renderPolicy = () => {
       const required = committeeRequired()
-      container.hidden = headChosen()
-      if (headNote) headNote.hidden = !headChosen()
+      container.hidden = headChosen() || singleVendor()
+      if (headNote) headNote.hidden = !headChosen() || singleVendor()
+      if (singleVendorNote) singleVendorNote.hidden = !singleVendor()
       if (skippedNotice) skippedNotice.hidden = required
       if (policyBlock) policyBlock.hidden = !required
 
@@ -1389,7 +1914,7 @@ const setupQuotationProposalForm = () => {
 
     const validateCommittee = ({ showEmpty = false } = {}) => {
       const members = renderPolicy()
-      if (!committeeRequired() || headChosen()) {
+      if (!committeeRequired() || headChosen() || singleVendor()) {
         setError("")
         return true
       }
@@ -1432,6 +1957,9 @@ const setupQuotationProposalForm = () => {
       if (event.target.matches("[name$='[quantity]'], [name$='[max_rate]']")) renderPolicy()
       if (event.target.matches("#thematic-head-search")) validateCommittee()
     })
+    form?.addEventListener("change", (event) => {
+      if (event.target.matches(".quotation-vendor-checkbox, #quotation_proposal_procurement_amount_bucket")) validateCommittee()
+    })
     form?.addEventListener("click", (event) => {
       if (event.target.closest("[data-remove-quotation-item], [data-add-quotation-item]")) setTimeout(renderPolicy, 0)
     })
@@ -1444,31 +1972,128 @@ const setupQuotationProposalForm = () => {
       }
     })
     approvalRoute?.addEventListener("change", () => validateCommittee())
+    registerStepValidator(form, container, () => validateCommittee({ showEmpty: true }))
 
     fillSearchFromId()
     renderPolicy()
     container.dataset.ready = "true"
   })
 
-  if (vendorDropdown) {
+  // Initialisers can run twice (turbo:load and DOMContentLoaded); bind once.
+  if (vendorDropdown && vendorDropdown.dataset.vendorRuleReady !== "true") {
+    vendorDropdown.dataset.vendorRuleReady = "true"
     const form = vendorDropdown.closest("[data-quotation-validation-form]")
     const errorNode = form?.querySelector("[data-vendor-selection-error='true']")
     const fieldWrapper = form?.querySelector("[data-vendor-selection-field]")
     const vendorCheckboxes = Array.from(vendorDropdown.querySelectorAll(".quotation-vendor-checkbox"))
 
-    const validateVendorSelection = () => {
-      const hasSelectedVendor = vendorCheckboxes.some((checkbox) => checkbox.checked)
-      if (fieldWrapper) fieldWrapper.classList.toggle("has-error", !hasSelectedVendor)
-      if (errorNode) {
-        errorNode.textContent = hasSelectedVendor ? "" : "Select at least one vendor."
-        errorNode.classList.toggle("is-visible", !hasSelectedVendor)
+    const bucketField = form?.querySelector("#quotation_proposal_procurement_amount_bucket")
+    const justificationBlock = form?.querySelector("[data-single-vendor-justification]")
+    const justificationField = justificationBlock?.querySelector("textarea")
+    // Above 10K: 3 or more vendors, or exactly one vendor with a note.
+    const vendorRuleApplies = () => bucketField?.value !== "below_10k"
+
+    const validateVendorSelection = ({ quiet = false } = {}) => {
+      const count = vendorCheckboxes.filter((checkbox) => checkbox.checked).length
+      let message = ""
+      if (count === 0) {
+        message = "Select at least one vendor."
+      } else if (vendorRuleApplies() && count === 2) {
+        message = "Select at least 3 vendors, or a single vendor with a Logic Note."
       }
-      return hasSelectedVendor
+
+      const single = vendorRuleApplies() && count === 1
+      if (justificationBlock) justificationBlock.hidden = !single
+      if (justificationField) justificationField.required = single
+      if (quiet) return !message
+
+      if (fieldWrapper) fieldWrapper.classList.toggle("has-error", Boolean(message))
+      if (errorNode) {
+        errorNode.textContent = message
+        errorNode.classList.toggle("is-visible", Boolean(message))
+      }
+      return !message
     }
 
+    // Lets the step guard check the vendor choice before leaving this step.
+    registerStepValidator(form, fieldWrapper, () => validateVendorSelection())
+
+    // Draft restore fires synthetic change events: update the Logic Note block
+    // but show an error only after a real change by the user.
     vendorCheckboxes.forEach((checkbox) => {
-      checkbox.addEventListener("change", validateVendorSelection)
+      checkbox.addEventListener("change", (event) => validateVendorSelection({ quiet: !event.isTrusted }))
     })
+    bucketField?.addEventListener("change", (event) => validateVendorSelection({ quiet: !event.isTrusted }))
+    validateVendorSelection({ quiet: true })
+
+    // Logic Note: "i" shows the sample format, which can be inserted into the field.
+    const logicNoteToggle = form?.querySelector("[data-logic-note-toggle]")
+    const logicNoteHelp = form?.querySelector("[data-logic-note-help]")
+    const logicNoteCount = form?.querySelector("[data-logic-note-count]")
+    const setLogicNoteHelp = (open) => {
+      if (!logicNoteHelp) return
+      logicNoteHelp.hidden = !open
+      logicNoteToggle?.setAttribute("aria-expanded", String(open))
+    }
+    const updateLogicNoteCount = () => {
+      if (!logicNoteCount || !justificationField) return
+      logicNoteCount.textContent = String((justificationField.value.match(/\b[\w]+\b/g) || []).length)
+    }
+    logicNoteToggle?.addEventListener("click", () => setLogicNoteHelp(logicNoteHelp?.hidden))
+    form?.querySelector("[data-logic-note-close]")?.addEventListener("click", () => setLogicNoteHelp(false))
+    // Fills the format with what this Request for Proposal already contains;
+    // anything not filled in yet stays as a [ ] placeholder.
+    const logicNoteValues = () => {
+      const rupees = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 })
+      const text = (node) => node?.textContent?.replace(/\s+/g, " ").trim() || ""
+      // The format already starts with "Procurement of", so do not repeat it.
+      const subject = form.querySelector("[name='quotation_proposal[subject]']")?.value.trim().replace(/^procurement\s+of\s+/i, "")
+      const themeSelect = form.querySelector("#quotation_proposal_theme_id")
+      const theme = themeSelect?.value ? text(themeSelect.selectedOptions[0]) : ""
+      const vendor = vendorCheckboxes.filter((checkbox) => checkbox.checked)
+        .map((checkbox) => text(checkbox.closest("[data-vendor-option]")?.querySelector("strong")))
+        .filter(Boolean).join(", ")
+      const endDate = form.querySelector("[name='quotation_proposal[proposal_end_date]']")?.value
+      const formattedDate = endDate ? endDate.split("-").reverse().join("-") : ""
+
+      let total = 0
+      const items = Array.from(form.querySelectorAll("[data-quotation-item-row]")).filter((row) => {
+        const destroyField = row.querySelector("[data-quotation-item-destroy]")
+        return row.style.display !== "none" && (!destroyField || destroyField.value !== "1")
+      }).map((row) => {
+        const nameSelect = row.querySelector("[name$='[item_name]']")
+        const name = nameSelect?.value ? (text(nameSelect.selectedOptions?.[0]) || nameSelect.value) : ""
+        const unitSelect = row.querySelector("[name$='[unit_id]']")
+        const unit = unitSelect?.value ? text(unitSelect.selectedOptions[0]) : ""
+        const quantity = Number(row.querySelector("[name$='[quantity]']")?.value || 0)
+        const maxRate = Number(row.querySelector("[name$='[max_rate]']")?.value || 0)
+        if (!name || !quantity || !maxRate) return null
+        total += quantity * maxRate
+        return `- ${name}: ${quantity} ${unit} x Rs. ${rupees.format(maxRate)} = Rs. ${rupees.format(quantity * maxRate)}`.replace(/\s+x/, " x")
+      }).filter(Boolean)
+
+      return {
+        subject: subject || "[item / purpose]",
+        theme: theme || "[theme]",
+        items: items.length ? items.join("\n") : "- [Item]: [qty] [unit] x Rs. [max rate] = Rs. [amount]",
+        total: items.length ? rupees.format(total) : "[total]",
+        vendor: vendor || "[vendor name]",
+        end_date: formattedDate || "[date]"
+      }
+    }
+
+    form?.querySelector("[data-logic-note-use]")?.addEventListener("click", () => {
+      const template = form.querySelector("[data-logic-note-template]")
+      if (!template || !justificationField) return
+      const values = logicNoteValues()
+      const text = template.content.textContent.trim().replace(/\{\{(\w+)\}\}/g, (match, key) => values[key] ?? match)
+      justificationField.value = justificationField.value.trim() ? `${justificationField.value.trim()}\n\n${text}` : text
+      justificationField.dispatchEvent(new Event("input", { bubbles: true }))
+      setLogicNoteHelp(false)
+      justificationField.focus()
+    })
+    justificationField?.addEventListener("input", updateLogicNoteCount)
+    updateLogicNoteCount()
 
     form?.addEventListener("submit", (event) => {
       if (!validateVendorSelection()) event.preventDefault()
@@ -1996,6 +2621,9 @@ const runAppInitializers = () => {
   setupPasswordVisibility()
   setupQuotationShowDetails()
   setupEmployeePickers()
+  setupStaticPagerValidation()
+  setupProcurementFormFields()
+  setupSearchableSelects()
   setupTruncatedCellTooltips()
   setupCopyLinkButtons()
   setupAutoDismissFlash()

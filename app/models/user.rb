@@ -36,8 +36,15 @@ class User < ApplicationRecord
   def employee_master
     lookup_email = email.to_s.strip.downcase
     return if lookup_email.blank?
+    return @employee_master if @employee_master && @employee_master_email == lookup_email
 
-    EmployeeMaster.find_by("LOWER(TRIM(email_id)) = ?", lookup_email)
+    @employee_master_email = lookup_email
+    @employee_master = EmployeeMaster.find_by("LOWER(TRIM(email_id)) = ?", lookup_email)
+  end
+
+  def reload(*)
+    @employee_master = nil
+    super
   end
 
   private

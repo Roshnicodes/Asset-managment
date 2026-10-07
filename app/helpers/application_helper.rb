@@ -1,6 +1,13 @@
 module ApplicationHelper
   APP_SVG_ICONS = {
     brand: '<path d="M7 8a3 3 0 0 1 3-3h6.2L21 9.8V19a3 3 0 0 1-3 3H10a3 3 0 0 1-3-3V8Z"/><path d="M16.2 5v3.2A1.8 1.8 0 0 0 18 10h3"/><path d="M11 13h6"/><path d="M11 17h4"/>',
+    cart: '<circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L20.5 8H6.1"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+    bell: '<path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+    clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    bolt: '<path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/>',
+    chart: '<path d="M5 20V10M10 20V4M15 20v-7M20 20V8"/>',
+    pie: '<path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/>',
     dashboard: '<path d="M4 12.5 12 5l8 7.5"/><path d="M6.5 10.5V20h11V10.5"/><path d="M10 20v-5h4v5"/>',
     office: '<rect x="4" y="6" width="16" height="14" rx="2"/><path d="M8 10h8"/><path d="M8 14h3"/><path d="M14 14h2"/><path d="M8 18h8"/>',
     map: '<path d="M9 5 4 7v12l5-2 6 2 5-2V5l-5 2-6-2Z"/><path d="M9 5v12"/><path d="M15 7v12"/>',
@@ -115,7 +122,9 @@ module ApplicationHelper
     return fallback if stakeholder.blank?
 
     if stakeholder.respond_to?(:logo_file) && stakeholder.logo_file.attached?
-      rails_blob_path(stakeholder.logo_file, only_path: true)
+      # Proxy URL is stable and served with long cache headers, so the logo
+      # is not downloaded again on every page.
+      rails_storage_proxy_path(stakeholder.logo_file, only_path: true)
     elsif stakeholder.respond_to?(:logo_url) && stakeholder.logo_url.present?
       stakeholder.logo_url
     else
@@ -146,42 +155,39 @@ module ApplicationHelper
     employee = current_employee_master
     return false unless employee
     
-    # If User Type is User, check permissions
-    role_perms = MenuPermission.where(stakeholder_category_id: employee.stakeholder_category_id, designation: employee.designation)
-    return false if role_perms.empty? # By default, when new employee logs in, nothing is visible
+    # If User Type is User, check permissions (loaded once per request)
+    return false if role_menu_permissions.empty? # By default, when new employee logs in, nothing is visible
 
     if identifier == "office_category_main"
-      office_menu_ids = %w[office_category_master office_category_name office_pmu office_fco office_to]
-      return true if role_perms.where(menu_identifier: office_menu_ids, can_view: true).exists?
+      return true if role_menu_any_viewable?(%w[office_category_master office_category_name office_pmu office_fco office_to])
     end
 
     if identifier == "office_category_master"
-      return true if role_perms.where(menu_identifier: %w[office_category_master office_pmu office_fco office_to], can_view: true).exists?
+      return true if role_menu_any_viewable?(%w[office_category_master office_pmu office_fco office_to])
     end
 
     if identifier == "office_category_name"
-      return true if role_perms.where(menu_identifier: %w[office_category_name office_pmu office_fco office_to], can_view: true).exists?
+      return true if role_menu_any_viewable?(%w[office_category_name office_pmu office_fco office_to])
     end
 
     if identifier == "vendor_registration_main"
-      return true if role_perms.find_by(menu_identifier: "vendor_registration")&.can_view?
-      return true if role_perms.find_by(menu_identifier: "vendor_registration_list")&.can_view?
+      return true if role_menu_viewable?("vendor_registration")
+      return true if role_menu_viewable?("vendor_registration_list")
     end
 
     if identifier == "quotation_proposal_main"
-      return true if role_perms.find_by(menu_identifier: "quotation_proposal_form")&.can_view?
-      return true if role_perms.find_by(menu_identifier: "quotation_proposal_list")&.can_view?
+      return true if role_menu_viewable?("quotation_proposal_form")
+      return true if role_menu_viewable?("quotation_proposal_list")
       return true if finance_queue_access?
     end
 
     if identifier == "assets"
-      return true if role_perms.find_by(menu_identifier: "assets")&.can_view?
-      return true if role_perms.find_by(menu_identifier: "quotation_proposal_form")&.can_view?
-      return true if role_perms.find_by(menu_identifier: "quotation_proposal_list")&.can_view?
+      return true if role_menu_viewable?("assets")
+      return true if role_menu_viewable?("quotation_proposal_form")
+      return true if role_menu_viewable?("quotation_proposal_list")
     end
-    
-    perm = role_perms.find_by(menu_identifier: identifier)
-    perm ? perm.can_view? : false
+
+    role_menu_viewable?(identifier)
   end
 
   def notification_target_path(notification)

@@ -600,6 +600,178 @@
     line-height: 1.25 !important;
   }
 
+  /* Contents stay in view while the sections scroll */
+  @media (min-width: 992px) {
+    .user-manual-sidebar {
+      position: sticky !important;
+      top: 14px !important;
+      align-self: start !important;
+    }
+  }
+
+  /* Who should read what */
+  .um-role-guide {
+    margin: 0 0 18px !important;
+    padding: 16px 18px !important;
+    border: 1px solid #e1ece6 !important;
+    border-radius: 16px !important;
+    background: #ffffff !important;
+  }
+
+  .um-role-guide__title {
+    margin: 0 0 12px !important;
+    color: #0b3d33 !important;
+    font-size: 1.05rem !important;
+    font-weight: 800 !important;
+  }
+
+  .um-role-guide__grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .um-role-card {
+    padding: 12px 14px !important;
+    border: 1px solid #e1ece6 !important;
+    border-left: 4px solid #1aa36f !important;
+    border-radius: 12px !important;
+    background: #f8fcfa !important;
+  }
+
+  .um-role-card strong {
+    color: #0b3d33 !important;
+    font-size: 0.95rem !important;
+  }
+
+  .um-role-card p {
+    margin: 4px 0 8px !important;
+    color: #526359 !important;
+    font-size: 0.84rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .um-role-card__links {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 5px !important;
+  }
+
+  .um-role-card__links a {
+    padding: 2px 8px !important;
+    border-radius: 999px !important;
+    background: #e3f3ea !important;
+    color: #0f6b55 !important;
+    font-size: 0.74rem !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+  }
+
+  .um-role-card__links a:hover {
+    background: #cdeedd !important;
+  }
+
+  /* Status meanings */
+  .um-status-grid {
+    display: grid !important;
+    gap: 8px !important;
+    padding: 4px 0 !important;
+  }
+
+  .um-status-row {
+    display: grid !important;
+    grid-template-columns: minmax(170px, 240px) 1fr !important;
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 8px 10px !important;
+    border-bottom: 1px solid #eef3ef !important;
+    font-size: 0.92rem !important;
+    color: #26372e !important;
+  }
+
+  .um-status-pill {
+    justify-self: start !important;
+    padding: 3px 10px !important;
+    border-radius: 999px !important;
+    background: #eef2f6 !important;
+    color: #475569 !important;
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+  }
+
+  .um-status-pill--green { background: #e3f6ec !important; color: #0f7a55 !important; }
+  .um-status-pill--amber { background: #fff4dc !important; color: #8a5a00 !important; }
+  .um-status-pill--orange { background: #ffecd9 !important; color: #a65300 !important; }
+  .um-status-pill--red { background: #fde7ee !important; color: #b4234a !important; }
+  .um-status-pill--blue { background: #e8f0fd !important; color: #1d5bbf !important; }
+  .um-status-pill--purple { background: #f1ebfe !important; color: #6d3fd1 !important; }
+
+  /* Common problems */
+  .um-faq {
+    display: grid !important;
+    gap: 8px !important;
+  }
+
+  .um-faq__item {
+    border: 1px solid #e1ece6 !important;
+    border-radius: 12px !important;
+    background: #ffffff !important;
+  }
+
+  .um-faq__item summary {
+    padding: 11px 14px !important;
+    color: #0b3d33 !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+  }
+
+  .um-faq__item[open] summary {
+    border-bottom: 1px solid #eef3ef !important;
+  }
+
+  .um-faq__item p {
+    margin: 0 !important;
+    padding: 10px 14px 12px !important;
+    color: #26372e !important;
+    font-size: 0.92rem !important;
+    line-height: 1.5 !important;
+  }
+
+  @media (max-width: 767px) {
+    .um-status-row {
+      grid-template-columns: 1fr !important;
+      gap: 4px !important;
+    }
+  }
+
+  /* Steps that point to a number on the screenshot use the same orange badge */
+  .um-step-row .um-step-marker.um-step-marker--screen {
+    background: #ff6a00 !important;
+    border-color: #ff6a00 !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 0 2px #ffffff, 0 0 0 3px #ff6a00 !important;
+  }
+
+  .um-step-row .um-step-marker.um-step-marker--plain {
+    color: #0f6b55 !important;
+    font-size: 1.1rem !important;
+  }
+
+  .um-role-chip {
+    margin-left: auto !important;
+    padding: 3px 10px !important;
+    border-radius: 999px !important;
+    background: #fff4d6 !important;
+    color: #7a5200 !important;
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+  }
+
+  .um-role-chip strong {
+    font-weight: 800 !important;
+  }
+
   .um-step-badge {
     font-size: 0.78rem !important;
     font-weight: 750 !important;
