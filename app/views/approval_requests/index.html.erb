@@ -1,321 +1,181 @@
-<style>
-  .approval-requests-table {
-    min-width: 1180px !important;
-    table-layout: fixed !important;
-  }
+<% tabs = [
+  ["pending", "Pending", :clock, "amber"],
+  ["approved", "Approved", :approval, "green"],
+  ["returned", "Returned", :undo, "blue"],
+  ["rejected", "Rejected", :x_circle, "red"],
+  ["all", "All", :document, "slate"]
+] %>
+<% rows = [] %>
+<% rows += @pending_approval_requests.to_a.map { |request| [request, :pending] } if @status.in?(%w[pending all]) %>
+<% rows += @processed_approval_requests.to_a.map { |request| [request, :processed] } if @status.in?(%w[approved returned rejected all]) %>
 
-  .approval-requests-table .approval-requests-table__trail {
-    width: 20rem !important;
-    min-width: 20rem !important;
-    max-width: 20rem !important;
-    overflow: visible !important;
-  }
-
-  .approval-requests-table .approval-trail-summary {
-    display: flex !important;
-    align-items: flex-start !important;
-    flex-direction: row !important;
-    flex-wrap: wrap !important;
-    gap: 0.35rem !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
-    max-height: none !important;
-    overflow: visible !important;
-    overflow-x: visible !important;
-    overflow-y: visible !important;
-    padding: 0.4rem !important;
-    border: 1px solid #dce9df !important;
-    border-radius: 12px !important;
-    background: #f8fcf9 !important;
-  }
-
-  .approval-requests-table .approval-trail-summary::before {
-    display: none !important;
-    content: none !important;
-  }
-
-  .approval-requests-table .approval-trail-summary__item {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) auto !important;
-    gap: 0.12rem 0.35rem !important;
-    flex: 0 1 calc(50% - 0.18rem) !important;
-    width: auto !important;
-    min-width: 8.5rem !important;
-    max-width: calc(50% - 0.18rem) !important;
-    height: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
-    margin: 0 !important;
-    padding: 0.38rem 0.45rem !important;
-    border: 1px solid #e2eee5 !important;
-    border-radius: 10px !important;
-    background: #ffffff !important;
-    box-shadow: 0 4px 10px rgba(11, 74, 79, 0.03) !important;
-  }
-
-  .approval-requests-table .approval-trail-summary__item::before {
-    display: none !important;
-    content: none !important;
-  }
-
-  .approval-requests-table .approval-trail-summary__level,
-  .approval-requests-table .approval-trail-summary__name,
-  .approval-requests-table .approval-trail-summary__status {
-    min-width: 0 !important;
-    max-width: 100% !important;
-    overflow: hidden !important;
-    white-space: nowrap !important;
-    text-overflow: ellipsis !important;
-    overflow-wrap: normal !important;
-  }
-
-  .approval-requests-table .approval-trail-summary__level {
-    grid-column: 1 / 2 !important;
-    color: var(--brand-deep) !important;
-    font-size: 0.66rem !important;
-    font-weight: 900 !important;
-    line-height: 1.15 !important;
-  }
-
-  .approval-requests-table .approval-trail-summary__name {
-    grid-column: 1 / -1 !important;
-    color: var(--text-main) !important;
-    font-weight: 800 !important;
-    font-size: 0.72rem !important;
-    line-height: 1.2 !important;
-  }
-
-  .approval-requests-table .approval-trail-summary__status {
-    grid-column: 2 / 3 !important;
-    grid-row: 1 / 2 !important;
-    align-self: center !important;
-    justify-self: end !important;
-    padding: 0.16rem 0.42rem !important;
-    border-radius: 999px !important;
-    background: #f3f8f5 !important;
-    color: var(--text-soft) !important;
-    font-size: 0.64rem !important;
-    font-weight: 900 !important;
-    text-align: right !important;
-    line-height: 1.15 !important;
-  }
-
-  .approval-requests-table .approval-trail-summary__item--approved .approval-trail-summary__status {
-    background: #ecf8ef !important;
-    color: #237a3d !important;
-  }
-
-  .approval-requests-table .approval-trail-summary__item--pending .approval-trail-summary__status {
-    background: #eafcff !important;
-    color: #0d5c63 !important;
-  }
-
-  .approval-requests-table .approval-trail-summary__item--returned .approval-trail-summary__status {
-    background: #fff7e5 !important;
-    color: #9a6700 !important;
-  }
-
-  .approval-requests-table .approval-trail-summary__item--rejected .approval-trail-summary__status {
-    background: #fff0ef !important;
-    color: #b42318 !important;
-  }
-
-  @media (max-width: 760px) {
-    .approval-requests-table .approval-requests-table__trail {
-      width: 17rem !important;
-      min-width: 17rem !important;
-      max-width: 17rem !important;
-    }
-
-    .approval-requests-table .approval-trail-summary__item {
-      flex-basis: 100% !important;
-      max-width: 100% !important;
-    }
-  }
-</style>
-
-<div class="app-hero-card">
-  <div class="app-hero-copy">
-    <span class="app-hero-eyebrow">Workflow Desk</span>
-    <h1 class="app-hero-title"><%= @form_name.presence || "My Approvals" %></h1>
-    <p class="app-hero-text">Review pending and processed approval requests from one place.</p>
-  </div>
-  <div class="app-hero-meta">
-    <div class="app-hero-stat">
-      <strong><%= @pending_approval_requests.size %></strong>
-      <span>Pending</span>
-    </div>
-    <div class="app-hero-stat">
-      <strong><%= @processed_approval_requests.size %></strong>
-      <span>Processed</span>
-    </div>
-  </div>
-</div>
-
-<div class="app-filter-pills">
-  <% %w[pending approved returned rejected all].each do |s| %>
-    <%= link_to s.titleize, approval_requests_path(status: s, form_name: @form_name), class: "app-filter-pill #{'is-active' if @status == s}" %>
-  <% end %>
-</div>
-
-<% if @status == 'pending' || @status == 'all' %>
-  <div class="app-admin-panel" style="margin-bottom: 1.5rem;">
-    <div class="app-admin-panel-header">
+<div class="appr">
+  <section class="appr-head">
+    <div class="appr-head__title">
+      <span class="appr-head__icon"><%= app_icon(:approval, size: 30) %></span>
       <div>
-        <h2 class="app-admin-panel-title">Pending Approvals</h2>
-        <p class="app-section-note mb-0">This section shows requests where your action is currently expected.</p>
+        <h1><%= @form_name.presence || "My Approvals" %></h1>
+        <p>Review and process approval requests from one place.</p>
       </div>
     </div>
+    <div class="appr-stats">
+      <% tabs.first(4).each do |key, label, icon, tone| %>
+        <%= link_to approval_requests_path(status: key, form_name: @form_name), class: "appr-stat appr-stat--#{tone}#{' is-active' if @status == key}" do %>
+          <span class="appr-stat__icon"><%= app_icon(icon, size: 22) %></span>
+          <span><strong><%= @status_counts[key] %></strong><small><%= label %></small></span>
+        <% end %>
+      <% end %>
+    </div>
+  </section>
 
-    <div class="app-table-wrap approval-requests-table-wrap">
-    <table class="table app-table approval-requests-table" data-sortable-table="true">
-      <thead>
-        <tr>
-          <th data-sort-direction="none"><button type="button" class="app-table-sort-trigger" data-sort-trigger data-sort-index="0">Form</button></th>
-          <th data-sort-direction="none"><button type="button" class="app-table-sort-trigger" data-sort-trigger data-sort-index="1">Reference</button></th>
-          <th data-sort-direction="none"><button type="button" class="app-table-sort-trigger" data-sort-trigger data-sort-index="2">Status</button></th>
-          <th data-sort-direction="none"><button type="button" class="app-table-sort-trigger" data-sort-trigger data-sort-index="3">Current Level</button></th>
-          <th data-sort-direction="none"><button type="button" class="app-table-sort-trigger" data-sort-trigger data-sort-index="4">Current Approver</button></th>
-          <th data-sort-direction="none"><button type="button" class="app-table-sort-trigger" data-sort-trigger data-sort-index="5">Current Action</button></th>
-          <th data-sort-direction="none"><button type="button" class="app-table-sort-trigger" data-sort-trigger data-sort-index="6">Approval Trail</button></th>
-          <th>View</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% @pending_approval_requests.each do |approval_request| %>
-          <% viewer_steps = viewer_approval_steps_for(approval_request) %>
-          <% current_step = viewer_steps.find { |step| step.status == "pending" } || approval_request.current_step %>
-          <% badge_data = approval_status_badge_data(approval_request) %>
+  <section class="appr-toolbar">
+    <nav class="appr-tabs" aria-label="Approval status">
+      <% tabs.each do |key, label, icon, tone| %>
+        <%= link_to approval_requests_path(status: key, form_name: @form_name), class: "appr-tab appr-tab--#{tone}#{' is-active' if @status == key}" do %>
+          <%= app_icon(icon, size: 16) %> <%= label %> (<%= @status_counts[key] %>)
+        <% end %>
+      <% end %>
+    </nav>
+    <div class="appr-tools">
+      <div class="appr-search" data-table-search-slot="approvals"></div>
+      <%= form_with url: approval_requests_path, method: :get, local: true, class: "appr-filter" do %>
+        <%= hidden_field_tag :status, @status %>
+        <%= select_tag :form_name, options_for_select([["All forms", ""]] + @form_names.map { |name| [name, name] }, @form_name), onchange: "this.form.submit()", "aria-label": "Filter by form" %>
+      <% end %>
+    </div>
+  </section>
+
+  <section class="appr-panel">
+    <div class="app-table-wrap appr-table-wrap" data-search-slot="approvals" data-search-placeholder="Search by form, reference, vendor or approver..." data-page-size="10">
+      <table class="table app-table appr-table" data-sortable-table="true">
+        <thead>
           <tr>
-            <td class="approval-requests-table__form"><%= approval_request.form_name %></td>
-            <td class="approval-requests-table__reference"><%= approval_request.reference_label %></td>
-            <td class="approval-requests-table__status">
-              <span class="badge border <%= badge_data[:css_class] %> fw-semibold px-2 py-1 approval-status-chip">
-                <%= badge_data[:label] %>
-              </span>
-            </td>
-            <td class="approval-requests-table__level"><%= approval_request.current_level_label %></td>
-            <td class="approval-requests-table__approver"><%= approval_request.current_approver_label %></td>
-            <td class="approval-requests-table__current-action"><%= approval_request.current_action_summary %></td>
-            <td class="approval-requests-table__trail">
-              <div class="approval-trail-summary">
-                <% approval_request.trail_steps.each do |step| %>
-                  <div class="approval-trail-summary__item approval-trail-summary__item--<%= step.effective_status %>">
-                    <span class="approval-trail-summary__level"><%= WorkflowLevelNaming.humanize_level_label(step.level) %></span>
-                    <span class="approval-trail-summary__name"><%= step.employee_master.name %></span>
-                    <span class="approval-trail-summary__status"><%= step.effective_status_label %></span>
-                  </div>
+            <th class="appr-col-num">#</th>
+            <th>Form Type</th>
+            <th>Reference</th>
+            <th>Vendor / Firm</th>
+            <th>Current Level</th>
+            <th>Current Approver</th>
+            <th>Submitted On</th>
+            <th>Status</th>
+            <th class="appr-col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% rows.each_with_index do |(approval_request, kind), index| %>
+            <% info = approval_row_info(approval_request) %>
+            <% target_path = approval_record_target_path(approval_request.approvable) %>
+            <% viewer_steps = viewer_approval_steps_for(approval_request) %>
+            <% current_step = viewer_steps.find { |step| step.status == "pending" } || approval_request.current_step %>
+            <% can_act = kind == :pending && current_step.present? && employee_matches_current_login?(current_step.employee_master) %>
+            <% badge_data = approval_status_badge_data(approval_request) %>
+            <% my_step = if kind == :processed
+                 processed_steps = approval_request.approval_steps.reject { |item| item.status.in?(%w[waiting pending]) }
+                 if current_approval_employee_ids.any?
+                   processed_steps.find { |item| employee_matches_current_login?(item.employee_master) }
+                 else
+                   processed_steps.max_by { |item| [item.actioned_at || Time.at(0), item.updated_at || Time.at(0)] }
+                 end
+               end %>
+            <tr class="<%= 'is-mine' if can_act %>">
+              <td class="appr-col-num"><%= index + 1 %></td>
+              <td>
+                <span class="appr-form">
+                  <span class="appr-form__icon appr-form__icon--<%= info[:tone] %>"><%= app_icon(info[:icon], size: 18) %></span>
+                  <span><%= approval_request.form_name %></span>
+                </span>
+              </td>
+              <td class="appr-ref"><%= info[:code] %></td>
+              <td class="appr-main">
+                <strong title="<%= info[:title] %>"><%= info[:title] %></strong>
+                <% if info[:subtitle].present? %><small><%= info[:subtitle] %></small><% end %>
+              </td>
+              <td><%= info[:level] %></td>
+              <td class="appr-main">
+                <strong title="<%= info[:approver] %>"><%= info[:approver] %></strong>
+                <% if info[:approver_role].present? %><small><%= info[:approver_role] %></small><% end %>
+              </td>
+              <td class="appr-date">
+                <% if info[:submitted_at] %>
+                  <%= info[:submitted_at].strftime("%d-%m-%Y") %><small><%= info[:submitted_at].strftime("%I:%M %p") %></small>
+                <% else %>-<% end %>
+              </td>
+              <td>
+                <span class="appr-status appr-status--<%= kind == :pending ? 'amber' : approval_status_tone(approval_request) %>" title="<%= badge_data[:label] %>"><%= kind == :pending ? "Pending" : approval_request.status_label %></span>
+                <% if can_act %>
+                  <small class="appr-yours">Your turn · <%= WorkflowLevelNaming.humanize_level_label(current_step.level) %></small>
+                <% elsif my_step %>
+                  <small class="appr-yours appr-yours--done" title="<%= my_step.remark.presence %>">You: <%= my_step.effective_status_label %><%= " · #{my_step.remark.truncate(30)}" if my_step.remark.present? %></small>
                 <% end %>
-              </div>
-            </td>
-            <td class="approval-requests-table__view">
-              <% target_path = approval_record_target_path(approval_request.approvable) %>
-              <% if target_path == approval_requests_path %>
-                -
-              <% else %>
-                <%= link_to "View", target_path, class: "app-action-button approval-view-link" %>
-              <% end %>
-            </td>
-            <td class="approval-requests-table__actions">
-              <% if current_step.present? && employee_matches_current_login?(current_step.employee_master) %>
-                <div class="approval-action-stack">
-                  <span class="badge border bg-info bg-opacity-10 text-info px-2 py-1 approval-you-chip">
-                    Pending For You: <%= WorkflowLevelNaming.humanize_level_label(current_step.level) %>
-                  </span>
-                  <%= render "approval_requests/approve_modal",
-                    approval_request: approval_request,
-                    modal_id: "approve-approval-request-#{approval_request.id}",
-                    trigger_label: "Approve",
-                    trigger_class: "app-form-submit approval-action-btn" %>
-
-                  <%= render "approval_requests/return_modal",
-                    approval_request: approval_request,
-                    current_step: current_step,
-                    modal_id: "return-approval-request-#{approval_request.id}",
-                    trigger_label: "Return",
-                    trigger_class: "app-secondary-btn approval-action-btn" %>
-
-                  <%= render "approval_requests/reject_modal",
-                    approval_request: approval_request,
-                    modal_id: "reject-approval-request-#{approval_request.id}",
-                    trigger_label: "Reject",
-                    trigger_class: "app-danger-btn approval-action-btn" %>
+              </td>
+              <td class="appr-col-actions">
+                <div class="appr-actions">
+                  <% if target_path != approval_requests_path %>
+                    <%= link_to target_path, class: "appr-view" do %><%= app_icon(:eye, size: 16) %> View<% end %>
+                  <% end %>
+                  <% if can_act %>
+                    <% ids = %w[approve return reject].index_with { |action| "#{action}-approval-request-#{approval_request.id}" } %>
+                    <button type="button" class="appr-more" aria-label="More actions" aria-haspopup="true" data-appr-menu-toggle>⋮</button>
+                    <div class="appr-menu" role="menu" hidden data-appr-menu>
+                      <button type="button" role="menuitem" class="appr-menu__item appr-menu__item--approve" data-approval-popup-open="<%= ids["approve"] %>">✓ Approve</button>
+                      <button type="button" role="menuitem" class="appr-menu__item appr-menu__item--return" data-approval-popup-open="<%= ids["return"] %>">↩ Return</button>
+                      <button type="button" role="menuitem" class="appr-menu__item appr-menu__item--reject" data-approval-popup-open="<%= ids["reject"] %>">✕ Reject</button>
+                    </div>
+                    <div class="appr-popups">
+                      <%= render "approval_requests/approve_modal", approval_request: approval_request, modal_id: ids["approve"], trigger_label: "Approve", trigger_class: "appr-hidden-trigger" %>
+                      <%= render "approval_requests/return_modal", approval_request: approval_request, current_step: current_step, modal_id: ids["return"], trigger_label: "Return", trigger_class: "appr-hidden-trigger" %>
+                      <%= render "approval_requests/reject_modal", approval_request: approval_request, modal_id: ids["reject"], trigger_label: "Reject", trigger_class: "appr-hidden-trigger" %>
+                    </div>
+                  <% end %>
                 </div>
-              <% else %>
-                <span class="text-muted">View only</span>
-              <% end %>
-            </td>
-          </tr>
-        <% end %>
-      </tbody>
-    </table>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+      <% if rows.empty? %>
+        <div class="appr-empty">
+          <span><%= app_icon(:approval, size: 28) %></span>
+          <strong><%= @status == "pending" ? "Nothing is waiting for your approval" : "No requests in this list" %></strong>
+        </div>
+      <% end %>
     </div>
-  </div>
-<% end %>
+  </section>
+</div>
 
-<% if @status.in?(%w[approved returned rejected all]) %>
-  <div class="app-admin-panel">
-    <div class="app-admin-panel-header">
-      <div>
-        <h2 class="app-admin-panel-title">Processed Approvals</h2>
-        <p class="app-section-note mb-0">This section shows the history of approved, returned, and rejected requests.</p>
-      </div>
-    </div>
-
-    <div class="app-table-wrap approval-requests-table-wrap">
-    <table class="table app-table approval-requests-table" data-sortable-table="true">
-      <thead>
-        <tr>
-          <th data-sort-direction="none"><button type="button" class="app-table-sort-trigger" data-sort-trigger data-sort-index="0">Form</button></th>
-          <th data-sort-direction="none"><button type="button" class="app-table-sort-trigger" data-sort-trigger data-sort-index="1">Reference</button></th>
-          <th data-sort-direction="none"><button type="button" class="app-table-sort-trigger" data-sort-trigger data-sort-index="2">Final Status</button></th>
-          <th data-sort-direction="none"><button type="button" class="app-table-sort-trigger" data-sort-trigger data-sort-index="3">Your Decision</button></th>
-          <th data-sort-direction="none"><button type="button" class="app-table-sort-trigger" data-sort-trigger data-sort-index="4">Remark</button></th>
-          <th data-sort-direction="none"><button type="button" class="app-table-sort-trigger" data-sort-trigger data-sort-index="5">Approval Trail</button></th>
-          <th>View</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% @processed_approval_requests.each do |approval_request| %>
-          <% processed_steps = approval_request.approval_steps.reject { |item| item.status.in?(%w[waiting pending]) } %>
-          <% step = if current_approval_employee_ids.any?
-               processed_steps.find { |item| employee_matches_current_login?(item.employee_master) }
-             else
-               processed_steps.max_by { |item| [item.actioned_at || Time.at(0), item.updated_at || Time.at(0)] }
-             end %>
-          <tr>
-            <td class="approval-requests-table__form"><%= approval_request.form_name %></td>
-            <td class="approval-requests-table__reference"><%= approval_request.reference_label %></td>
-            <td class="approval-requests-table__status"><span class="approval-status-chip approval-status-chip--plain"><%= approval_request.status_label %></span></td>
-            <td class="approval-requests-table__decision"><%= step&.effective_status_label || "-" %></td>
-            <td class="approval-requests-table__remark"><%= step&.remark.presence || "-" %></td>
-            <td class="approval-requests-table__trail">
-              <div class="approval-trail-summary">
-                <% approval_request.trail_steps.each do |step| %>
-                  <div class="approval-trail-summary__item approval-trail-summary__item--<%= step.effective_status %>">
-                    <span class="approval-trail-summary__level"><%= WorkflowLevelNaming.humanize_level_label(step.level) %></span>
-                    <span class="approval-trail-summary__name"><%= step.employee_master.name %></span>
-                    <span class="approval-trail-summary__status"><%= step.effective_status_label %></span>
-                  </div>
-                <% end %>
-              </div>
-            </td>
-            <td class="approval-requests-table__view">
-              <% target_path = approval_record_target_path(approval_request.approvable) %>
-              <% if target_path == approval_requests_path %>
-                -
-              <% else %>
-                <%= link_to "View", target_path, class: "app-action-button approval-view-link" %>
-              <% end %>
-            </td>
-          </tr>
-        <% end %>
-      </tbody>
-    </table>
-    </div>
-  </div>
-<% end %>
+<script>
+  (() => {
+    // Approve / Return / Reject popups live in the table rows; show them above
+    // the page so the table box cannot clip them.
+    document.querySelectorAll(".appr-popups [data-approval-popup-panel]").forEach((panel) => document.body.appendChild(panel))
+    if (window.apprMenuBound) return
+    window.apprMenuBound = true
+    const closeAll = () => document.querySelectorAll("[data-appr-menu]").forEach((menu) => { menu.hidden = true })
+    document.addEventListener("click", (event) => {
+      const toggle = event.target.closest("[data-appr-menu-toggle]")
+      if (toggle) {
+        // The menu is moved to <body> so the table box cannot clip it.
+        const menu = toggle.apprMenu || toggle.parentElement.querySelector("[data-appr-menu]")
+        toggle.apprMenu = menu
+        if (menu.parentElement !== document.body) document.body.appendChild(menu)
+        const wasOpen = !menu.hidden
+        closeAll()
+        if (!wasOpen) {
+          const rect = toggle.getBoundingClientRect()
+          menu.hidden = false
+          menu.style.top = `${Math.min(rect.bottom + 4, window.innerHeight - menu.offsetHeight - 8)}px`
+          menu.style.left = `${Math.max(8, rect.right - menu.offsetWidth)}px`
+        }
+        return
+      }
+      if (event.target.closest("[data-appr-menu] [data-approval-popup-open]")) {
+        setTimeout(closeAll, 0)
+        return
+      }
+      if (!event.target.closest("[data-appr-menu]")) closeAll()
+    })
+    document.addEventListener("scroll", (event) => { if (!event.target.closest?.("[data-appr-menu]")) closeAll() }, true)
+    document.addEventListener("turbo:before-cache", () => document.querySelectorAll("body > [data-appr-menu], body > [data-approval-popup-panel]").forEach((node) => node.remove()))
+    document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeAll() })
+  })()
+</script>

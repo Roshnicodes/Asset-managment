@@ -73,6 +73,25 @@ class ApprovalVisibilityTest < ActionDispatch::IntegrationTest
     assert_includes controller.instance_variable_get(:@processed_approval_requests).to_a, @approval_request
   end
 
+  test "the approver gets Approve, Return and Reject from the list and the detail page" do
+    sign_in user_for(@first_approver)
+
+    get approval_requests_url(status: "pending")
+    assert_response :success
+    assert_select ".appr-stat strong", text: "1"
+    assert_select "tr.is-mine .appr-ref", text: format("VEN-%03d", @vendor_registration.id)
+    assert_select "[data-appr-menu] [data-approval-popup-open='approve-approval-request-#{@approval_request.id}']"
+    assert_select "[data-appr-menu] [data-approval-popup-open='return-approval-request-#{@approval_request.id}']"
+    assert_select "[data-appr-menu] [data-approval-popup-open='reject-approval-request-#{@approval_request.id}']"
+    assert_select "form[action='#{approve_approval_request_path(@approval_request)}']"
+
+    get vendor_registration_url(@vendor_registration)
+    assert_response :success
+    assert_select "h2", /Vendor Registration Details/
+    assert_select ".vd-action-card form[action='#{approve_approval_request_path(@approval_request)}']"
+    assert_select "[data-vd-tab]", 5
+  end
+
   private
 
   def user_for(employee)

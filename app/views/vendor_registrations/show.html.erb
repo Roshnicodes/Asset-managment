@@ -2,28 +2,30 @@
 <% current_step = approval_request&.current_step %>
 <% approver_view = approval_request.present? && current_step&.employee_master_id == current_employee_master&.id && approval_request.status == "pending" %>
 <% owner_or_admin = current_user == @vendor_registration.user || admin_user? %>
+<% header_badge = approval_status_badge_data(approval_request) %>
 <div class="app-page-shell vendor-registration-show-page">
-  <div class="app-page-header vendor-show-header">
+  <nav class="vd-crumbs" aria-label="Breadcrumb">
+    <%= link_to "← Vendor Registration", vendor_registrations_path %> <span>›</span> <span>Details</span>
+  </nav>
+  <div class="app-page-header vendor-show-header vd-header">
     <div>
-      <h2>Vendor Registration Details</h2>
-      <p><%= @vendor_registration.vendor_name %></p>
+      <h2>Vendor Registration Details <span class="badge border <%= header_badge[:css_class] %> fw-semibold vd-header__status"><%= header_badge[:label] %></span></h2>
+      <p class="vd-header__name"><%= @vendor_registration.vendor_name %></p>
     </div>
     <div class="vendor-show-actions">
       <%= link_to "← Back", vendor_registrations_path, class: "app-back-link" %>
       <% if admin_user? || (owner_or_admin && !@vendor_registration.approval_locked?) %>
-        <%= link_to "Edit", edit_vendor_registration_path(@vendor_registration), class: "app-primary-btn" %>
+        <%= link_to edit_vendor_registration_path(@vendor_registration), class: "vd-btn vd-btn--edit" do %><%= app_icon(:pencil, size: 16) %> Edit<% end %>
       <% end %>
       <% if admin_user? || (@vendor_registration.user_id == current_user.id && !@vendor_registration.approval_locked?) %>
-        <%= button_to "Delete", @vendor_registration, method: :delete, data: { turbo_confirm: "Are you sure you want to delete this vendor registration?" }, class: "app-danger-btn" %>
+        <%= button_to @vendor_registration, method: :delete, data: { turbo_confirm: "Are you sure you want to delete this vendor registration?" }, class: "vd-btn vd-btn--delete" do %><%= app_icon(:trash, size: 16) %> Delete<% end %>
       <% end %>
     </div>
   </div>
 
-  <%= render @vendor_registration %>
-
   <% if approver_view %>
-    <div class="app-form-card vendor-approval-action-card">
-      <h3>Pending Approval Action (<%= current_step.current_action %>)</h3>
+    <div class="app-form-card vendor-approval-action-card vd-action-card">
+      <h3>Your action is pending (<%= current_step.current_action %>)</h3>
 
       <div class="vendor-approval-action-buttons">
         <%= render "approval_requests/approve_modal",
@@ -47,4 +49,6 @@
       </div>
     </div>
   <% end %>
+
+  <%= render @vendor_registration %>
 </div>

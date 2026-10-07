@@ -15,309 +15,234 @@
   <% document_rows << [document_name, document.file] %>
   <% seen_document_blob_ids << document.file.blob_id %>
 <% end %>
-
-<div id="<%= dom_id vendor_registration %>" class="app-detail-card vendor-detail-card">
-  <div class="app-detail-grid vendor-detail-grid">
-    <div class="app-detail-item">
-      <div class="app-detail-label">Stakeholder</div>
-      <div class="app-detail-value"><%= vendor_registration.stakeholder_category&.name || "-" %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Registration Type</div>
-      <div class="app-detail-value"><%= vendor_registration.registration_type&.name %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Firm</div>
-      <div class="app-detail-value"><%= vendor_registration.firm&.name %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Firm Name</div>
-      <div class="app-detail-value"><%= vendor_registration.firm_name %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Vendor Name</div>
-      <div class="app-detail-value"><%= vendor_registration.vendor_name %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Firm Type</div>
-      <div class="app-detail-value"><%= vendor_registration.firm_type %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">GST No</div>
-      <div class="app-detail-value"><%= vendor_registration.gst_no %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">PAN No</div>
-      <div class="app-detail-value"><%= vendor_registration.pan_no %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Email</div>
-      <div class="app-detail-value"><%= vendor_registration.email %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Mobile No</div>
-      <div class="app-detail-value"><%= vendor_registration.mobile_no %></div>
-    </div>
-
-    <div class="app-detail-item app-detail-item-full">
-      <div class="app-detail-label">Address</div>
-      <div class="app-detail-value"><%= vendor_registration.address.presence || "-" %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">State</div>
-      <div class="app-detail-value"><%= vendor_registration.state&.name %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">District</div>
-      <div class="app-detail-value"><%= vendor_registration.district&.name %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Block</div>
-      <div class="app-detail-value"><%= vendor_registration.block&.name %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">PIN No</div>
-      <div class="app-detail-value"><%= vendor_registration.pin_no %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Contact Person</div>
-      <div class="app-detail-value"><%= vendor_registration.contact_person_name %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Contact Designation</div>
-      <div class="app-detail-value"><%= vendor_registration.contact_person_designation %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">MSME</div>
-      <div class="app-detail-value"><%= vendor_registration.msme ? "Yes" : "No" %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">MSME Number</div>
-      <div class="app-detail-value"><%= vendor_registration.msme_number.presence || "-" %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Company Status</div>
-      <div class="app-detail-value"><%= vendor_registration.company_status %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Firm Profile</div>
-      <div class="app-detail-value"><%= vendor_registration.firm_profile %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Business Description</div>
-      <div class="app-detail-value"><%= vendor_registration.business_description %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Submitted At</div>
-      <div class="app-detail-value"><%= vendor_registration.submitted_at %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Submitted IP</div>
-      <div class="app-detail-value"><%= vendor_registration.submitted_ip %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Selected Themes</div>
-      <div class="app-detail-value"><%= vendor_registration.themes.map(&:name).presence&.join(", ") || "-" %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Selected Products</div>
-      <div class="app-detail-value"><%= vendor_registration.products.map(&:name).presence&.join(", ") || "-" %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Selected Product Types</div>
-      <div class="app-detail-value"><%= vendor_registration.product_varieties.map(&:name).presence&.join(", ") || "-" %></div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Approval Status</div>
-      <div class="app-detail-value">
-        <% badge_data = approval_status_badge_data(approval_request) %>
-        <span class="badge border <%= badge_data[:css_class] %> fw-semibold px-3 py-2" style="font-size: 0.9rem;">
-          <%= badge_data[:label] %>
-        </span>
-      </div>
-    </div>
-
-    <div class="app-detail-item">
-      <div class="app-detail-label">Current Approver</div>
-      <div class="app-detail-value">
-        <% if vendor_registration.approval_request&.current_step %>
-          <span class="badge border bg-info bg-opacity-10 text-info px-3 py-2" style="font-size: 0.9rem;">
-            <%= vendor_registration.approval_request.current_step.employee_master.name %>
-            <small>(<%= vendor_registration.approval_request.current_step.current_action_label %>)</small>
-          </span>
-        <% else %>
-          -
-        <% end %>
-      </div>
-    </div>
-
-    <div class="app-detail-item app-detail-item-full vendor-approval-trail">
-      <div class="app-detail-label">Approval Trail</div>
-      <div class="app-detail-value">
-        <% if approval_request %>
-          <div class="vendor-approval-trail-grid">
-            <% approval_request.trail_steps.each do |step| %>
-              <% step_class = case step.effective_status
-                 when 'approved' then 'border-success bg-success bg-opacity-10 text-success'
-                 when 'returned' then 'border-warning bg-warning bg-opacity-10 text-warning'
-                 when 'rejected' then 'border-danger bg-danger bg-opacity-10 text-danger'
-                 when 'pending' then 'border-info bg-info bg-opacity-10 text-info'
-                 else 'border-secondary bg-light text-muted opacity-50'
-                 end %>
-              <div class="badge border <%= step_class %> px-3 py-2 text-start d-flex flex-column gap-1 vendor-approval-step" style="font-style: normal; font-weight: normal;">
-                <span class="fw-bold border-bottom pb-1 mb-1">Step <%= step.level %>: <%= step.employee_master.name %></span>
-                <span>
-                  <%= step.current_action_label %>
-                  <% if step.show_status_in_trail? %>
-                    : <strong><%= step.effective_status_label %></strong>
-                  <% end %>
-                </span>
-                <% if step.actioned_at.present? %>
-                  <span class="small opacity-75"><%= step.actioned_at.strftime("%d-%m-%Y %H:%M") %></span>
-                <% end %>
-              </div>
-            <% end %>
-          </div>
-        <% else %>
-          -
-        <% end %>
-      </div>
-    </div>
-
-    <div class="vendor-detail-section vendor-bank-section">
-      <div class="app-detail-label">Bank Details</div>
-      <div class="app-detail-value">
-        <% if vendor_registration.vendor_bank_masters.any? %>
-          <div class="vendor-bank-list">
-            <% vendor_registration.vendor_bank_masters.each do |bank| %>
-              <div class="vendor-bank-card">
-                <div class="vendor-bank-grid">
-                  <div class="app-detail-item">
-                    <div class="app-detail-label">Bank Name</div>
-                    <div class="app-detail-value"><%= bank.bank_name.presence || "-" %></div>
-                  </div>
-                  <div class="app-detail-item">
-                    <div class="app-detail-label">Account Type</div>
-                    <div class="app-detail-value"><%= bank.account_type.presence || "-" %></div>
-                  </div>
-                  <div class="app-detail-item">
-                    <div class="app-detail-label">Account No</div>
-                    <div class="app-detail-value"><%= bank.account_number.presence || "-" %></div>
-                  </div>
-                  <div class="app-detail-item">
-                    <div class="app-detail-label">IFSC Code</div>
-                    <div class="app-detail-value"><%= bank.ifsc_code.presence || "-" %></div>
-                  </div>
-                  <div class="app-detail-item">
-                    <div class="app-detail-label">Bank Address</div>
-                    <div class="app-detail-value"><%= bank.bank_address.presence || "-" %></div>
-                  </div>
-                  <div class="app-detail-item">
-                    <div class="app-detail-label">Cancelled Cheque</div>
-                    <div class="app-detail-value">
-                      <% if bank.cancelled_cheque.attached? %>
-                        <% cheque = bank.cancelled_cheque %>
-                        <% if cheque.blob.content_type.to_s.start_with?("image/") %>
-                          <div class="vendor-document-preview">
-                            <a href="<%= rails_blob_path(cheque, disposition: "inline") %>" target="_blank" rel="noopener">
-                              <%= image_tag cheque, alt: "Cancelled cheque", class: "vendor-document-thumb" %>
-                            </a>
-                            <div>
-                              <%= link_to cheque.filename.to_s, rails_blob_path(cheque, disposition: "inline"), target: "_blank", rel: "noopener" %>
-                            </div>
-                          </div>
-                        <% elsif cheque.blob.content_type == "application/pdf" %>
-                          <div class="vendor-document-preview">
-                            <a href="<%= rails_blob_path(cheque, disposition: "inline") %>" target="_blank" rel="noopener">
-                              <iframe src="<%= rails_blob_path(cheque, disposition: "inline") %>" class="vendor-document-frame"></iframe>
-                            </a>
-                            <div>
-                              <%= link_to cheque.filename.to_s, rails_blob_path(cheque, disposition: "inline"), target: "_blank", rel: "noopener" %>
-                            </div>
-                          </div>
-                        <% else %>
-                          <%= link_to cheque.filename.to_s, rails_blob_path(cheque, disposition: "inline"), target: "_blank", rel: "noopener" %>
-                        <% end %>
-                      <% else %>
-                        -
-                      <% end %>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            <% end %>
-          </div>
-        <% else %>
-          -
-        <% end %>
-      </div>
-    </div>
-
-    <div class="vendor-detail-section vendor-documents-section">
-      <div class="app-detail-label">Uploaded Documents</div>
-      <div class="app-detail-value">
-        <% if document_rows.any? %>
-          <div class="vendor-document-grid">
-            <% document_rows.each do |document_name, attachment| %>
-              <% next unless attachment.present? %>
-              <div class="app-detail-item">
-                <div class="app-detail-label"><%= document_name %></div>
-                <div class="app-detail-value">
-                  <% if attachment.blob.content_type.to_s.start_with?("image/") %>
-                    <div class="vendor-document-preview">
-                      <a href="<%= rails_blob_path(attachment, disposition: "inline") %>" target="_blank" rel="noopener">
-                        <%= image_tag attachment, alt: document_name, class: "vendor-document-thumb" %>
-                      </a>
-                      <div>
-                        <%= link_to attachment.filename.to_s, rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener" %>
-                      </div>
-                    </div>
-                  <% elsif attachment.blob.content_type == "application/pdf" %>
-                    <div class="vendor-document-preview">
-                      <a href="<%= rails_blob_path(attachment, disposition: "inline") %>" target="_blank" rel="noopener">
-                        <iframe src="<%= rails_blob_path(attachment, disposition: "inline") %>" class="vendor-document-frame"></iframe>
-                      </a>
-                      <div>
-                        <%= link_to attachment.filename.to_s, rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener" %>
-                      </div>
-                    </div>
-                  <% else %>
-                    <%= link_to attachment.filename.to_s, rails_blob_path(attachment, disposition: "inline"), target: "_blank", rel: "noopener" %>
-                  <% end %>
-                </div>
-              </div>
-            <% end %>
-          </div>
-        <% else %>
-          -
-        <% end %>
-      </div>
+<% value = ->(v) { v.presence || "-" } %>
+<% chip = ->(text, tone = "green") { text.present? ? content_tag(:span, text, class: "vd-chip vd-chip--#{tone}") : "-" } %>
+<% current_step = approval_request&.current_step %>
+<% badge_data = approval_status_badge_data(approval_request) %>
+<% location = [vendor_registration.district&.name, vendor_registration.state&.name].compact.join(", ") %>
+<% preview = lambda do |attachment, name| %>
+  <% url = rails_blob_path(attachment, disposition: "inline") %>
+  <div class="vd-file">
+    <a href="<%= url %>" target="_blank" rel="noopener" class="vd-file__thumb">
+      <% if attachment.blob.content_type.to_s.start_with?("image/") %>
+        <%= image_tag attachment, alt: name, class: "vendor-document-thumb" %>
+      <% elsif attachment.blob.content_type == "application/pdf" %>
+        <iframe src="<%= url %>" class="vendor-document-frame" title="<%= name %>"></iframe>
+      <% else %>
+        <span class="vd-file__icon"><%= app_icon(:document, size: 28) %></span>
+      <% end %>
+    </a>
+    <div class="vd-file__meta">
+      <strong><%= name %></strong>
+      <%= link_to attachment.filename.to_s, url, target: "_blank", rel: "noopener" %>
     </div>
   </div>
+<% end %>
+
+<div id="<%= dom_id vendor_registration %>" class="vd" data-vd-tabs>
+  <section class="vd-profile">
+    <span class="vd-profile__avatar"><%= (vendor_registration.vendor_name.presence || vendor_registration.firm_name).to_s.split.first(2).map { |w| w[0] }.join.upcase %></span>
+    <div class="vd-profile__name">
+      <strong><%= vendor_registration.vendor_name.presence || vendor_registration.firm_name %></strong>
+      <span><%= app_icon(:approval, size: 14) %> <%= [vendor_registration.firm_type, vendor_registration.stakeholder_category&.name].compact_blank.join(" · ") %></span>
+    </div>
+    <div class="vd-profile__contacts">
+      <span class="vd-contact"><span class="vd-contact__icon vd-contact__icon--purple"><%= app_icon(:people, size: 18) %></span><span><strong><%= value.(vendor_registration.mobile_no) %></strong><small>Mobile Number</small></span></span>
+      <span class="vd-contact"><span class="vd-contact__icon vd-contact__icon--blue"><%= app_icon(:document, size: 18) %></span><span><strong><%= value.(vendor_registration.email) %></strong><small>Email Address</small></span></span>
+      <span class="vd-contact"><span class="vd-contact__icon vd-contact__icon--orange"><%= app_icon(:map, size: 18) %></span><span><strong><%= value.(location) %></strong><small>Location</small></span></span>
+    </div>
+  </section>
+
+  <nav class="vd-tabs" role="tablist">
+    <button type="button" class="vd-tab is-active" data-vd-tab="general"><%= app_icon(:document, size: 16) %> General Information</button>
+    <button type="button" class="vd-tab" data-vd-tab="bank"><%= app_icon(:bank, size: 16) %> Bank Details</button>
+    <button type="button" class="vd-tab" data-vd-tab="products"><%= app_icon(:product, size: 16) %> Product &amp; Service</button>
+    <button type="button" class="vd-tab" data-vd-tab="approvals"><%= app_icon(:approval, size: 16) %> Approvals &amp; Status</button>
+    <button type="button" class="vd-tab" data-vd-tab="documents"><%= app_icon(:registration, size: 16) %> Documents (<%= document_rows.size %>)</button>
+  </nav>
+
+  <div class="vd-panel" data-vd-panel="general">
+    <div class="vd-grid vd-grid--3">
+      <section class="vd-card">
+        <h3><span class="vd-card__icon vd-card__icon--blue"><%= app_icon(:registration, size: 18) %></span> Basic Details</h3>
+        <dl class="vd-list">
+          <dt>Stakeholder</dt><dd><%= chip.(vendor_registration.stakeholder_category&.name, "blue") %></dd>
+          <dt>Registration Type</dt><dd><%= value.(vendor_registration.registration_type&.name) %></dd>
+          <dt>Firm</dt><dd><%= value.(vendor_registration.firm&.name) %></dd>
+          <dt>Firm Name</dt><dd><%= value.(vendor_registration.firm_name) %></dd>
+          <dt>Vendor Name</dt><dd><%= value.(vendor_registration.vendor_name) %></dd>
+          <dt>Firm Type</dt><dd><%= chip.(vendor_registration.firm_type, "blue") %></dd>
+          <dt>GST No</dt><dd><%= chip.(vendor_registration.gst_no, "slate") %></dd>
+          <dt>PAN No</dt><dd><%= chip.(vendor_registration.pan_no, "slate") %></dd>
+          <dt>MSME</dt><dd><%= chip.(vendor_registration.msme ? "Yes" : "No", vendor_registration.msme ? "green" : "slate") %></dd>
+          <dt>MSME Number</dt><dd><%= value.(vendor_registration.msme_number) %></dd>
+          <dt>Company Status</dt><dd><%= chip.(vendor_registration.company_status, "green") %></dd>
+        </dl>
+      </section>
+
+      <section class="vd-card">
+        <h3><span class="vd-card__icon vd-card__icon--orange"><%= app_icon(:map, size: 18) %></span> Contact &amp; Address</h3>
+        <dl class="vd-list">
+          <dt>Mobile Number</dt><dd><%= value.(vendor_registration.mobile_no) %></dd>
+          <dt>Email Address</dt><dd class="vd-break"><%= value.(vendor_registration.email) %></dd>
+          <dt>Address</dt><dd><%= value.(vendor_registration.address) %></dd>
+          <dt>State</dt><dd><%= value.(vendor_registration.state&.name) %></dd>
+          <dt>District</dt><dd><%= value.(vendor_registration.district&.name) %></dd>
+          <dt>Block</dt><dd><%= value.(vendor_registration.block&.name) %></dd>
+          <dt>PIN No</dt><dd><%= value.(vendor_registration.pin_no) %></dd>
+          <dt>Contact Person</dt><dd><%= value.(vendor_registration.contact_person_name) %></dd>
+          <dt>Contact Designation</dt><dd><%= value.(vendor_registration.contact_person_designation) %></dd>
+        </dl>
+      </section>
+
+      <section class="vd-card">
+        <h3><span class="vd-card__icon vd-card__icon--purple"><%= app_icon(:approval, size: 18) %></span> Approval Information</h3>
+        <dl class="vd-list">
+          <dt>Approval Status</dt><dd><span class="badge border <%= badge_data[:css_class] %> fw-semibold px-2 py-1"><%= badge_data[:label] %></span></dd>
+          <dt>Current Approver</dt>
+          <dd>
+            <% if current_step %>
+              <span class="vd-approver"><strong><%= current_step.employee_master.name %></strong><small><%= current_step.current_action_label %></small></span>
+            <% else %>-<% end %>
+          </dd>
+          <dt>Current Level</dt><dd><%= current_step ? WorkflowLevelNaming.humanize_level_label(current_step.level) : "-" %></dd>
+        </dl>
+        <% if approval_request %>
+          <ul class="vd-trail">
+            <% approval_request.trail_steps.each do |step| %>
+              <li class="vd-trail__step is-<%= step.effective_status %>">
+                <span class="vd-trail__dot"></span>
+                <span class="vd-trail__text">
+                  <strong><%= step.employee_master.name %></strong>
+                  <small><%= step.current_action_label %><%= " · #{step.actioned_at.in_time_zone('Asia/Kolkata').strftime('%d-%m-%Y %H:%M')}" if step.actioned_at.present? %></small>
+                </span>
+                <% if step.show_status_in_trail? %><span class="vd-trail__status"><%= step.effective_status_label %></span><% end %>
+              </li>
+            <% end %>
+          </ul>
+        <% end %>
+      </section>
+    </div>
+
+    <div class="vd-grid vd-grid--3">
+      <section class="vd-card">
+        <h3><span class="vd-card__icon vd-card__icon--purple"><%= app_icon(:firm, size: 18) %></span> Firm Profile</h3>
+        <p class="vd-text"><%= value.(vendor_registration.firm_profile) %></p>
+      </section>
+      <section class="vd-card">
+        <h3><span class="vd-card__icon vd-card__icon--blue"><%= app_icon(:document, size: 18) %></span> Business Description</h3>
+        <p class="vd-text"><%= value.(vendor_registration.business_description) %></p>
+      </section>
+      <section class="vd-card">
+        <h3><span class="vd-card__icon vd-card__icon--green"><%= app_icon(:key, size: 18) %></span> Key Information</h3>
+        <dl class="vd-list">
+          <dt>Registration Date</dt><dd><%= vendor_registration.submitted_at&.in_time_zone("Asia/Kolkata")&.strftime("%d-%m-%Y %I:%M %p") || vendor_registration.created_at.in_time_zone("Asia/Kolkata").strftime("%d-%m-%Y %I:%M %p") %></dd>
+          <dt>Submitted IP</dt><dd><%= value.(vendor_registration.submitted_ip) %></dd>
+          <dt>Selected Themes</dt><dd class="vd-chips"><%= vendor_registration.themes.any? ? safe_join(vendor_registration.themes.map { |t| chip.(t.name, "blue") }, " ") : "-" %></dd>
+          <dt>Selected Products</dt><dd class="vd-chips"><%= vendor_registration.products.any? ? safe_join(vendor_registration.products.map { |p| chip.(p.name, "blue") }, " ") : "-" %></dd>
+          <dt>Selected Product Types</dt><dd class="vd-chips"><%= vendor_registration.product_varieties.any? ? safe_join(vendor_registration.product_varieties.map { |p| chip.(p.name, "blue") }, " ") : "-" %></dd>
+        </dl>
+      </section>
+    </div>
+  </div>
+
+  <div class="vd-panel" data-vd-panel="bank">
+    <% if vendor_registration.vendor_bank_masters.any? %>
+      <div class="vd-grid vd-grid--2">
+        <% vendor_registration.vendor_bank_masters.each do |bank| %>
+          <section class="vd-card">
+            <h3><span class="vd-card__icon vd-card__icon--green"><%= app_icon(:bank, size: 18) %></span> <%= bank.bank_name.presence || "Bank Details" %></h3>
+            <dl class="vd-list">
+              <dt>Bank Name</dt><dd><%= value.(bank.bank_name) %></dd>
+              <dt>Account Type</dt><dd><%= value.(bank.account_type) %></dd>
+              <dt>Account No</dt><dd><%= value.(bank.account_number) %></dd>
+              <dt>IFSC Code</dt><dd><%= chip.(bank.ifsc_code, "slate") %></dd>
+              <dt>Bank Address</dt><dd><%= value.(bank.bank_address) %></dd>
+            </dl>
+            <% if bank.cancelled_cheque.attached? %>
+              <% preview.call(bank.cancelled_cheque, "Cancelled Cheque") %>
+            <% end %>
+          </section>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="vd-empty">No bank details added.</p>
+    <% end %>
+  </div>
+
+  <div class="vd-panel" data-vd-panel="products">
+    <div class="vd-grid vd-grid--3">
+      <section class="vd-card">
+        <h3><span class="vd-card__icon vd-card__icon--blue"><%= app_icon(:theme, size: 18) %></span> Themes</h3>
+        <div class="vd-chips"><%= vendor_registration.themes.any? ? safe_join(vendor_registration.themes.map { |t| chip.(t.name, "blue") }, " ") : "-" %></div>
+      </section>
+      <section class="vd-card">
+        <h3><span class="vd-card__icon vd-card__icon--purple"><%= app_icon(:product, size: 18) %></span> Products</h3>
+        <div class="vd-chips"><%= vendor_registration.products.any? ? safe_join(vendor_registration.products.map { |p| chip.(p.name, "purple") }, " ") : "-" %></div>
+      </section>
+      <section class="vd-card">
+        <h3><span class="vd-card__icon vd-card__icon--orange"><%= app_icon(:layers, size: 18) %></span> Product Types</h3>
+        <div class="vd-chips"><%= vendor_registration.product_varieties.any? ? safe_join(vendor_registration.product_varieties.map { |p| chip.(p.name, "orange") }, " ") : "-" %></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="vd-panel" data-vd-panel="approvals">
+    <section class="vd-card">
+      <h3><span class="vd-card__icon vd-card__icon--purple"><%= app_icon(:approval, size: 18) %></span> Approval Trail</h3>
+      <% if approval_request %>
+        <ol class="vd-timeline">
+          <% approval_request.trail_steps.each do |step| %>
+            <li class="vd-timeline__step is-<%= step.effective_status %>">
+              <span class="vd-timeline__dot"><%= step.level %></span>
+              <div>
+                <strong>Step <%= step.level %>: <%= step.employee_master.name %></strong>
+                <span><%= step.current_action_label %><% if step.show_status_in_trail? %> · <b><%= step.effective_status_label %></b><% end %></span>
+                <% if step.actioned_at.present? %><small><%= step.actioned_at.in_time_zone("Asia/Kolkata").strftime("%d-%m-%Y %I:%M %p") %></small><% end %>
+                <% if step.remark.present? %><p class="vd-remark"><%= step.remark %></p><% end %>
+              </div>
+            </li>
+          <% end %>
+        </ol>
+      <% else %>
+        <p class="vd-empty">Not sent for approval yet.</p>
+      <% end %>
+    </section>
+  </div>
+
+  <div class="vd-panel" data-vd-panel="documents">
+    <% if document_rows.any? %>
+      <div class="vd-grid vd-grid--docs">
+        <% document_rows.each do |document_name, attachment| %>
+          <% next unless attachment.present? %>
+          <section class="vd-card vd-card--doc"><% preview.call(attachment, document_name) %></section>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="vd-empty">No documents uploaded.</p>
+    <% end %>
+  </div>
 </div>
+
+<script>
+  (() => {
+    const setup = () => {
+      document.querySelectorAll("[data-vd-tabs]").forEach((root) => {
+        if (root.dataset.ready === "true") return
+        root.dataset.ready = "true"
+        const show = (name) => {
+          root.querySelectorAll("[data-vd-tab]").forEach((tab) => tab.classList.toggle("is-active", tab.dataset.vdTab === name))
+          root.querySelectorAll("[data-vd-panel]").forEach((panel) => { panel.hidden = panel.dataset.vdPanel !== name })
+        }
+        root.addEventListener("click", (event) => {
+          const tab = event.target.closest("[data-vd-tab]")
+          if (tab) show(tab.dataset.vdTab)
+        })
+        show("general")
+      })
+    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", setup)
+    else setup()
+    document.addEventListener("turbo:load", setup)
+  })()
+</script>

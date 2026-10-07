@@ -8,6 +8,8 @@ module ApplicationHelper
     bolt: '<path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/>',
     chart: '<path d="M5 20V10M10 20V4M15 20v-7M20 20V8"/>',
     pie: '<path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/>',
+    x_circle: '<circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/>',
+    undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>',
     dashboard: '<path d="M4 12.5 12 5l8 7.5"/><path d="M6.5 10.5V20h11V10.5"/><path d="M10 20v-5h4v5"/>',
     office: '<rect x="4" y="6" width="16" height="14" rx="2"/><path d="M8 10h8"/><path d="M8 14h3"/><path d="M14 14h2"/><path d="M8 18h8"/>',
     map: '<path d="M9 5 4 7v12l5-2 6 2 5-2V5l-5 2-6-2Z"/><path d="M9 5v12"/><path d="M15 7v12"/>',

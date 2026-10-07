@@ -130,7 +130,7 @@ module UserManualContent
           steps: [
             "Maker: open Vendor Registration Form. New registrations show a Send button in the Action column. Click Send to start approval.",
             "The Approval Trail column shows each approver and their status (Pending, Verify, Approved, Returned).",
-            "Approver: open My Approvals (or click the task on the Dashboard), open the record and check all details and documents.",
+            "Approver: open My Approvals (or click the task on the Dashboard). Rows marked \"Your turn\" are waiting on you. Click View to check all details and documents, or use ⋮ next to View to act directly.",
             "Click Approve when everything is correct.",
             "Click Return when the maker must correct something, and write a clear remark.",
             "Click Reject only when the registration must not continue.",
@@ -140,7 +140,7 @@ module UserManualContent
           note: "Only an approved vendor can be selected in a Request for Proposal. An admin can edit a vendor even after approval.",
           screenshots: [
             ["manual/v3-vendor-index.jpg", "1 Add Vendor Registration opens a new form · 2 Send starts the approval of a new registration · 3 Approval Trail shows each approver and status."],
-            ["manual/v3-approvals.jpg", "1 Tabs: Pending (waiting on you), Approved, Returned, Rejected and All."]
+            ["manual/v3-approvals-v4.jpg", "1 Counts of Pending, Approved, Returned and Rejected (click to open) · 2 Tabs for each list · 3 Search and the form filter · 4 \"Your turn\" marks a request waiting on you · 5 ⋮ next to View opens Approve, Return and Reject."]
           ]
         },
         {
@@ -434,7 +434,7 @@ module UserManualContent
           steps: [
             "Maker: Vendor Registration Form खोलें. नए registration के Action column में Send button होता है. Approval शुरू करने के लिए Send दबाएं.",
             "Approval Trail column में हर approver और उसका status (Pending, Verify, Approved, Returned) दिखता है.",
-            "Approver: My Approvals खोलें (या Dashboard का task click करें), record खोलें और सारी details और documents देखें.",
+            "Approver: My Approvals खोलें (या Dashboard का task click करें). \"Your turn\" वाली rows आप पर pending हैं. सारी details और documents देखने के लिए View दबाएं, या सीधे action के लिए View के पास ⋮ दबाएं.",
             "सब सही हो तो Approve दबाएं.",
             "Maker को कुछ ठीक करना हो तो Return दबाएं और साफ remark लिखें.",
             "Registration आगे नहीं बढ़ना चाहिए तभी Reject दबाएं.",
@@ -444,7 +444,7 @@ module UserManualContent
           note: "Request for Proposal में सिर्फ approved vendor चुना जा सकता है. Admin approval के बाद भी vendor edit कर सकता है.",
           screenshots: [
             ["manual/v3-vendor-index.jpg", "1 Add Vendor Registration से नया form खुलता है · 2 Send से नए registration का approval शुरू होता है · 3 Approval Trail में हर approver और status."],
-            ["manual/v3-approvals.jpg", "1 Tabs: Pending (आप पर pending), Approved, Returned, Rejected और All."]
+            ["manual/v3-approvals-v4.jpg", "1 Pending, Approved, Returned और Rejected की गिनती (click करके खोलें) · 2 हर list का tab · 3 Search और form filter · 4 \"Your turn\" = आप पर pending request · 5 View के पास ⋮ से Approve, Return और Reject."]
           ]
         },
         {

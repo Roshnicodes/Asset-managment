@@ -32,6 +32,16 @@ class ApprovalRequestsController < ApplicationController
       base_requests.where(status: "pending", approval_steps: { status: "pending" })
     end
 
+    # Counts for the summary cards and tabs (same scope as the lists).
+    @status_counts = {
+      "pending" => actionable_requests.count,
+      "approved" => base_requests.where(status: "approved").count,
+      "returned" => base_requests.where(status: "returned").count,
+      "rejected" => base_requests.where(status: "rejected").count
+    }
+    @status_counts["all"] = @status_counts["pending"] + base_requests.where.not(status: "pending").count
+    @form_names = ApprovalRequest.distinct.order(:form_name).pluck(:form_name).compact
+
     @pending_approval_requests = ApprovalRequest.none
     @processed_approval_requests = ApprovalRequest.none
 
