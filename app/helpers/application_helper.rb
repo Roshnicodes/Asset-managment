@@ -116,6 +116,16 @@ module ApplicationHelper
     normalized_name
   end
 
+  # Round initials badge for list rows; the colour follows the name.
+  LIST_AVATAR_TONES = %w[blue pink green orange purple teal].freeze
+
+  def list_avatar(name)
+    text = name.to_s.strip
+    initials = text.split(/\s+/).first(2).map { |word| word[0] }.join.upcase.presence || "?"
+    tone = LIST_AVATAR_TONES[text.sum % LIST_AVATAR_TONES.size]
+    content_tag(:span, initials, class: "rl-avatar rl-avatar--#{tone}", aria: { hidden: true })
+  end
+
   def current_stakeholder_category
     current_employee_master&.stakeholder_category
   end

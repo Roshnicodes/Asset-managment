@@ -1,0 +1,24 @@
+<%# Filter bar of a list page (reference design): search, dropdown filters,
+    Reset and the chips of the active filters. Works with [data-rlist].
+    locals: placeholder, filters ([[key, label, options]]) %>
+<div class="rl-filters">
+  <div class="rl-filters__row">
+    <label class="rl-search">
+      <%= app_icon(:search, size: 18) %>
+      <input type="search" placeholder="<%= placeholder %>" aria-label="Search" data-rlist-search data-native-select>
+    </label>
+    <% filters.each do |key, label, options| %>
+      <label class="rl-filter">
+        <span><%= label %></span>
+        <select data-rlist-filter="<%= key %>" data-rlist-filter-label="<%= label %>" aria-label="<%= label %>">
+          <option value="">All</option>
+          <% options.each do |option| %>
+            <option value="<%= option %>"><%= option %></option>
+          <% end %>
+        </select>
+      </label>
+    <% end %>
+    <button type="button" class="rl-reset" data-rlist-reset><%= app_icon(:undo, size: 16) %> Reset</button>
+  </div>
+  <div class="rl-chips" data-rlist-chips hidden></div>
+</div>

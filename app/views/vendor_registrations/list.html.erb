@@ -1,94 +1,88 @@
-<style>
-  .sticky-top { position: sticky; top: 0; z-index: 100; }
-  .app-table thead th { background: #f8fcf9 !important; border-bottom: 2px solid #eef3ef !important; }
-  .app-table-wrap { max-height: 75vh; overflow-y: auto; overflow-x: auto; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-  /* Column widths; values wrap, the rest is shared .app-list-table styling. */
-  .vendor-list-table .vl-col-check { width: 40px; }
-  .vendor-list-table .vl-col-view { width: 58px; }
-  .vendor-list-table .vl-col-stakeholder { width: 100px; }
-  .vendor-list-table .vl-col-vendor { width: 170px; }
-  .vendor-list-table .vl-col-firm { width: 160px; }
-  .vendor-list-table .vl-col-state { width: 120px; }
-  .vendor-list-table .vl-col-status { width: 90px; }
-  .vendor-list-table .vl-col-approval { width: 130px; }
-  .vendor-list-table .vl-col-remark { width: 150px; }
-  .vendor-list-table .vl-col-trail { width: 240px; }
-  .vendor-list-table .vl-col-submitted { width: 120px; }
-  .vendor-list-table .vl-col-action { width: 140px; }
-  @media (max-width: 1500px) {
-    .vendor-list-table .vl-col-vendor { width: 160px; }
-    .vendor-list-table .vl-col-firm { width: 140px; }
-    .vendor-list-table .vl-col-trail { width: 200px; }
-  }
-  /* 1280-1400 px laptops: Vendor Name takes the space that is left */
-  @media (max-width: 1400px) {
-    .vendor-list-table .vl-col-view { width: 50px; }
-    .vendor-list-table .vl-col-stakeholder { width: 90px; }
-    .vendor-list-table .vl-col-vendor { width: auto; }
-    .vendor-list-table .vl-col-firm { width: 130px; }
-    .vendor-list-table .vl-col-approval { width: 112px; }
-    .vendor-list-table .vl-col-trail { width: 185px; }
-    .vendor-list-table .vl-col-action { width: 120px; }
-  }
-</style>
+<% approval_tone = ->(request) { { "approved" => "green", "pending" => "amber", "returned" => "orange", "rejected" => "red" }.fetch(request&.status.to_s, "slate") } %>
 
-<div class="app-toolbar">
-  <div class="d-flex align-items-center gap-3" style="width:100%">
-    <div>
-      <h1 class="mb-0" style="white-space: nowrap;">Vendor Registration List</h1>
+<div class="rl">
+  <section class="rl-head">
+    <span class="rl-head__icon"><%= app_icon(:people, size: 28) %></span>
+    <div class="rl-head__title">
+      <h1>Vendor Registration List</h1>
+      <p>All vendor registrations you can see, with their approval status.</p>
     </div>
-  </div>
-</div>
+  </section>
 
-<div class="app-table-wrap">
-  <table class="table app-table app-list-table vendor-list-table" data-min-width-ready="true">
-    <thead class="sticky-top">
-      <tr>
-        <th class="vl-col-view">View</th>
-        <th class="vl-col-stakeholder">Stakeholder</th>
-        <th class="vl-col-vendor">Vendor Name</th>
-        <th class="vl-col-firm">Company / Firm Type</th>
-        <th class="vl-col-state ql-optional">State</th>
-        <th class="vl-col-status ql-optional">Status</th>
-        <th class="vl-col-approval">Approval Status</th>
-        <th class="vl-col-remark ql-optional">Latest Remark</th>
-        <th class="vl-col-trail">Approval Trail</th>
-        <th class="vl-col-submitted ql-optional">Submitted At</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @vendor_registrations.each do |vendor_registration| %>
-        <tr>
-          <td>
-            <%= link_to vendor_registration_path(vendor_registration), class: "app-action-icon text-primary", title: "View" do %>
-              <%= app_icon(:eye, size: 18) %>
-            <% end %>
-          </td>
-          <td><%= vendor_registration.stakeholder_category&.name || "-" %></td>
-          <td><span class="ql-clamp-2 fw-semibold" title="<%= vendor_registration.vendor_name %>"><%= vendor_registration.vendor_name %></span></td>
-          <% firm_label = vendor_registration.firm_name.presence || vendor_registration.firm_type.presence || vendor_registration.firm&.name || "-" %>
-          <td><span class="ql-clamp-2" title="<%= firm_label %>"><%= firm_label %></span></td>
-          <td class="ql-optional"><%= vendor_registration.state&.name || "-" %></td>
-          <td class="ql-optional"><%= vendor_registration.company_status %></td>
-          <td>
+  <div class="rl-card" data-rlist>
+    <%= render "shared/rlist_toolbar",
+               placeholder: "Search by vendor name, firm, GST, PAN, state...",
+               filters: [
+                 ["state", "State", @vendor_registrations.filter_map { |v| v.state&.name }.uniq.sort],
+                 ["firm", "Firm Type", @vendor_registrations.filter_map { |v| v.firm_type.presence }.uniq.sort],
+                 ["approval", "Approval Status", @vendor_registrations.map { |v| approval_status_badge_data(v.approval_request)[:label] }.uniq.sort]
+               ] %>
+
+    <div class="app-table-wrap rl-table-wrap" data-table-search="false" data-table-pagination="false">
+      <table class="table app-table rl-table" data-min-width-ready="true">
+        <thead>
+          <tr>
+            <th class="rl-col-num">#</th>
+            <th class="rl-col-view">View</th>
+            <th>Vendor Name</th>
+            <th>Stakeholder</th>
+            <th>Company / Firm Type</th>
+            <th>State</th>
+            <th class="rl-optional-sm">Status</th>
+            <th>Approval Status</th>
+            <th>Submitted At</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @vendor_registrations.each do |vendor_registration| %>
             <% approval_request = vendor_registration.approval_request %>
             <% badge_data = approval_status_badge_data(approval_request) %>
-            <span class="badge border <%= badge_data[:css_class] %> fw-semibold px-2 py-1">
-              <%= badge_data[:label] %>
-            </span>
-          </td>
-          <% latest_remark = vendor_registration.approval_request&.latest_remark.presence %>
-          <td class="ql-optional"><span class="ql-remark" title="<%= latest_remark %>"><%= latest_remark || "-" %></span></td>
-          <td>
-            <% if vendor_registration.approval_request %>
-              <%= render "shared/approval_trail", steps: vendor_registration.approval_request.trail_steps, started: true %>
-            <% else %>
-              <span class="text-muted">-</span>
-            <% end %>
-          </td>
-          <td class="ql-optional"><%= vendor_registration.submitted_at&.strftime("%d-%m-%Y %H:%M") %></td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
+            <% current_step = approval_request&.current_step %>
+            <% trail_text = approval_request ? approval_request.trail_steps.map { |step| "#{step.employee_master&.name}: #{step.effective_status_label}" }.join("\n") : "Not sent for approval" %>
+            <tr data-rlist-row
+                data-f-state="<%= vendor_registration.state&.name %>"
+                data-f-firm="<%= vendor_registration.firm_type %>"
+                data-f-approval="<%= badge_data[:label] %>"
+                data-search-text="<%= [vendor_registration.vendor_name, vendor_registration.firm_name, vendor_registration.gst_no, vendor_registration.pan_no, vendor_registration.mobile_no, vendor_registration.state&.name, vendor_registration.district&.name].compact.join(' ') %>">
+              <td class="rl-col-num" data-rlist-number></td>
+              <td class="rl-col-view">
+                <%= link_to vendor_registration_path(vendor_registration), class: "rl-icon-btn rl-icon-btn--blue", title: "View" do %><%= app_icon(:eye, size: 16) %><% end %>
+              </td>
+              <td>
+                <span class="rl-person">
+                  <%= list_avatar(vendor_registration.display_name) %>
+                  <span>
+                    <strong title="<%= vendor_registration.vendor_name %>"><%= vendor_registration.vendor_name.presence || "-" %></strong>
+                    <small title="<%= vendor_registration.firm_name %>"><%= vendor_registration.firm_name %></small>
+                  </span>
+                </span>
+              </td>
+              <td><%= vendor_registration.stakeholder_category&.name || "-" %></td>
+              <td><%= vendor_registration.firm_type.presence || vendor_registration.firm&.name || "-" %></td>
+              <td><%= vendor_registration.state&.name || "-" %></td>
+              <td class="rl-optional-sm">
+                <% if vendor_registration.company_status.present? %>
+                  <span class="rl-pill rl-pill--<%= vendor_registration.company_status.to_s.casecmp?("active") ? "green" : "slate" %>"><%= vendor_registration.company_status %></span>
+                <% else %>-<% end %>
+              </td>
+              <td title="<%= trail_text %>">
+                <span class="rl-pill rl-pill--<%= approval_tone.(approval_request) %>"><%= badge_data[:label] %></span>
+                <% if current_step && approval_request.status == "pending" %>
+                  <small class="rl-sub">Waiting: <%= current_step.employee_master&.name %></small>
+                <% end %>
+              </td>
+              <td class="rl-date">
+                <% if vendor_registration.submitted_at %>
+                  <%= vendor_registration.submitted_at.in_time_zone("Asia/Kolkata").strftime("%d-%m-%Y") %>
+                  <small><%= vendor_registration.submitted_at.in_time_zone("Asia/Kolkata").strftime("%I:%M %p") %></small>
+                <% else %>-<% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+      <div class="rl-empty" data-rlist-empty hidden>No vendor registration matches the filters.</div>
+    </div>
+    <div class="rl-footer" data-rlist-footer></div>
+  </div>
 </div>

@@ -1,129 +1,50 @@
-<style>
-  .sticky-top { position: sticky; top: 0; z-index: 100; }
-  .app-table thead th { background: #f8fcf9 !important; border-bottom: 2px solid #eef3ef !important; }
-  .quotation-list-table-wrap { max-height: none; overflow-x: auto; overflow-y: visible; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-  .quotation-index-table .qi-col-view { width: 58px; }
-  .quotation-index-table .qi-col-subject { width: 200px; }
-  .quotation-index-table .qi-col-theme { width: 120px; }
-  .quotation-index-table .qi-col-vendors { width: 150px; }
-  .quotation-index-table .qi-col-date { width: 104px; }
-  .quotation-index-table .qi-col-items { width: 62px; }
-  .quotation-index-table .qi-col-status { width: 150px; }
-  .quotation-index-table .qi-col-remark { width: 140px; }
-  .quotation-index-table .qi-col-trail { width: 240px; }
-  .quotation-index-table .qi-col-created { width: 130px; }
-  .quotation-index-table .qi-col-action { width: 92px; }
-  @media (max-width: 1500px) {
-    .quotation-index-table .qi-col-subject { width: 170px; }
-    .quotation-index-table .qi-col-vendors { width: 130px; }
-    .quotation-index-table .qi-col-trail { width: 200px; }
-  }
-  /* 1280-1400 px laptops: Subject takes the space that is left */
-  @media (max-width: 1400px) {
-    .quotation-index-table .qi-col-view { width: 50px; }
-    .quotation-index-table .qi-col-subject { width: auto; }
-    .quotation-index-table .qi-col-theme { width: 105px; }
-    .quotation-index-table .qi-col-vendors { width: 115px; }
-    .quotation-index-table .qi-col-date { width: 96px; }
-    .quotation-index-table .qi-col-status { width: 130px; }
-    .quotation-index-table .qi-col-trail { width: 180px; }
-    .quotation-index-table .qi-col-action { width: 84px; }
-  }
-</style>
+<% stages = @quotation_proposals.map { |quotation_proposal| quotation_stage(quotation_proposal).label }.uniq.sort %>
 
-<div class="app-toolbar">
-  <div class="d-flex align-items-center gap-3" style="width: 100%">
-    <div>
-      <h1 class="mb-0" style="white-space: nowrap;">Quotation Proposals</h1>
+<div class="rl">
+  <section class="rl-head">
+    <span class="rl-head__icon"><%= app_icon(:document, size: 28) %></span>
+    <div class="rl-head__title">
+      <h1>Quotation Proposals</h1>
+      <p>Your Requests for Proposal, their stage and the next action.</p>
     </div>
-    <div style="margin-left:auto; display:flex; gap:.5rem; align-items:center;">
+    <div class="rl-head__actions">
       <% if can_view_menu?("quotation_proposal_form") && quotation_proposal_maker? %>
-        <%= link_to "Request for Proposal", new_quotation_proposal_path, class: "app-primary-btn" %>
+        <%= link_to new_quotation_proposal_path, class: "rl-btn rl-btn--primary" do %>+ Request for Proposal<% end %>
       <% end %>
     </div>
-  </div>
-</div>
+  </section>
 
-<div class="app-table-wrap quotation-list-table-wrap" data-page-size="10" data-search-placeholder="Search quotation proposals...">
-  <table class="table app-table app-list-table quotation-index-table" data-min-width-ready="true">
-    <thead class="sticky-top">
-      <tr>
-        <th class="qi-col-view">View</th>
-        <th class="qi-col-subject">Subject</th>
-        <th class="qi-col-theme">Theme</th>
-        <th class="qi-col-vendors">Vendors</th>
-        <th class="qi-col-date">End Date</th>
-        <th class="qi-col-items ql-optional">Items</th>
-        <th class="qi-col-status">Status</th>
-        <th class="qi-col-remark ql-optional">Latest Remark</th>
-        <th class="qi-col-trail">Committee Trail</th>
-        <th class="qi-col-created ql-optional">Created By</th>
-        <th class="qi-col-action">Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @quotation_proposals.each do |quotation_proposal| %>
-        <tr>
-          <td>
-            <%= link_to quotation_proposal_path(quotation_proposal), class: "app-action-icon text-primary", title: "View" do %>
-              <%= app_icon(:eye, size: 18) %>
-            <% end %>
-          </td>
-          <td><span class="ql-clamp-2 fw-semibold" title="<%= quotation_proposal.subject %>"><%= quotation_proposal.subject %></span></td>
-          <td><span class="ql-clamp-2"><%= quotation_proposal.theme.name %></span></td>
-          <% vendor_names = quotation_proposal.vendor_registrations.map(&:display_name) %>
-          <td>
-            <span class="ql-vendors" title="<%= vendor_names.join(", ") %>">
-              <span class="ql-clamp-2"><%= vendor_names.first || "-" %></span>
-              <% if vendor_names.size > 1 %><span class="ql-more">+<%= vendor_names.size - 1 %></span><% end %>
-            </span>
-          </td>
-          <td><%= quotation_proposal.proposal_end_date.strftime("%d-%m-%Y") %></td>
-          <td class="ql-optional"><%= quotation_proposal.quotation_proposal_items.size %></td>
-          <td>
-            <% status_class = case quotation_proposal.workflow_status
-               when 'vendor_selected' then 'bg-success bg-opacity-10 text-success border-success'
-               when 'responses_received' then 'bg-primary bg-opacity-10 text-primary border-primary'
-               when 'sent_to_vendors' then 'bg-info bg-opacity-10 text-info border-info'
-               when 'committee_approved' then 'bg-success bg-opacity-10 text-success border-success'
-               when 'rejected' then 'bg-danger bg-opacity-10 text-danger border-danger'
-               when 'returned' then 'bg-danger bg-opacity-10 text-danger border-danger'
-               else 'bg-warning bg-opacity-10 text-warning border-warning'
-               end %>
-            <span class="badge border <%= status_class %> fw-semibold px-2 py-1">
-              <%= quotation_proposal.workflow_status.humanize %>
-            </span>
-          </td>
-          <% latest_remark = quotation_proposal.approval_request&.latest_remark.presence || quotation_proposal.committee_steps.where.not(remark: [nil, ""]).order(actioned_at: :desc).pick(:remark).presence %>
-          <td class="ql-optional"><span class="ql-remark" title="<%= latest_remark %>"><%= latest_remark || "-" %></span></td>
-          <td>
-            <% trail_steps = quotation_proposal.approval_request&.trail_steps || quotation_proposal.committee_steps %>
-            <% if trail_steps.any? %>
-              <%= render "shared/approval_trail", steps: trail_steps, started: quotation_proposal.approval_request.present? %>
-            <% elsif quotation_proposal.awaiting_thematic_head_decision? %>
-              <span class="ql-head-badge">With Thematic Head</span>
-            <% else %>
-              <span class="text-muted">-</span>
-            <% end %>
-          </td>
-          <% creator = quotation_proposal.user %>
-          <td class="ql-optional"><span class="ql-clamp-2" title="<%= creator&.email %>"><%= creator&.employee_master&.name.presence || creator&.email || "-" %></span></td>
-          <td class="app-row-actions">
-            <div class="d-flex align-items-center gap-2">
-              <% if admin_user? || (quotation_proposal.user_id == current_user.id && !quotation_proposal.approval_locked?) %>
-                <%= link_to edit_quotation_proposal_path(quotation_proposal), class: "app-action-icon text-warning", title: "Edit" do %>
-                  <%= app_icon(:pencil, size: 18) %>
-                <% end %>
-              <% end %>
-              <% if admin_user? || (quotation_proposal.user_id == current_user.id && !quotation_proposal.approval_locked?) %>
-                <%= button_to quotation_proposal_path(quotation_proposal), method: :delete, data: { turbo_confirm: "Delete this quotation proposal?" }, class: "app-action-icon text-danger", title: "Delete" do %>
-                  <%= app_icon(:trash, size: 18) %>
-                <% end %>
-              <% end %>
-            </div>
-          </td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
+  <div class="rl-card" data-rlist>
+    <%= render "shared/rlist_toolbar",
+               placeholder: "Search by subject, QTN number, theme, vendor...",
+               filters: [
+                 ["theme", "Theme", @quotation_proposals.filter_map { |q| q.theme&.name }.uniq.sort],
+                 ["status", "Status", stages]
+               ] %>
+
+    <div class="app-table-wrap rl-table-wrap" data-table-search="false" data-table-pagination="false">
+      <table class="table app-table rl-table" data-min-width-ready="true">
+        <thead>
+          <tr>
+            <th class="rl-col-num">#</th>
+            <th class="rl-col-view">View</th>
+            <th>Subject</th>
+            <th>Theme</th>
+            <th>Vendors</th>
+            <th>End Date</th>
+            <th>Status</th>
+            <th class="rl-optional">Created By</th>
+            <th class="rl-col-actions">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @quotation_proposals.each do |quotation_proposal| %>
+            <%= render "rlist_row", quotation_proposal: quotation_proposal, show_check: false, show_actions: true, pending_label: nil %>
+          <% end %>
+        </tbody>
+      </table>
+      <div class="rl-empty" data-rlist-empty hidden>No quotation matches the filters.</div>
+    </div>
+    <div class="rl-footer" data-rlist-footer></div>
+  </div>
 </div>

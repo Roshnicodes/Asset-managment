@@ -1,198 +1,77 @@
-<style>
-  .sticky-top { position: sticky; top: 0; z-index: 100; }
-  .app-table thead th { background: #f8fcf9 !important; border-bottom: 2px solid #eef3ef !important; }
-  .quotation-list-table-wrap { max-height: none; overflow-x: auto; overflow-y: visible; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-  .app-table tbody tr.quotation-row-pending > td { background: #fdf3f3; }
-  .app-table tbody tr.quotation-row-pending > td:first-child { box-shadow: inset 3px 0 0 #a32d2d; }
-  /* Each column gets the width its content needs instead of an equal share. */
-  .quotation-list-table .ql-col-check { width: 40px; }
-  .quotation-list-table .ql-col-view { width: 58px; }
-  .quotation-list-table .ql-col-subject { width: 200px; }
-  .quotation-list-table .ql-col-theme { width: 120px; }
-  .quotation-list-table .ql-col-vendors { width: 150px; }
-  .quotation-list-table .ql-col-date { width: 108px; }
-  .quotation-list-table .ql-col-items { width: 62px; }
-  .quotation-list-table .ql-col-status { width: 160px; }
-  .quotation-list-table .ql-col-remark { width: 150px; }
-  .quotation-list-table .ql-col-trail { width: 250px; }
-  .quotation-list-table .ql-col-created { width: 130px; }
-  .quotation-list-table .ql-col-action { width: 92px; }
-  /* Small laptops: hide the least important columns instead of squeezing all of them. */
-  @media (max-width: 1500px) {
-    .quotation-list-table .ql-col-subject { width: 162px; }
-    .quotation-list-table .ql-col-theme { width: 110px; }
-    .quotation-list-table .ql-col-vendors { width: 120px; }
-    .quotation-list-table .ql-col-status { width: 120px; }
-    .quotation-list-table .ql-col-trail { width: 200px; }
-    .quotation-list-table .ql-col-date { width: 104px; }
-  }
-  /* 1280-1400 px laptops: Subject takes the space that is left */
-  @media (max-width: 1400px) {
-    .quotation-list-table .ql-col-check { width: 36px; }
-    .quotation-list-table .ql-col-view { width: 50px; }
-    .quotation-list-table .ql-col-subject { width: auto; }
-    .quotation-list-table .ql-col-theme { width: 100px; }
-    .quotation-list-table .ql-col-vendors { width: 110px; }
-    .quotation-list-table .ql-col-date { width: 96px; }
-    .quotation-list-table .ql-col-status { width: 112px; }
-    .quotation-list-table .ql-col-trail { width: 180px; }
-    .quotation-list-table .ql-col-action { width: 84px; }
-  }
-  .quotation-list-table .ql-subject { display: flex; flex-direction: column; align-items: flex-start; gap: .3rem; white-space: normal; }
-  .quotation-list-table .ql-subject__text { font-weight: 600; color: #10302a; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-</style>
-
 <% can_manage_quotation_proposals = can_view_menu?("quotation_proposal_form") && quotation_proposal_maker? %>
 <% sendable_quotation_proposals = can_manage_quotation_proposals ? @quotation_proposals.select { |quotation_proposal| quotation_proposal.approval_request.blank? && (admin_user? || quotation_proposal.user_id == current_user.id) } : [] %>
+<% pending_actions = quotation_pending_actions %>
+<%# Anything waiting on this user is listed first so it cannot be missed. %>
+<% ordered_quotation_proposals = @quotation_proposals.sort_by { |proposal| [pending_actions.key?(proposal.id) ? 0 : 1, -proposal.id] } %>
+<% stages = @quotation_proposals.map { |quotation_proposal| quotation_stage(quotation_proposal).label }.uniq.sort %>
 
-<div class="app-toolbar">
-  <div class="d-flex align-items-center gap-3" style="width:100%">
-    <div>
-      <h1 class="mb-0" style="white-space: nowrap;">Quotation Proposal List</h1>
+<div class="rl">
+  <section class="rl-head">
+    <span class="rl-head__icon"><%= app_icon(:layers, size: 28) %></span>
+    <div class="rl-head__title">
+      <h1>Quotation Proposal List</h1>
+      <p>All quotations you can see; anything waiting on you is shown first.</p>
     </div>
-    <div style="margin-left:auto; display:flex; gap:.5rem; align-items:center;">
+    <div class="rl-head__actions">
+      <% if pending_actions.any? %>
+        <span class="rl-pending-chip">
+          <% QuotationPendingHelper::QUOTATION_PENDING_LABELS.each do |kind, label| %>
+            <% count = pending_actions.count { |_id, pending_kind| pending_kind == kind } %>
+            <% next if count.zero? %>
+            <b><%= count %></b> <%= label.downcase %>
+          <% end %>
+        </span>
+      <% end %>
       <% if can_manage_quotation_proposals %>
-        <%= form_tag send_for_approval_quotation_proposals_path, method: :post, id: "send-quotation-approval-form", style: "display: inline;" do %>
-          <button type="submit" class="app-secondary-btn d-none" id="send_quotation_for_approval_button">Send for Approval</button>
+        <%= form_tag send_for_approval_quotation_proposals_path, method: :post, id: "send-quotation-approval-form", class: "d-inline" do %>
+          <button type="submit" class="rl-btn rl-btn--primary d-none" id="send_quotation_for_approval_button"><%= app_icon(:approval, size: 16) %> Send for Approval</button>
         <% end %>
       <% end %>
     </div>
-  </div>
-</div>
+  </section>
 
-<% pending_summary = quotation_pending_actions %>
-<% if pending_summary.any? %>
-  <div class="app-detail-card" style="border-left: 3px solid #a32d2d; background: #fdf3f3; margin-bottom: 1rem;">
-    <strong style="color: #a32d2d;">Pending with you</strong>
-    <div class="app-section-note mb-0" style="margin-top: .35rem;">
-      <% QuotationPendingHelper::QUOTATION_PENDING_LABELS.each do |kind, label| %>
-        <% count = pending_summary.count { |_id, pending_kind| pending_kind == kind } %>
-        <% next if count.zero? %>
-        <span class="badge rounded-pill text-bg-danger me-1 app-nav-badge-live"><%= count %></span>
-        <span class="me-3"><%= label.downcase %></span>
-      <% end %>
+  <div class="rl-card" data-rlist>
+    <%= render "shared/rlist_toolbar",
+               placeholder: "Search by subject, QTN number, theme, vendor...",
+               filters: [
+                 ["theme", "Theme", @quotation_proposals.filter_map { |q| q.theme&.name }.uniq.sort],
+                 ["status", "Status", stages],
+                 ["creator", "Created By", @quotation_proposals.filter_map { |q| q.user&.employee_master&.name.presence || q.user&.email }.uniq.sort]
+               ] %>
+
+    <div class="app-table-wrap rl-table-wrap" data-table-search="false" data-table-pagination="false">
+      <table class="table app-table rl-table" data-min-width-ready="true">
+        <thead>
+          <tr>
+            <% if can_manage_quotation_proposals %>
+              <th class="rl-col-check">
+                <% if sendable_quotation_proposals.any? %>
+                  <input type="checkbox" id="quotation_select_all_checkbox" aria-label="Select all">
+                <% end %>
+              </th>
+            <% end %>
+            <th class="rl-col-num">#</th>
+            <th class="rl-col-view">View</th>
+            <th>Subject</th>
+            <th>Theme</th>
+            <th>Vendors</th>
+            <th>End Date</th>
+            <th>Status</th>
+            <th class="rl-optional">Created By</th>
+            <% if can_manage_quotation_proposals %>
+              <th class="rl-col-actions">Action</th>
+            <% end %>
+          </tr>
+        </thead>
+        <tbody>
+          <% ordered_quotation_proposals.each do |quotation_proposal| %>
+            <%= render "rlist_row", quotation_proposal: quotation_proposal, show_check: can_manage_quotation_proposals,
+                                    show_actions: can_manage_quotation_proposals, pending_label: quotation_pending_label(quotation_proposal) %>
+          <% end %>
+        </tbody>
+      </table>
+      <div class="rl-empty" data-rlist-empty hidden>No quotation matches the filters.</div>
     </div>
+    <div class="rl-footer" data-rlist-footer></div>
   </div>
-<% end %>
-
-<div class="app-table-wrap quotation-list-table-wrap" data-page-size="10" data-search-placeholder="Search quotation proposals...">
-  <table class="table app-table app-list-table quotation-list-table" data-min-width-ready="true">
-    <thead class="sticky-top">
-      <tr>
-        <% if can_manage_quotation_proposals %>
-          <th class="ql-col-check">
-            <% if sendable_quotation_proposals.any? %>
-              <input type="checkbox" id="quotation_select_all_checkbox" style="cursor: pointer;">
-            <% end %>
-          </th>
-        <% end %>
-        <th class="ql-col-view">View</th>
-        <th class="ql-col-subject">Subject</th>
-        <th class="ql-col-theme">Theme</th>
-        <th class="ql-col-vendors">Vendors</th>
-        <th class="ql-col-date">End Date</th>
-        <th class="ql-col-items ql-optional">Items</th>
-        <th class="ql-col-status">Status</th>
-        <th class="ql-col-remark ql-optional">Latest Remark</th>
-        <th class="ql-col-trail">Approval Trail</th>
-        <th class="ql-col-created ql-optional">Created By</th>
-        <% if can_manage_quotation_proposals %>
-          <th class="ql-col-action">Action</th>
-        <% end %>
-      </tr>
-    </thead>
-    <tbody>
-      <%# Anything waiting on this user is listed first so it cannot be missed. %>
-      <% pending_actions = quotation_pending_actions %>
-      <% ordered_quotation_proposals = @quotation_proposals.sort_by { |proposal| [pending_actions.key?(proposal.id) ? 0 : 1, -proposal.id] } %>
-      <% ordered_quotation_proposals.each do |quotation_proposal| %>
-        <% pending_label = quotation_pending_label(quotation_proposal) %>
-        <tr class="<%= "quotation-row-pending" if pending_label %>">
-          <% if can_manage_quotation_proposals %>
-            <td>
-              <% if quotation_proposal.approval_request.blank? && (admin_user? || quotation_proposal.user_id == current_user.id) %>
-                <input type="checkbox" name="quotation_proposal_ids[]" value="<%= quotation_proposal.id %>" class="quotation-approval-checkbox" style="cursor: pointer;" form="send-quotation-approval-form">
-              <% end %>
-            </td>
-          <% end %>
-          <td>
-            <%= link_to quotation_proposal_path(quotation_proposal), class: "app-action-icon text-primary", title: "View" do %>
-              <%= app_icon(:eye, size: 18) %>
-            <% end %>
-          </td>
-          <td>
-            <div class="ql-subject" data-truncate-target>
-              <span class="ql-subject__text" title="<%= quotation_proposal.subject %>"><%= quotation_proposal.subject %></span>
-              <% if pending_label %>
-                <span class="badge rounded-pill text-bg-danger app-nav-badge-live"><%= pending_label %></span>
-              <% end %>
-            </div>
-          </td>
-          <td><%= quotation_proposal.theme.name %></td>
-          <% vendor_names = quotation_proposal.vendor_registrations.map(&:display_name) %>
-          <td>
-            <span class="ql-vendors" title="<%= vendor_names.join(", ") %>">
-              <span class="ql-clamp-2"><%= vendor_names.first || "-" %></span>
-              <% if vendor_names.size > 1 %><span class="ql-more">+<%= vendor_names.size - 1 %></span><% end %>
-            </span>
-          </td>
-          <td><%= quotation_proposal.proposal_end_date.strftime("%d-%m-%Y") %></td>
-          <td class="ql-optional"><%= quotation_proposal.quotation_proposal_items.size %></td>
-          <td>
-            <% if quotation_proposal.awaiting_thematic_head_decision? %>
-              <span class="ql-head-badge">With Thematic Head</span>
-            <% else %>
-              <% badge_data = approval_status_badge_data(quotation_proposal.approval_request) %>
-              <span class="badge border <%= badge_data[:css_class] %> fw-semibold px-2 py-1">
-                <%= badge_data[:label] %>
-              </span>
-            <% end %>
-          </td>
-          <% latest_remark = quotation_proposal.approval_request&.latest_remark.presence %>
-          <td class="ql-optional"><span class="ql-remark" title="<%= latest_remark %>"><%= latest_remark || "-" %></span></td>
-          <td class="ql-trail-cell">
-            <% approval_started = quotation_proposal.approval_request.present? %>
-            <% trail_steps = quotation_proposal.approval_request&.trail_steps || quotation_proposal.committee_steps %>
-            <% if trail_steps.any? %>
-              <%= render "shared/approval_trail", steps: trail_steps, started: approval_started %>
-            <% elsif quotation_proposal.awaiting_thematic_head_decision? %>
-              <ul class="ql-trail">
-                <li class="ql-trail__step is-pending" title="<%= quotation_proposal.thematic_head&.name %> (Thematic Head)">
-                  <span class="ql-trail__dot"></span>
-                  <span class="ql-trail__name"><%= quotation_proposal.thematic_head&.name %></span>
-                  <span class="ql-trail__status">Thematic Head</span>
-                </li>
-              </ul>
-            <% else %>
-              <span class="text-muted">-</span>
-            <% end %>
-          </td>
-          <% creator = quotation_proposal.user %>
-          <% creator_name = creator&.employee_master&.name.presence || creator&.email %>
-          <td class="ql-optional"><span class="ql-clamp-2" title="<%= creator&.email %>"><%= creator_name || "-" %></span></td>
-          <% if can_manage_quotation_proposals %>
-            <td class="app-row-actions">
-              <div class="d-flex align-items-center gap-2">
-                <% if quotation_proposal.selected_vendor_registration_id.present? %>
-                  <%= link_to purchase_order_quotation_proposal_path(quotation_proposal), class: "app-action-icon text-success", title: "Purchase Order" do %>
-                    <%= app_icon(:document, size: 18) %>
-                  <% end %>
-                <% end %>
-                <% if admin_user? || (quotation_proposal.user_id == current_user.id && !quotation_proposal.approval_locked?) %>
-                  <%= link_to edit_quotation_proposal_path(quotation_proposal), class: "app-action-icon text-warning", title: "Edit" do %>
-                    <%= app_icon(:pencil, size: 18) %>
-                  <% end %>
-                <% end %>
-                <% if admin_user? || (quotation_proposal.user_id == current_user.id && !quotation_proposal.approval_locked?) %>
-                  <%= button_to quotation_proposal_path(quotation_proposal), method: :delete, data: { turbo_confirm: "Delete this quotation proposal?" }, class: "app-action-icon text-danger", title: "Delete" do %>
-                    <%= app_icon(:trash, size: 18) %>
-                  <% end %>
-                <% end %>
-              </div>
-            </td>
-          <% end %>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
 </div>

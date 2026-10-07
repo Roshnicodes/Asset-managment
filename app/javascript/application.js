@@ -945,6 +945,152 @@ const setupPageHeadCards = () => {
   })
 }
 
+// List pages (reference design): search box, dropdown filters with chips,
+// Reset, "Showing 1-10 of N records", page numbers and rows per page.
+// Rows carry data-f-<key> values for the filters and data-search-text.
+const setupRichLists = () => {
+  document.querySelectorAll("[data-rlist]").forEach((root) => {
+    if (root.dataset.rlistReady === "true") return
+    root.dataset.rlistReady = "true"
+
+    const tbody = root.querySelector("tbody")
+    if (!tbody) return
+    const search = root.querySelector("[data-rlist-search]")
+    const filters = Array.from(root.querySelectorAll("[data-rlist-filter]"))
+    const chips = root.querySelector("[data-rlist-chips]")
+    const footer = root.querySelector("[data-rlist-footer]")
+    const empty = root.querySelector("[data-rlist-empty]")
+    const reset = root.querySelector("[data-rlist-reset]")
+    const storageKey = `rlist:${window.location.pathname}`
+    const escape = (text) => String(text).replace(/[&<>"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[char]))
+    let page = 1
+    let pageSize = 10
+
+    // Remember the filters while the user moves between pages.
+    try {
+      const saved = JSON.parse(window.sessionStorage.getItem(storageKey) || "null")
+      if (saved) {
+        if (search) search.value = saved.q || ""
+        filters.forEach((select) => {
+          const value = saved.f?.[select.dataset.rlistFilter]
+          if (value && Array.from(select.options).some((option) => option.value === value)) select.value = value
+        })
+        pageSize = Number(saved.size) || 10
+      }
+    } catch (_error) { /* storage unavailable */ }
+
+    const save = () => {
+      try {
+        window.sessionStorage.setItem(storageKey, JSON.stringify({
+          q: search?.value || "",
+          f: Object.fromEntries(filters.map((select) => [select.dataset.rlistFilter, select.value])),
+          size: pageSize
+        }))
+      } catch (_error) { /* storage unavailable */ }
+    }
+
+    const rows = () => Array.from(tbody.querySelectorAll("tr[data-rlist-row]"))
+    const datasetKey = (key) => `f${key.charAt(0).toUpperCase()}${key.slice(1)}`
+
+    const matches = (row) => {
+      const words = (search?.value || "").trim().toLowerCase().split(/\s+/).filter(Boolean)
+      const text = `${row.dataset.searchText || ""} ${row.innerText}`.toLowerCase()
+      if (!words.every((word) => text.includes(word))) return false
+      return filters.every((select) => !select.value || (row.dataset[datasetKey(select.dataset.rlistFilter)] || "") === select.value)
+    }
+
+    const renderChips = () => {
+      if (!chips) return
+      const active = filters.filter((select) => select.value).map((select) => ({ key: select.dataset.rlistFilter, text: `${select.dataset.rlistFilterLabel}: ${select.value}` }))
+      if (search?.value.trim()) active.unshift({ key: "__search", text: `Search: ${search.value.trim()}` })
+      chips.hidden = active.length === 0
+      chips.innerHTML = active.map((chip) => `<span class="rl-chip">${escape(chip.text)}<button type="button" data-rlist-chip-clear="${escape(chip.key)}" aria-label="Remove">×</button></span>`).join("") +
+        (active.length ? `<button type="button" class="rl-clear-all" data-rlist-chip-clear="__all">Clear All</button>` : "")
+    }
+
+    const pageButtons = (totalPages) => {
+      const numbers = []
+      const from = Math.max(1, Math.min(page - 2, totalPages - 4))
+      for (let number = from; number <= Math.min(totalPages, from + 4); number += 1) numbers.push(number)
+      const button = (label, target, disabled, active = false, aria = "") =>
+        `<button type="button" class="rl-page${active ? " is-active" : ""}" data-rlist-page="${target}" ${disabled ? "disabled" : ""} ${aria ? `aria-label="${aria}"` : ""}>${label}</button>`
+      return button("«", 1, page === 1, false, "First page") +
+        button("‹", page - 1, page === 1, false, "Previous page") +
+        numbers.map((number) => button(number, number, false, number === page)).join("") +
+        button("›", page + 1, page === totalPages, false, "Next page") +
+        button("»", totalPages, page === totalPages, false, "Last page")
+    }
+
+    const render = () => {
+      const all = rows()
+      const filtered = all.filter(matches)
+      const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+      page = Math.min(Math.max(1, page), totalPages)
+      const start = (page - 1) * pageSize
+      const visible = new Set(filtered.slice(start, start + pageSize))
+      all.forEach((row) => { row.style.display = visible.has(row) ? "" : "none" })
+      filtered.slice(start, start + pageSize).forEach((row, index) => {
+        const cell = row.querySelector("[data-rlist-number]")
+        if (cell) cell.textContent = String(start + index + 1)
+      })
+      if (empty) empty.hidden = filtered.length > 0
+      if (footer) {
+        const shownTo = Math.min(start + pageSize, filtered.length)
+        footer.innerHTML = `
+          <span class="rl-footer__info">Showing ${filtered.length ? start + 1 : 0}-${shownTo} of ${filtered.length} records${filtered.length !== all.length ? ` (filtered from ${all.length})` : ""}</span>
+          <span class="rl-footer__pages">${pageButtons(totalPages)}</span>
+          <label class="rl-footer__size"><select data-rlist-size data-native-select aria-label="Rows per page">${[10, 25, 50, 100].map((size) => `<option value="${size}" ${size === pageSize ? "selected" : ""}>${size} / page</option>`).join("")}</select></label>`
+      }
+      renderChips()
+      save()
+    }
+
+    let searchTimer
+    search?.addEventListener("input", () => {
+      clearTimeout(searchTimer)
+      searchTimer = setTimeout(() => { page = 1; render() }, 150)
+    })
+    filters.forEach((select) => select.addEventListener("change", () => { page = 1; render() }))
+    reset?.addEventListener("click", () => {
+      if (search) search.value = ""
+      filters.forEach((select) => { select.value = "" })
+      page = 1
+      render()
+    })
+    root.addEventListener("click", (event) => {
+      const pageButton = event.target.closest("[data-rlist-page]")
+      if (pageButton && !pageButton.disabled) {
+        page = Number(pageButton.dataset.rlistPage)
+        render()
+        return
+      }
+      const chip = event.target.closest("[data-rlist-chip-clear]")
+      if (chip) {
+        const key = chip.dataset.rlistChipClear
+        if (key === "__all") {
+          if (search) search.value = ""
+          filters.forEach((select) => { select.value = "" })
+        } else if (key === "__search") {
+          if (search) search.value = ""
+        } else {
+          const select = filters.find((item) => item.dataset.rlistFilter === key)
+          if (select) select.value = ""
+        }
+        page = 1
+        render()
+      }
+    })
+    root.addEventListener("change", (event) => {
+      if (!event.target.matches("[data-rlist-size]")) return
+      pageSize = Number(event.target.value) || 10
+      page = 1
+      render()
+    })
+
+    render()
+  })
+}
+
 const setupFormPagination = () => {
   document.querySelectorAll("[data-ui-form-pager='true']").forEach((form) => {
     if (form.dataset.uiFormPagerReady === "true") return
@@ -2777,6 +2923,7 @@ const runAppInitializers = () => {
   setupStaticPagerValidation()
   setupProcurementFormFields()
   setupWrdActivity()
+  setupRichLists()
   setupSearchableSelects()
   setupPageHeadCards()
   setupTruncatedCellTooltips()

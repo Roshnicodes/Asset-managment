@@ -1,0 +1,74 @@
+<%# One row of the quotation lists (Quotation Proposals and Quotation Proposal List).
+    locals: quotation_proposal, show_check (checkbox column), show_actions,
+            pending_label (what is waiting on the user, or nil) %>
+<% stage = quotation_stage(quotation_proposal) %>
+<% vendor_names = quotation_proposal.vendor_registrations.map(&:display_name) %>
+<% creator = quotation_proposal.user %>
+<% creator_name = creator&.employee_master&.name.presence || creator&.email %>
+<% approval_started = quotation_proposal.approval_request.present? %>
+<% trail_steps = quotation_proposal.approval_request&.trail_steps || quotation_proposal.committee_steps %>
+<% trail_text = if trail_steps.any?
+     trail_steps.map { |step| "#{step.employee_master&.name}: #{approval_started && step.respond_to?(:effective_status_label) ? step.effective_status_label : 'Not started'}" }.join("\n")
+   elsif quotation_proposal.awaiting_thematic_head_decision?
+     "#{quotation_proposal.thematic_head&.name}: Thematic Head decision"
+   else
+     "Not sent for approval"
+   end %>
+<% can_change = admin_user? || (quotation_proposal.user_id == current_user.id && !quotation_proposal.approval_locked?) %>
+<tr data-rlist-row class="<%= "quotation-row-pending" if pending_label %>"
+    data-f-theme="<%= quotation_proposal.theme&.name %>"
+    data-f-status="<%= stage.label %>"
+    data-f-creator="<%= creator_name %>"
+    data-search-text="<%= [format('QTN-%03d', quotation_proposal.id), quotation_proposal.subject, quotation_proposal.theme&.name, vendor_names.join(' '), creator_name, stage.label].compact.join(' ') %>">
+  <% if show_check %>
+    <td class="rl-col-check">
+      <% if quotation_proposal.approval_request.blank? && (admin_user? || quotation_proposal.user_id == current_user.id) %>
+        <input type="checkbox" name="quotation_proposal_ids[]" value="<%= quotation_proposal.id %>" class="quotation-approval-checkbox" form="send-quotation-approval-form" aria-label="Select <%= format('QTN-%03d', quotation_proposal.id) %>">
+      <% end %>
+    </td>
+  <% end %>
+  <td class="rl-col-num" data-rlist-number></td>
+  <td class="rl-col-view">
+    <%= link_to quotation_proposal_path(quotation_proposal), class: "rl-icon-btn rl-icon-btn--plain", title: "View" do %><%= app_icon(:eye, size: 17) %><% end %>
+  </td>
+  <td>
+    <span class="rl-person">
+      <span class="rl-doc"><%= app_icon(:document, size: 18) %></span>
+      <span>
+        <strong title="<%= quotation_proposal.subject %>"><%= quotation_proposal.subject %></strong>
+        <small><%= format("QTN-%03d", quotation_proposal.id) %><%= " · #{quotation_proposal.activity_product.name}" if quotation_proposal.activity_product.present? %></small>
+        <% if pending_label %>
+          <span class="badge rounded-pill text-bg-danger app-nav-badge-live"><%= pending_label %></span>
+        <% end %>
+      </span>
+    </span>
+  </td>
+  <td><%= quotation_proposal.theme&.name %></td>
+  <td>
+    <span class="ql-vendors rl-vendors" title="<%= vendor_names.join(", ") %>">
+      <span class="ql-clamp-2"><%= vendor_names.first || "-" %></span>
+      <% if vendor_names.size > 1 %><span class="ql-more">+<%= vendor_names.size - 1 %></span><% end %>
+    </span>
+  </td>
+  <td class="rl-date"><%= quotation_proposal.proposal_end_date&.strftime("%d-%m-%Y") %></td>
+  <td title="<%= trail_text %>">
+    <span class="rl-pill rl-pill--<%= dashboard_stage_tone(stage) %>"><%= stage.label %></span>
+    <% if stage.waiting? %>
+      <small class="rl-sub">Waiting: <%= stage.actor_names.truncate(40) %><%= " · #{stage.progress}" if stage.progress %></small>
+    <% end %>
+  </td>
+  <td class="rl-optional rl-creator"><span class="ql-clamp-2" title="<%= creator&.email %>"><%= creator_name || "-" %></span></td>
+  <% if show_actions %>
+    <td class="rl-col-actions">
+      <div class="rl-actions">
+        <% if quotation_proposal.selected_vendor_registration_id.present? && (admin_user? || quotation_proposal.user_id == current_user.id) %>
+          <%= link_to purchase_order_quotation_proposal_path(quotation_proposal), class: "rl-icon-btn rl-icon-btn--green", title: "Purchase Order" do %><%= app_icon(:cart, size: 16) %><% end %>
+        <% end %>
+        <% if can_change %>
+          <%= link_to edit_quotation_proposal_path(quotation_proposal), class: "rl-icon-btn rl-icon-btn--teal", title: "Edit" do %><%= app_icon(:pencil, size: 16) %><% end %>
+          <%= button_to quotation_proposal_path(quotation_proposal), method: :delete, data: { turbo_confirm: "Delete this quotation proposal?" }, class: "rl-icon-btn rl-icon-btn--red", title: "Delete", form: { class: "d-inline-block" } do %><%= app_icon(:trash, size: 16) %><% end %>
+        <% end %>
+      </div>
+    </td>
+  <% end %>
+</tr>
