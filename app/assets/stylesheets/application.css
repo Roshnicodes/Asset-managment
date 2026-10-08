@@ -12897,7 +12897,7 @@ select.app-combo__native {
   .app-form-grid.three-col,
   .app-form-grid.four-col,
   .app-form-grid.five-col {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   }
 }
 
@@ -12906,7 +12906,7 @@ select.app-combo__native {
 @media screen and (min-width: 1200px) and (max-width: 1439px) {
   .app-form-grid.four-col,
   .app-form-grid.five-col {
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   }
 }
 
