@@ -86,6 +86,60 @@ class PaymentAdviceMailRelayTest < ActiveSupport::TestCase
     end
   end
 
+  test "a redirect after sending (302 Object moved) is followed to the result page" do
+    redirect = Class.new(Net::HTTPFound) do
+      def initialize; super("1.1", "302", "Found"); end
+      def [](key) = key.to_s.downcase == "location" ? "/mailsent.aspx?ok=1" : nil
+      def body = "Object moved"
+    end.new
+    calls = []
+    fake = lambda do |uri|
+      calls << uri.to_s
+      calls.size == 1 ? redirect : FakeResponse.new("200", "Mail sent successfully", "OK", true)
+    end
+
+    with_env("PAYMENT_ADVICE_MAIL_RELAY_URL" => nil, "PAYMENT_ADVICE_MAIL_RELAY_SECRET" => nil) do
+      PaymentAdviceMailRelay.stub(:get, fake) { assert PaymentAdviceMailRelay.deliver!(@payment_advice) }
+    end
+    assert_equal 2, calls.size
+    assert_equal "https://krai.asaindia.org/mailsent.aspx?ok=1", calls.last
+  end
+
+  test "krai's cookieless-session redirect /(S(...))/nemail.aspx is followed and the mail is sent there" do
+    redirect = Class.new(Net::HTTPFound) do
+      def initialize; super("1.1", "302", "Found"); end
+      def [](key) = key.to_s.downcase == "location" ? "/(S(jvfjhhwwc0jtcwp4h4d3rnfo))/nemail.aspx?advice_no=PA-2026-950" : nil
+      def body = "Object moved"
+    end.new
+    calls = []
+    fake = lambda do |uri|
+      calls << uri
+      calls.size == 1 ? redirect : FakeResponse.new("200", "Email successfully bhej diya gaya: relay.vendor@example.com", "OK", true)
+    end
+
+    with_env("PAYMENT_ADVICE_MAIL_RELAY_URL" => nil, "PAYMENT_ADVICE_MAIL_RELAY_SECRET" => nil) do
+      PaymentAdviceMailRelay.stub(:get, fake) { assert PaymentAdviceMailRelay.deliver!(@payment_advice) }
+    end
+    assert_equal "/(S(jvfjhhwwc0jtcwp4h4d3rnfo))/nemail.aspx", calls.last.path
+  end
+
+  test "a redirect to a login page is reported as a failure" do
+    redirect = Class.new(Net::HTTPFound) do
+      def initialize; super("1.1", "302", "Found"); end
+      def [](key) = key.to_s.downcase == "location" ? "/Login.aspx?ReturnUrl=%2fnemail.aspx" : nil
+      def body = "Object moved"
+    end.new
+    fake = ->(uri) { uri.path.include?("Login") ? FakeResponse.new("200", "<form>login</form>", "OK", true) : redirect }
+
+    error = with_env("PAYMENT_ADVICE_MAIL_RELAY_URL" => nil, "PAYMENT_ADVICE_MAIL_RELAY_SECRET" => nil) do
+      assert_raises(PaymentAdviceMailRelay::DeliveryError) do
+        PaymentAdviceMailRelay.stub(:get, fake) { PaymentAdviceMailRelay.deliver!(@payment_advice) }
+      end
+    end
+    assert_match "asked for a login", error.message
+    assert_match "/Login.aspx", error.message
+  end
+
   test "an error answer from the mail service is reported" do
     fake = ->(_uri) { FakeResponse.new("200", { success: false, message: "Invalid signature" }.to_json, "OK", true) }
 

@@ -50,10 +50,13 @@ class PaymentAdviceMailRelay
   end
 
   def self.deliver!(payment_advice, now: Time.current)
-    response = get(signed_url(payment_advice, now: now))
-    raise DeliveryError, failure_message(response) unless success?(response)
+    response, final_uri = fetch(signed_url(payment_advice, now: now))
+    # The address (without the advice details) helps to see where it went.
+    where = "[#{final_uri.scheme}://#{final_uri.host}#{final_uri.path}]"
+    raise DeliveryError, "Mail service asked for a login #{where}" if login_page?(final_uri)
+    raise DeliveryError, "#{failure_message(response)} #{where}" unless success?(response)
 
-    Rails.logger.info("PaymentAdviceMailRelay sent advice=#{payment_advice.advice_no} to=#{payment_advice.payee_email} status=#{response.code}")
+    Rails.logger.info("PaymentAdviceMailRelay sent advice=#{payment_advice.advice_no} to=#{payment_advice.payee_email} status=#{response.code} #{where}")
     true
   rescue DeliveryError => error
     Rails.logger.error("PaymentAdviceMailRelay failed advice=#{payment_advice.advice_no}: #{error.message}")
@@ -99,6 +102,27 @@ class PaymentAdviceMailRelay
     uri = URI.parse(url)
     uri.query = URI.encode_www_form(query)
     uri
+  end
+
+  MAX_REDIRECTS = 3
+
+  # krai's page may answer with a redirect (302 "Object moved") to a result
+  # page; follow it and judge the page it ends on.
+  def self.fetch(uri)
+    response = get(uri)
+    MAX_REDIRECTS.times do
+      break unless response.is_a?(Net::HTTPRedirection) && response["location"].present?
+
+      next_uri = URI.join(uri.to_s, response["location"])
+      Rails.logger.info("PaymentAdviceMailRelay redirect #{response.code} -> #{next_uri.scheme}://#{next_uri.host}#{next_uri.path}")
+      uri = next_uri
+      response = get(uri)
+    end
+    [response, uri]
+  end
+
+  def self.login_page?(uri)
+    uri.path.to_s.downcase.match?(/login|signin|sign_in/)
   end
 
   def self.get(uri)
