@@ -4,10 +4,10 @@ require "openssl"
 require "uri"
 
 # Sends payment advice mails through the ASA mail service (krai) because the
-# server has no SMTP. The Apurti server calls a link with the advice details as
-# query parameters; krai builds the mail from them and sends it.
+# server has no SMTP. The Apurti server calls krai's nemail.aspx page with the
+# advice details as query parameters; krai builds the mail and sends it.
 #
-#   GET <PAYMENT_ADVICE_MAIL_RELAY_URL>?<SIGNED_FIELDS...>
+#   GET https://krai.asaindia.org/nemail.aspx?company_name=...&advice_no=...&...&remarks=
 #
 # If PAYMENT_ADVICE_MAIL_RELAY_SECRET is set, the link also carries
 # expires_at=<unix> and signature=HMAC-SHA256(secret, values of SIGNED_FIELDS
@@ -17,7 +17,8 @@ require "uri"
 class PaymentAdviceMailRelay
   class DeliveryError < StandardError; end
 
-  DEFAULT_URL = "https://krai.asaindia.org/".freeze
+  DEFAULT_URL = "https://krai.asaindia.org/nemail.aspx".freeze
+  MAIL_PAGE = "/nemail.aspx".freeze
   TIMEOUT_SECONDS = 15
   LINK_VALID_FOR = 10.minutes
   SIGNED_FIELDS = %w[
@@ -35,8 +36,13 @@ class PaymentAdviceMailRelay
     !PaymentAdviceMailer.payment_advice_real_smtp_configured?
   end
 
+  # A configured bare host (e.g. the older "https://krai.asaindia.org/") still
+  # points at the mail page.
   def self.url
-    ENV["PAYMENT_ADVICE_MAIL_RELAY_URL"].presence || DEFAULT_URL
+    configured = ENV["PAYMENT_ADVICE_MAIL_RELAY_URL"].presence || DEFAULT_URL
+    uri = URI.parse(configured)
+    uri.path = MAIL_PAGE if uri.path.blank? || uri.path == "/"
+    uri.to_s
   end
 
   def self.secret

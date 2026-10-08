@@ -36,6 +36,7 @@ class PaymentAdviceMailRelayTest < ActiveSupport::TestCase
     end
 
     assert_equal "krai.asaindia.org", called.host
+    assert_equal "/nemail.aspx", called.path
     query = URI.decode_www_form(called.query).to_h
     assert_equal "relay.vendor@example.com", query["payee_email"]
     assert_equal "Relay Vendor & Sons", query["payee_name"]
@@ -60,6 +61,29 @@ class PaymentAdviceMailRelayTest < ActiveSupport::TestCase
     assert_equal "relay.vendor@example.com", query["payee_email"]
     assert_not query.key?("signature")
     assert_not query.key?("expires_at")
+  end
+
+  test "the default link is krai's nemail.aspx page with the parameters in the agreed order" do
+    called = nil
+    fake = ->(uri) { called = uri; FakeResponse.new("200", "Mail sent", "OK", true) }
+
+    with_env("PAYMENT_ADVICE_MAIL_RELAY_URL" => nil, "PAYMENT_ADVICE_MAIL_RELAY_SECRET" => nil) do
+      PaymentAdviceMailRelay.stub(:get, fake) { assert PaymentAdviceMailRelay.deliver!(@payment_advice) }
+    end
+
+    assert_equal "https://krai.asaindia.org/nemail.aspx", "#{called.scheme}://#{called.host}#{called.path}"
+    assert_equal %w[company_name advice_no payee_name payee_email invoice_no invoice_date gross_amount tds_amount
+                    other_deduction net_amount payment_mode reference_no bank_name payment_date remarks],
+                 URI.decode_www_form(called.query).map(&:first)
+  end
+
+  test "an older bare relay address still goes to nemail.aspx" do
+    with_env("PAYMENT_ADVICE_MAIL_RELAY_URL" => "https://krai.asaindia.org/") do
+      assert_equal "https://krai.asaindia.org/nemail.aspx", PaymentAdviceMailRelay.url
+    end
+    with_env("PAYMENT_ADVICE_MAIL_RELAY_URL" => "https://krai.asaindia.org/other.aspx") do
+      assert_equal "https://krai.asaindia.org/other.aspx", PaymentAdviceMailRelay.url
+    end
   end
 
   test "an error answer from the mail service is reported" do
