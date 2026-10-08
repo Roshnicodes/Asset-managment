@@ -2632,6 +2632,68 @@ const setupBulkDeleteSelections = () => {
   })
 }
 
+const setupMenuPermissionSelections = () => {
+  document.querySelectorAll("[data-menu-permissions-form]").forEach((form) => {
+    if (form.dataset.menuPermissionsReady === "true") return
+
+    const allCheckboxes = Array.from(form.querySelectorAll("input[name='menu_ids[]']"))
+    const selectAllCheckbox = form.querySelector("[data-permission-select-all]")
+    if (allCheckboxes.length === 0) return
+
+    const syncSelectAllState = () => {
+      if (!selectAllCheckbox) return
+
+      const checkedCount = allCheckboxes.filter((checkbox) => checkbox.checked).length
+      selectAllCheckbox.checked = checkedCount === allCheckboxes.length
+      selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < allCheckboxes.length
+    }
+
+    const syncGroupState = (group) => {
+      const parentCheckbox = group.querySelector("[data-permission-parent]")
+      const childCheckboxes = Array.from(group.querySelectorAll("[data-permission-child]"))
+      if (!parentCheckbox || childCheckboxes.length === 0) return
+
+      const checkedCount = childCheckboxes.filter((checkbox) => checkbox.checked).length
+      parentCheckbox.checked = checkedCount === childCheckboxes.length
+      parentCheckbox.indeterminate = checkedCount > 0 && checkedCount < childCheckboxes.length
+    }
+
+    form.querySelectorAll("[data-permission-group]").forEach((group) => {
+      const parentCheckbox = group.querySelector("[data-permission-parent]")
+      const childCheckboxes = Array.from(group.querySelectorAll("[data-permission-child]"))
+
+      parentCheckbox?.addEventListener("change", () => {
+        childCheckboxes.forEach((checkbox) => {
+          checkbox.checked = parentCheckbox.checked
+        })
+        parentCheckbox.indeterminate = false
+        syncSelectAllState()
+      })
+
+      childCheckboxes.forEach((checkbox) => {
+        checkbox.addEventListener("change", () => {
+          syncGroupState(group)
+          syncSelectAllState()
+        })
+      })
+    })
+
+    selectAllCheckbox?.addEventListener("change", () => {
+      allCheckboxes.forEach((checkbox) => {
+        checkbox.checked = selectAllCheckbox.checked
+        checkbox.indeterminate = false
+      })
+      syncSelectAllState()
+    })
+
+    // Do not alter stored parent permissions on first page load. The parent
+    // checkbox becomes a group controller as soon as the user changes it or a
+    // child item, while the master checkbox accurately reflects all saved rows.
+    syncSelectAllState()
+    form.dataset.menuPermissionsReady = "true"
+  })
+}
+
 const setupProductBatchForm = () => {
   document.querySelectorAll("[data-product-batch-form]").forEach((form) => {
     if (form.dataset.productBatchReady === "true") return
@@ -2916,6 +2978,7 @@ const runAppInitializers = () => {
   setupAssetInsuranceFields()
   setupFinanceQueueBulkSelection()
   setupBulkDeleteSelections()
+  setupMenuPermissionSelections()
   setupProductBatchForm()
   setupPasswordVisibility()
   setupQuotationShowDetails()

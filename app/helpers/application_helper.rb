@@ -46,7 +46,7 @@ module ApplicationHelper
     return unless can_view_menu?(identifier)
 
     link_classes = [class_name]
-    link_classes << "is-active" if app_nav_path_active?(path)
+    link_classes << "is-active" if app_nav_path_active?(path, include_descendants: true)
 
     link_to path, class: link_classes.join(" ") do
       content_tag(:span, class: "app-link-wrap") do
@@ -55,13 +55,19 @@ module ApplicationHelper
     end
   end
 
-  def app_dropdown_toggle(label, target_id, icon:, identifier: nil, badge_count: 0)
+  def app_dropdown_toggle(label, target_id, icon:, identifier: nil, badge_count: 0, expanded: false)
     return unless can_view_menu?(identifier)
 
     link_classes = ["nav-link", "dropdown-toggle-link"]
     link_classes << "app-nav-link-alert" if badge_count.to_i.positive?
+    link_classes << "is-active" if expanded
 
-    content_tag(:a, class: link_classes.join(" "), data: { bs_toggle: "collapse" }, href: "##{target_id}") do
+    content_tag(:a,
+      class: link_classes.join(" "),
+      data: { bs_toggle: "collapse" },
+      href: "##{target_id}",
+      role: "button",
+      aria: { controls: target_id, expanded: expanded }) do
       wrap_parts = [app_icon(icon), content_tag(:span, label, class: "app-link-label")]
       if badge_count.to_i.positive?
         wrap_parts << content_tag(:span, badge_count, class: "badge rounded-pill text-bg-danger app-nav-badge-live")
@@ -71,8 +77,33 @@ module ApplicationHelper
     end
   end
 
-  def app_nav_path_active?(path)
-    request.path == path.to_s.split("?").first
+  # Submenus use regular links (without a second icon) but still need the
+  # same active state as top-level navigation.  Keeping that concern here
+  # means styling never has to change access-control or route logic.
+  def app_subnav_link(label, path)
+    link_classes = ["nav-link", "app-subnav-link"]
+    link_classes << "is-active" if app_nav_path_active?(path)
+    link_to label, path, class: link_classes.join(" ")
+  end
+
+  # Keep a parent group open while its current page, new form, edit form or
+  # details page is being viewed. Query strings deliberately do not affect
+  # this check, so filters retain the correct menu state.
+  def app_submenu_open?(*paths)
+    paths.flatten.compact.any? do |path|
+      menu_path = path.to_s.split("?").first
+      menu_path.present? && (
+        request.path == menu_path ||
+        (menu_path != "/" && request.path.start_with?("#{menu_path}/"))
+      )
+    end
+  end
+
+  def app_nav_path_active?(path, include_descendants: false)
+    menu_path = path.to_s.split("?").first
+    return true if request.path == menu_path
+
+    include_descendants && menu_path != "/" && request.path.start_with?("#{menu_path}/")
   end
 
   def catalog_item_option_label(item)

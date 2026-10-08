@@ -47,7 +47,7 @@
     <div class="app-context-note">Checked items remain visible in both the sidebar and permitted pages.</div>
   </div>
 
-  <%= form_with url: menu_permissions_path, method: :post, local: true do |f| %>
+  <%= form_with url: menu_permissions_path, method: :post, local: true, data: { menu_permissions_form: true } do |f| %>
     <%= f.hidden_field :stakeholder_category_id, value: @current_stakeholder.id %>
     <%= f.hidden_field :designation, value: @current_designation %>
 
@@ -57,15 +57,26 @@
           <h2 class="app-admin-panel-title">Permission Matrix</h2>
           <p class="app-section-note mb-0">Enable or disable primary and submenu items for the selected role.</p>
         </div>
+        <label class="app-permission-select-all" for="permission_select_all">
+          <%= check_box_tag "permission_select_all", "1", false,
+                            id: "permission_select_all",
+                            class: "form-check-input",
+                            data: { permission_select_all: true },
+                            aria: { label: "Select all menus" } %>
+          <span>Select all menus</span>
+        </label>
       </div>
 
       <div class="app-permission-list">
         <% MenuPermission::SIDEBAR_MENUS.each do |label, value| %>
-          <div class="app-permission-card">
+          <div class="app-permission-card" <%= 'data-permission-group="true"'.html_safe if value.is_a?(Hash) %>>
             <% if value.is_a?(Hash) %>
               <div class="app-permission-head">
                 <label class="app-permission-main">
-                  <%= check_box_tag "menu_ids[]", value["main"], @permissions[value["main"]], id: "menu_#{value["main"]}", class: "form-check-input" %>
+                  <%= check_box_tag "menu_ids[]", value["main"], @permissions[value["main"]],
+                                    id: "menu_#{value["main"]}",
+                                    class: "form-check-input",
+                                    data: { permission_parent: true } %>
                   <span><%= label %></span>
                 </label>
                 <span class="app-permission-tag">Parent + Submenu</span>
@@ -74,7 +85,10 @@
                 <% value.each do |sub_label, sub_id| %>
                   <% next if sub_label == "main" %>
                   <label for="menu_<%= sub_id %>" class="app-permission-chip">
-                    <%= check_box_tag "menu_ids[]", sub_id, @permissions[sub_id], id: "menu_#{sub_id}", class: "form-check-input" %>
+                    <%= check_box_tag "menu_ids[]", sub_id, @permissions[sub_id],
+                                      id: "menu_#{sub_id}",
+                                      class: "form-check-input",
+                                      data: { permission_child: true } %>
                     <span><%= sub_label %></span>
                   </label>
                 <% end %>

@@ -3,20 +3,22 @@
     <li><%= app_nav_link("Dashboard", root_path, icon: :dashboard, identifier: "dashboard") %></li>
     
     <% if can_view_menu?("rbac_master") %>
+      <% user_management_open = app_submenu_open?(menu_permissions_path) %>
       <li>
-        <%= app_dropdown_toggle("User Rights", "userManagementMenu", icon: :people, identifier: "rbac_master") %>
-        <div class="collapse submenu h-auto" id="userManagementMenu">
+        <%= app_dropdown_toggle("User Rights", "userManagementMenu", icon: :people, identifier: "rbac_master", expanded: user_management_open) %>
+        <div class="collapse submenu h-auto<%= ' show' if user_management_open %>" id="userManagementMenu">
           <ul class="nav flex-column">
-            <li><%= link_to "Role Based Access Control", menu_permissions_path, class: "nav-link" %></li>
+            <li><%= app_subnav_link("Role Based Access Control", menu_permissions_path) %></li>
           </ul>
         </div>
       </li>
     <% end %>
 
     <% if can_view_menu?("lg_main") %>
+      <% lg_menu_open = app_submenu_open?(states_path, districts_path, blocks_path) %>
       <li>
-        <%= app_dropdown_toggle("LG", "lgMenu", icon: :map, identifier: "lg_main") %>
-        <div class="collapse submenu" id="lgMenu">
+        <%= app_dropdown_toggle("LG", "lgMenu", icon: :map, identifier: "lg_main", expanded: lg_menu_open) %>
+        <div class="collapse submenu<%= ' show' if lg_menu_open %>" id="lgMenu">
           <ul class="nav flex-column">
             <li><%= app_nav_link("State", states_path, icon: :map, identifier: "lg_state") %></li>
             <li><%= app_nav_link("District", districts_path, icon: :map, identifier: "lg_district") %></li>
@@ -27,9 +29,10 @@
     <% end %>
 
     <% if can_view_menu?("office_category_main") %>
+      <% office_category_menu_open = app_submenu_open?(office_category_masters_path, office_categories_path) %>
       <li>
-        <%= app_dropdown_toggle("Office Category", "officeCategoryMenu", icon: :office, identifier: "office_category_main") %>
-        <div class="collapse submenu" id="officeCategoryMenu">
+        <%= app_dropdown_toggle("Office Category", "officeCategoryMenu", icon: :office, identifier: "office_category_main", expanded: office_category_menu_open) %>
+        <div class="collapse submenu<%= ' show' if office_category_menu_open %>" id="officeCategoryMenu">
           <ul class="nav flex-column">
             <li><%= app_nav_link("Office Category Master", office_category_masters_path, icon: :office, identifier: "office_category_master") %></li>
             <li><%= app_nav_link("Office Structure", office_categories_path, icon: :office, identifier: "office_category_name") %></li>
@@ -39,9 +42,10 @@
     <% end %>
 
     <% if can_view_menu?("stakeholder_categories") %>
+      <% stakeholder_menu_open = app_submenu_open?(stakeholder_categories_path) %>
       <li>
-        <%= app_dropdown_toggle("Stakeholder Categories", "stakeholderMenu", icon: :people, identifier: "stakeholder_categories") %>
-        <div class="collapse submenu" id="stakeholderMenu">
+        <%= app_dropdown_toggle("Stakeholder Categories", "stakeholderMenu", icon: :people, identifier: "stakeholder_categories", expanded: stakeholder_menu_open) %>
+        <div class="collapse submenu<%= ' show' if stakeholder_menu_open %>" id="stakeholderMenu">
           <ul class="nav flex-column">
             <li><%= app_nav_link("Stakeholder Name", stakeholder_categories_path, icon: :people, identifier: "stakeholder_categories") %></li>
           </ul>
@@ -57,8 +61,10 @@
     <li><%= app_nav_link("Documents", document_masters_path, icon: :document, identifier: "documents") %></li>
     <li><%= app_nav_link("Approval Channels", approval_channels_path, icon: :approval, identifier: "approval_channels") %></li>
     <% if admin_user? || current_approval_employee_ids.any? %>
+      <% approval_link_classes = ["nav-link"] %>
+      <% approval_link_classes << "is-active" if app_nav_path_active?(approval_requests_path) %>
       <li>
-        <%= link_to approval_requests_path(status: "pending"), class: "nav-link" do %>
+        <%= link_to approval_requests_path(status: "pending"), class: approval_link_classes.join(" ") do %>
           <span class="app-link-wrap">
             <%= app_icon(:approval) %>
             <span class="app-link-label">My Approvals</span>
@@ -70,15 +76,16 @@
       </li>
     <% end %>
     <% if can_view_menu?("vendor_registration_list") || (can_view_menu?("vendor_registration") && vendor_registration_maker?) %>
+      <% vendor_registration_menu_open = app_submenu_open?(vendor_registrations_path, list_vendor_registrations_path) %>
       <li>
-        <%= app_dropdown_toggle("Vendor Registration Form", "vendorRegistrationMenu", icon: :vendor, identifier: "vendor_registration_main") %>
-        <div class="collapse submenu h-auto" id="vendorRegistrationMenu">
+        <%= app_dropdown_toggle("Vendor Registration Form", "vendorRegistrationMenu", icon: :vendor, identifier: "vendor_registration_main", expanded: vendor_registration_menu_open) %>
+        <div class="collapse submenu h-auto<%= ' show' if vendor_registration_menu_open %>" id="vendorRegistrationMenu">
           <ul class="nav flex-column">
             <% if can_view_menu?("vendor_registration") && vendor_registration_maker? %>
-              <li><%= link_to "Vendor Registration", vendor_registrations_path, class: "nav-link" %></li>
+              <li><%= app_subnav_link("Vendor Registration", vendor_registrations_path) %></li>
             <% end %>
             <% if can_view_menu?("vendor_registration_list") || (can_view_menu?("vendor_registration") && vendor_registration_maker?) %>
-              <li><%= link_to "Vendor Registration List", list_vendor_registrations_path, class: "nav-link" %></li>
+              <li><%= app_subnav_link("Vendor Registration List", list_vendor_registrations_path) %></li>
             <% end %>
           </ul>
         </div>
@@ -86,8 +93,11 @@
     <% end %>
     <% pending_scoring_proposals = pending_committee_scoring_proposals %>
     <% if pending_scoring_proposals.any? %>
+      <% committee_scoring_path = pending_scoring_proposals.one? ? quotation_proposal_path(pending_scoring_proposals.first) : list_quotation_proposals_path %>
+      <% committee_scoring_classes = ["nav-link", "app-nav-link-alert"] %>
+      <% committee_scoring_classes << "is-active" if app_nav_path_active?(committee_scoring_path) %>
       <li>
-        <%= link_to(pending_scoring_proposals.one? ? quotation_proposal_path(pending_scoring_proposals.first) : list_quotation_proposals_path, class: "nav-link app-nav-link-alert", title: "Vendor marks pending from you") do %>
+        <%= link_to(committee_scoring_path, class: committee_scoring_classes.join(" "), title: "Vendor marks pending from you") do %>
           <span class="app-link-wrap">
             <%= app_icon(:approval) %>
             <span class="app-link-label">Committee Scoring</span>
@@ -97,18 +107,19 @@
       </li>
     <% end %>
     <% if can_view_menu?("quotation_proposal_list") || (can_view_menu?("quotation_proposal_form") && quotation_proposal_maker?) || can_view_menu?("payment_advice_queue") %>
+      <% quotation_proposal_menu_open = app_submenu_open?(quotation_proposals_path, list_quotation_proposals_path, payment_advice_quotation_proposals_path) %>
       <li>
-        <%= app_dropdown_toggle("Quotation Proposal", "quotationProposalMenu", icon: :document, identifier: "quotation_proposal_main", badge_count: quotation_approval_pending_count) %>
-        <div class="collapse submenu h-auto" id="quotationProposalMenu">
+        <%= app_dropdown_toggle("Quotation Proposal", "quotationProposalMenu", icon: :document, identifier: "quotation_proposal_main", badge_count: quotation_approval_pending_count, expanded: quotation_proposal_menu_open) %>
+        <div class="collapse submenu h-auto<%= ' show' if quotation_proposal_menu_open %>" id="quotationProposalMenu">
           <ul class="nav flex-column">
             <% if can_view_menu?("quotation_proposal_form") && quotation_proposal_maker? %>
-              <li><%= link_to "Request for Proposal", quotation_proposals_path, class: "nav-link" %></li>
+              <li><%= app_subnav_link("Request for Proposal", quotation_proposals_path) %></li>
             <% end %>
             <% if can_view_menu?("quotation_proposal_list") || (can_view_menu?("quotation_proposal_form") && quotation_proposal_maker?) %>
-              <li><%= link_to "Quotation Proposal List", list_quotation_proposals_path, class: "nav-link" %></li>
+              <li><%= app_subnav_link("Quotation Proposal List", list_quotation_proposals_path) %></li>
             <% end %>
             <% if can_view_menu?("payment_advice_queue") %>
-              <li><%= link_to "Payment Advice Queue", payment_advice_quotation_proposals_path, class: "nav-link" %></li>
+              <li><%= app_subnav_link("Payment Advice Queue", payment_advice_quotation_proposals_path) %></li>
             <% end %>
           </ul>
         </div>

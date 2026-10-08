@@ -12795,3 +12795,1413 @@ select.app-combo__native {
   .rl-table thead th,
   .rl-table tbody td { padding-left: 0.4rem !important; padding-right: 0.4rem !important; }
 }
+
+/* ========================================================================
+   Shared navigation and laptop-fit finish
+
+   These are deliberately layout-only rules. They apply the registration
+   module's clear hierarchy to every menu without changing a route, form or
+   permission check.
+   ======================================================================== */
+.app-sidebar > .nav > li {
+  min-width: 0;
+}
+
+.app-sidebar .dropdown-toggle-link {
+  position: relative;
+}
+
+.app-sidebar .dropdown-toggle-link::after {
+  flex: 0 0 auto;
+  margin-left: auto;
+  transition: transform 180ms ease, color 180ms ease;
+}
+
+.app-sidebar .dropdown-toggle-link[aria-expanded="true"]::after {
+  color: var(--polish-teal, #0c6f6a);
+  transform: rotate(180deg);
+}
+
+.app-sidebar .submenu {
+  min-width: 0;
+}
+
+.app-sidebar .submenu .app-subnav-link {
+  position: relative;
+  min-width: 0;
+  margin-bottom: 0.12rem;
+  padding-left: 1.15rem;
+  color: #50635d;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.app-sidebar .submenu .app-subnav-link::before {
+  position: absolute;
+  top: 50%;
+  left: 0.48rem;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  content: "";
+  opacity: 0.55;
+  transform: translateY(-50%);
+}
+
+.app-sidebar .submenu .app-subnav-link.is-active {
+  background: rgba(12, 111, 106, 0.1);
+  color: var(--polish-teal, #0c6f6a);
+}
+
+.app-sidebar .submenu .app-subnav-link.is-active::before {
+  width: 6px;
+  height: 6px;
+  opacity: 1;
+}
+
+/* Give 1024px-class laptops a meaningful work area. Long forms reflow
+   naturally instead of leaving narrow, cut-off fields or word-by-word text. */
+@media screen and (min-width: 992px) and (max-width: 1199px) {
+  body.app-fixed-shell.app-procure:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-shell {
+    grid-template-columns: 218px minmax(0, 1fr) !important;
+    gap: 0.55rem !important;
+    padding: 0.55rem !important;
+  }
+
+  body.app-fixed-shell.app-procure:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-shell > .app-sidebar {
+    padding: 0.62rem !important;
+  }
+
+  body.app-fixed-shell.app-procure:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-sidebar .nav-link {
+    gap: 0.48rem;
+    min-height: 39px;
+    padding: 0.5rem 0.55rem;
+    font-size: 0.8rem;
+  }
+
+  body.app-fixed-shell.app-procure:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-sidebar .submenu .app-subnav-link {
+    padding-left: 1.05rem;
+    font-size: 0.77rem;
+  }
+
+  body.app-fixed-shell.app-procure:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-sidebar .app-menu-icon {
+    width: 19px;
+    height: 19px;
+  }
+
+  body.app-fixed-shell.app-procure:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-shell > .app-main > .app-content {
+    padding: 0.8rem !important;
+  }
+
+  .app-form-grid.three-col,
+  .app-form-grid.four-col,
+  .app-form-grid.five-col {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  }
+}
+
+/* Mid-sized laptop forms retain comfortable field widths as well. Five
+   compact columns become four-plus-one when the panel cannot fit them. */
+@media screen and (min-width: 1200px) and (max-width: 1439px) {
+  .app-form-grid.four-col,
+  .app-form-grid.five-col {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  }
+}
+
+/* On touch-sized displays the menu floats above the page, keeping the active
+   screen in place and preventing the menu from pushing content out of view. */
+@media screen and (max-width: 991px) {
+  body.app-sidebar-open:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-shell > .app-sidebar {
+    position: fixed !important;
+    inset: 4.75rem 0.65rem 0.65rem !important;
+    z-index: 1090;
+    max-height: none !important;
+    overscroll-behavior: contain;
+  }
+
+  .app-sidebar .submenu .app-subnav-link {
+    font-size: 0.84rem;
+  }
+}
+
+/* ========================================================================
+   Colourful glass sidebar
+
+   The sidebar is intentionally light enough for long workdays, while its
+   colour and icon system gives the navigation the same energy as the vendor
+   registration workspace. No markup or navigation behaviour is required.
+   ======================================================================== */
+.app-sidebar {
+  isolation: isolate;
+  overflow-x: hidden !important;
+  border: 1px solid rgba(255, 255, 255, 0.82) !important;
+  background:
+    radial-gradient(ellipse 96% 26% at 50% -2%, rgba(141, 217, 255, 0.84), transparent 72%),
+    radial-gradient(circle 34% at 8% 42%, rgba(158, 231, 205, 0.44), transparent 100%),
+    radial-gradient(circle 44% at 100% 55%, rgba(213, 182, 255, 0.36), transparent 94%),
+    radial-gradient(ellipse 90% 25% at 50% 100%, rgba(255, 186, 218, 0.46), transparent 78%),
+    linear-gradient(168deg, #e9f8ff 0%, #f5f3ff 48%, #effff7 100%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    0 18px 42px rgba(45, 91, 112, 0.16) !important;
+}
+
+.app-sidebar::before,
+.app-sidebar::after {
+  position: absolute;
+  z-index: -1;
+  display: block;
+  border-radius: 50%;
+  content: "";
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+.app-sidebar::before {
+  top: 28%;
+  right: -6.8rem;
+  width: 13rem;
+  height: 13rem;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  background: rgba(173, 222, 255, 0.26);
+  box-shadow:
+    -1.8rem 3.8rem 0 -1.1rem rgba(255, 204, 230, 0.24),
+    -7rem 23rem 0 -4rem rgba(191, 238, 214, 0.34);
+}
+
+.app-sidebar::after {
+  bottom: -8rem;
+  left: -7rem;
+  width: 15rem;
+  height: 15rem;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: rgba(149, 231, 205, 0.27);
+}
+
+.app-sidebar > .nav {
+  position: relative;
+  z-index: 1;
+}
+
+.app-sidebar .nav-link {
+  border-color: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.18);
+  text-shadow: 0 1px rgba(255, 255, 255, 0.44);
+}
+
+.app-sidebar .app-link-wrap {
+  width: 100%;
+}
+
+.app-sidebar .app-menu-icon {
+  box-sizing: border-box;
+  width: 29px;
+  height: 29px;
+  padding: 6px;
+  border: 1px solid rgba(88, 133, 178, 0.1);
+  border-radius: 9px;
+  background: #e5f0ff;
+  color: #2364c4;
+  box-shadow: 0 4px 10px rgba(65, 109, 150, 0.1);
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.app-sidebar > .nav > li:nth-child(4n + 2) .app-menu-icon {
+  background: #e1f8ec;
+  color: #0d9562;
+}
+
+.app-sidebar > .nav > li:nth-child(4n + 3) .app-menu-icon {
+  background: #f0e6ff;
+  color: #8854d8;
+}
+
+.app-sidebar > .nav > li:nth-child(4n) .app-menu-icon {
+  background: #fff0dc;
+  color: #e68219;
+}
+
+.app-sidebar .nav-link:hover,
+.app-sidebar .nav-link:focus {
+  border-color: rgba(255, 255, 255, 0.86);
+  background: rgba(255, 255, 255, 0.54);
+  box-shadow: 0 8px 18px rgba(77, 105, 137, 0.11);
+  color: #194b77;
+}
+
+.app-sidebar .nav-link:hover .app-menu-icon,
+.app-sidebar .nav-link:focus .app-menu-icon {
+  box-shadow: 0 7px 13px rgba(57, 102, 147, 0.17);
+  transform: translateY(-1px) scale(1.04);
+}
+
+.app-sidebar .nav-link.is-active {
+  border-color: rgba(255, 255, 255, 0.92);
+  background:
+    linear-gradient(100deg, rgba(238, 255, 252, 0.95), rgba(228, 238, 255, 0.93)) !important;
+  box-shadow:
+    inset 3px 0 0 #1cb89a,
+    0 10px 18px rgba(75, 110, 150, 0.16) !important;
+  color: #087f79;
+}
+
+.app-sidebar .nav-link.is-active .app-menu-icon {
+  border-color: transparent;
+  background: linear-gradient(135deg, #16bca0, #3b8ee9) !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 13px rgba(25, 151, 165, 0.28);
+}
+
+.app-sidebar .dropdown-toggle-link::after {
+  color: #386687;
+}
+
+.app-sidebar .submenu {
+  margin-top: 0.1rem;
+  margin-bottom: 0.3rem;
+  border-left-color: rgba(85, 141, 164, 0.26);
+}
+
+.app-sidebar .submenu .nav-link {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.app-sidebar .submenu .app-subnav-link.is-active {
+  border-color: rgba(255, 255, 255, 0.66);
+  background: rgba(255, 255, 255, 0.56) !important;
+  box-shadow: none !important;
+  color: #087f79;
+}
+
+.app-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.app-sidebar::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(242, 249, 255, 0.85);
+  border-radius: 999px;
+  background: rgba(62, 142, 164, 0.46);
+}
+
+@media screen and (min-width: 992px) and (max-width: 1199px) {
+  body.app-fixed-shell.app-procure:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-sidebar .app-menu-icon {
+    width: 27px !important;
+    height: 27px !important;
+    padding: 5px !important;
+  }
+}
+
+@media screen and (max-width: 991px) {
+  .app-sidebar .app-menu-icon {
+    width: 27px;
+    height: 27px;
+    padding: 5px;
+  }
+
+  body.app-sidebar-open:not(.auth-page-body):not(.public-qr-page):not(.print-layout) > .app-shell > .app-sidebar {
+    border-radius: 18px !important;
+    background:
+      radial-gradient(ellipse 88% 26% at 50% -4%, rgba(141, 217, 255, 0.86), transparent 72%),
+      radial-gradient(ellipse 90% 25% at 50% 100%, rgba(255, 186, 218, 0.48), transparent 78%),
+      linear-gradient(165deg, #e9f8ff 0%, #f5f3ff 50%, #effff7 100%) !important;
+  }
+}
+
+/* ========================================================================
+   Application-wide aurora glass finish
+
+   A shared translucent surface keeps dashboards, lists, forms and detail
+   screens visually related, while the opaque text and inputs preserve the
+   contrast needed for data-entry work.
+   ======================================================================== */
+:root {
+  --aurora-line: rgba(255, 255, 255, 0.68);
+  --aurora-panel: rgba(255, 255, 255, 0.66);
+  --aurora-panel-strong: rgba(255, 255, 255, 0.82);
+  --aurora-shadow: 0 14px 34px rgba(62, 91, 132, 0.13);
+  --aurora-shadow-hover: 0 20px 44px rgba(62, 91, 132, 0.18);
+}
+
+body.app-procure:not(.auth-page-body):not(.public-qr-page):not(.print-layout) {
+  background:
+    radial-gradient(circle 52rem at -12% -18%, rgba(74, 196, 255, 0.27), transparent 54%),
+    radial-gradient(circle 46rem at 108% 2%, rgba(191, 141, 255, 0.22), transparent 55%),
+    radial-gradient(circle 42rem at 72% 112%, rgba(81, 227, 176, 0.2), transparent 56%),
+    radial-gradient(circle 32rem at 6% 96%, rgba(255, 171, 210, 0.18), transparent 58%),
+    linear-gradient(135deg, #edf8ff 0%, #f8f5ff 48%, #effff8 100%) !important;
+  background-attachment: fixed !important;
+}
+
+body.app-procure:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-navbar {
+  border-color: var(--aurora-line) !important;
+  background: rgba(255, 255, 255, 0.68) !important;
+  box-shadow: 0 10px 30px rgba(61, 91, 133, 0.1) !important;
+  backdrop-filter: blur(20px) saturate(145%);
+  -webkit-backdrop-filter: blur(20px) saturate(145%);
+}
+
+body.app-procure:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content {
+  border-color: var(--aurora-line) !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(247, 252, 255, 0.57)) !important;
+  box-shadow: var(--aurora-shadow) !important;
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+}
+
+/* Shared cards across master data, forms, lists and workflow detail pages. */
+body.app-procure:not(.auth-page-body):not(.public-qr-page):not(.print-layout) :is(
+  .app-form-card,
+  .app-card,
+  .app-admin-panel,
+  .app-detail-card,
+  .app-hero-card,
+  .app-empty-state,
+  .app-table-wrap,
+  .quotation-proposal-show,
+  .catalog-index-page,
+  .rl-head,
+  .rl-card,
+  .rl-filters,
+  .appr-head,
+  .appr-panel,
+  .vd-profile,
+  .vd-panel,
+  .vd-card,
+  .procurement-settings__option,
+  .dash-panel,
+  .dash-search,
+  .dash-clock,
+  .dash-user,
+  .dash-action-strip,
+  .dash-kpi
+) {
+  border-color: var(--aurora-line) !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(248, 251, 255, 0.53)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    var(--aurora-shadow) !important;
+  backdrop-filter: blur(16px) saturate(135%);
+  -webkit-backdrop-filter: blur(16px) saturate(135%);
+}
+
+body.app-procure:not(.auth-page-body):not(.public-qr-page):not(.print-layout) :is(
+  .app-form-card,
+  .app-card,
+  .app-admin-panel,
+  .app-detail-card,
+  .app-hero-card,
+  .rl-head,
+  .rl-card,
+  .appr-panel,
+  .vd-card,
+  .dash-panel,
+  .dash-kpi
+):hover {
+  border-color: rgba(255, 255, 255, 0.95) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    var(--aurora-shadow-hover) !important;
+}
+
+/* Preserve the dashboard's individual colour language through glass-tinted
+   KPI cards instead of turning all cards into the same white surface. */
+body.app-procure .dash-kpi--blue {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(225, 239, 255, 0.72)) !important;
+}
+
+body.app-procure .dash-kpi--orange {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 239, 210, 0.72)) !important;
+}
+
+body.app-procure .dash-kpi--red {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(255, 225, 239, 0.72)) !important;
+}
+
+body.app-procure .dash-kpi:not(.dash-kpi--blue):not(.dash-kpi--orange):not(.dash-kpi--red) {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8), rgba(219, 248, 233, 0.72)) !important;
+}
+
+/* Controls remain easy to read, but now sit naturally on the glass surfaces. */
+body.app-procure :is(
+  .app-form-card input,
+  .app-form-card select,
+  .app-form-card textarea,
+  .form-control,
+  .form-select,
+  .app-table-search-input,
+  .rl-search,
+  .rl-filter select,
+  .rl-filter .app-combo__input,
+  .appr-filter select,
+  .appr-filter .app-combo__input,
+  .dash-range select,
+  .dash-range .app-combo__input
+) {
+  border-color: rgba(174, 200, 222, 0.68) !important;
+  background-color: rgba(255, 255, 255, 0.74) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+body.app-procure :is(.app-table thead th, .rl-table thead th, .appr-table thead th, .dash-table th) {
+  background: rgba(239, 247, 252, 0.72) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+body.app-procure :is(.app-table tbody tr:nth-child(even), .rl-table tbody tr:nth-child(even)) {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+body.app-procure .dash-quick__tile,
+body.app-procure .dash-task-chip,
+body.app-procure .app-context-pill,
+body.app-procure .app-permission-chip {
+  border-color: rgba(255, 255, 255, 0.72) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(12px) saturate(135%);
+  -webkit-backdrop-filter: blur(12px) saturate(135%);
+}
+
+@media (max-width: 991px) {
+  body.app-procure:not(.auth-page-body):not(.public-qr-page):not(.print-layout) {
+    background-attachment: scroll !important;
+  }
+
+  body.app-procure:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content {
+    background: rgba(255, 255, 255, 0.75) !important;
+  }
+}
+
+/* Sign-in pages participate in the same palette without reducing form
+   legibility or changing their existing split-screen layout. */
+body.auth-page-body {
+  background:
+    radial-gradient(circle 36rem at 2% 2%, rgba(95, 196, 255, 0.28), transparent 58%),
+    radial-gradient(circle 34rem at 100% 100%, rgba(185, 142, 255, 0.24), transparent 62%),
+    linear-gradient(135deg, #edf8ff, #fbf6ff 54%, #effff8) !important;
+}
+
+.auth-wrapper {
+  background: transparent !important;
+}
+
+.auth-split-card {
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  background: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 28px 72px rgba(57, 85, 127, 0.2) !important;
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+}
+
+.auth-form-side {
+  background: rgba(255, 255, 255, 0.74) !important;
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+}
+
+.auth-hero-panel {
+  border-color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px) saturate(135%);
+  -webkit-backdrop-filter: blur(16px) saturate(135%);
+}
+
+/* ========================================================================
+   Higher-colour visual layer
+
+   The base glass layer remains calm for forms and tables. These colour blocks
+   intentionally make navigation, headings and key workspace cards more
+   expressive at a glance.
+   ======================================================================== */
+.app-sidebar > .nav > li > .nav-link:not(.app-subnav-link) {
+  border-color: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 5px 12px rgba(61, 91, 133, 0.09);
+}
+
+.app-sidebar > .nav > li:nth-child(6n + 1) > .nav-link:not(.app-subnav-link) {
+  background: linear-gradient(100deg, rgba(218, 241, 255, 0.9), rgba(234, 246, 255, 0.68));
+  color: #165d99;
+}
+
+.app-sidebar > .nav > li:nth-child(6n + 2) > .nav-link:not(.app-subnav-link) {
+  background: linear-gradient(100deg, rgba(211, 249, 232, 0.9), rgba(237, 255, 247, 0.68));
+  color: #08785c;
+}
+
+.app-sidebar > .nav > li:nth-child(6n + 3) > .nav-link:not(.app-subnav-link) {
+  background: linear-gradient(100deg, rgba(233, 219, 255, 0.92), rgba(246, 240, 255, 0.68));
+  color: #6640a8;
+}
+
+.app-sidebar > .nav > li:nth-child(6n + 4) > .nav-link:not(.app-subnav-link) {
+  background: linear-gradient(100deg, rgba(255, 229, 193, 0.92), rgba(255, 246, 228, 0.7));
+  color: #a4530b;
+}
+
+.app-sidebar > .nav > li:nth-child(6n + 5) > .nav-link:not(.app-subnav-link) {
+  background: linear-gradient(100deg, rgba(255, 220, 237, 0.9), rgba(255, 241, 248, 0.68));
+  color: #ad3d73;
+}
+
+.app-sidebar > .nav > li:nth-child(6n) > .nav-link:not(.app-subnav-link) {
+  background: linear-gradient(100deg, rgba(204, 247, 244, 0.92), rgba(234, 255, 253, 0.68));
+  color: #087b78;
+}
+
+.app-sidebar > .nav > li > .nav-link:not(.app-subnav-link):hover,
+.app-sidebar > .nav > li > .nav-link:not(.app-subnav-link):focus {
+  filter: saturate(1.15) brightness(1.02);
+  transform: translateX(3px) scale(1.01);
+}
+
+.app-sidebar > .nav > li > .nav-link.is-active:not(.app-subnav-link) {
+  border-color: rgba(255, 255, 255, 0.96) !important;
+  background: linear-gradient(105deg, #16b89f 0%, #3196e7 100%) !important;
+  box-shadow:
+    inset 3px 0 0 rgba(255, 255, 255, 0.82),
+    0 10px 20px rgba(20, 133, 170, 0.3) !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px rgba(0, 74, 91, 0.24);
+}
+
+.app-sidebar > .nav > li > .nav-link.is-active:not(.app-subnav-link) .app-menu-icon {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.25) !important;
+  box-shadow: none;
+}
+
+.app-sidebar > .nav > li > .nav-link.is-active:not(.app-subnav-link)::after {
+  color: #ffffff;
+}
+
+body.app-procure:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content {
+  background:
+    radial-gradient(circle 28rem at 0% 0%, rgba(107, 211, 255, 0.33), transparent 62%),
+    radial-gradient(circle 27rem at 100% 4%, rgba(194, 151, 255, 0.24), transparent 62%),
+    radial-gradient(circle 31rem at 76% 105%, rgba(97, 236, 183, 0.25), transparent 63%),
+    radial-gradient(circle 23rem at 4% 100%, rgba(255, 176, 213, 0.2), transparent 65%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.43), rgba(246, 250, 255, 0.3)) !important;
+}
+
+body.app-procure:not(.auth-page-body):not(.public-qr-page):not(.print-layout) :is(.app-head-card, .rl-head, .appr-head) {
+  border-color: rgba(255, 255, 255, 0.9) !important;
+  background:
+    radial-gradient(circle at 92% 10%, rgba(255, 216, 135, 0.43), transparent 27%),
+    linear-gradient(105deg, rgba(205, 249, 237, 0.86), rgba(220, 235, 255, 0.83) 55%, rgba(240, 220, 255, 0.78)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 14px 30px rgba(55, 113, 148, 0.17) !important;
+}
+
+body.app-procure:not(.auth-page-body):not(.public-qr-page):not(.print-layout) :is(.rl-card, .app-table-wrap, .appr-panel, .vd-panel, .vd-card, .dash-panel) {
+  border-color: rgba(219, 240, 255, 0.94) !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(230, 245, 255, 0.55) 55%, rgba(244, 235, 255, 0.48)) !important;
+}
+
+body.app-procure .rl-filters {
+  border-color: rgba(183, 222, 250, 0.8) !important;
+  background: linear-gradient(100deg, rgba(221, 247, 255, 0.72), rgba(238, 232, 255, 0.6)) !important;
+}
+
+body.app-procure :is(.app-table thead th, .rl-table thead th, .appr-table thead th, .dash-table th) {
+  border-bottom-color: rgba(129, 187, 222, 0.35) !important;
+  background: linear-gradient(100deg, rgba(205, 241, 255, 0.86), rgba(225, 236, 255, 0.82), rgba(235, 222, 255, 0.78)) !important;
+}
+
+body.app-procure :is(.app-table tbody tr:nth-child(even), .rl-table tbody tr:nth-child(even)) {
+  background: rgba(231, 248, 255, 0.38);
+}
+
+body.app-procure :is(.app-table tbody tr:hover, .rl-table tbody tr:hover) {
+  background: rgba(205, 242, 233, 0.45) !important;
+}
+
+body.app-procure .dash-action-strip {
+  background: linear-gradient(100deg, rgba(255, 236, 211, 0.82), rgba(255, 250, 236, 0.64), rgba(237, 231, 255, 0.62)) !important;
+}
+
+body.app-procure .dash-quick__tile {
+  border-color: rgba(255, 255, 255, 0.78) !important;
+  box-shadow: 0 6px 14px rgba(61, 91, 133, 0.1);
+}
+
+@media (max-width: 991px) {
+  body.app-procure:not(.auth-page-body):not(.public-qr-page):not(.print-layout) .app-content {
+    background:
+      radial-gradient(circle 22rem at 0% 0%, rgba(107, 211, 255, 0.27), transparent 62%),
+      radial-gradient(circle 24rem at 100% 100%, rgba(194, 151, 255, 0.2), transparent 62%),
+      rgba(255, 255, 255, 0.48) !important;
+  }
+}
+
+/* ========================================================================
+   Dashboard colour-forward workspace
+   ======================================================================== */
+.dash {
+  position: relative;
+  isolation: isolate;
+  gap: 1.1rem;
+}
+
+.dash::before,
+.dash::after {
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  content: "";
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+.dash::before {
+  top: 4rem;
+  right: -12rem;
+  width: 26rem;
+  height: 26rem;
+  background: rgba(150, 122, 255, 0.18);
+}
+
+.dash::after {
+  bottom: 4rem;
+  left: -14rem;
+  width: 28rem;
+  height: 28rem;
+  background: rgba(59, 211, 173, 0.16);
+}
+
+.dash-top > :is(.dash-search, .dash-clock, .dash-user) {
+  border-color: rgba(255, 255, 255, 0.88) !important;
+  box-shadow: 0 10px 22px rgba(60, 98, 145, 0.14) !important;
+}
+
+.dash-search {
+  background: linear-gradient(105deg, rgba(220, 247, 255, 0.94), rgba(235, 234, 255, 0.82)) !important;
+}
+
+.dash-search__icon {
+  color: #1972bd !important;
+}
+
+.dash-search kbd {
+  border-color: rgba(85, 142, 205, 0.2);
+  background: rgba(255, 255, 255, 0.58);
+  color: #356183;
+}
+
+.dash-clock {
+  background: linear-gradient(135deg, rgba(255, 239, 201, 0.94), rgba(255, 245, 230, 0.82)) !important;
+}
+
+.dash-clock__icon {
+  color: #d67a10 !important;
+}
+
+.dash-user {
+  background: linear-gradient(135deg, rgba(234, 222, 255, 0.94), rgba(246, 238, 255, 0.82)) !important;
+}
+
+.dash-user__avatar {
+  background: linear-gradient(135deg, #7756d9, #2a9de0) !important;
+  box-shadow: 0 5px 12px rgba(104, 79, 205, 0.27);
+}
+
+.dash-kpi {
+  border-top: 4px solid var(--tone) !important;
+  overflow: hidden;
+  box-shadow: 0 12px 24px rgba(57, 91, 134, 0.15) !important;
+}
+
+.dash-kpi::before {
+  position: absolute;
+  top: -2.8rem;
+  right: -2.8rem;
+  width: 9rem;
+  height: 9rem;
+  border-radius: 50%;
+  background: var(--tone-bg);
+  content: "";
+  opacity: 0.72;
+}
+
+.dash-kpi__head,
+.dash-kpi__parts {
+  position: relative;
+  z-index: 1;
+}
+
+.dash-kpi__icon {
+  border: 1px solid rgba(255, 255, 255, 0.84);
+  box-shadow: 0 7px 15px rgba(50, 98, 140, 0.1);
+}
+
+.dash-kpi__trend {
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow: 0 3px 8px rgba(50, 98, 140, 0.07);
+}
+
+.dash-kpi:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 18px 32px rgba(57, 91, 134, 0.23) !important;
+}
+
+.dash-panel {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(255, 255, 255, 0.88) !important;
+  box-shadow: 0 12px 26px rgba(57, 91, 134, 0.14) !important;
+}
+
+.dash-panel::before {
+  position: absolute;
+  top: -5rem;
+  right: -4rem;
+  width: 13rem;
+  height: 13rem;
+  border-radius: 50%;
+  content: "";
+  opacity: 0.58;
+  pointer-events: none;
+}
+
+.dash-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dash-panel--overview {
+  background: linear-gradient(135deg, rgba(228, 251, 246, 0.85), rgba(229, 242, 255, 0.7)) !important;
+}
+
+.dash-panel--overview::before {
+  background: rgba(73, 204, 181, 0.22);
+}
+
+.dash-panel--status {
+  background: linear-gradient(135deg, rgba(241, 234, 255, 0.88), rgba(224, 242, 255, 0.68)) !important;
+}
+
+.dash-panel--status::before {
+  background: rgba(142, 101, 235, 0.2);
+}
+
+.dash-panel--actions {
+  background: linear-gradient(135deg, rgba(255, 239, 215, 0.88), rgba(255, 226, 239, 0.68)) !important;
+}
+
+.dash-panel--actions::before {
+  background: rgba(247, 141, 84, 0.2);
+}
+
+.dash-bottom > .dash-panel:nth-child(1) {
+  background: linear-gradient(135deg, rgba(230, 243, 255, 0.82), rgba(255, 255, 255, 0.65)) !important;
+}
+
+.dash-bottom > .dash-panel:nth-child(2) {
+  background: linear-gradient(135deg, rgba(238, 232, 255, 0.82), rgba(255, 255, 255, 0.65)) !important;
+}
+
+.dash-stack .dash-panel {
+  background: linear-gradient(135deg, rgba(255, 247, 223, 0.82), rgba(255, 255, 255, 0.65)) !important;
+}
+
+.dash-stack .dash-panel + .dash-panel {
+  background: linear-gradient(135deg, rgba(222, 247, 255, 0.82), rgba(255, 255, 255, 0.65)) !important;
+}
+
+.dash-panel__head {
+  position: relative;
+  margin-bottom: 1rem;
+  padding-bottom: 0.7rem;
+  border-bottom: 1px solid rgba(126, 175, 205, 0.2);
+}
+
+.dash-panel__head::after {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 4.5rem;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #14ad91, #338ee7, #9660ec);
+  content: "";
+}
+
+.dash-panel__icon {
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 5px 12px rgba(54, 96, 139, 0.11);
+}
+
+.dash-range select {
+  border-color: rgba(120, 174, 207, 0.35) !important;
+  background-color: rgba(255, 255, 255, 0.68) !important;
+}
+
+.dash-chart__grid {
+  stroke: rgba(102, 150, 184, 0.2);
+}
+
+.dash-donut {
+  filter: drop-shadow(0 8px 12px rgba(103, 82, 175, 0.14));
+}
+
+.dash-status__list li {
+  min-width: 12.5rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.dash-quick__tile {
+  border: 1px solid rgba(255, 255, 255, 0.84) !important;
+  box-shadow: 0 8px 16px rgba(57, 91, 134, 0.1) !important;
+}
+
+.dash-quick__tile:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 14px 24px rgba(57, 91, 134, 0.18) !important;
+}
+
+.dash-task-chip {
+  border-color: rgba(255, 255, 255, 0.78) !important;
+  background: rgba(255, 255, 255, 0.64) !important;
+  box-shadow: 0 4px 10px rgba(63, 98, 137, 0.08);
+}
+
+.dash-table-wrap {
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.dash-table th {
+  background: linear-gradient(90deg, rgba(203, 239, 255, 0.68), rgba(232, 220, 255, 0.65)) !important;
+}
+
+.dash-table tbody tr:hover td {
+  background: rgba(213, 247, 239, 0.62) !important;
+}
+
+.dash-status-pill {
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  box-shadow: 0 3px 8px rgba(66, 104, 145, 0.06);
+}
+
+.dash-notes li + li {
+  border-top-color: rgba(123, 172, 203, 0.18);
+}
+
+.dash-notes__row:hover {
+  background: rgba(255, 255, 255, 0.52);
+}
+
+@media (max-width: 767px) {
+  .dash-panel {
+    padding: 0.85rem;
+  }
+
+  .dash-status__list li {
+    min-width: 0;
+  }
+}
+
+/* ========================================================================
+   Dashboard motion and colour highlights
+   ======================================================================== */
+@keyframes dash-aurora-drift-one {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-2.5rem, 1.8rem, 0) scale(1.08); }
+}
+
+@keyframes dash-aurora-drift-two {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(2.4rem, -1.5rem, 0) scale(1.06); }
+}
+
+@keyframes dash-card-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes dash-kpi-shimmer {
+  0%, 42% { transform: translateX(-145%) skewX(-18deg); opacity: 0; }
+  48% { opacity: 0.52; }
+  68%, 100% { transform: translateX(270%) skewX(-18deg); opacity: 0; }
+}
+
+.dash::before {
+  animation: dash-aurora-drift-one 13s ease-in-out infinite;
+}
+
+.dash::after {
+  animation: dash-aurora-drift-two 16s ease-in-out infinite;
+}
+
+.dash-top,
+.dash-action-strip,
+.dash-kpis,
+.dash-middle,
+.dash-bottom {
+  animation: dash-card-arrive 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dash-action-strip { animation-delay: 45ms; }
+.dash-kpis { animation-delay: 75ms; }
+.dash-middle { animation-delay: 110ms; }
+.dash-bottom { animation-delay: 145ms; }
+
+.dash-kpi {
+  animation: dash-card-arrive 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dash-kpi:nth-child(1) { animation-delay: 90ms; }
+.dash-kpi:nth-child(2) { animation-delay: 145ms; }
+.dash-kpi:nth-child(3) { animation-delay: 200ms; }
+.dash-kpi:nth-child(4) { animation-delay: 255ms; }
+
+.dash-kpi::after {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  width: 34%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
+  content: "";
+  pointer-events: none;
+  animation: dash-kpi-shimmer 7s ease-in-out infinite;
+}
+
+.dash-kpi:nth-child(2)::after { animation-delay: 1.2s; }
+.dash-kpi:nth-child(3)::after { animation-delay: 2.4s; }
+.dash-kpi:nth-child(4)::after { animation-delay: 3.6s; }
+
+.dash-quick__tile--blue {
+  background: linear-gradient(135deg, #bfe5ff, #edf7ff) !important;
+}
+
+.dash-quick__tile--purple {
+  background: linear-gradient(135deg, #dec8ff, #f6edff) !important;
+}
+
+.dash-quick__tile--amber {
+  background: linear-gradient(135deg, #ffe0a6, #fff5de) !important;
+}
+
+.dash-quick__tile--teal {
+  background: linear-gradient(135deg, #b8f2e4, #e9fffa) !important;
+}
+
+.dash-quick__tile--slate {
+  background: linear-gradient(135deg, #d7e7ff, #eff5ff) !important;
+}
+
+.dash-status__list li:nth-child(1) {
+  background: linear-gradient(90deg, rgba(204, 249, 226, 0.7), rgba(255, 255, 255, 0.36));
+}
+
+.dash-status__list li:nth-child(2) {
+  background: linear-gradient(90deg, rgba(207, 229, 255, 0.7), rgba(255, 255, 255, 0.36));
+}
+
+.dash-status__list li:nth-child(3) {
+  background: linear-gradient(90deg, rgba(236, 216, 255, 0.7), rgba(255, 255, 255, 0.36));
+}
+
+.dash-status__list li:nth-child(4) {
+  background: linear-gradient(90deg, rgba(255, 224, 237, 0.7), rgba(255, 255, 255, 0.36));
+}
+
+.dash-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0.25rem 0.62rem;
+  border: 1px solid rgba(101, 154, 213, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.52);
+  box-shadow: 0 3px 8px rgba(59, 103, 149, 0.07);
+  transition: transform 170ms ease, background-color 170ms ease, box-shadow 170ms ease;
+}
+
+.dash-link:hover {
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 7px 13px rgba(59, 103, 149, 0.13);
+  transform: translateX(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dash::before,
+  .dash::after,
+  .dash-top,
+  .dash-action-strip,
+  .dash-kpis,
+  .dash-middle,
+  .dash-bottom,
+  .dash-kpi,
+  .dash-kpi::after {
+    animation: none !important;
+  }
+}
+
+/* Slightly richer card colours for a dashboard that is easy to scan. */
+.dash-kpi:not(.dash-kpi--blue):not(.dash-kpi--orange):not(.dash-kpi--red) {
+  background: linear-gradient(135deg, #d9f9e9 0%, #effff6 62%, #c9f3df 100%) !important;
+}
+
+.dash-kpi--blue {
+  background: linear-gradient(135deg, #d5ecff 0%, #f0f8ff 62%, #cde5ff 100%) !important;
+}
+
+.dash-kpi--orange {
+  background: linear-gradient(135deg, #ffe3b9 0%, #fff7e8 62%, #ffdca1 100%) !important;
+}
+
+.dash-kpi--red {
+  background: linear-gradient(135deg, #ffd8e7 0%, #fff1f6 62%, #ffcfe1 100%) !important;
+}
+
+.dash-panel--overview {
+  background: linear-gradient(135deg, #d9f8ef 0%, #e9f7ff 58%, #d5efff 100%) !important;
+}
+
+.dash-panel--status {
+  background: linear-gradient(135deg, #eadcff 0%, #f6efff 58%, #dceeff 100%) !important;
+}
+
+.dash-panel--actions {
+  background: linear-gradient(135deg, #ffe7bd 0%, #fff0e8 52%, #ffd9ec 100%) !important;
+}
+
+.dash-bottom > .dash-panel:nth-child(1) {
+  background: linear-gradient(135deg, #dceeff 0%, #f6fbff 62%, #d8f4ff 100%) !important;
+}
+
+.dash-bottom > .dash-panel:nth-child(2) {
+  background: linear-gradient(135deg, #eee0ff 0%, #faf6ff 62%, #e4d8ff 100%) !important;
+}
+
+.dash-stack .dash-panel {
+  background: linear-gradient(135deg, #fff0c9 0%, #fffaf0 62%, #ffe2bd 100%) !important;
+}
+
+.dash-stack .dash-panel + .dash-panel {
+  background: linear-gradient(135deg, #d6f7ff 0%, #f1fcff 62%, #ccefff 100%) !important;
+}
+
+/* Strong, immediately visible colour coding for each dashboard card. */
+.dash-panel--overview {
+  border-top: 5px solid #12b886 !important;
+  background: linear-gradient(135deg, #bdf7e4 0%, #dcfff4 43%, #ccecff 100%) !important;
+  box-shadow: 0 16px 30px rgba(16, 185, 129, 0.2) !important;
+}
+
+.dash-panel--status {
+  border-top: 5px solid #8854d8 !important;
+  background: linear-gradient(135deg, #ddc7ff 0%, #f0e6ff 48%, #cfe6ff 100%) !important;
+  box-shadow: 0 16px 30px rgba(136, 84, 216, 0.2) !important;
+}
+
+.dash-panel--actions {
+  border-top: 5px solid #f07818 !important;
+  background: linear-gradient(135deg, #ffd5a1 0%, #ffe9d3 47%, #ffd4e8 100%) !important;
+  box-shadow: 0 16px 30px rgba(240, 120, 24, 0.2) !important;
+}
+
+.dash-bottom > .dash-panel:nth-child(1) {
+  border-top: 5px solid #2f74e0 !important;
+  background: linear-gradient(135deg, #c7e7ff 0%, #eaf7ff 55%, #d7f1ff 100%) !important;
+  box-shadow: 0 16px 30px rgba(47, 116, 224, 0.17) !important;
+}
+
+.dash-bottom > .dash-panel:nth-child(2) {
+  border-top: 5px solid #8b5cf6 !important;
+  background: linear-gradient(135deg, #e1d0ff 0%, #f4edff 55%, #ddd4ff 100%) !important;
+  box-shadow: 0 16px 30px rgba(139, 92, 246, 0.17) !important;
+}
+
+.dash-stack .dash-panel {
+  border-top: 5px solid #f59f00 !important;
+  background: linear-gradient(135deg, #ffe5a9 0%, #fff5d9 55%, #ffe2bd 100%) !important;
+  box-shadow: 0 16px 30px rgba(245, 159, 0, 0.17) !important;
+}
+
+.dash-stack .dash-panel + .dash-panel {
+  border-top-color: #16a6d6 !important;
+  background: linear-gradient(135deg, #bceeff 0%, #e4faff 55%, #c5e8ff 100%) !important;
+  box-shadow: 0 16px 30px rgba(22, 166, 214, 0.17) !important;
+}
+
+.dash-kpi:not(.dash-kpi--blue):not(.dash-kpi--orange):not(.dash-kpi--red) {
+  border-top-color: #08a86c !important;
+  background: linear-gradient(135deg, #b7f3d4 0%, #d7ffea 56%, #a9eeca 100%) !important;
+}
+
+.dash-kpi--blue {
+  border-top-color: #1e6ee8 !important;
+  background: linear-gradient(135deg, #b9dcff 0%, #dff0ff 56%, #acd2ff 100%) !important;
+}
+
+.dash-kpi--orange {
+  border-top-color: #f08b00 !important;
+  background: linear-gradient(135deg, #ffcf82 0%, #ffe8c2 56%, #ffc76f 100%) !important;
+}
+
+.dash-kpi--red {
+  border-top-color: #e83f74 !important;
+  background: linear-gradient(135deg, #ffbcd2 0%, #ffdeea 56%, #ffaecb 100%) !important;
+}
+
+.dash-panel__head h2 {
+  color: #123a51;
+}
+
+.dash-panel--overview .dash-panel__icon { background: #0dbb8d; color: #ffffff; }
+.dash-panel--status .dash-panel__icon { background: #8854d8; color: #ffffff; }
+.dash-panel--actions .dash-panel__icon { background: #f07818; color: #ffffff; }
+.dash-bottom > .dash-panel:nth-child(1) .dash-panel__icon { background: #2f74e0; color: #ffffff; }
+.dash-bottom > .dash-panel:nth-child(2) .dash-panel__icon { background: #8b5cf6; color: #ffffff; }
+.dash-stack .dash-panel .dash-panel__icon { background: #f59f00; color: #ffffff; }
+.dash-stack .dash-panel + .dash-panel .dash-panel__icon { background: #16a6d6; color: #ffffff; }
+
+.dash-quick__tile {
+  border-width: 2px !important;
+}
+
+.dash-quick__tile--blue { background: linear-gradient(135deg, #82c9ff, #cdeeff) !important; }
+.dash-quick__tile--purple { background: linear-gradient(135deg, #c6a2ff, #eadbff) !important; }
+.dash-quick__tile--amber { background: linear-gradient(135deg, #ffc85e, #ffe6b0) !important; }
+.dash-quick__tile--teal { background: linear-gradient(135deg, #7be7cf, #c7fff4) !important; }
+.dash-quick__tile--slate { background: linear-gradient(135deg, #a9cdfd, #d8e9ff) !important; }
+
+/* Top dashboard cards: bold individual identities, not neutral surfaces. */
+.dash-top .dash-search {
+  border-left: 5px solid #228be6 !important;
+  background: linear-gradient(105deg, #bee8ff 0%, #dfefff 58%, #ecddff 100%) !important;
+}
+
+.dash-top .dash-clock {
+  border-bottom: 4px solid #f59f00 !important;
+  background: linear-gradient(135deg, #ffe3a2, #fff3d8) !important;
+}
+
+.dash-top .dash-user {
+  border-bottom: 4px solid #8854d8 !important;
+  background: linear-gradient(135deg, #ded0ff, #f3ecff) !important;
+}
+
+.dash-kpi:not(.dash-kpi--blue):not(.dash-kpi--orange):not(.dash-kpi--red) .dash-kpi__icon {
+  background: linear-gradient(135deg, #08a86c, #19c69b) !important;
+  color: #ffffff !important;
+}
+
+.dash-kpi--blue .dash-kpi__icon {
+  background: linear-gradient(135deg, #1e6ee8, #3ca9f2) !important;
+  color: #ffffff !important;
+}
+
+.dash-kpi--orange .dash-kpi__icon {
+  background: linear-gradient(135deg, #f08b00, #ffb11f) !important;
+  color: #ffffff !important;
+}
+
+.dash-kpi--red .dash-kpi__icon {
+  background: linear-gradient(135deg, #e83f74, #f56c9b) !important;
+  color: #ffffff !important;
+}
+
+.dash-kpi:not(.dash-kpi--blue):not(.dash-kpi--orange):not(.dash-kpi--red) .dash-kpi__trend {
+  background: #d8ffea !important;
+  color: #078456 !important;
+}
+
+.dash-kpi--blue .dash-kpi__trend {
+  background: #d9ecff !important;
+  color: #1666d5 !important;
+}
+
+.dash-kpi--orange .dash-kpi__trend {
+  background: #fff0c8 !important;
+  color: #bd6500 !important;
+}
+
+.dash-kpi--red .dash-kpi__trend {
+  background: #ffe0ea !important;
+  color: #cc2d62 !important;
+}
+
+.dash-kpi:not(.dash-kpi--blue):not(.dash-kpi--orange):not(.dash-kpi--red) .dash-kpi__value strong { color: #07925f; }
+.dash-kpi--blue .dash-kpi__value strong { color: #1e6ee8; }
+.dash-kpi--orange .dash-kpi__value strong { color: #df7d00; }
+.dash-kpi--red .dash-kpi__value strong { color: #db3468; }
+
+/* ========================================================================
+   High-visibility checkbox controls
+
+   The same clear, tactile control is used throughout the application so a
+   checkbox never disappears into a white or translucent glass surface.
+   ======================================================================== */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-grid;
+  width: 1.2rem;
+  height: 1.2rem;
+  min-width: 1.2rem;
+  margin: 0;
+  place-content: center;
+  vertical-align: middle;
+  border: 2px solid #198a89;
+  border-radius: 0.32rem;
+  background: #ffffff !important;
+  background-image: none !important;
+  box-shadow: 0 2px 7px rgba(8, 92, 100, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+input[type="checkbox"]::after {
+  width: 0.34rem;
+  height: 0.64rem;
+  content: "";
+  border: solid #ffffff;
+  border-width: 0 0.15rem 0.15rem 0;
+  opacity: 0;
+  transform: rotate(45deg) scale(0.72);
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+
+input[type="checkbox"]:hover:not(:disabled) {
+  border-color: #087a9a;
+  box-shadow: 0 0 0 0.22rem rgba(45, 177, 198, 0.18), 0 3px 9px rgba(8, 92, 100, 0.16);
+  transform: translateY(-1px);
+}
+
+input[type="checkbox"]:focus-visible {
+  outline: none;
+  border-color: #1769d1;
+  box-shadow: 0 0 0 0.25rem rgba(36, 116, 235, 0.26);
+}
+
+input[type="checkbox"]:checked {
+  border-color: #087a9a;
+  background: linear-gradient(135deg, #10b995, #1976d2) !important;
+  box-shadow: 0 4px 10px rgba(19, 127, 170, 0.28);
+}
+
+input[type="checkbox"]:checked::after {
+  opacity: 1;
+  transform: rotate(45deg) scale(1);
+}
+
+input[type="checkbox"]:indeterminate {
+  border-color: #7654d6;
+  background: linear-gradient(135deg, #9a6ff0, #7056d8) !important;
+}
+
+input[type="checkbox"]:indeterminate::after {
+  width: 0.62rem;
+  height: 0;
+  border-width: 0 0 0.15rem;
+  opacity: 1;
+  transform: none;
+}
+
+input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Role Based Access Control gets clear hierarchy and colourful selection
+   states, without changing its submitted menu_ids[] values. */
+.app-permission-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.62rem;
+  flex: 0 0 auto;
+  min-height: 2.7rem;
+  padding: 0.62rem 0.9rem;
+  border: 1px solid rgba(59, 109, 213, 0.26);
+  border-radius: 0.9rem;
+  background: linear-gradient(135deg, rgba(213, 242, 255, 0.92), rgba(237, 224, 255, 0.9));
+  box-shadow: 0 7px 18px rgba(84, 111, 184, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  color: #17476f;
+  font-size: 0.86rem;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.app-permission-select-all:hover {
+  border-color: rgba(36, 116, 235, 0.45);
+  box-shadow: 0 10px 23px rgba(84, 111, 184, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.app-permission-card {
+  border-color: rgba(110, 165, 157, 0.28) !important;
+  background: linear-gradient(125deg, rgba(255, 255, 255, 0.93), rgba(237, 255, 249, 0.76)) !important;
+  box-shadow: 0 9px 20px rgba(37, 101, 100, 0.07);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, background 0.18s ease;
+}
+
+.app-permission-card:hover {
+  border-color: rgba(33, 151, 144, 0.42) !important;
+  box-shadow: 0 14px 26px rgba(37, 101, 100, 0.13);
+  transform: translateY(-1px);
+}
+
+.app-permission-card:has(input[type="checkbox"]:checked),
+.app-permission-card:has(input[type="checkbox"]:indeterminate) {
+  border-color: rgba(21, 145, 151, 0.48) !important;
+  background: linear-gradient(125deg, rgba(225, 255, 247, 0.94), rgba(228, 240, 255, 0.82)) !important;
+}
+
+.app-permission-main {
+  cursor: pointer;
+}
+
+.app-permission-main:has(input[type="checkbox"]:checked) span,
+.app-permission-main:has(input[type="checkbox"]:indeterminate) span {
+  color: #067f79;
+}
+
+.app-permission-chip {
+  border-color: rgba(109, 154, 183, 0.25) !important;
+  background: rgba(255, 255, 255, 0.72) !important;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.app-permission-chip:hover {
+  border-color: rgba(47, 123, 216, 0.36) !important;
+  transform: translateY(-1px);
+}
+
+.app-permission-chip:has(input[type="checkbox"]:checked) {
+  border-color: rgba(37, 125, 205, 0.42) !important;
+  background: linear-gradient(135deg, #d7f7ef, #ddebff) !important;
+  box-shadow: 0 5px 12px rgba(40, 120, 179, 0.12);
+  color: #075d72;
+}
+
+@media (max-width: 640px) {
+  .app-permission-select-all {
+    width: 100%;
+    justify-content: center;
+  }
+}
