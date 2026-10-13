@@ -14,6 +14,7 @@ class NotificationDispatcher
     Notification.create!(
       user: user,
       notifiable: approval_request,
+      mail_kind: "approval_pending",
       title: "#{approval_request.form_name} - #{approval_step.current_action_label}",
       message: message
     )
@@ -33,6 +34,7 @@ class NotificationDispatcher
       Notification.create!(
         user: user,
         notifiable: approval_request,
+        mail_kind: "approval_reminder",
         title: "#{approval_request.form_name} - Approval Reminder",
         message: "Reminder: #{approval_request.reference_label} is pending for your action: #{approval_step.current_action_label}."
       )
@@ -49,6 +51,7 @@ class NotificationDispatcher
       Notification.create!(
         user: user,
         notifiable: approval_request,
+        mail_kind: "approval_#{status}",
         title: "#{approval_request.form_name} #{status}",
         message: "#{approval_request.reference_label} was #{status} by #{actor.name}.#{remark.present? ? " Remark: #{remark}" : ""}"
       )
@@ -65,6 +68,7 @@ class NotificationDispatcher
       Notification.create!(
         user: user,
         notifiable: approval_request,
+        mail_kind: "approval_returned",
         title: "#{approval_request.form_name} returned",
         message: "#{approval_request.reference_label} was returned by #{actor.name}. Remark: #{remark}"
       )
@@ -78,6 +82,7 @@ class NotificationDispatcher
     Notification.create!(
       user: user,
       notifiable: approval_request,
+      mail_kind: "approval_returned_to_level",
       title: "#{approval_request.form_name} returned to your level",
       message: "#{approval_request.reference_label} was returned by #{actor.name} to your level for re-approval. Remark: #{remark}"
     )
@@ -91,6 +96,7 @@ class NotificationDispatcher
     Notification.create!(
       user: user,
       notifiable: quotation_proposal,
+      mail_kind: "thematic_head_decision_request",
       title: "Quotation Proposal - Thematic Head Decision",
       message: "#{quotation_proposal.subject} is waiting for your decision: send it With Committee approval or Without Committee directly to the vendors."
     )
@@ -103,6 +109,7 @@ class NotificationDispatcher
     Notification.create!(
       user: quotation_proposal.user,
       notifiable: quotation_proposal,
+      mail_kind: "thematic_head_decided",
       title: "Quotation Proposal - Thematic Head Decision",
       message: "#{quotation_proposal.thematic_head&.name} chose #{route} for #{quotation_proposal.subject}."
     )
@@ -124,6 +131,7 @@ class NotificationDispatcher
     Notification.create!(
       user: user,
       notifiable: quotation_proposal,
+      mail_kind: "committee_approval_pending",
       title: "Quotation Proposal Committee Approval",
       message: message
     )
@@ -145,6 +153,7 @@ class NotificationDispatcher
       Notification.create!(
         user: user,
         notifiable: quotation_proposal,
+        mail_kind: "committee_approved",
         title: "Quotation Proposal Approved",
         message: "#{quotation_proposal.subject} has been approved by the committee. Approved by #{actor.name}.#{remark.present? ? " Remark: #{remark}" : ""}"
       )
@@ -161,6 +170,7 @@ class NotificationDispatcher
       Notification.create!(
         user: user,
         notifiable: quotation_proposal,
+        mail_kind: "committee_returned",
         title: "Quotation Proposal Returned",
         message: "#{quotation_proposal.subject} has been returned by #{actor.name}. Remark: #{remark}"
       )
@@ -177,6 +187,7 @@ class NotificationDispatcher
       Notification.create!(
         user: user,
         notifiable: quotation_proposal,
+        mail_kind: "vendor_response_received",
         title: "Vendor Response Received",
         message: "#{proposal_vendor.vendor_registration.display_name} has submitted the quotation response for #{quotation_proposal.subject}. You can now review and compare vendor quotations."
       )
@@ -193,6 +204,7 @@ class NotificationDispatcher
       Notification.create!(
         user: user,
         notifiable: quotation_proposal,
+        mail_kind: "purchase_order_sent",
         title: "Purchase Order Sent",
         message: "Purchase order has been sent to #{proposal_vendor.vendor_registration.display_name} for #{quotation_proposal.subject}."
       )
@@ -209,6 +221,7 @@ class NotificationDispatcher
       Notification.create!(
         user: user,
         notifiable: quotation_proposal,
+        mail_kind: "purchase_order_reply_updated",
         title: "Purchase Order Reply Updated",
         message: "Purchase order reply for vendor #{proposal_vendor.vendor_registration.display_name} was updated by #{actor_name}."
       )
@@ -228,6 +241,7 @@ class NotificationDispatcher
       Notification.create!(
         user: user,
         notifiable: quotation_proposal,
+        mail_kind: "purchase_order_vendor_response",
         title: "Vendor Purchase Order Response",
         message: "#{proposal_vendor.vendor_registration.display_name} marked the purchase order as #{decision}.#{remark.present? ? " Remark: #{remark}" : ""}"
       )
@@ -244,6 +258,7 @@ class NotificationDispatcher
       Notification.create!(
         user: user,
         notifiable: quotation_proposal,
+        mail_kind: "invoice_requested",
         title: "Invoice Requested From Vendor",
         message: "Invoice request #{invoice_request.id} has been sent to #{proposal_vendor.vendor_registration.display_name} after goods receive."
       )
@@ -260,6 +275,7 @@ class NotificationDispatcher
       Notification.create!(
         user: user,
         notifiable: quotation_proposal,
+        mail_kind: "invoice_uploaded",
         title: "Vendor Invoice Uploaded",
         message: "#{proposal_vendor.vendor_registration.display_name} uploaded invoice for request #{invoice_request.id}."
       )
@@ -276,6 +292,7 @@ class NotificationDispatcher
       Notification.create!(
         user: user,
         notifiable: quotation_proposal,
+        mail_kind: "invoice_returned",
         title: "Vendor Invoice Returned",
         message: "Invoice request #{invoice_request.id} for vendor #{proposal_vendor.vendor_registration.display_name} was returned for correction."
       )
@@ -292,6 +309,7 @@ class NotificationDispatcher
       Notification.create!(
         user: user,
         notifiable: quotation_proposal,
+        mail_kind: "invoice_accepted",
         title: "Vendor Invoice Accepted",
         message: "Invoice request #{invoice_request.id} for vendor #{proposal_vendor.vendor_registration.display_name} has been accepted."
       )
@@ -310,6 +328,7 @@ class NotificationDispatcher
       Notification.create!(
         user: user,
         notifiable: quotation_proposal,
+        mail_kind: "payment_recorded",
         title: "Invoice Payment Recorded",
         message: "Payment details have been recorded for invoice request #{invoice_request.id} of vendor #{proposal_vendor.vendor_registration.display_name} by #{actor_name}. Transaction No: #{transaction_number}."
       )
