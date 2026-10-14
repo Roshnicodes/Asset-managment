@@ -1133,3 +1133,35 @@
     padding: 8px 12px;
   }
 }
+
+@media screen {
+  /* Inside the app page the content box scrolls; the studio keeps its full
+     height (it must not shrink to the box and clip the form) and its parts
+     wrap instead of being cut on the right. */
+  .app-content > .payment-advice-shell {
+    flex: 0 0 auto;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .app-content .payment-advice-shell > *,
+  .app-content .payment-advice-main,
+  .app-content .payment-advice-workspace {
+    min-width: 0;
+  }
+
+  .app-content .payment-advice-sidebar,
+  .app-content .payment-advice-side-nav,
+  .app-content .payment-advice-topbar {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .app-content .payment-advice-side-nav {
+    min-width: 0;
+  }
+
+  .app-content .payment-advice-topbar-actions {
+    flex-wrap: wrap;
+  }
+}

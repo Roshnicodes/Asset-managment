@@ -39,6 +39,7 @@ class NotificationMailRelay
     invoice_returned
     invoice_accepted
     payment_recorded
+    max_rate_required
   ].freeze
   DEFAULT_PAGE = "apurti_nnotify.aspx".freeze
 
