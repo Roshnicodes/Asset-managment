@@ -81,4 +81,80 @@ class PaymentAdvicesControllerTest < ActionDispatch::IntegrationTest
     ENV.delete("PAYMENT_ADVICE_MAIL_RELAY_URL")
     ENV.delete("PAYMENT_ADVICE_MAIL_RELAY_SECRET")
   end
+
+  test "saving a new advice never overwrites another advice with the same number" do
+    assert_no_difference -> { PaymentAdviceRecord.count } do
+      post payment_advices_path, params: { payment_advice: advice_params(advice_no: @payment_advice.advice_no, payee_name: "Other Vendor") }, as: :json
+    end
+
+    assert_response :unprocessable_entity
+    assert_equal "Original Vendor", @payment_advice.reload.payee_name
+  end
+
+  test "a saved advice is edited by its id" do
+    post payment_advices_path, params: { record_id: @payment_advice.id, payment_advice: advice_params(payee_name: "Edited Vendor") }, as: :json
+
+    assert_response :success
+    assert_equal "Edited Vendor", @payment_advice.reload.payee_name
+  end
+
+  test "mail goes to every To, CC and BCC address and then locks the advice" do
+    assert_difference -> { ActionMailer::Base.deliveries.size }, 1 do
+      post send_mail_payment_advice_path(@payment_advice),
+        params: { payment_advice: advice_params(payee_email: "a@example.com, b@example.com", cc_emails: "c@example.com", bcc_emails: "d@example.com") },
+        as: :json
+    end
+
+    assert_response :success
+    mail = ActionMailer::Base.deliveries.last
+    assert_equal %w[a@example.com b@example.com], mail.to
+    assert_equal ["c@example.com"], mail.cc
+    assert_equal ["d@example.com"], mail.bcc
+    assert @payment_advice.reload.mail_sent?
+    assert response.parsed_body.dig("payment_advice", "mail_sent_at").present?
+  end
+
+  test "a mailed advice cannot be edited or deleted, but can be mailed again unchanged" do
+    @payment_advice.update_column(:mail_sent_at, 1.hour.ago)
+
+    post payment_advices_path, params: { record_id: @payment_advice.id, payment_advice: advice_params(payee_name: "Changed") }, as: :json
+    assert_response :unprocessable_entity
+    assert_match "can no longer be edited", response.parsed_body["errors"].join
+
+    # Delete is admin-only anyway; a mailed advice stays even then.
+    assert_no_difference -> { PaymentAdviceRecord.count } do
+      delete payment_advice_path(@payment_advice), as: :json
+    end
+    assert_not_equal 204, response.status
+
+    post send_mail_payment_advice_path(@payment_advice), params: { payment_advice: advice_params(payee_name: "Changed") }, as: :json
+    assert_response :success
+    assert_equal "Original Vendor", @payment_advice.reload.payee_name
+  end
+
+  test "a wrong email in the lists is reported" do
+    post payment_advices_path, params: { payment_advice: advice_params(advice_no: "PA-2026-950", cc_emails: "good@example.com, not-an-email") }, as: :json
+
+    assert_response :unprocessable_entity
+    assert_match "CC has an invalid email: not-an-email", response.parsed_body["errors"].join
+  end
+
+  test "emails used before are offered as suggestions" do
+    @payment_advice.update!(cc_emails: "cc.person@example.com")
+
+    get new_payment_advice_path
+    assert_response :success
+    assert_includes response.body, "cc.person@example.com"
+    assert_includes response.body, "old.vendor@example.com"
+  end
+
+  private
+
+  def advice_params(**overrides)
+    {
+      company_name: "Accounts Department", advice_no: @payment_advice.advice_no, payee_name: "Original Vendor",
+      payee_email: "old.vendor@example.com", invoice_no: "INV-901", gross_amount: 1000, tds_amount: 50,
+      other_deduction: 25, payment_mode: "NEFT"
+    }.merge(overrides)
+  end
 end

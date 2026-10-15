@@ -1150,7 +1150,6 @@
     min-width: 0;
   }
 
-  .app-content .payment-advice-sidebar,
   .app-content .payment-advice-side-nav,
   .app-content .payment-advice-topbar {
     flex-wrap: wrap;
@@ -1163,5 +1162,144 @@
 
   .app-content .payment-advice-topbar-actions {
     flex-wrap: wrap;
+  }
+}
+
+/* Edit / locked state, To-CC-BCC email lists and their suggestions. */
+.payment-advice-mode-banner {
+  margin-bottom: 14px;
+  border: 1px solid #b8d6c6;
+  border-radius: 10px;
+  background: #eef8f2;
+  color: #0b4a4f;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.payment-advice-mode-banner[data-tone="locked"] {
+  border-color: #f3d27a;
+  background: #fff8e6;
+  color: #7a4b00;
+}
+
+.payment-advice-mode-banner[hidden] {
+  display: none;
+}
+
+.payment-advice-email-field {
+  position: relative;
+}
+
+.payment-advice-email-suggest {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: grid;
+  margin-top: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid #c9d5e3;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 14px 30px rgba(20, 32, 51, 0.14);
+  padding: 4px;
+}
+
+.payment-advice-email-suggest[hidden] {
+  display: none;
+}
+
+.payment-advice-shell .payment-advice-email-option {
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #1f2a37;
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.payment-advice-shell .payment-advice-email-option:hover,
+.payment-advice-shell .payment-advice-email-option.is-active {
+  background: #eef8f2;
+  color: #0b4a4f;
+}
+
+.payment-advice-field-hint {
+  grid-column: 1 / -1;
+  margin: -4px 0 0;
+  color: #66737f;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.payment-advice-shell input:disabled,
+.payment-advice-shell select:disabled,
+.payment-advice-shell textarea:disabled {
+  background: #f3f6f4;
+  color: #4b5563;
+  cursor: not-allowed;
+}
+
+.payment-advice-shell button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.payment-advice-record-item {
+  grid-template-columns: minmax(0, 1fr) 220px;
+}
+
+.payment-advice-record-actions {
+  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+}
+
+.payment-advice-record-edit {
+  border: 1px solid rgba(11, 74, 79, 0.25);
+  border-radius: 7px;
+  background: rgba(11, 74, 79, 0.08);
+  color: #0b4a4f;
+  font-weight: 950;
+}
+
+.payment-advice-record-load .payment-advice-record-status {
+  grid-column: 1;
+  justify-self: start;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.payment-advice-record-status.is-sent {
+  background: #fff3d6;
+  color: #7a4b00;
+}
+
+.payment-advice-record-status.is-draft {
+  background: #eaf4ee;
+  color: #0b4a4f;
+}
+
+.payment-advice-record-load b {
+  grid-row: 1 / span 3;
+}
+
+@media (max-width: 860px) {
+  .payment-advice-record-item {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* The "Signed in" box needs room; on smaller laptops the name is already in the top bar. */
+@media screen and (max-width: 1440px) {
+  .app-content .payment-advice-sidebar-footer {
+    display: none;
   }
 }

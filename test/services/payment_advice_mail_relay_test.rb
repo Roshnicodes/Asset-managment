@@ -179,6 +179,48 @@ class PaymentAdviceMailRelayTest < ActiveSupport::TestCase
     with_env("PAYMENT_ADVICE_MAIL_RELAY_URL" => nil) { assert_not PaymentAdviceMailRelay.enabled? }
   end
 
+  test "every To, CC and BCC address gets its own mail until krai takes cc and bcc" do
+    @payment_advice.update!(payee_email: "a@example.com, b@example.com", cc_emails: "c@example.com", bcc_emails: "d@example.com")
+    sent = []
+    fake = ->(uri) { sent << URI.decode_www_form(uri.query).to_h; FakeResponse.new("200", "OK", "OK", true) }
+
+    with_env("PAYMENT_ADVICE_MAIL_RELAY_URL" => nil, "PAYMENT_ADVICE_MAIL_RELAY_SECRET" => nil, "PAYMENT_ADVICE_MAIL_RELAY_CC" => nil) do
+      PaymentAdviceMailRelay.stub(:get, fake) { assert PaymentAdviceMailRelay.deliver!(@payment_advice) }
+    end
+    assert_equal %w[a@example.com b@example.com c@example.com d@example.com], sent.map { |query| query["payee_email"] }
+    assert sent.none? { |query| query.key?("cc_email") }
+  end
+
+  test "when krai takes cc and bcc one mail carries all addresses" do
+    @payment_advice.update!(payee_email: "a@example.com, b@example.com", cc_emails: "c@example.com", bcc_emails: "d@example.com")
+    sent = []
+    fake = ->(uri) { sent << URI.decode_www_form(uri.query).to_h; FakeResponse.new("200", "OK", "OK", true) }
+
+    with_env("PAYMENT_ADVICE_MAIL_RELAY_URL" => nil, "PAYMENT_ADVICE_MAIL_RELAY_SECRET" => nil, "PAYMENT_ADVICE_MAIL_RELAY_CC" => "1") do
+      PaymentAdviceMailRelay.stub(:get, fake) { assert PaymentAdviceMailRelay.deliver!(@payment_advice) }
+    end
+    assert_equal 1, sent.size
+    assert_equal "a@example.com,b@example.com", sent.first["payee_email"]
+    assert_equal "c@example.com", sent.first["cc_email"]
+    assert_equal "d@example.com", sent.first["bcc_email"]
+  end
+
+  test "when only some addresses fail the others are reported as sent" do
+    @payment_advice.update!(payee_email: "a@example.com", cc_emails: "c@example.com")
+    fake = lambda do |uri|
+      to = URI.decode_www_form(uri.query).to_h["payee_email"]
+      to == "c@example.com" ? FakeResponse.new("500", "Server error", "Error", false) : FakeResponse.new("200", "OK", "OK", true)
+    end
+
+    error = with_env("PAYMENT_ADVICE_MAIL_RELAY_URL" => nil, "PAYMENT_ADVICE_MAIL_RELAY_SECRET" => nil, "PAYMENT_ADVICE_MAIL_RELAY_CC" => nil) do
+      assert_raises(PaymentAdviceMailRelay::PartialDeliveryError) do
+        PaymentAdviceMailRelay.stub(:get, fake) { PaymentAdviceMailRelay.deliver!(@payment_advice) }
+      end
+    end
+    assert_equal ["a@example.com"], error.sent_to
+    assert_match "not to c@example.com", error.message
+  end
+
   private
 
   def with_env(values)

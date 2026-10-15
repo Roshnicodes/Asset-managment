@@ -29,6 +29,7 @@ module Api
         else
           PaymentAdviceMailer.with(payment_advice: payment_advice).payment_advice.deliver_now
         end
+        payment_advice.update_column(:mail_sent_at, Time.current)
         render json: {
           message: relay ? "Payment advice sent to #{payment_advice.payee_email}." : mail_success_message(payment_advice),
           payment_advice: payment_advice_payload(payment_advice)
@@ -67,7 +68,7 @@ module Api
 
       def payment_advice_params
         permitted_params = source_params.permit(
-          :company_name, :advice_no, :payee_name, :payee_email, :recipient_email, :invoice_no, :invoice_date,
+          :company_name, :advice_no, :payee_name, :payee_email, :recipient_email, :cc_emails, :bcc_emails, :invoice_no, :invoice_date,
           :gross_amount, :tds_amount, :other_deduction, :payment_mode, :reference_no,
           :bank_name, :payment_date, :remarks
         )
@@ -91,6 +92,9 @@ module Api
           payee_name: advice.payee_name,
           payee_email: advice.payee_email,
           recipient_email: advice.payee_email,
+          cc_emails: advice.cc_emails,
+          bcc_emails: advice.bcc_emails,
+          mail_sent_at: advice.mail_sent_at,
           invoice_no: advice.invoice_no,
           invoice_date: advice.invoice_date,
           gross_amount: advice.gross_amount.to_s,

@@ -17,6 +17,16 @@ require "uri"
 class PaymentAdviceMailRelay
   class DeliveryError < StandardError; end
 
+  # Some addresses got the mail, others did not.
+  class PartialDeliveryError < DeliveryError
+    attr_reader :sent_to
+
+    def initialize(message, sent_to:)
+      super(message)
+      @sent_to = sent_to
+    end
+  end
+
   DEFAULT_URL = "https://krai.asaindia.org/nemail.aspx".freeze
   MAIL_PAGE = "/nemail.aspx".freeze
   TIMEOUT_SECONDS = 15
@@ -49,14 +59,46 @@ class PaymentAdviceMailRelay
     ENV["PAYMENT_ADVICE_MAIL_RELAY_SECRET"].to_s
   end
 
+  # krai's page takes one payee_email. Until krai accepts cc_email/bcc_email
+  # (PAYMENT_ADVICE_MAIL_RELAY_CC=1), every To, CC and BCC address gets its own
+  # mail, so nobody sees the other addresses.
+  def self.cc_supported?
+    ENV["PAYMENT_ADVICE_MAIL_RELAY_CC"].to_s.strip.in?(%w[1 true yes])
+  end
+
   def self.deliver!(payment_advice, now: Time.current)
-    response, final_uri = fetch(signed_url(payment_advice, now: now))
+    to_list = payment_advice.respond_to?(:to_list) ? payment_advice.to_list : [payment_advice.payee_email]
+    cc_list = payment_advice.respond_to?(:cc_list) ? payment_advice.cc_list : []
+    bcc_list = payment_advice.respond_to?(:bcc_list) ? payment_advice.bcc_list : []
+
+    if cc_supported? || (to_list.size <= 1 && cc_list.empty? && bcc_list.empty?)
+      extra = { "cc_email" => cc_list.join(","), "bcc_email" => bcc_list.join(",") }.reject { |_key, value| value.blank? }
+      deliver_one!(payment_advice, to: to_list.join(","), extra: extra, now: now)
+    else
+      sent_to = []
+      failures = {}
+      (to_list + cc_list + bcc_list).uniq(&:downcase).each do |address|
+        deliver_one!(payment_advice, to: address, now: now)
+        sent_to << address
+      rescue DeliveryError => error
+        failures[address] = error.message
+      end
+      raise DeliveryError, failures.values.first if sent_to.empty?
+      if failures.any?
+        raise PartialDeliveryError.new("Sent to #{sent_to.join(', ')}, but not to #{failures.keys.join(', ')}: #{failures.values.first}", sent_to: sent_to)
+      end
+    end
+    true
+  end
+
+  def self.deliver_one!(payment_advice, to:, extra: {}, now: Time.current)
+    response, final_uri = fetch(signed_url(payment_advice, now: now, to: to, extra: extra))
     # The address (without the advice details) helps to see where it went.
     where = "[#{final_uri.scheme}://#{final_uri.host}#{final_uri.path}]"
     raise DeliveryError, "Mail service asked for a login #{where}" if login_page?(final_uri)
     raise DeliveryError, "#{failure_message(response)} #{where}" unless success?(response)
 
-    Rails.logger.info("PaymentAdviceMailRelay sent advice=#{payment_advice.advice_no} to=#{payment_advice.payee_email} status=#{response.code} #{where}")
+    Rails.logger.info("PaymentAdviceMailRelay sent advice=#{payment_advice.advice_no} to=#{to} status=#{response.code} #{where}")
     true
   rescue DeliveryError => error
     Rails.logger.error("PaymentAdviceMailRelay failed advice=#{payment_advice.advice_no}: #{error.message}")
@@ -66,12 +108,12 @@ class PaymentAdviceMailRelay
     raise DeliveryError, "Mail service could not be reached (#{error.message})."
   end
 
-  def self.params_for(payment_advice)
+  def self.params_for(payment_advice, to: payment_advice.payee_email)
     {
       "company_name" => payment_advice.company_name,
       "advice_no" => payment_advice.advice_no,
       "payee_name" => payment_advice.payee_name,
-      "payee_email" => payment_advice.payee_email,
+      "payee_email" => to,
       "invoice_no" => payment_advice.invoice_no,
       "invoice_date" => payment_advice.invoice_date&.iso8601,
       "gross_amount" => payment_advice.gross_amount.to_s,
@@ -92,12 +134,13 @@ class PaymentAdviceMailRelay
   end
 
   # The link carries expires_at and signature only when a shared secret is set.
-  def self.signed_url(payment_advice, now: Time.current)
-    query = params_for(payment_advice)
+  def self.signed_url(payment_advice, now: Time.current, to: payment_advice.payee_email, extra: {})
+    query = params_for(payment_advice, to: to)
     if secret.present?
       expires_at = (now + LINK_VALID_FOR).to_i
       query = query.merge("expires_at" => expires_at.to_s, "signature" => signature_for(query, expires_at))
     end
+    query = query.merge(extra)
 
     uri = URI.parse(url)
     uri.query = URI.encode_www_form(query)

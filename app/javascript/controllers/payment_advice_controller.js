@@ -15,15 +15,17 @@ export default class extends Controller {
     records: Array,
     nextAdviceNo: String,
     createBankUrl: String,
-    createRecordUrl: String
+    createRecordUrl: String,
+    usedEmails: Array,
+    canDelete: Boolean
   }
 
   static targets = [
     "navItem", "panel",
-    "companyName", "adviceNo", "payeeName", "payeeEmail", "invoiceNo", "invoiceDate",
+    "companyName", "adviceNo", "payeeName", "payeeEmail", "ccEmails", "bccEmails", "invoiceNo", "invoiceDate",
     "paymentMode", "referenceNo", "bankSelect", "paymentDate", "grossAmount", "tdsAmount",
     "otherDeduction", "remarks", "newBankName", "bankList", "bankCount", "netPreview",
-    "recordList", "recordCount", "saveMessage",
+    "recordList", "recordCount", "saveMessage", "modeBanner", "saveButton", "sendButton",
     "previewCompany", "previewAdviceNo", "previewPayee", "previewEmail", "previewInvoiceSubject",
     "previewInvoiceNo", "previewInvoiceDate", "previewGrossAmount", "previewTdsAmount",
     "previewOtherDeduction", "previewNetAmount", "previewNetAmountTable", "previewPaymentMode",
@@ -38,6 +40,8 @@ export default class extends Controller {
     this.records = this.recordsValue
     this.renderBanks("HDFC Bank")
     this.renderRecords()
+    this.setupEmailSuggestions()
+    this.setMode(null)
 
     this.companyNameTarget.value = "Accounts Department"
     if (this.adviceNoTarget.value === "PA-2026-001") this.adviceNoTarget.value = this.nextAdviceNoValue
@@ -118,6 +122,11 @@ export default class extends Controller {
   }
 
   async saveAdvice() {
+    if (this.currentRecordLocked()) {
+      this.showSaveMessage("This advice was already mailed and cannot be edited.", "error")
+      return
+    }
+
     this.showSaveMessage("Saving...", "muted")
 
     try {
@@ -133,15 +142,24 @@ export default class extends Controller {
     const recordId = event.currentTarget.dataset.recordId
     if (!recordId) return
 
+    const record = this.records.find((item) => String(item.id) === String(recordId))
+    if (!window.confirm(`Delete payment advice ${record?.advice_no || ""}?`)) return
+
     const response = await fetch(`/payment_advices/${recordId}`, {
       method: "DELETE",
       headers: this.requestHeaders(),
       credentials: "same-origin"
     })
 
-    if (!response.ok) return
+    // Delete is allowed for admins only; anything but 204 means it stayed.
+    if (response.status !== 204) {
+      const payload = response.redirected ? {} : await response.json().catch(() => ({}))
+      alert(payload.error || "Record could not be deleted. Only an admin can delete a payment advice.")
+      return
+    }
 
     this.records = this.records.filter((record) => String(record.id) !== String(recordId))
+    if (String(this.currentRecordId) === String(recordId)) this.resetForm()
     this.renderRecords()
   }
 
@@ -155,6 +173,8 @@ export default class extends Controller {
     this.adviceNoTarget.value = record.advice_no || ""
     this.payeeNameTarget.value = record.payee_name || ""
     this.payeeEmailTarget.value = record.payee_email || ""
+    this.ccEmailsTarget.value = record.cc_emails || ""
+    this.bccEmailsTarget.value = record.bcc_emails || ""
     this.invoiceNoTarget.value = record.invoice_no || ""
     this.invoiceDateTarget.value = record.invoice_date || ""
     this.paymentModeTarget.value = record.payment_mode || "NEFT"
@@ -165,6 +185,8 @@ export default class extends Controller {
     this.paymentDateTarget.value = record.payment_date || ""
     this.remarksTarget.value = record.remarks || ""
     this.renderBanks(record.bank_name || this.bankSelectTarget.value)
+    this.setMode(record)
+    this.showSaveMessage("", "muted")
     this.refresh()
     this.activateView("advice")
   }
@@ -201,6 +223,8 @@ export default class extends Controller {
     this.adviceNoTarget.value = this.nextAdviceNumber()
     this.payeeNameTarget.value = ""
     this.payeeEmailTarget.value = ""
+    this.ccEmailsTarget.value = ""
+    this.bccEmailsTarget.value = ""
     this.invoiceNoTarget.value = ""
     this.paymentModeTarget.value = "NEFT"
     this.referenceNoTarget.value = ""
@@ -209,6 +233,7 @@ export default class extends Controller {
     this.otherDeductionTarget.value = "0"
     this.remarksTarget.value = ""
     this.renderBanks("HDFC Bank")
+    this.setMode(null)
     if (!options.keepMessage) this.showSaveMessage("", "muted")
     this.refresh()
   }
@@ -226,33 +251,46 @@ export default class extends Controller {
       return
     }
 
-    this.showSaveMessage("Saving before mail...", "muted")
-
+    const locked = this.currentRecordLocked()
     let savedRecord
-    try {
-      savedRecord = await this.persistAdvice()
-    } catch (error) {
-      this.showSaveMessage(error.message || "Record could not be saved.", "error")
-      alert(error.message || "Record could not be saved before sending mail.")
-      this.activateView("advice")
-      return
+
+    if (locked) {
+      // A mailed advice is final; it can only be sent again as it is.
+      const record = this.currentRecord()
+      if (!window.confirm(`This advice was already mailed on ${record.mail_sent_at}. Send the same mail again?`)) return
+      savedRecord = record
+    } else {
+      this.showSaveMessage("Saving before mail...", "muted")
+      try {
+        savedRecord = await this.persistAdvice()
+      } catch (error) {
+        this.showSaveMessage(error.message || "Record could not be saved.", "error")
+        alert(error.message || "Record could not be saved before sending mail.")
+        this.activateView("advice")
+        return
+      }
     }
 
+    this.sendButtonTarget.disabled = true
+    this.showSaveMessage("Sending mail...", "muted")
     try {
       const response = await fetch(`/payment_advices/${savedRecord.id}/send_mail`, {
         method: "POST",
         headers: this.requestHeaders(),
         credentials: "same-origin",
-        body: JSON.stringify({ payment_advice: this.recordPayload() })
+        body: JSON.stringify(locked ? {} : { payment_advice: this.recordPayload() })
       })
 
       const payload = await this.responsePayload(response)
       const message = payload.message || payload.error || payload.errors?.join(", ") || "Mail request completed."
+      if (payload.payment_advice) this.storeRecord(payload.payment_advice)
       this.showSaveMessage(message, response.ok ? "success" : "error")
       alert(message)
     } catch (error) {
       this.showSaveMessage(error.message || "Mail could not be sent.", "error")
       alert(error.message || "Mail could not be sent.")
+    } finally {
+      this.sendButtonTarget.disabled = false
     }
   }
 
@@ -261,18 +299,53 @@ export default class extends Controller {
       method: "POST",
       headers: this.requestHeaders(),
       credentials: "same-origin",
-      body: JSON.stringify({ payment_advice: this.recordPayload() })
+      body: JSON.stringify({ record_id: this.currentRecordId, payment_advice: this.recordPayload() })
     })
 
     const payload = await this.responsePayload(response)
     if (!response.ok) throw new Error(payload.errors?.join(", ") || payload.error || "Record could not be saved.")
 
-    this.currentRecordId = payload.id
-    this.records = [payload, ...this.records.filter((item) => item.id !== payload.id)]
-    this.renderRecords()
+    this.storeRecord(payload)
     this.nextAdviceNoValue = this.nextAdviceNumber()
 
     return payload
+  }
+
+  // Keeps the list, the form mode and the email suggestions in step with a saved record.
+  storeRecord(record) {
+    this.currentRecordId = record.id
+    this.records = [record, ...this.records.filter((item) => String(item.id) !== String(record.id))]
+    this.renderRecords()
+    this.rememberEmails([record.payee_email, record.cc_emails, record.bcc_emails])
+    this.setMode(record)
+  }
+
+  currentRecord() {
+    return this.records.find((item) => String(item.id) === String(this.currentRecordId)) || null
+  }
+
+  currentRecordLocked() {
+    return Boolean(this.currentRecord()?.mail_sent_at)
+  }
+
+  // New advice, editing a saved one, or a mailed (locked) one.
+  setMode(record) {
+    const locked = Boolean(record?.mail_sent_at)
+    const banner = this.modeBannerTarget
+
+    banner.hidden = !record
+    banner.dataset.tone = locked ? "locked" : "editing"
+    banner.textContent = !record ? "" : locked
+      ? `${record.advice_no} was mailed on ${record.mail_sent_at}. It is locked and cannot be edited. Use New Advice to make another advice.`
+      : `Editing saved advice ${record.advice_no}. Save Record keeps your changes.`
+
+    this.element.querySelectorAll(".payment-advice-entry-panel input:not([type='hidden']), .payment-advice-entry-panel select, .payment-advice-entry-panel textarea")
+      .forEach((field) => { field.disabled = locked })
+    this.saveButtonTargets.forEach((button) => {
+      button.disabled = locked
+      button.title = locked ? "Mailed advice cannot be edited" : ""
+    })
+    this.sendButtonTarget.textContent = locked ? "Resend Mail" : "Send Mail"
   }
 
   renderBanks(selectedBank) {
@@ -332,9 +405,12 @@ export default class extends Controller {
         details.dataset.action = "payment-advice#loadRecord"
         details.dataset.recordId = record.id
         title.textContent = `${record.advice_no} - ${record.payee_name}`
-        meta.textContent = `${record.invoice_no} | ${record.bank_name || "-"} | ${record.created_at}`
+        meta.textContent = `${record.invoice_no} | ${record.payee_email || "-"} | ${record.bank_name || "-"} | ${record.created_at}`
         amount.textContent = this.formatCurrency(this.numberValue(record.net_amount))
-        details.append(title, meta, amount)
+        const status = document.createElement("small")
+        status.className = `payment-advice-record-status ${record.mail_sent_at ? "is-sent" : "is-draft"}`
+        status.textContent = record.mail_sent_at ? `Mail sent · ${record.mail_sent_at} · Locked` : "Not mailed yet · Editable"
+        details.append(title, meta, status, amount)
 
         actions.className = "payment-advice-record-actions"
         view.type = "button"
@@ -349,7 +425,19 @@ export default class extends Controller {
         remove.dataset.action = "payment-advice#removeRecord"
         remove.dataset.recordId = record.id
 
-        actions.append(view, remove)
+        if (record.mail_sent_at) {
+          actions.classList.add("is-locked")
+          actions.append(view)
+        } else {
+          const edit = document.createElement("button")
+          edit.type = "button"
+          edit.className = "payment-advice-record-edit"
+          edit.textContent = "Edit"
+          edit.dataset.action = "payment-advice#loadRecord"
+          edit.dataset.recordId = record.id
+          actions.append(view, edit)
+          if (this.canDeleteValue) actions.append(remove)
+        }
         item.append(details, actions)
         return item
       })
@@ -362,6 +450,8 @@ export default class extends Controller {
       advice_no: this.adviceNoTarget.value,
       payee_name: this.payeeNameTarget.value,
       payee_email: this.payeeEmailTarget.value,
+      cc_emails: this.ccEmailsTarget.value,
+      bcc_emails: this.bccEmailsTarget.value,
       invoice_no: this.invoiceNoTarget.value,
       invoice_date: this.invoiceDateTarget.value,
       gross_amount: this.grossAmountTarget.value,
@@ -385,12 +475,99 @@ export default class extends Controller {
     const currentNumber = this.sequentialNumber(this.nextAdviceNoValue)
     const nextNumber = Math.max(0, currentNumber - 1, ...numbers) + 1
 
-    return `PA-2026-${String(nextNumber).padStart(3, "0")}`
+    return `PA-${this.adviceYear()}-${String(nextNumber).padStart(3, "0")}`
+  }
+
+  // The year of the numbers the server hands out (PA-<year>-001).
+  adviceYear() {
+    return String(this.nextAdviceNoValue || "").match(/^PA-(\d{4})-/)?.[1] || String(new Date().getFullYear())
   }
 
   sequentialNumber(adviceNo) {
-    const match = String(adviceNo || "").match(/^PA-2026-(\d{3})$/)
+    const match = String(adviceNo || "").match(new RegExp(`^PA-${this.adviceYear()}-(\\d{3,})$`))
     return match ? Number.parseInt(match[1], 10) : 0
+  }
+
+  // Email suggestions: addresses used before, offered under To / CC / BCC.
+  setupEmailSuggestions() {
+    this.knownEmails = []
+    this.rememberEmails(this.usedEmailsValue)
+    this.rememberEmails(this.records.flatMap((record) => [record.payee_email, record.cc_emails, record.bcc_emails]))
+
+    this.element.querySelectorAll("[data-email-list]").forEach((input) => {
+      const box = document.createElement("div")
+      box.className = "payment-advice-email-suggest"
+      box.hidden = true
+      box.setAttribute("role", "listbox")
+      input.insertAdjacentElement("afterend", box)
+      input.emailSuggest = box
+
+      input.addEventListener("focus", () => this.showEmailSuggestions(input))
+      input.addEventListener("input", () => this.showEmailSuggestions(input))
+      input.addEventListener("blur", () => setTimeout(() => { box.hidden = true }, 150))
+      input.addEventListener("keydown", (event) => this.emailSuggestKey(event, input))
+    })
+  }
+
+  rememberEmails(values) {
+    const seen = new Set(this.knownEmails.map((email) => email.toLowerCase()))
+    values.flatMap((value) => String(value || "").split(/[,;\s]+/)).map((email) => email.trim()).filter(Boolean).forEach((email) => {
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || seen.has(email.toLowerCase())) return
+      seen.add(email.toLowerCase())
+      this.knownEmails.push(email)
+    })
+  }
+
+  showEmailSuggestions(input) {
+    const box = input.emailSuggest
+    if (!box || input.disabled) return
+
+    const parts = input.value.split(",")
+    const typed = parts[parts.length - 1].trim().toLowerCase()
+    const chosen = new Set(parts.slice(0, -1).map((part) => part.trim().toLowerCase()))
+    const matches = this.knownEmails
+      .filter((email) => !chosen.has(email.toLowerCase()) && email.toLowerCase() !== typed && email.toLowerCase().includes(typed))
+      .slice(0, 8)
+
+    box.replaceChildren(...matches.map((email, index) => {
+      const option = document.createElement("button")
+      option.type = "button"
+      option.className = `payment-advice-email-option${index === 0 ? " is-active" : ""}`
+      option.setAttribute("role", "option")
+      option.textContent = email
+      option.addEventListener("mousedown", (event) => {
+        event.preventDefault()
+        this.pickEmail(input, email)
+      })
+      return option
+    }))
+    box.hidden = matches.length === 0
+  }
+
+  emailSuggestKey(event, input) {
+    const box = input.emailSuggest
+    if (!box || box.hidden) return
+
+    const options = [...box.children]
+    const current = options.findIndex((option) => option.classList.contains("is-active"))
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault()
+      const next = (current + (event.key === "ArrowDown" ? 1 : -1) + options.length) % options.length
+      options.forEach((option, index) => option.classList.toggle("is-active", index === next))
+    } else if (event.key === "Enter" && current >= 0) {
+      event.preventDefault()
+      this.pickEmail(input, options[current].textContent)
+    } else if (event.key === "Escape") {
+      box.hidden = true
+    }
+  }
+
+  pickEmail(input, email) {
+    const parts = input.value.split(",").slice(0, -1).map((part) => part.trim()).filter(Boolean)
+    input.value = [...parts, email].join(", ") + ", "
+    input.dispatchEvent(new Event("input", { bubbles: true }))
+    input.focus()
+    input.emailSuggest.hidden = true
   }
 
   activateInitialView() {

@@ -5,7 +5,9 @@ class PaymentAdviceMailer < ApplicationMailer
     @payment_advice = params[:payment_advice]
 
     message = mail(
-      to: @payment_advice.payee_email,
+      to: @payment_advice.respond_to?(:to_list) ? @payment_advice.to_list : @payment_advice.payee_email,
+      cc: @payment_advice.respond_to?(:cc_list) ? @payment_advice.cc_list.presence : nil,
+      bcc: @payment_advice.respond_to?(:bcc_list) ? @payment_advice.bcc_list.presence : nil,
       from: self.class.payment_advice_sender,
       subject: "Payment Advice #{@payment_advice.advice_no}"
     )

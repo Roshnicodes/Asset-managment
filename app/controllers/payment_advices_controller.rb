@@ -7,10 +7,13 @@ class PaymentAdvicesController < ApplicationController
     @banks = Bank.ordered.map { |bank| { id: bank.id, name: bank.name } }
     @payment_advices = PaymentAdviceRecord.recent.limit(50).map { |advice| payment_advice_payload(advice) }
     @next_advice_no = PaymentAdviceRecord.next_advice_no
+    @used_emails = PaymentAdviceRecord.used_emails
   end
 
+  # A saved advice is updated by its id; a new one never overwrites another
+  # advice that already has the same number.
   def create
-    payment_advice = PaymentAdviceRecord.find_or_initialize_by(advice_no: payment_advice_params[:advice_no])
+    payment_advice = params[:record_id].present? ? PaymentAdviceRecord.find(params[:record_id]) : PaymentAdviceRecord.new
     payment_advice.assign_attributes(payment_advice_params)
 
     if payment_advice.save
@@ -21,13 +24,19 @@ class PaymentAdvicesController < ApplicationController
   end
 
   def destroy
+    if @payment_advice.mail_sent?
+      render json: { error: "This payment advice was already mailed and cannot be deleted." }, status: :unprocessable_entity
+      return
+    end
+
     @payment_advice.destroy
 
     head :no_content
   end
 
   def send_mail
-    return unless apply_payment_advice_params_for_mail
+    # A mailed advice is final: it can be sent again, but not changed.
+    return unless @payment_advice.mail_sent? || apply_payment_advice_params_for_mail
 
     if @payment_advice.payee_email.blank?
       render json: { error: "Recipient Email is required before sending mail." }, status: :unprocessable_entity
@@ -36,8 +45,15 @@ class PaymentAdvicesController < ApplicationController
 
     # Without SMTP the mail goes out through the ASA mail service.
     if PaymentAdviceMailRelay.enabled?
-      PaymentAdviceMailRelay.deliver!(@payment_advice)
-      render json: { message: "Payment advice sent to #{@payment_advice.payee_email}." }
+      begin
+        PaymentAdviceMailRelay.deliver!(@payment_advice)
+      rescue PaymentAdviceMailRelay::PartialDeliveryError => error
+        mark_mail_sent!
+        render json: { error: error.message, payment_advice: payment_advice_payload(@payment_advice) }, status: :bad_gateway
+        return
+      end
+      mark_mail_sent!
+      render json: { message: "Payment advice sent to #{recipients_label}.", payment_advice: payment_advice_payload(@payment_advice) }
       return
     end
 
@@ -47,7 +63,8 @@ class PaymentAdvicesController < ApplicationController
     end
 
     PaymentAdviceMailer.with(payment_advice: @payment_advice).payment_advice.deliver_now
-    render json: { message: mail_success_message }
+    mark_mail_sent!
+    render json: { message: mail_success_message, payment_advice: payment_advice_payload(@payment_advice) }
   rescue StandardError => e
     render json: { error: "Email could not be sent: #{e.message}" }, status: :bad_gateway
   end
@@ -68,17 +85,26 @@ class PaymentAdvicesController < ApplicationController
     false
   end
 
+  def mark_mail_sent!
+    @payment_advice.update_column(:mail_sent_at, Time.current)
+  end
+
+  def recipients_label
+    [@payment_advice.payee_email, @payment_advice.cc_emails.presence && "CC: #{@payment_advice.cc_emails}",
+     @payment_advice.bcc_emails.presence && "BCC: #{@payment_advice.bcc_emails}"].compact.join(" | ")
+  end
+
   def mail_success_message
     if PaymentAdviceMailer.payment_advice_local_file_delivery? && !PaymentAdviceMailer.payment_advice_real_smtp_configured?
       "Mail was not sent to inbox. Local test copy saved at tmp/payment_advice_mails/#{@payment_advice.payee_email}. Configure SMTP_ADDRESS, SMTP_USERNAME and SMTP_PASSWORD for real email."
     else
-      "Payment advice sent to #{@payment_advice.payee_email}."
+      "Payment advice sent to #{recipients_label}."
     end
   end
 
   def payment_advice_params
     params.expect(payment_advice: [
-      :company_name, :advice_no, :payee_name, :payee_email, :invoice_no, :invoice_date,
+      :company_name, :advice_no, :payee_name, :payee_email, :cc_emails, :bcc_emails, :invoice_no, :invoice_date,
       :gross_amount, :tds_amount, :other_deduction, :payment_mode, :reference_no,
       :bank_name, :payment_date, :remarks
     ])
@@ -91,6 +117,9 @@ class PaymentAdvicesController < ApplicationController
       advice_no: advice.advice_no,
       payee_name: advice.payee_name,
       payee_email: advice.payee_email,
+      cc_emails: advice.cc_emails,
+      bcc_emails: advice.bcc_emails,
+      mail_sent_at: advice.mail_sent_at&.in_time_zone("Asia/Kolkata")&.strftime("%d %b %Y, %I:%M %p"),
       invoice_no: advice.invoice_no,
       invoice_date: advice.invoice_date,
       gross_amount: advice.gross_amount.to_s,

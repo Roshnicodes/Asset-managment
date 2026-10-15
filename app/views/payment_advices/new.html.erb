@@ -8,6 +8,8 @@
   data-payment-advice-next-advice-no-value="<%= @next_advice_no %>"
   data-payment-advice-create-bank-url-value="<%= banks_path %>"
   data-payment-advice-create-record-url-value="<%= payment_advices_path %>"
+  data-payment-advice-used-emails-value="<%= @used_emails.to_json %>"
+  data-payment-advice-can-delete-value="<%= admin_user? %>"
 >
   <aside class="payment-advice-sidebar">
     <div class="payment-advice-sidebar-brand">
@@ -49,7 +51,7 @@
       <div class="payment-advice-topbar-actions">
         <button class="payment-advice-ghost-button" type="button" data-action="payment-advice#resetForm">New Advice</button>
         <button class="payment-advice-ghost-button" type="button" data-view="preview" data-action="payment-advice#showView">Preview</button>
-        <button class="payment-advice-secondary-button" type="button" data-action="payment-advice#saveAdvice">Save Record</button>
+        <button class="payment-advice-secondary-button" type="button" data-payment-advice-target="saveButton" data-action="payment-advice#saveAdvice">Save Record</button>
         <button class="payment-advice-primary-button" type="button" data-action="payment-advice#printAdvice">Print Advice</button>
       </div>
     </header>
@@ -58,6 +60,8 @@
       <section class="payment-advice-view-panel active" data-payment-advice-target="panel" data-view="advice" id="advice-form">
         <form class="payment-advice-entry-panel" autocomplete="off">
           <input data-payment-advice-target="companyName" data-action="input->payment-advice#refresh" type="hidden" value="Accounts Department">
+
+          <div class="payment-advice-mode-banner" data-payment-advice-target="modeBanner" hidden></div>
 
           <div class="payment-advice-section-heading">
             <div>
@@ -77,10 +81,22 @@
               <input data-payment-advice-target="payeeName" data-action="input->payment-advice#refresh" type="text" value="">
             </label>
 
-            <label>
-              Recipient Email
-              <input data-payment-advice-target="payeeEmail" data-action="input->payment-advice#refresh" type="email" value="">
+            <label class="payment-advice-email-field">
+              Recipient Email (To)
+              <input data-payment-advice-target="payeeEmail" data-email-list data-action="input->payment-advice#refresh" type="text" inputmode="email" autocomplete="off" placeholder="name@example.com" value="">
             </label>
+
+            <label class="payment-advice-email-field">
+              CC
+              <input data-payment-advice-target="ccEmails" data-email-list type="text" inputmode="email" autocomplete="off" placeholder="Optional" value="">
+            </label>
+
+            <label class="payment-advice-email-field">
+              BCC
+              <input data-payment-advice-target="bccEmails" data-email-list type="text" inputmode="email" autocomplete="off" placeholder="Optional" value="">
+            </label>
+
+            <p class="payment-advice-field-hint">Add more than one email with a comma. Emails used before are suggested while you type.</p>
           </div>
 
           <div class="payment-advice-section-heading">
@@ -165,7 +181,7 @@
           <div class="payment-advice-form-actions">
             <span class="payment-advice-save-message" data-payment-advice-target="saveMessage"></span>
             <button class="payment-advice-ghost-button" type="button" data-view="preview" data-action="payment-advice#showView">Preview Advice</button>
-            <button class="payment-advice-secondary-button" type="button" data-action="payment-advice#saveAdvice">Save Record</button>
+            <button class="payment-advice-secondary-button" type="button" data-payment-advice-target="saveButton" data-action="payment-advice#saveAdvice">Save Record</button>
           </div>
         </form>
       </section>
@@ -208,7 +224,7 @@
 
       <section class="payment-advice-view-panel payment-advice-preview-panel" data-payment-advice-target="panel" data-view="preview" id="payment-preview">
         <div class="payment-advice-preview-actions">
-          <button class="payment-advice-ghost-button" type="button" data-action="payment-advice#sendMail">Send Mail</button>
+          <button class="payment-advice-ghost-button" type="button" data-payment-advice-target="sendButton" data-action="payment-advice#sendMail">Send Mail</button>
           <button class="payment-advice-primary-button" type="button" data-action="payment-advice#printAdvice">Print Advice</button>
         </div>
 
