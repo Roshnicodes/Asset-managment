@@ -159,7 +159,7 @@ export default class extends Controller {
     }
 
     this.records = this.records.filter((record) => String(record.id) !== String(recordId))
-    if (String(this.currentRecordId) === String(recordId)) this.resetForm()
+    if (String(this.currentRecordId) === String(recordId)) this.resetForm({ keepView: true })
     this.renderRecords()
   }
 
@@ -231,11 +231,20 @@ export default class extends Controller {
     this.grossAmountTarget.value = "0"
     this.tdsAmountTarget.value = "0"
     this.otherDeductionTarget.value = "0"
-    this.remarksTarget.value = ""
+    this.remarksTarget.value = "Payment processed against the above invoice."
+    const today = new Date().toISOString().slice(0, 10)
+    this.invoiceDateTarget.value = today
+    this.paymentDateTarget.value = today
     this.renderBanks("HDFC Bank")
     this.setMode(null)
     if (!options.keepMessage) this.showSaveMessage("", "muted")
     this.refresh()
+
+    // From the preview or records tab, New Advice opens the empty form.
+    if (!options.keepView) {
+      this.activateView("advice")
+      this.payeeNameTarget.focus()
+    }
   }
 
   printAdvice() {
@@ -346,6 +355,7 @@ export default class extends Controller {
       button.title = locked ? "Mailed advice cannot be edited" : ""
     })
     this.sendButtonTarget.textContent = locked ? "Resend Mail" : "Send Mail"
+    this.renderAllEmailChips()
   }
 
   renderBanks(selectedBank) {
@@ -488,87 +498,186 @@ export default class extends Controller {
     return match ? Number.parseInt(match[1], 10) : 0
   }
 
-  // Email suggestions: addresses used before, offered under To / CC / BCC.
+  // To / CC / BCC: every address is a chip with a ×; the original input keeps
+  // the comma-separated value that is saved. Addresses used before are
+  // suggested while typing.
   setupEmailSuggestions() {
     this.knownEmails = []
     this.rememberEmails(this.usedEmailsValue)
     this.rememberEmails(this.records.flatMap((record) => [record.payee_email, record.cc_emails, record.bcc_emails]))
 
-    this.element.querySelectorAll("[data-email-list]").forEach((input) => {
+    this.element.querySelectorAll("[data-email-list]").forEach((store) => {
       const box = document.createElement("div")
-      box.className = "payment-advice-email-suggest"
-      box.hidden = true
-      box.setAttribute("role", "listbox")
-      input.insertAdjacentElement("afterend", box)
-      input.emailSuggest = box
+      const chips = document.createElement("span")
+      const entry = document.createElement("input")
+      const suggest = document.createElement("div")
 
-      input.addEventListener("focus", () => this.showEmailSuggestions(input))
-      input.addEventListener("input", () => this.showEmailSuggestions(input))
-      input.addEventListener("blur", () => setTimeout(() => { box.hidden = true }, 150))
-      input.addEventListener("keydown", (event) => this.emailSuggestKey(event, input))
+      box.className = "payment-advice-email-box"
+      chips.className = "payment-advice-email-chips"
+      entry.type = "text"
+      entry.inputMode = "email"
+      entry.autocomplete = "off"
+      entry.className = "payment-advice-email-entry"
+      entry.placeholder = store.placeholder
+      suggest.className = "payment-advice-email-suggest"
+      suggest.hidden = true
+      suggest.setAttribute("role", "listbox")
+
+      box.append(chips, entry)
+      store.hidden = true
+      store.insertAdjacentElement("afterend", box)
+      box.insertAdjacentElement("afterend", suggest)
+      Object.assign(entry, { emailStore: store, emailChips: chips, emailSuggest: suggest })
+      store.emailEntry = entry
+
+      box.addEventListener("click", (event) => { if (!event.target.closest("button")) entry.focus() })
+      entry.addEventListener("focus", () => this.showEmailSuggestions(entry))
+      entry.addEventListener("input", () => {
+        if (/[,;\s]/.test(entry.value)) this.commitEmailEntry(entry)
+        this.showEmailSuggestions(entry)
+      })
+      // Commit at once so a Save click right after typing keeps the address.
+      entry.addEventListener("blur", () => {
+        this.commitEmailEntry(entry)
+        setTimeout(() => { suggest.hidden = true }, 150)
+      })
+      entry.addEventListener("keydown", (event) => this.emailSuggestKey(event, entry))
+      this.renderEmailChips(store)
     })
+  }
+
+  emailListOf(store) {
+    return String(store.value || "").split(/[,;\s]+/).map((email) => email.trim()).filter(Boolean)
+  }
+
+  // Draws the chips from the saved value (after load, reset or lock).
+  renderEmailChips(store) {
+    const entry = store.emailEntry
+    if (!entry) return
+
+    const locked = store.disabled
+    entry.disabled = locked
+    entry.placeholder = this.emailListOf(store).length ? "" : store.placeholder
+    entry.closest(".payment-advice-email-box").classList.toggle("is-disabled", locked)
+    entry.emailChips.replaceChildren(...this.emailListOf(store).map((email) => {
+      const chip = document.createElement("span")
+      chip.className = `payment-advice-email-chip${this.validEmail(email) ? "" : " is-invalid"}`
+      chip.title = this.validEmail(email) ? email : `${email} is not a valid email`
+      chip.append(email)
+      if (!locked) {
+        const remove = document.createElement("button")
+        remove.type = "button"
+        remove.textContent = "×"
+        remove.setAttribute("aria-label", `Remove ${email}`)
+        remove.addEventListener("click", () => {
+          store.value = this.emailListOf(store).filter((item) => item !== email).join(", ")
+          this.emailListChanged(store)
+          entry.focus()
+        })
+        chip.append(remove)
+      }
+      return chip
+    }))
+  }
+
+  renderAllEmailChips() {
+    this.element.querySelectorAll("[data-email-list]").forEach((store) => this.renderEmailChips(store))
+  }
+
+  emailListChanged(store) {
+    store.dispatchEvent(new Event("input", { bubbles: true }))
+    this.renderEmailChips(store)
+  }
+
+  // Moves what was typed into chips (on comma, space, Enter or leaving the box).
+  commitEmailEntry(entry) {
+    const typed = entry.value.split(/[,;\s]+/).map((email) => email.trim()).filter(Boolean)
+    entry.value = ""
+    if (typed.length === 0) return
+
+    this.addEmails(entry.emailStore, typed)
+  }
+
+  addEmails(store, emails) {
+    const current = this.emailListOf(store)
+    const seen = new Set(current.map((email) => email.toLowerCase()))
+    emails.forEach((email) => {
+      if (seen.has(email.toLowerCase())) return
+      seen.add(email.toLowerCase())
+      current.push(email)
+    })
+    store.value = current.join(", ")
+    this.emailListChanged(store)
+  }
+
+  validEmail(email) {
+    return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)
   }
 
   rememberEmails(values) {
     const seen = new Set(this.knownEmails.map((email) => email.toLowerCase()))
     values.flatMap((value) => String(value || "").split(/[,;\s]+/)).map((email) => email.trim()).filter(Boolean).forEach((email) => {
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || seen.has(email.toLowerCase())) return
+      if (!this.validEmail(email) || seen.has(email.toLowerCase())) return
       seen.add(email.toLowerCase())
       this.knownEmails.push(email)
     })
   }
 
-  showEmailSuggestions(input) {
-    const box = input.emailSuggest
-    if (!box || input.disabled) return
+  showEmailSuggestions(entry) {
+    const box = entry.emailSuggest
+    if (!box || entry.disabled) return
 
-    const parts = input.value.split(",")
-    const typed = parts[parts.length - 1].trim().toLowerCase()
-    const chosen = new Set(parts.slice(0, -1).map((part) => part.trim().toLowerCase()))
+    const typed = entry.value.trim().toLowerCase()
+    const chosen = new Set(this.emailListOf(entry.emailStore).map((email) => email.toLowerCase()))
     const matches = this.knownEmails
-      .filter((email) => !chosen.has(email.toLowerCase()) && email.toLowerCase() !== typed && email.toLowerCase().includes(typed))
+      .filter((email) => !chosen.has(email.toLowerCase()) && email.toLowerCase().includes(typed))
       .slice(0, 8)
 
     box.replaceChildren(...matches.map((email, index) => {
       const option = document.createElement("button")
       option.type = "button"
-      option.className = `payment-advice-email-option${index === 0 ? " is-active" : ""}`
+      option.className = `payment-advice-email-option${index === 0 && typed ? " is-active" : ""}`
       option.setAttribute("role", "option")
       option.textContent = email
       option.addEventListener("mousedown", (event) => {
         event.preventDefault()
-        this.pickEmail(input, email)
+        this.pickEmail(entry, email)
       })
       return option
     }))
     box.hidden = matches.length === 0
   }
 
-  emailSuggestKey(event, input) {
-    const box = input.emailSuggest
-    if (!box || box.hidden) return
-
-    const options = [...box.children]
+  emailSuggestKey(event, entry) {
+    const box = entry.emailSuggest
+    const options = box && !box.hidden ? [...box.children] : []
     const current = options.findIndex((option) => option.classList.contains("is-active"))
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+
+    if ((event.key === "ArrowDown" || event.key === "ArrowUp") && options.length) {
       event.preventDefault()
       const next = (current + (event.key === "ArrowDown" ? 1 : -1) + options.length) % options.length
       options.forEach((option, index) => option.classList.toggle("is-active", index === next))
-    } else if (event.key === "Enter" && current >= 0) {
+    } else if (event.key === "Enter") {
       event.preventDefault()
-      this.pickEmail(input, options[current].textContent)
-    } else if (event.key === "Escape") {
+      if (current >= 0) this.pickEmail(entry, options[current].textContent)
+      else this.commitEmailEntry(entry)
+    } else if (event.key === "Backspace" && entry.value === "") {
+      const list = this.emailListOf(entry.emailStore)
+      if (list.length === 0) return
+      entry.emailStore.value = list.slice(0, -1).join(", ")
+      this.emailListChanged(entry.emailStore)
+    } else if (event.key === "Escape" && box) {
       box.hidden = true
     }
   }
 
-  pickEmail(input, email) {
-    const parts = input.value.split(",").slice(0, -1).map((part) => part.trim()).filter(Boolean)
-    input.value = [...parts, email].join(", ") + ", "
-    input.dispatchEvent(new Event("input", { bubbles: true }))
-    input.focus()
-    input.emailSuggest.hidden = true
+  pickEmail(entry, email) {
+    entry.value = ""
+    this.addEmails(entry.emailStore, [email])
+    entry.focus()
+    this.showEmailSuggestions(entry)
   }
+
 
   activateInitialView() {
     const viewByHash = {

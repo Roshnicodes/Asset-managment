@@ -1303,3 +1303,104 @@
     display: none;
   }
 }
+
+/* To / CC / BCC chip boxes */
+.payment-advice-email-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 43px;
+  border: 1px solid #c9d5e3;
+  border-radius: 7px;
+  background: #ffffff;
+  padding: 5px 8px;
+  cursor: text;
+}
+
+.payment-advice-email-box:focus-within {
+  border-color: #0b4a4f;
+  box-shadow: 0 0 0 3px rgba(11, 74, 79, 0.12);
+}
+
+.payment-advice-email-box.is-disabled {
+  background: #f3f6f4;
+  cursor: not-allowed;
+}
+
+.payment-advice-email-chips {
+  display: contents;
+}
+
+.payment-advice-email-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  border: 1px solid #b8d6c6;
+  border-radius: 999px;
+  background: #eef8f2;
+  color: #0b4a4f;
+  padding: 3px 4px 3px 10px;
+  font-size: 12.5px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.payment-advice-email-box.is-disabled .payment-advice-email-chip {
+  padding-right: 10px;
+}
+
+.payment-advice-email-chip.is-invalid {
+  border-color: #f5b8b8;
+  background: #fff5f5;
+  color: #b42318;
+}
+
+.payment-advice-shell .payment-advice-email-chip button {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(11, 74, 79, 0.1);
+  color: inherit;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.payment-advice-shell .payment-advice-email-chip button:hover {
+  background: rgba(180, 35, 24, 0.14);
+  color: #b42318;
+}
+
+.payment-advice-shell input.payment-advice-email-entry {
+  flex: 1 1 140px;
+  width: auto;
+  min-width: 120px;
+  min-height: 30px;
+  border: 0;
+  background: transparent;
+  padding: 2px 4px;
+  box-shadow: none;
+  outline: none;
+}
+
+/* Email boxes are wider (two columns) and grow downwards without stretching
+   the fields next to them. */
+.payment-advice-form-grid:has(.payment-advice-email-field) {
+  align-items: start;
+}
+
+.payment-advice-form-grid:has(.payment-advice-email-field) > label {
+  align-content: start;
+}
+
+@media (min-width: 861px) {
+  .payment-advice-email-field {
+    grid-column: span 2;
+  }
+}
