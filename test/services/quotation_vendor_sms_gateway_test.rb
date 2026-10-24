@@ -838,7 +838,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     end
   end
 
-  test "vendor registration sms link defaults to the ASA India portal OTP page" do
+  test "vendor registration sms link defaults to approved production CTA url" do
     with_env(
       "APP_BASE_URL" => nil,
       "SMS_APP_BASE_URL" => nil,
@@ -850,7 +850,7 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
         config = QuotationVendorSmsGateway.vendor_registration_sms_config
 
         assert_equal(
-          "https://apurti.asaindia.org/vr/inviteToken1",
+          "http://apurti.ploughmanagro.com/vr?inviteToken1",
           QuotationVendorSmsGateway.vendor_registration_sms_link_for_config("inviteToken1", config: config)
         )
       end

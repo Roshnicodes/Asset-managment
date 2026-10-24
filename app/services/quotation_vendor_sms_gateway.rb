@@ -20,9 +20,8 @@ class QuotationVendorSmsGateway
   DEFAULT_INVOICE_OTP_TEMPLATE_ID = "1707177675366996869".freeze
   DEFAULT_VENDOR_REGISTRATION_LINK_TEMPLATE_ID = "1707177944223861381".freeze
   DEFAULT_VENDOR_REGISTRATION_OTP_TEMPLATE_ID = "1707177944234142889".freeze
-  DEFAULT_VENDOR_REGISTRATION_BASE_URL = "https://apurti.asaindia.org".freeze
-  # SMS link: https://apurti.asaindia.org/vr/<token> opens the vendor OTP page directly.
-  DEFAULT_VENDOR_REGISTRATION_CTA_URL = "https://apurti.asaindia.org/vr".freeze
+  DEFAULT_VENDOR_REGISTRATION_BASE_URL = "http://apurti.ploughmanagro.com".freeze
+  DEFAULT_VENDOR_REGISTRATION_CTA_URL = "http://apurti.ploughmanagro.com/vr?".freeze
   DEVELOPMENT_BASE_URL = "http://127.0.0.1:3000".freeze
   ASA_LINK_TEMPLATE_ID = "1707177512006405172".freeze
   ASA_OTP_TEMPLATE_ID = "1707177528687356932".freeze
