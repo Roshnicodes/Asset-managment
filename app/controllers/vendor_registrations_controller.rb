@@ -56,6 +56,7 @@ class VendorRegistrationsController < ApplicationController
 
       @vendor_registrations = base_scope.where(id: own_ids)
         .or(base_scope.where(id: involved_ids))
+        .or(base_scope.where(id: self_registered_ids_for_maker))
         .distinct
         .order(created_at: :desc)
     end
@@ -193,6 +194,31 @@ class VendorRegistrationsController < ApplicationController
   end
 
   private
+    # Vendors who registered themselves from the public /vr page belong to no
+    # maker. They are shown to the Vendor Registration makers whose approval
+    # channel has the same stakeholder and theme (a channel without a theme
+    # covers every theme of its stakeholder).
+    def self_registered_ids_for_maker
+      employee_ids = current_approval_employee_ids
+      return VendorRegistration.none.select(:id) if employee_ids.blank?
+
+      channels = ApprovalChannel.where(form_name: "Vendor Registration")
+        .joins(:approval_channel_steps)
+        .where(approval_channel_steps: { to_responsible_user_id: employee_ids })
+        .where("LOWER(TRIM(approval_channel_steps.current_action)) = ?", "proposal create")
+        .distinct
+        .pluck(:stakeholder_category_id, :theme_id)
+      return VendorRegistration.none.select(:id) if channels.empty?
+
+      matches = channels.map do |stakeholder_id, theme_id|
+        scope = VendorRegistration.where(user_id: nil)
+        scope = scope.where(stakeholder_category_id: stakeholder_id) if stakeholder_id.present?
+        scope = scope.where(id: VendorRegistrationTheme.where(theme_id: theme_id).select(:vendor_registration_id)) if theme_id.present?
+        scope
+      end
+      matches.reduce { |combined, scope| combined.or(scope) }.joins(:approval_request).select(:id)
+    end
+
     # Use callbacks to share common setup or constraints between actions.
     def set_vendor_registration
       @vendor_registration = VendorRegistration.find(params.expect(:id))
@@ -276,6 +302,7 @@ class VendorRegistrationsController < ApplicationController
       return if admin_user?
       return if @vendor_registration.user_id == current_user.id
       return if @vendor_registration.approval_request&.approval_steps&.any? { |step| step.reached? && employee_matches_current_login?(step.employee_master) }
+      return if @vendor_registration.user_id.nil? && self_registered_ids_for_maker.where(id: @vendor_registration.id).exists?
 
       redirect_to list_vendor_registrations_path, alert: "You are not authorized to view this vendor registration."
     end
