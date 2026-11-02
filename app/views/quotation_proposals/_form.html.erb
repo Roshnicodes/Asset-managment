@@ -24,6 +24,14 @@
   .app-rfp-committee-table .app-rfp-cell-field input:not([type="checkbox"]):not([type="radio"]),
   .app-rfp-committee-table .app-rfp-cell-field select,
   .app-rfp-committee-table .app-rfp-cell-field textarea { border-radius: 10px; }
+  /* Item names (e.g. "Tom-F1 | Tomato F1 Puru_Seed_10gm") need the widest column; on a
+     small laptop the table scrolls sideways instead of squeezing the other fields. */
+  .app-rfp-items-table { min-width: 980px; table-layout: fixed; }
+  .app-rfp-items-table > thead > tr > th:nth-child(1) { width: 30%; }
+  .app-rfp-items-table > thead > tr > th:nth-child(2) { width: 14%; }
+  .app-rfp-items-table > thead > tr > th:nth-child(3) { width: 12%; }
+  .app-rfp-items-table > thead > tr > th:nth-child(4) { width: 14%; }
+  .app-rfp-items-table > thead > tr > th:nth-child(6) { width: 140px; }
   .app-rfp-items-table .app-rfp-table-cell--action .app-action-button,
   .app-rfp-committee-table .app-rfp-table-cell--action .app-action-button { width: 100%; }
   .app-committee-amount { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: .2rem 1rem; margin-bottom: 1rem; padding: .9rem 1.1rem; border: 1px solid #cfe3d8; border-radius: 14px; background: linear-gradient(135deg, #f3faf6, #ffffff); }
@@ -279,6 +287,7 @@
                 <%= check_box_tag "quotation_proposal[vendor_registration_ids][]", vendor.id, quotation_proposal.vendor_registration_ids.include?(vendor.id), class: "quotation-vendor-checkbox" %>
                 <span>
                   <strong><%= vendor.display_name %></strong><br>
+                  <% if (firm_name = vendor.firm_name_for_display) %><small>Firm: <%= firm_name %></small><br><% end %>
                   <small><%= [vendor.email, vendor.stakeholder_category&.name].compact.join(" | ") %></small>
                 </span>
               </label>

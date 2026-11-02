@@ -2,8 +2,11 @@
   <div class="auth-card">
     <div class="auth-header">
       <h1 class="auth-title">Forgot Password?</h1>
-      <p class="auth-subtitle">Enter your employee code to reset your password.</p>
+      <p class="auth-subtitle">Enter your employee code. A reset link will be sent to your registered email.</p>
     </div>
+
+    <% if notice.present? %><div class="alert alert-success auth-flash"><%= notice %></div><% end %>
+    <% if alert.present? %><div class="alert alert-danger auth-flash"><%= alert %></div><% end %>
 
     <%= form_for(resource, as: resource_name, url: password_path(resource_name), html: { method: :post, class: "auth-form", data: { turbo: false } }) do |f| %>
       <%= render "devise/shared/error_messages", resource: resource %>
@@ -13,7 +16,7 @@
         <%= f.text_field :email, class: "form-control", placeholder: "EMP001", autofocus: true, autocomplete: "username" %>
       </div>
 
-      <%= f.submit "Reset My Password", class: "btn btn-auth-submit" %>
+      <%= f.submit "Send Reset Link", class: "btn btn-auth-submit" %>
     <% end %>
 
     <div class="auth-footer">

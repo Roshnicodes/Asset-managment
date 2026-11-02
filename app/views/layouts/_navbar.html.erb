@@ -43,6 +43,12 @@
                 <span>Profile Settings</span>
               <% end %>
             </li>
+            <li class="py-1">
+              <%= link_to edit_user_registration_path, class: "dropdown-item d-flex align-items-center gap-2 py-2 px-3" do %>
+                <%= app_icon(:approval, classes: "icon-sm text-brand-mid") %>
+                <span>Change Password</span>
+              <% end %>
+            </li>
             <li><hr class="dropdown-divider my-0 opacity-10"></li>
             <li class="py-1">
               <%= button_to destroy_user_session_path, method: :delete, form: { data: { turbo: false } }, class: "dropdown-item d-flex align-items-center gap-2 py-2 px-3 text-danger border-0 bg-transparent w-100 text-start" do %>

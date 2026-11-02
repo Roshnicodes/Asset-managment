@@ -56,6 +56,14 @@ class VendorRegistration < ApplicationRecord
     vendor_name.presence || firm_name.presence || "Vendor Registration ##{id}"
   end
 
+  # Firm name to show next to the vendor name (nil when it adds nothing).
+  def firm_name_for_display
+    firm = firm_name.to_s.strip
+    return if firm.blank? || vendor_name.to_s.strip.blank? || firm.casecmp?(vendor_name.to_s.strip)
+
+    firm
+  end
+
   def approval_locked?
     approval_request&.status == "approved"
   end

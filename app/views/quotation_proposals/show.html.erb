@@ -806,6 +806,9 @@
               <th style="min-width: 280px; vertical-align: top; <%= header_style %>">
                 <div style="display: flex; flex-direction: column; gap: 0.45rem;">
                 <div class="fw-semibold" style="font-size: 1rem;"><%= proposal_vendor.vendor_registration.display_name %></div>
+                <% if (firm_name = proposal_vendor.vendor_registration.firm_name_for_display) %>
+                  <div class="quotation-proposal-show__vendor-firm">Firm: <%= firm_name %></div>
+                <% end %>
                 <div class="small text-muted"><%= proposal_vendor.response_status.humanize %></div>
                 <div class="d-flex gap-2 flex-wrap">
                     <% if proposal_vendor_selected %>

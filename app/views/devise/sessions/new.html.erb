@@ -8,6 +8,9 @@
         <p class="auth-subtitle">Secure procurement, AI-powered approvals, and realtime transaction visibility in one beautiful login experience.</p>
       </div>
 
+      <% if notice.present? %><div class="alert alert-success auth-flash"><%= notice %></div><% end %>
+      <% if alert.present? %><div class="alert alert-danger auth-flash"><%= alert %></div><% end %>
+
       <%= form_for(resource, as: resource_name, url: session_path(resource_name), html: { class: "auth-form", data: { turbo: false } }) do |f| %>
         <div class="form-group mb-4">
           <%= f.label :email, "Employee Code", class: "form-label" %>
@@ -17,6 +20,7 @@
         <div class="form-group mb-4">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <%= f.label :password, "Your Password", class: "form-label mb-0" %>
+            <%= link_to "Forgot Password?", new_user_password_path, class: "auth-forgot-link" %>
           </div>
           <%= f.password_field :password, class: "form-control", placeholder: "••••••••", autocomplete: "current-password" %>
         </div>

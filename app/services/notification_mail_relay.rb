@@ -40,6 +40,7 @@ class NotificationMailRelay
     invoice_accepted
     payment_recorded
     max_rate_required
+    password_reset
   ].freeze
   DEFAULT_PAGE = "apurti_nnotify.aspx".freeze
 
@@ -106,12 +107,31 @@ class NotificationMailRelay
     params = params_for(notification)
     return false unless params["to_email"].include?("@")
 
-    response, final_uri = PaymentAdviceMailRelay.fetch(request_uri(notification))
+    status = send_request!(request_uri(notification))
+    Rails.logger.info("NotificationMailRelay sent notification=#{notification.id} kind=#{notification.mail_kind} to=#{params['to_email']} status=#{status}")
+    true
+  end
+
+  # A mail that is not an in-app notification (e.g. the password reset link),
+  # sent through the same krai page with the same five parameters.
+  def self.deliver_message!(to_email:, to_name:, subject:, message:, link:, kind: nil)
+    params = { "to_email" => to_email.to_s.strip, "to_name" => to_name.to_s, "subject" => subject.to_s,
+               "message" => message.to_s, "link" => link.to_s }
+    return false unless params["to_email"].include?("@")
+
+    uri = URI.parse(page_url(kind))
+    uri.query = URI.encode_www_form(params)
+    status = send_request!(uri)
+    Rails.logger.info("NotificationMailRelay sent kind=#{kind} to=#{params['to_email']} status=#{status}")
+    true
+  end
+
+  def self.send_request!(uri)
+    response, final_uri = PaymentAdviceMailRelay.fetch(uri)
     where = "[#{final_uri.scheme}://#{final_uri.host}#{final_uri.path}]"
     raise DeliveryError, "Mail service asked for a login #{where}" if PaymentAdviceMailRelay.login_page?(final_uri)
     raise DeliveryError, "#{PaymentAdviceMailRelay.failure_message(response)} #{where}" unless PaymentAdviceMailRelay.success?(response)
 
-    Rails.logger.info("NotificationMailRelay sent notification=#{notification.id} kind=#{notification.mail_kind} to=#{params['to_email']} status=#{response.code}")
-    true
+    response.code
   end
 end

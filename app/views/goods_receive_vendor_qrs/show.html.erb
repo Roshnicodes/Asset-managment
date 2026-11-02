@@ -931,7 +931,7 @@
           </div>
           <div class="gr-meta-card">
             <div class="gr-label">Last OTP Sent At</div>
-            <div class="gr-value"><%= @quotation_vendor_dispatch.latest_active_otp&.sent_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+            <div class="gr-value"><%= @quotation_vendor_dispatch.latest_active_otp&.sent_at&.in_time_zone("Asia/Kolkata")&.strftime("%d-%m-%Y %I:%M %p") || "-" %></div>
           </div>
         </div>
 

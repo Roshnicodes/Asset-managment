@@ -12,7 +12,7 @@
       <div class="form-group mb-3">
         <%= f.label :password, "New Password", class: "form-label" %>
         <% if @minimum_password_length %>
-          <small class="text-muted d-block mb-2">(<%= @minimum_password_length %> characters minimum)</small>
+          <small class="text-muted d-block mb-2">(<%= Devise.password_length.min %> to <%= Devise.password_length.max %> characters)</small>
         <% end %>
         <%= f.password_field :password, class: "form-control", placeholder: "••••••••", autofocus: true, autocomplete: "new-password" %>
       </div>

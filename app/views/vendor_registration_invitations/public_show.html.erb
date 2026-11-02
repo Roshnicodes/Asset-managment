@@ -201,7 +201,7 @@
           </div>
           <div class="vendor-registration-otp-fact">
             <div class="app-detail-label">Last OTP Sent At</div>
-            <div class="app-detail-value"><%= @invitation.otp_sent_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
+            <div class="app-detail-value"><%= @invitation.otp_sent_at&.in_time_zone("Asia/Kolkata")&.strftime("%d-%m-%Y %I:%M %p") || "-" %></div>
           </div>
         </div>
 

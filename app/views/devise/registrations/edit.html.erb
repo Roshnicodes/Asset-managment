@@ -15,7 +15,8 @@
 
           <div class="account-field">
             <%= f.label :email, class: "form-label" %>
-            <%= f.email_field :email, autofocus: true, autocomplete: "email", class: "form-control profile-form-control", placeholder: "yourname@example.com" %>
+            <%= f.email_field :email, readonly: true, autocomplete: "email", class: "form-control profile-form-control", placeholder: "yourname@example.com" %>
+            <p class="account-field-hint">Your login email comes from the Employee Master; ask the admin to change it.</p>
           </div>
 
           <% if devise_mapping.confirmable? && resource.pending_reconfirmation? %>
@@ -31,9 +32,9 @@
           <div class="account-field">
             <%= f.label :password, class: "form-label" %>
             <p class="account-field-hint">Leave blank if you don't want to change it.</p>
-            <%= f.password_field :password, autocomplete: "new-password", class: "form-control profile-form-control", placeholder: "Enter a new password" %>
+            <%= f.password_field :password, autofocus: true, autocomplete: "new-password", class: "form-control profile-form-control", placeholder: "Enter a new password" %>
             <% if @minimum_password_length %>
-              <p class="account-field-meta"><%= @minimum_password_length %> characters minimum</p>
+              <p class="account-field-meta"><%= Devise.password_length.min %> to <%= Devise.password_length.max %> characters</p>
             <% end %>
           </div>
 

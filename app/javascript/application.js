@@ -627,6 +627,7 @@ const enhanceSearchableSelect = (select) => {
 
   const sync = () => {
     if (!open) input.value = selectedText()
+    input.title = selectedText()
     input.placeholder = placeholderOption()?.textContent.trim() || "Select"
     input.disabled = select.disabled
     combo.classList.toggle("is-disabled", select.disabled)
@@ -637,8 +638,10 @@ const enhanceSearchableSelect = (select) => {
     const rect = input.getBoundingClientRect()
     const below = window.innerHeight - rect.bottom
     const height = Math.min(300, list.scrollHeight || 300)
-    list.style.left = `${Math.max(4, rect.left)}px`
-    list.style.width = `${Math.max(rect.width, 180)}px`
+    // Long option names get a wider list than a narrow field, kept on screen.
+    const width = Math.min(Math.max(rect.width, 320), window.innerWidth - 16)
+    list.style.width = `${width}px`
+    list.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))}px`
     if (below < height + 12 && rect.top > below) {
       list.style.top = ""
       list.style.bottom = `${window.innerHeight - rect.top + 4}px`

@@ -135,6 +135,7 @@
       <li><%= app_nav_link("Procurement Settings", procurement_settings_path, icon: :approval) %></li>
     <% end %>
     <li><%= app_nav_link("User Manual", user_manual_path, icon: :document) %></li>
+    <li><%= app_nav_link("Change Password", edit_user_registration_path, icon: :approval) %></li>
     <%= button_to destroy_user_session_path, method: :delete, form: { data: { turbo: false } }, class: "dropdown-item d-flex align-items-center gap-2 py-2 px-3 text-danger border-0 bg-transparent w-100 text-start" do %>
       <%= app_icon(:logout, classes: "icon-sm") %>
       <span>Logout Account</span>

@@ -7,6 +7,7 @@
   .comparison-print-table { width: 100%; min-width: 900px; border-collapse: collapse; }
   .comparison-print-table th, .comparison-print-table td { border: 1px solid #d9e8dd; padding: 8px; text-align: left; vertical-align: top; }
   .comparison-print-table th { background: #f6faf7; color: #125f38; }
+  .comparison-print-firm { margin-top: 2px; color: #4b5563; font-size: 12px; font-weight: 600; }
   .comparison-print-field { width: 220px; font-weight: 700; background: #fbfdfb; }
   .comparison-print-selected { background: #effaf3; }
   @media print { .comparison-print-toolbar { display: none !important; } .comparison-print-page { padding: 0; } .comparison-print-table { font-size: 11px; } }
@@ -38,6 +39,7 @@
           <% @comparison_vendors.each do |proposal_vendor| %>
             <th class="<%= 'comparison-print-selected' if selected_vendor_registration_id == proposal_vendor.vendor_registration_id %>">
               <%= proposal_vendor.vendor_registration.display_name %>
+              <% if (firm_name = proposal_vendor.vendor_registration.firm_name_for_display) %><div class="comparison-print-firm">Firm: <%= firm_name %></div><% end %>
               <% if proposal_vendor.id == top_rank_vendor_id %><div>Top Rank</div><% end %>
               <% if selected_vendor_registration_id == proposal_vendor.vendor_registration_id %><div>Selected</div><% end %>
             </th>
