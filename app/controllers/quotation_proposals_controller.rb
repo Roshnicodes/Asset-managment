@@ -1329,13 +1329,8 @@ class QuotationProposalsController < ApplicationController
       .left_joins(:themes)
       .joins(:approval_request)
       .where(approval_requests: { status: "approved" })
-    if stakeholder_id.present?
-      @vendors = @vendors.where(
-        "vendor_registrations.stakeholder_category_id IN (:stakeholder_ids) OR vendor_registrations.stakeholder_category_id IS NULL OR themes.stakeholder_category_id = :stakeholder_id",
-        stakeholder_ids: [stakeholder_id],
-        stakeholder_id: stakeholder_id
-      )
-    end
+    # Any approved vendor can be picked for any quotation, whatever its
+    # stakeholder or theme (vendors of the chosen theme are listed first).
     @vendors = @vendors.distinct
       .order(:vendor_name)
     @vendor_selection_criteria = VendorSelectionCriterion

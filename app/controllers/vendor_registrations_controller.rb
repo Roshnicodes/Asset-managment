@@ -57,6 +57,7 @@ class VendorRegistrationsController < ApplicationController
       @vendor_registrations = base_scope.where(id: own_ids)
         .or(base_scope.where(id: involved_ids))
         .or(base_scope.where(id: self_registered_ids_for_maker))
+        .or(base_scope.where(id: approved_vendor_ids))
         .distinct
         .order(created_at: :desc)
     end
@@ -194,6 +195,15 @@ class VendorRegistrationsController < ApplicationController
   end
 
   private
+    # Approved vendors can be used by everyone, whichever maker or stakeholder
+    # registered them, so they are listed and viewable for all logins.
+    # Vendors still in approval stay with their maker and the approvers.
+    def approved_vendor_ids
+      VendorRegistration.joins(:approval_request)
+        .where(approval_requests: { status: "approved" })
+        .select(:id)
+    end
+
     # Vendors who registered themselves from the public /vr page belong to no
     # maker. They are shown to the Vendor Registration makers whose approval
     # channel has the same stakeholder and theme (a channel without a theme
@@ -303,6 +313,7 @@ class VendorRegistrationsController < ApplicationController
       return if @vendor_registration.user_id == current_user.id
       return if @vendor_registration.approval_request&.approval_steps&.any? { |step| step.reached? && employee_matches_current_login?(step.employee_master) }
       return if @vendor_registration.user_id.nil? && self_registered_ids_for_maker.where(id: @vendor_registration.id).exists?
+      return if approved_vendor_ids.where(id: @vendor_registration.id).exists?
 
       redirect_to list_vendor_registrations_path, alert: "You are not authorized to view this vendor registration."
     end

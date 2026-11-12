@@ -1879,7 +1879,7 @@ const setupQuotationProposalForm = () => {
       if (selectionNote) {
         selectionNote.textContent = singleVendorMode()
           ? "Below 10K: one vendor only."
-          : "Vendors of the selected theme."
+          : "All approved vendors. Vendors of the selected theme are listed first."
       }
 
       if (selectedWrap) {
@@ -1912,17 +1912,22 @@ const setupQuotationProposalForm = () => {
         .filter((checkbox) => checkbox?.checked)
       const lockedSelection = singleVendorMode() && selectedCheckboxes.length > 0 ? selectedCheckboxes[0].value : null
 
+      // Every approved vendor can be picked; the chosen theme's vendors come first.
+      const themeMatch = (option) => selectedThemeId !== "" && (option.dataset.themeIds || "").split(",").filter(Boolean).includes(selectedThemeId)
+      const optionsBox = vendorOptions[0]?.parentElement
+      if (optionsBox && optionsBox.dataset.sortedTheme !== selectedThemeId) {
+        optionsBox.dataset.sortedTheme = selectedThemeId
+        vendorOptions.filter((option) => !themeMatch(option)).forEach((option) => optionsBox.appendChild(option))
+      }
+
       vendorOptions.forEach((option) => {
-        const themeIds = (option.dataset.themeIds || "").split(",").filter(Boolean)
         const text = option.innerText.toLowerCase()
-        const matchesTheme = selectedThemeId === "" || themeIds.includes(selectedThemeId)
         const matchesSearch = query === "" || text.includes(query)
         const checkbox = option.querySelector(".quotation-vendor-checkbox")
         const isSelected = !!checkbox?.checked
-        const shouldShow = matchesTheme && matchesSearch && !isSelected
+        const shouldShow = matchesSearch && !isSelected
 
         option.classList.toggle("is-hidden", !shouldShow)
-        if (!matchesTheme && checkbox) checkbox.checked = false
         if (checkbox) {
           checkbox.disabled = !!(singleVendorMode() && lockedSelection && checkbox.value !== lockedSelection)
         }
@@ -1934,16 +1939,13 @@ const setupQuotationProposalForm = () => {
           const checkbox = option.querySelector(".quotation-vendor-checkbox")
           if (!checkbox?.checked) return false
 
-          const themeIds = (option.dataset.themeIds || "").split(",").filter(Boolean)
           const text = option.innerText.toLowerCase()
-          const matchesTheme = selectedThemeId === "" || themeIds.includes(selectedThemeId)
-          const matchesSearch = query === "" || text.includes(query)
-          return matchesTheme && matchesSearch
+          return query === "" || text.includes(query)
         })
 
         emptyState.textContent = selectedMatchingOptions.length > 0
           ? "All matching vendors are selected."
-          : "No vendor matches the selected theme or search."
+          : "No vendor matches the search."
         emptyState.classList.toggle("is-hidden", visibleOptions.length > 0)
       }
       updateLabel()

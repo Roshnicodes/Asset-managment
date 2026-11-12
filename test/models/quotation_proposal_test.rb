@@ -186,22 +186,16 @@ class QuotationProposalTest < ActiveSupport::TestCase
     assert_equal false, refreshed.call
   end
 
-  test "selected vendors must match quotation stakeholder" do
+  test "a vendor of another stakeholder can be selected" do
     proposal = QuotationProposal.new
-    vendor = OpenStruct.new(
-      stakeholder_category_id: 2,
-      display_name: "Mismatch Vendor"
-    )
+    vendor = Struct.new(:stakeholder_category_id, :display_name).new(2, "Other Stakeholder Vendor")
 
     proposal.define_singleton_method(:stakeholder_category_id) { 1 }
     proposal.define_singleton_method(:vendor_registrations) { [vendor] }
 
     proposal.send(:selected_vendors_must_match_stakeholder)
 
-    assert_includes(
-      proposal.errors[:base],
-      "Selected vendors must belong to the same stakeholder as the quotation theme. Mismatch: Mismatch Vendor"
-    )
+    assert_empty proposal.errors[:base]
   end
 
   test "committee requires l1 l2 and l3 members" do

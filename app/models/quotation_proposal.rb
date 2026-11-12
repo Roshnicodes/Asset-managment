@@ -268,16 +268,10 @@ end
     theme&.stakeholder_category_id
   end
 
+  # Any vendor may be used for any quotation, whatever its stakeholder; the
+  # name is kept for the callers that check a vendor can be selected.
   def vendor_matches_stakeholder?(vendor_registration)
-    return false if vendor_registration.blank?
-
-    proposal_stakeholder_id = stakeholder_category_id
-    return true if proposal_stakeholder_id.blank?
-
-    vendor_stakeholder_id = vendor_registration.stakeholder_category_id
-    return true if vendor_stakeholder_id.blank? || vendor_stakeholder_id == proposal_stakeholder_id
-
-    vendor_registration.themes.any? { |theme| theme.stakeholder_category_id == proposal_stakeholder_id }
+    vendor_registration.present?
   end
 
   def sync_selected_vendor_registration!(vendor_registration)
