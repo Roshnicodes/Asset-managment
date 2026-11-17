@@ -1165,7 +1165,7 @@ class QuotationProposalsController < ApplicationController
       item_id = item_params["id"].to_s
 
       if ActiveModel::Type::Boolean.new.cast(item_params["_destroy"])
-        existing_items[item_id]&.destroy! if item_id.present?
+        remove_quotation_item!(quotation_proposal, existing_items[item_id]) if item_id.present?
         next
       end
 
@@ -1179,6 +1179,27 @@ class QuotationProposalsController < ApplicationController
         quotation_proposal.quotation_proposal_items.create!(payload)
       end
     end
+  end
+
+  # Each selected vendor gets an empty row per item, which blocks a plain delete
+  # (foreign key). Those empty rows go with the item; once a vendor has quoted
+  # or goods were received, the item is kept and the maker is told why.
+  def remove_quotation_item!(quotation_proposal, item)
+    return if item.blank?
+
+    vendor_items = QuotationProposalVendorItem.where(quotation_proposal_item_id: item.id)
+    vendor_data_present = vendor_items.where.not(quoted_rate: nil)
+      .or(vendor_items.where(goods_received: true))
+      .or(vendor_items.where("received_quantity > 0"))
+      .exists?
+
+    if vendor_data_present
+      quotation_proposal.errors.add(:base, "\"#{item.item_name}\" cannot be removed because a vendor has already quoted for it or goods were received.")
+      raise ActiveRecord::RecordInvalid, quotation_proposal
+    end
+
+    vendor_items.destroy_all
+    item.destroy!
   end
 
   def normalize_item_attributes(attributes)

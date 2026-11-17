@@ -825,7 +825,9 @@ const setupWrdActivity = () => {
         select.required = false
         select.hidden = true
       } else {
-        const typed = custom.value.trim()
+        // Carry a typed item over only when the row was really in typed (WRD)
+        // mode; otherwise keep the product the user picked in the dropdown.
+        const typed = custom.disabled ? "" : custom.value.trim()
         if (typed && !Array.from(select.options).some((option) => option.value === typed)) {
           select.add(new Option(typed, typed))
         }

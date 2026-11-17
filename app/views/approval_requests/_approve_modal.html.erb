@@ -49,6 +49,9 @@
         item.hidden = true;
       });
 
+      // A card with a blur/transform makes "position: fixed" relative to the
+      // card, which cuts the popup off; shown from <body> it stays on screen.
+      if (panel.parentElement !== document.body) document.body.appendChild(panel);
       panel.hidden = false;
       document.body.classList.add("approval-popup-open");
     }
