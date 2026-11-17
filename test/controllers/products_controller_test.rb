@@ -70,7 +70,8 @@ class ProductsControllerTest < ActionDispatch::IntegrationTest
       }
     end
 
-    assert_response :success
+    # 422 so that Turbo shows the form again with the errors.
+    assert_response :unprocessable_entity
     assert_not Product.exists?(product_code: "P-BATCH-004")
     assert_select ".product-batch-row-errors", /Name can't be blank/
   end

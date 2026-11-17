@@ -1343,14 +1343,26 @@ const setupFormDraftAutosave = () => {
     const key = draftStorageKey(form)
     const draft = readDraft(key)
 
+    // A removed proposal item keeps _destroy = 1 in the draft; keep its row hidden.
+    const hideRemovedQuotationRows = () => {
+      form.querySelectorAll("[data-quotation-item-row]").forEach((row) => {
+        if (row.querySelector("[data-quotation-item-destroy]")?.value === "1") row.style.display = "none"
+      })
+    }
+
     if (draft?.values) {
       restoreQuotationRows(form, draft.values)
       applyValues(form, draft.values)
-      window.setTimeout(() => applyValues(form, draft.values), 150)
-      window.setTimeout(() => applyValues(form, draft.values), 600)
+      hideRemovedQuotationRows()
+      window.setTimeout(() => { applyValues(form, draft.values); hideRemovedQuotationRows() }, 150)
+      window.setTimeout(() => { applyValues(form, draft.values); hideRemovedQuotationRows() }, 600)
     }
 
     const persistDraft = () => {
+      // Once the form is submitted the draft is done; leaving the page must
+      // not write it back.
+      if (form.dataset.draftSubmitted === "true") return
+
       const values = collectValues(form)
       if (!valuesHaveContent(values)) {
         window.localStorage.removeItem(key)
@@ -1374,8 +1386,14 @@ const setupFormDraftAutosave = () => {
     form.addEventListener("click", () => window.setTimeout(saveDraft, 0))
 
     form.addEventListener("submit", (event) => {
+      form.dataset.draftSubmitted = "true"
+      window.clearTimeout(saveTimer)
       window.setTimeout(() => {
-        if (!event.defaultPrevented) window.localStorage.removeItem(key)
+        if (event.defaultPrevented) {
+          delete form.dataset.draftSubmitted
+        } else {
+          window.localStorage.removeItem(key)
+        }
       }, 0)
     })
 

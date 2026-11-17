@@ -62,7 +62,13 @@
   #quotation-step-1:checked ~ .app-static-pager-nav .quotation-nav-1, #quotation-step-2:checked ~ .app-static-pager-nav .quotation-nav-2, #quotation-step-3:checked ~ .app-static-pager-nav .quotation-nav-3, #quotation-step-4:checked ~ .app-static-pager-nav .quotation-nav-4, #quotation-step-5:checked ~ .app-static-pager-nav .quotation-nav-5 { display: flex !important; }
 </style>
 
-<%= form_with(model: quotation_proposal, html: { class: "app-rfp-form", data: { quotation_validation_form: true, ui_form_pager: true, draft_autosave: true, draft_key: "quotation-proposal:#{request.path}:#{quotation_proposal.to_key&.join('-') || 'new'}" }, novalidate: true }) do |form| %>
+<%# A saved quotation's draft is tied to its saved items: once it is saved again (items
+    added, changed or removed) an older browser draft is no longer restored over it. %>
+<% draft_version = if quotation_proposal.persisted?
+     saved_items = quotation_proposal.quotation_proposal_items.reject(&:new_record?)
+     [quotation_proposal.updated_at.to_i, saved_items.map(&:id).sort.join("-"), saved_items.map { |item| item.updated_at.to_i }.max].join(":")
+   end %>
+<%= form_with(model: quotation_proposal, html: { class: "app-rfp-form", data: { quotation_validation_form: true, ui_form_pager: true, draft_autosave: true, draft_key: ["quotation-proposal:#{request.path}:#{quotation_proposal.to_key&.join('-') || 'new'}", draft_version].compact.join(":") }, novalidate: true }) do |form| %>
   <% approval_request = quotation_proposal.approval_request %>
   <% field_errors = ->(field_name) { quotation_proposal.errors.full_messages_for(field_name) } %>
   <% selected_criterion_ids = Array(@selected_vendor_selection_criterion_ids).map(&:to_i) %>

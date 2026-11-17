@@ -29,7 +29,7 @@ class ProductsController < ApplicationController
     else
       @products = [@product]
       prepare_product_form_collections
-      render :new
+      render :new, status: :unprocessable_entity
     end
   end
 
@@ -46,7 +46,7 @@ class ProductsController < ApplicationController
       redirect_to products_path, notice: "Product updated successfully."
     else
       prepare_product_form_collections
-      render :edit
+      render :edit, status: :unprocessable_entity
     end
   end
 
@@ -74,7 +74,7 @@ class ProductsController < ApplicationController
       @products = [@product]
       @product_batch_context = product_batch_context_params
       prepare_product_form_collections
-      render :new
+      render :new, status: :unprocessable_entity
       return
     end
 
@@ -96,7 +96,7 @@ class ProductsController < ApplicationController
       @product = @products.find { |product| product.errors.any? } || @products.first
       @product_batch_context = product_batch_context_params
       prepare_product_form_collections
-      render :new
+      render :new, status: :unprocessable_entity
     end
   end
 
