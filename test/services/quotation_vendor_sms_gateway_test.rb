@@ -563,6 +563,49 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     assert_equal "Dear GTEC SOLUTION, We kindly request you to accept the Quotation Proposal: 123. Please submit the quotation through link: https://asa360.asaindia.org/xyz?v=13&qp=123. - ACTION FOR SOCIAL ADVANCEMENT", params["message"]
   end
 
+  test "an ASA link marker is added to ASA sms links only when it is configured" do
+    asa = { profile: :asa }
+    papl = { profile: :default }
+    link = "http://apurti.ploughmanagro.com/xyz?v=13&qp=123"
+
+    with_env("ASA_SMS_LINK_MARKER" => nil) do
+      assert_equal link, QuotationVendorSmsGateway.with_asa_link_marker(link, asa)
+    end
+    with_env("ASA_SMS_LINK_MARKER" => "o=asa") do
+      assert_equal "#{link}&o=asa", QuotationVendorSmsGateway.with_asa_link_marker(link, asa)
+      assert_equal "http://apurti.ploughmanagro.com/gr/tok?o=asa", QuotationVendorSmsGateway.with_asa_link_marker("http://apurti.ploughmanagro.com/gr/tok", asa)
+      assert_equal link, QuotationVendorSmsGateway.with_asa_link_marker(link, papl), "PAPL sms links never carry the marker"
+    end
+  end
+
+  test "the ASA quotation sms carries the marker when it is configured" do
+    captured_uri = nil
+    response = Net::HTTPOK.new("1.1", "200", "OK")
+
+    def response.body
+      '{"Status":"Success","Code":"000","Description":"Sent"}'
+    end
+
+    dispatch = AsaDispatchStub.new(
+      vendor_name: "GTec Solution",
+      mobile_no: "9876543210",
+      stakeholder_category: OpenStruct.new(name: "ASA"),
+      quotation_proposal_id: 123,
+      quotation_proposal_vendor: OpenStruct.new(id: 13, qr_token: "secure-token")
+    )
+
+    with_env("ASA_SMS_LINK_MARKER" => "o=asa") do
+      QuotationVendorSmsGateway.stub(:base_url, "http://apurti.ploughmanagro.com") do
+        Net::HTTP.stub(:get_response, ->(uri) { captured_uri = uri; response }) do
+          assert QuotationVendorSmsGateway.send_vendor_link(dispatch)
+        end
+      end
+    end
+
+    params = URI.decode_www_form(captured_uri.query).to_h
+    assert_equal "Dear GTEC SOLUTION, We kindly request you to accept the Quotation Proposal: 123. Please submit the quotation through link: http://apurti.ploughmanagro.com/xyz?v=13&qp=123&o=asa. - ACTION FOR SOCIAL ADVANCEMENT", params["message"]
+  end
+
   test "send_vendor_link falls back to token link when ASA approved link ids are unavailable" do
     captured_uri = nil
     response = Net::HTTPOK.new("1.1", "200", "OK")

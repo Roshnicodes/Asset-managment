@@ -158,6 +158,17 @@ class QuotationVendorSmsGateway
     "#{base_url(config: config)}/xyz?v=#{proposal_vendor_id}&qp=#{quotation_proposal_id}"
   end
 
+  # ASA's SMS links can carry a marker (ASA_SMS_LINK_MARKER, e.g. "o=asa") so
+  # that, while ASA sends them on the shared DLT-approved PAPL domain, the PAPL
+  # server can tell them apart and forward them to ASA. Off unless set; PAPL's
+  # own SMS (other profiles) never get it.
+  def self.with_asa_link_marker(link, config)
+    marker = ENV["ASA_SMS_LINK_MARKER"].to_s.strip
+    return link if marker.blank? || config[:profile] != :asa
+
+    "#{link}#{link.include?('?') ? '&' : '?'}#{marker}"
+  end
+
   def self.purchase_order_link_for(token)
     "#{base_url}/p/#{token}"
   end
@@ -189,7 +200,7 @@ class QuotationVendorSmsGateway
     quotation_reference = quotation_reference_for(dispatch)
     link =
       if config[:profile] == :asa
-        asa_vendor_link_for_config(dispatch, config: config)
+        with_asa_link_marker(asa_vendor_link_for_config(dispatch, config: config), config)
       else
         vendor_sms_link_for_config(dispatch.quotation_proposal_vendor.qr_token, config: config)
       end
@@ -220,7 +231,7 @@ class QuotationVendorSmsGateway
   def self.purchase_order_link_message(dispatch, proposal_vendor, config:)
     vendor_name = sms_vendor_name(dispatch, config: config)
     purchase_order_reference = purchase_order_reference_for(dispatch, proposal_vendor)
-    link = purchase_order_sms_link_for_config(proposal_vendor.po_token, config: config)
+    link = with_asa_link_marker(purchase_order_sms_link_for_config(proposal_vendor.po_token, config: config), config)
 
     if config[:profile] == :asa
       "Dear #{vendor_name}, We kindly request you to accept the purchase order: #{purchase_order_reference}.through link: #{link}. - Action for social advancement (ASA)"
@@ -232,7 +243,7 @@ class QuotationVendorSmsGateway
   def self.goods_receive_invoice_link_message(dispatch, invoice_request, config:)
     vendor_name = sms_vendor_name(dispatch, config: config)
     purchase_order_reference = purchase_order_reference_for(dispatch, invoice_request.quotation_proposal_vendor)
-    link = goods_receive_invoice_sms_link_for_config(invoice_request.request_token, config: config)
+    link = with_asa_link_marker(goods_receive_invoice_sms_link_for_config(invoice_request.request_token, config: config), config)
 
     if config[:profile] == :asa
       "Dear #{vendor_name}, We kindly request you to upload the invoice for the purchase order: #{purchase_order_reference}.through link: #{link}. - Action For Social Advancement(ASA)"
@@ -244,7 +255,7 @@ class QuotationVendorSmsGateway
   def self.goods_receive_invoice_return_link_message(dispatch, invoice_request, config:)
     vendor_name = sms_vendor_name(dispatch, config: config)
     purchase_order_reference = purchase_order_reference_for(dispatch, invoice_request.quotation_proposal_vendor)
-    link = goods_receive_invoice_sms_link_for_config(invoice_request.request_token, config: config)
+    link = with_asa_link_marker(goods_receive_invoice_sms_link_for_config(invoice_request.request_token, config: config), config)
 
     if config[:profile] == :asa
       "Dear #{vendor_name}, Your invoice has been rejected. Please upload a revised invoice for PO: #{purchase_order_reference} using the link below:#{link}.-Action For Social Advancement (ASA)"
