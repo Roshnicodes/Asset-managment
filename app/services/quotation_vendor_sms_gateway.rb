@@ -206,7 +206,10 @@ class QuotationVendorSmsGateway
       end
 
     if config[:profile] == :asa
-      "Dear #{vendor_name}, We kindly request you to accept the Quotation Proposal: #{quotation_reference}. Please submit the quotation through link: #{link}. - ACTION FOR SOCIAL ADVANCEMENT"
+      build = ->(name) { "Dear #{name}, We kindly request you to accept the Quotation Proposal: #{quotation_reference}. Please submit the quotation through link: #{link}. - ACTION FOR SOCIAL ADVANCEMENT" }
+      overflow = build.(vendor_name).length - ASA_QUOTATION_SMS_LIMIT
+      vendor_name = fit_sms_text(vendor_name, [vendor_name.length - overflow, 10].max) if overflow.positive?
+      build.(vendor_name)
     else
       "Dear #{vendor_name}, PLOUGHMAN AGRO PRIVATE LIMITED requests you to review and accept the quotation proposal #{quotation_reference}. Please submit the quotation using the following link: #{link}."
     end
@@ -771,11 +774,29 @@ class QuotationVendorSmsGateway
       .gsub("Please submit the quotation through link:", "Please submit the quotation using this link")
   end
 
-  def self.sms_vendor_name(dispatch, config:)
-    vendor_name = dispatch.vendor_name.to_s.strip.presence || "Vendor"
-    return vendor_name if config[:profile] != :asa
+  # Operators drop the SMS when the vendor name in it is longer than 45
+  # characters (seen: 45 delivered, 46 and 53 dropped), so the name in the SMS
+  # is cut at a word boundary. Screens keep the full name.
+  SMS_VENDOR_NAME_LIMIT = 45
+  # Longest delivered ASA quotation SMS (233 characters); a longer one is
+  # dropped, so the name is shortened further when the link is longer.
+  ASA_QUOTATION_SMS_LIMIT = 233
 
-    vendor_name.upcase
+  def self.sms_vendor_name(dispatch, config:)
+    vendor_name = dispatch.vendor_name.to_s.squish.presence || "Vendor"
+    vendor_name = vendor_name.upcase if config[:profile] == :asa
+
+    fit_sms_text(vendor_name, SMS_VENDOR_NAME_LIMIT)
+  end
+
+  # Cuts text to at most limit characters, at a word boundary when possible.
+  def self.fit_sms_text(text, limit)
+    text = text.to_s.squish
+    return text if text.length <= limit
+
+    cut = text[0, limit]
+    space = cut.rindex(" ")
+    (space && space >= limit / 2 ? cut[0, space] : cut).strip
   end
 
   def self.stakeholder_name_for(dispatch)

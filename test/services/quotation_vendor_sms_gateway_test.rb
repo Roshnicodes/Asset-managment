@@ -563,6 +563,44 @@ class QuotationVendorSmsGatewayTest < ActiveSupport::TestCase
     assert_equal "Dear GTEC SOLUTION, We kindly request you to accept the Quotation Proposal: 123. Please submit the quotation through link: https://asa360.asaindia.org/xyz?v=13&qp=123. - ACTION FOR SOCIAL ADVANCEMENT", params["message"]
   end
 
+  test "a vendor name longer than 45 characters is shortened in the sms only" do
+    g = QuotationVendorSmsGateway
+    stub = ->(name) { OpenStruct.new(vendor_name: name) }
+
+    assert_equal "PIPLDA KHETIHAR AGRO PRODUCER COMPANY LIMITED", g.sms_vendor_name(stub.("Piplda Khetihar Agro Producer Company Limited"), config: { profile: :asa })
+    assert_equal "SARGUJA MAHILA FARMER PRODUCER COMPANY", g.sms_vendor_name(stub.("Sarguja Mahila Farmer Producer Company Limited"), config: { profile: :asa })
+    assert_equal "MAIKAL BEEJ UTPADAK SAHKARI SAMITI MARYADIT", g.sms_vendor_name(stub.("Maikal Beej Utpadak Sahkari Samiti maryadit Kathotiya"), config: { profile: :asa })
+    assert_operator g.sms_vendor_name(stub.("A" * 60), config: { profile: :default }).length, :<=, 45
+  end
+
+  test "the ASA quotation sms stays within the delivered length with a longer link" do
+    captured_uri = nil
+    response = Net::HTTPOK.new("1.1", "200", "OK")
+
+    def response.body
+      '{"Status":"Success","Code":"000","Description":"Sent"}'
+    end
+
+    dispatch = AsaDispatchStub.new(
+      vendor_name: "Piplda Khetihar Agro Producer Company Limited",
+      mobile_no: "9876543210",
+      stakeholder_category: OpenStruct.new(name: "ASA"),
+      quotation_proposal_id: 53,
+      quotation_proposal_vendor: OpenStruct.new(id: 1000001, qr_token: "secure-token")
+    )
+
+    QuotationVendorSmsGateway.stub(:base_url, "http://apurti.ploughmanagro.com") do
+      Net::HTTP.stub(:get_response, ->(uri) { captured_uri = uri; response }) do
+        assert QuotationVendorSmsGateway.send_vendor_link(dispatch)
+      end
+    end
+
+    message = URI.decode_www_form(captured_uri.query).to_h["message"]
+    assert_operator message.length, :<=, 233
+    assert_includes message, "http://apurti.ploughmanagro.com/xyz?v=1000001&qp=53."
+    assert message.start_with?("Dear PIPLDA KHETIHAR AGRO PRODUCER COMPANY, ")
+  end
+
   test "an ASA link marker is added to ASA sms links only when it is configured" do
     asa = { profile: :asa }
     papl = { profile: :default }
