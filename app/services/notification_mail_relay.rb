@@ -41,6 +41,7 @@ class NotificationMailRelay
     payment_recorded
     max_rate_required
     password_reset
+    committee_member_rejected
   ].freeze
   DEFAULT_PAGE = "apurti_nnotify.aspx".freeze
 

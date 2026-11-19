@@ -347,4 +347,24 @@ class NotificationDispatcher
       message: "#{proposal_vendor.vendor_registration.display_name} filled quotation details for #{quotation_proposal.subject}, but final submit is pending. Please fill max rate for: #{item_names}."
     )
   end
+
+  # A committee member rejected while others have not decided yet: tell the
+  # members still to decide and the maker who rejected and why.
+  def self.notify_committee_member_rejected(approval_request, actor:, rejected_step:, remark:)
+    users = approval_request.approval_steps.includes(:employee_master).where(status: "pending").map do |step|
+      User.find_by(email: step.employee_master.email_id)
+    end.compact
+    users << approval_request.approvable.user if approval_request.approvable.respond_to?(:user)
+
+    level = WorkflowLevelNaming.humanize_level_label(rejected_step.level)
+    users.compact.uniq.each do |user|
+      Notification.create!(
+        user: user,
+        notifiable: approval_request,
+        mail_kind: "committee_member_rejected",
+        title: "#{approval_request.form_name} - Rejected by #{actor.name} (#{level})",
+        message: "#{approval_request.reference_label} was rejected by #{actor.name} (#{level}). Reason: #{remark.presence || '-'}. The other committee members can still give their decision; the final result comes once everyone has decided."
+      )
+    end
+  end
 end

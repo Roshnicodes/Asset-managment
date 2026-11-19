@@ -32,25 +32,32 @@ class ApprovalRequestsController < ApplicationController
       base_requests.where(status: "pending", approval_steps: { status: "pending" })
     end
 
+    # A committee member who rejected sees it under Rejected at once, while the
+    # other members are still deciding (the request itself is still pending).
+    rejected_by_me_ids = is_admin ? [] : base_requests.where(status: "pending", approval_steps: { status: "rejected" }).reorder(nil).pluck(:id)
+    rejected_requests = base_requests.where(status: "rejected").or(base_requests.where(id: rejected_by_me_ids))
+
     # Counts for the summary cards and tabs (same scope as the lists).
     @status_counts = {
       "pending" => actionable_requests.count,
       "approved" => base_requests.where(status: "approved").count,
       "returned" => base_requests.where(status: "returned").count,
-      "rejected" => base_requests.where(status: "rejected").count
+      "rejected" => rejected_requests.count
     }
-    @status_counts["all"] = @status_counts["pending"] + base_requests.where.not(status: "pending").count
+    @status_counts["all"] = @status_counts["pending"] + base_requests.where.not(status: "pending").count + rejected_by_me_ids.size
     @form_names = ApprovalRequest.distinct.order(:form_name).pluck(:form_name).compact
 
     @pending_approval_requests = ApprovalRequest.none
     @processed_approval_requests = ApprovalRequest.none
 
     case @status
-    when "approved", "returned", "rejected"
+    when "rejected"
+      @processed_approval_requests = rejected_requests
+    when "approved", "returned"
       @processed_approval_requests = base_requests.where(status: @status)
     when "all"
       @pending_approval_requests = actionable_requests
-      @processed_approval_requests = base_requests.where.not(status: "pending")
+      @processed_approval_requests = base_requests.where.not(status: "pending").or(base_requests.where(id: rejected_by_me_ids))
     else
       @pending_approval_requests = actionable_requests
     end

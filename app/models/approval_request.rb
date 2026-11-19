@@ -300,9 +300,7 @@ class ApprovalRequest < ApplicationRecord
             returned_to_level: nil
           )
         else
-          update!(current_level: nil, status: "approved", return_mode: nil, returned_by_level: nil, returned_to_level: nil)
-          approvable.generate_vendor_qr_tokens! if approvable.is_a?(QuotationProposal)
-          NotificationDispatcher.notify_request_completed(self, status: "approved", actor: employee, remark: remark)
+          finish_committee_decision!(employee: employee, remark: remark)
         end
       end
 
@@ -329,14 +327,23 @@ class ApprovalRequest < ApplicationRecord
   def reject!(employee:, remark:)
     step = pending_step_for(employee)
 
+    # Committee: a rejection is recorded, but the other members still give
+    # their decision; the result is decided once everyone has decided (any
+    # rejection then rejects it). The others are told who rejected and why.
     if committee_parallel_flow?
+      remaining_pending_steps = []
       transaction do
         step.update!(status: "rejected", remark: remark, actioned_at: Time.current)
-        approval_steps.where.not(id: step.id).where(status: %w[pending waiting]).update_all(status: "waiting", remark: nil, actioned_at: nil)
-        update!(current_level: nil, status: "rejected", return_mode: nil, returned_by_level: nil, returned_to_level: nil)
+
+        remaining_pending_steps = current_steps.to_a
+        if remaining_pending_steps.any?
+          update!(current_level: remaining_pending_steps.min_by(&:level).level, status: "pending", return_mode: nil, returned_by_level: nil, returned_to_level: nil)
+        else
+          finish_committee_decision!(employee: employee, remark: remark)
+        end
       end
 
-      NotificationDispatcher.notify_request_completed(self, status: "rejected", actor: employee, remark: remark)
+      NotificationDispatcher.notify_committee_member_rejected(self, actor: employee, rejected_step: step, remark: remark) if remaining_pending_steps.any?
       sync_quotation_proposal!
       return
     end
@@ -345,6 +352,22 @@ class ApprovalRequest < ApplicationRecord
     update!(current_level: nil, status: "rejected", return_mode: nil, returned_by_level: nil, returned_to_level: nil)
     NotificationDispatcher.notify_request_completed(self, status: "rejected", actor: employee, remark: remark)
     sync_quotation_proposal!
+  end
+
+  # Every committee member has decided: all approved -> approved; any
+  # rejection -> rejected (with every rejection reason in the notification).
+  def finish_committee_decision!(employee:, remark:)
+    rejected_steps = approval_steps.includes(:employee_master).where(status: "rejected").order(:level).to_a
+
+    if rejected_steps.any?
+      update!(current_level: nil, status: "rejected", return_mode: nil, returned_by_level: nil, returned_to_level: nil)
+      reasons = rejected_steps.map { |rejected| "#{rejected.employee_master&.name}: #{rejected.remark.presence || '-'}" }.join("; ")
+      NotificationDispatcher.notify_request_completed(self, status: "rejected", actor: rejected_steps.first.employee_master, remark: reasons)
+    else
+      update!(current_level: nil, status: "approved", return_mode: nil, returned_by_level: nil, returned_to_level: nil)
+      approvable.generate_vendor_qr_tokens! if approvable.is_a?(QuotationProposal)
+      NotificationDispatcher.notify_request_completed(self, status: "approved", actor: employee, remark: remark)
+    end
   end
 
   def return_to_employee!(employee:, remark:)

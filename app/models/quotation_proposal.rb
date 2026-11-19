@@ -624,7 +624,8 @@ end
 
       approval_request.update!(
         current_level: pending_step&.level,
-        status: rejected_step.present? ? "rejected" : returned_step.present? ? "returned" : pending_step.present? ? "pending" : "approved",
+        # A committee rejection only decides the result once nobody is left to decide.
+        status: returned_step.present? ? "returned" : pending_step.present? ? "pending" : rejected_step.present? ? "rejected" : "approved",
         return_mode: returned_step.present? ? "employee" : nil,
         returned_by_level: returned_step&.level,
         returned_to_level: nil
@@ -988,13 +989,13 @@ end
 
     case approval_request.status
     when "pending"
-      pending_count.positive? && returned_count.zero? && rejected_count.zero?
+      pending_count.positive? && returned_count.zero?
     when "approved"
       request_steps.present? && request_steps.all? { |step| step.status == "approved" }
     when "returned"
       returned_count == 1 && pending_count.zero? && rejected_count.zero?
     when "rejected"
-      rejected_count == 1 && pending_count.zero? && returned_count.zero?
+      rejected_count.positive? && pending_count.zero? && returned_count.zero?
     else
       false
     end
