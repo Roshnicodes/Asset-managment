@@ -30,7 +30,8 @@
   thematic_head_can_dispatch = @quotation_proposal.vendor_dispatch_allowed_for_thematic_head?(current_approval_employee_ids)
   show_send_vendor_action = (creator_can_dispatch || thematic_head_can_dispatch) && @quotation_proposal.committee_completed? && !@quotation_proposal.vendor_responses_received?
   print_actions_present = true
-  status_actions_present = show_edit_action || show_start_approval_action || show_send_vendor_action || print_actions_present
+  status_actions_present = show_edit_action || show_start_approval_action || show_send_vendor_action || print_actions_present ||
+    (creator_can_dispatch && @quotation_proposal.selected_vendor_registration_pending?)
   trail_should_open = approver_view || pending_approval_count.positive? || committee_trail_steps.size <= 2
   trail_completed_count = if committee_approval_started
     committee_trail_steps.count do |step|
@@ -353,7 +354,7 @@
         <%# 10K-50K: the selected vendor registers (Finance approval) before the PO / agreement. %>
         <%= button_to "Send Registration Link: #{@quotation_proposal.selected_vendor_registration.display_name}",
                       send_vendor_registration_link_quotation_proposal_path(@quotation_proposal),
-                      method: :post, class: "app-secondary-btn" %>
+                      method: :post, class: "app-secondary-btn", form: { id: "send-registration-link-form" } %>
       <% elsif creator_can_dispatch && @quotation_proposal.quotation_currently_usable? %>
         <%= link_to "Reuse Quote / Direct PO", reuse_quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn" %>
       <% end %>
@@ -846,10 +847,9 @@
                           <% if @quotation_proposal.selected_vendor_registration_pending? %>
                             <%# Up to 50K: the vendor registers (Finance approval) before the PO / agreement. %>
                             <span class="badge border bg-warning bg-opacity-10 text-warning">Registration pending</span>
-                            <%= button_to "Send Registration Link",
-                                  send_vendor_registration_link_quotation_proposal_path(@quotation_proposal),
-                                  method: :post, class: "app-secondary-btn", form: { class: "d-inline" },
-                                  style: "padding: 0.35rem 0.8rem; font-size: 0.82rem;" %>
+                            <%# Inside the scoring form: submits the registration-link form at the top. %>
+                            <button type="submit" form="send-registration-link-form" class="app-secondary-btn"
+                                    style="padding: 0.35rem 0.8rem; font-size: 0.82rem;">Send Registration Link</button>
                           <% elsif @quotation_proposal.agreement_mode? %>
                             <%= link_to "Create Agreement",
                                   agreement_quotation_proposal_path(@quotation_proposal),

@@ -150,6 +150,14 @@ class Upto50kUnregisteredVendorTest < ActionDispatch::IntegrationTest
     assert_redirected_to quotation_proposal_path(quotation)
     assert_match "must complete the vendor registration", flash[:alert]
 
+    # Every "Send Registration Link" button submits the registration-link form,
+    # never the committee scoring form it may sit in.
+    get quotation_proposal_url(quotation)
+    form = css_select("form#send-registration-link-form").first
+    assert form, "registration-link form is on the page"
+    assert_equal send_vendor_registration_link_quotation_proposal_path(quotation), form["action"]
+    css_select("button[form]").each { |button| assert_equal "send-registration-link-form", button["form"] }
+
     QuotationVendorSmsGateway.stub(:send_vendor_registration_link, true) do
       assert_difference -> { VendorRegistrationInvitation.count }, 1 do
         post send_vendor_registration_link_quotation_proposal_url(quotation)
@@ -262,7 +270,7 @@ class Upto50kUnregisteredVendorTest < ActionDispatch::IntegrationTest
   def quotation_with_selected(vendor, bucket: "upto_50k", theme: @theme)
     quotation = QuotationProposal.new(procurement_amount_bucket: bucket, proposal_end_date: Date.current + 7.days, remark: "Remark",
                                       subject: "Selected vendor quotation subject for the test", theme: theme,
-                                      user: user_for(@maker), workflow_status: "vendor_selected")
+                                      user: user_for(@maker), workflow_status: "vendor_selected", vendor_rule_enforced: true)
     quotation.save!(validate: false)
     item = quotation.quotation_proposal_items.create!(item_name: "Seed", unit: @unit, quantity: 2, max_rate: 1000, remark: "Item")
     proposal_vendor = quotation.quotation_proposal_vendors.create!(vendor_registration: vendor, response_status: "responded")
