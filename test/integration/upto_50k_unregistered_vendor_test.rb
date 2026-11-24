@@ -80,6 +80,19 @@ class Upto50kUnregisteredVendorTest < ActionDispatch::IntegrationTest
     assert_match "ramu-quote.pdf", response.body
   end
 
+  test "an item removed on the form before saving is not created" do
+    sign_in user_for(@maker)
+    params = quotation_params(bucket: "upto_50k", unregistered: [{ vendor_name: "Removed Row Traders", mobile_no: "9876500019" }])
+    params[:quotation_proposal][:quotation_proposal_items_attributes]["1795"] =
+      { _destroy: "1", item_name: "", unit_id: "", quantity: "0.0", max_rate: "", remark: "" }
+
+    post quotation_proposals_url, params: params
+
+    quotation = QuotationProposal.order(:id).last
+    assert_redirected_to quotation_proposal_path(quotation)
+    assert_equal ["Seed"], quotation.quotation_proposal_items.map(&:item_name)
+  end
+
   test "above 50K an unregistered vendor is refused and nothing is created" do
     sign_in user_for(@maker)
 
@@ -140,6 +153,26 @@ class Upto50kUnregisteredVendorTest < ActionDispatch::IntegrationTest
     assert_match "Village- Bataikela-ll, Batouli/Sarguja, C.G.", response.body
     assert_match "complete all works within two and half (2.5) months from the commencement date, subject to the overall completion deadline of 25th Dec. 2026", response.body
     assert_match "Rs. 1,30,000/- (Rupees One Lakh Thirty Thousand only)", response.body
+  end
+
+  test "a WRD work of 10K-50K waits for the vendor's registration before the agreement" do
+    quotation = quotation_with_selected(provisional_vendor("9876500018"), theme: @wrd_theme)
+    sign_in user_for(@maker)
+
+    get agreement_quotation_proposal_url(quotation)
+    assert_redirected_to quotation_proposal_path(quotation)
+    assert_match "must complete the vendor registration", flash[:alert]
+
+    vendor = quotation.selected_vendor_registration
+    vendor.update_columns(provisional: false, state_id: @state.id, district_id: @district.id, block_id: @block.id,
+                          firm_name: "U50 WRD Firm", pan_no: "ABCDE0018F")
+    ApprovalRequestBuilder.create_for!(vendor, form_name: "Vendor Registration").approve!(employee: @finance, remark: "OK")
+
+    get purchase_order_quotation_proposal_url(quotation)
+    assert_redirected_to agreement_quotation_proposal_path(quotation)
+    get agreement_quotation_proposal_url(quotation)
+    assert_response :success
+    assert_match "U50 WRD Firm", response.body
   end
 
   test "other themes keep the purchase order" do

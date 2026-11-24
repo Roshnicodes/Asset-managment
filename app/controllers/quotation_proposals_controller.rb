@@ -1210,6 +1210,7 @@ class QuotationProposalsController < ApplicationController
   def build_quotation_items(quotation_proposal, item_attributes)
     Array(item_attributes).each do |attributes|
       item_params = normalize_item_attributes(attributes)
+      next if ActiveModel::Type::Boolean.new.cast(item_params["_destroy"])
       next if skip_item_attributes?(item_params)
 
       quotation_proposal.quotation_proposal_items.build(item_params.except("id", "_destroy"))

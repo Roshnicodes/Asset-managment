@@ -303,7 +303,10 @@ const setupStaticPagerValidation = () => {
     form.dataset.stepGuardReady = "true"
 
     const fieldSelector = "input:not([type='hidden']):not([type='radio'].app-static-page-toggle), select, textarea"
-    const isShown = (element) => !element.closest("[hidden], template") && element.type !== "hidden"
+    // A removed item row stays in the form (hidden, marked _destroy) and is not checked.
+    const inRemovedRow = (element) =>
+      element.closest("[data-quotation-item-row]")?.querySelector("[data-quotation-item-destroy]")?.value === "1"
+    const isShown = (element) => !element.closest("[hidden], template") && element.type !== "hidden" && !inRemovedRow(element)
     const wordCount = (value) => (value.match(/\b[\w]+\b/g) || []).length
 
     const errorNodeFor = (field) => field.closest(".app-form-field")?.querySelector("[data-field-error='true']")
@@ -1754,6 +1757,8 @@ const setupQuotationProposalForm = () => {
 
       form.querySelectorAll(validatableSelector).forEach((input) => {
         if (input.disabled || input.type === "hidden") return
+        // Removed item rows stay in the form, hidden and marked _destroy.
+        if (input.closest("[data-quotation-item-row]")?.querySelector("[data-quotation-item-destroy]")?.value === "1") return
 
         const isValid = validateField(input)
         if (!isValid && !firstInvalidField) firstInvalidField = input
