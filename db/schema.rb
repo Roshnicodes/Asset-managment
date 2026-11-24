@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_15_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_24_100000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -752,13 +752,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_15_100000) do
 
   create_table "vendor_registrations", force: :cascade do |t|
     t.text "address"
-    t.bigint "block_id", null: false
+    t.bigint "block_id"
     t.text "business_description"
     t.string "company_status"
     t.string "contact_person_designation"
     t.string "contact_person_name"
     t.datetime "created_at", null: false
-    t.bigint "district_id", null: false
+    t.bigint "district_id"
     t.string "email"
     t.bigint "firm_id"
     t.string "firm_name"
@@ -770,11 +770,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_15_100000) do
     t.string "msme_number"
     t.string "pan_no"
     t.string "pin_no"
+    t.boolean "provisional", default: false, null: false
     t.bigint "registration_type_id"
     t.bigint "stakeholder_category_id"
-    t.bigint "state_id", null: false
-    t.datetime "submitted_at", null: false
-    t.string "submitted_ip", null: false
+    t.bigint "state_id"
+    t.datetime "submitted_at"
+    t.string "submitted_ip"
     t.datetime "updated_at", null: false
     t.bigint "user_id"
     t.string "vendor_name"
@@ -783,6 +784,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_15_100000) do
     t.index ["district_id"], name: "index_vendor_registrations_on_district_id"
     t.index ["firm_id"], name: "index_vendor_registrations_on_firm_id"
     t.index ["mobile_no"], name: "index_vendor_registrations_on_mobile_no"
+    t.index ["provisional"], name: "index_vendor_registrations_on_provisional"
     t.index ["registration_type_id"], name: "index_vendor_registrations_on_registration_type_id"
     t.index ["stakeholder_category_id"], name: "index_vendor_registrations_on_stakeholder_category_id"
     t.index ["state_id"], name: "index_vendor_registrations_on_state_id"

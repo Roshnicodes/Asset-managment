@@ -151,7 +151,7 @@ module DashboardChartsHelper
     case stage.kind
     when :selected then "green"
     when :approval, :thematic_head then stage.mine ? "red" : "amber"
-    when :returned, :max_rate then "orange"
+    when :returned, :max_rate, :vendor_registration then "orange"
     when :scoring, :vendor_selection then "purple"
     when :vendor_response then "blue"
     else "slate"

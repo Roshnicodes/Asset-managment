@@ -2137,7 +2137,11 @@ const setupQuotationProposalForm = () => {
     const singleVendorNote = form?.querySelector("[data-single-vendor-committee-note]")
     const singleVendor = () => {
       const bucket = form?.querySelector("#quotation_proposal_procurement_amount_bucket")?.value
-      const checked = form ? form.querySelectorAll(".quotation-vendor-checkbox:checked").length : 0
+      const unregisteredBox = form?.querySelector("[data-unregistered-vendors]")
+      const unregistered = unregisteredBox && !unregisteredBox.hidden
+        ? Array.from(unregisteredBox.querySelectorAll("[data-unregistered-vendor-row] input[name$='[vendor_name]']")).filter((input) => input.value.trim()).length
+        : 0
+      const checked = (form ? form.querySelectorAll(".quotation-vendor-checkbox:checked").length : 0) + unregistered
       return bucket !== "below_10k" && checked === 1
     }
     const memberOptions = searchField?.list ? Array.from(searchField.list.options) : []
@@ -2317,8 +2321,40 @@ const setupQuotationProposalForm = () => {
     // Above 10K: 3 or more vendors, or exactly one vendor with a note.
     const vendorRuleApplies = () => bucketField?.value !== "below_10k"
 
+    // Up to 50K: vendors without a registration (name + mobile rows).
+    const unregisteredBox = form?.querySelector("[data-unregistered-vendors]")
+    const unregisteredList = unregisteredBox?.querySelector("[data-unregistered-vendor-list]")
+    const unregisteredTemplate = unregisteredBox?.querySelector("[data-unregistered-vendor-template]")
+    const registrationOptional = () => bucketField?.value === "upto_50k"
+    const filledUnregisteredRows = () => {
+      if (!unregisteredBox || unregisteredBox.hidden) return 0
+      return Array.from(unregisteredBox.querySelectorAll("[data-unregistered-vendor-row]"))
+        .filter((row) => row.querySelector("input[name$='[vendor_name]']")?.value.trim()).length
+    }
+    const syncUnregisteredBox = () => {
+      if (!unregisteredBox) return
+      const show = registrationOptional()
+      unregisteredBox.hidden = !show
+      // Hidden rows are not sent, so a value above 50K never adds them.
+      unregisteredBox.querySelectorAll("input").forEach((input) => { input.disabled = !show })
+    }
+    unregisteredBox?.addEventListener("click", (event) => {
+      if (event.target.closest("[data-add-unregistered-vendor]") && unregisteredTemplate) {
+        unregisteredList.insertAdjacentHTML("beforeend", unregisteredTemplate.innerHTML)
+        unregisteredList.lastElementChild?.querySelector("input")?.focus()
+      }
+      const remove = event.target.closest("[data-remove-unregistered-vendor]")
+      if (remove) {
+        remove.closest("[data-unregistered-vendor-row]")?.remove()
+        validateVendorSelection({ quiet: true })
+      }
+    })
+    unregisteredBox?.addEventListener("input", () => validateVendorSelection({ quiet: true }))
+    bucketField?.addEventListener("change", syncUnregisteredBox)
+    syncUnregisteredBox()
+
     const validateVendorSelection = ({ quiet = false } = {}) => {
-      const count = vendorCheckboxes.filter((checkbox) => checkbox.checked).length
+      const count = vendorCheckboxes.filter((checkbox) => checkbox.checked).length + filledUnregisteredRows()
       let message = ""
       if (count === 0) {
         message = "Select at least one vendor."

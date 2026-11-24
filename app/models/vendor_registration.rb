@@ -9,9 +9,9 @@ class VendorRegistration < ApplicationRecord
   belongs_to :stakeholder_category, optional: true
   belongs_to :registration_type, optional: true
   belongs_to :firm, optional: true
-  belongs_to :state
-  belongs_to :district
-  belongs_to :block
+  belongs_to :state, optional: true
+  belongs_to :district, optional: true
+  belongs_to :block, optional: true
   has_many :vendor_registration_themes, dependent: :destroy
   has_many :themes, through: :vendor_registration_themes
   has_many :vendor_registration_products, dependent: :destroy
@@ -51,6 +51,29 @@ class VendorRegistration < ApplicationRecord
   before_validation :normalize_registration_fields
   before_validation :clear_msme_details_unless_applicable
   after_commit :persist_incoming_document_files, on: %i[create update]
+
+  scope :registered, -> { where(provisional: false) }
+
+  # Approved registration: may get a purchase order.
+  def registration_approved?
+    !provisional? && approval_request&.status == "approved"
+  end
+
+  # A vendor added to a quotation up to 50K with only name, firm and mobile.
+  def self.create_provisional!(vendor_name:, firm_name:, mobile_no:, user:, theme:)
+    mobile = mobile_no.to_s.gsub(/\D/, "").last(10)
+    raise ArgumentError, "Enter a valid 10-digit mobile number for #{vendor_name}." unless mobile.match?(MOBILE_NO_FORMAT)
+    raise ArgumentError, "Enter the vendor name." if vendor_name.to_s.strip.blank?
+
+    existing = find_by(mobile_no: mobile)
+    return existing if existing
+
+    vendor = new(vendor_name: vendor_name.to_s.squish, firm_name: firm_name.to_s.squish.presence || vendor_name.to_s.squish,
+                 mobile_no: mobile, user: user, stakeholder_category_id: theme&.stakeholder_category_id, provisional: true)
+    vendor.save!(validate: false)
+    VendorRegistrationTheme.create!(vendor_registration: vendor, theme: theme) if theme
+    vendor
+  end
 
   def display_name
     vendor_name.presence || firm_name.presence || "Vendor Registration ##{id}"

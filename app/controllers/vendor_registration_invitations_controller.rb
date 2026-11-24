@@ -109,6 +109,8 @@ class VendorRegistrationInvitationsController < ApplicationController
     @vendor_registration.incoming_document_files = permitted_params[:document_uploads]
     @vendor_registration.submitted_at ||= Time.current
     @vendor_registration.submitted_ip ||= request.remote_ip
+    # An unregistered vendor of a quotation up to 50K becomes a full registration.
+    @vendor_registration.provisional = false
 
     if @vendor_registration.valid?
       VendorRegistration.transaction do

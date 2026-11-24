@@ -4,7 +4,14 @@ class QuotationProposal < ApplicationRecord
   REQUIRED_COMMITTEE_LEVELS = [1, 2, 3].freeze
   DEFAULT_COMMITTEE_MEMBERS = 3
   COMMITTEE_AMOUNT_THRESHOLD = BigDecimal("1000000")
-  PROCUREMENT_AMOUNT_BUCKETS = %w[above_10k below_10k].freeze
+  # above_10k is kept for older quotations; new ones choose 10K-50K or Above 50K.
+  PROCUREMENT_AMOUNT_BUCKETS = %w[above_10k below_10k upto_50k above_50k].freeze
+  PROCUREMENT_AMOUNT_LABELS = {
+    "below_10k" => "Below 10K", "upto_50k" => "10K - 50K", "above_50k" => "Above 50K", "above_10k" => "Above 10K"
+  }.freeze
+  # From 10K to 50K a vendor does not need a registration to give a quotation; the
+  # selected one registers before the purchase order.
+  REGISTRATION_OPTIONAL_BUCKETS = %w[upto_50k].freeze
   # Above 10K: at least this many vendors, or a single vendor with a note.
   MIN_COMPETITIVE_VENDORS = 3
   MIN_LOGIC_NOTE_WORDS = 50
@@ -71,6 +78,7 @@ class QuotationProposal < ApplicationRecord
   validate :maker_cannot_be_committee_member
   validate :committee_members_must_be_unique
   validate :selected_vendors_must_match_stakeholder
+  validate :unregistered_vendors_only_up_to_50k
 
   after_commit :sync_vendor_item_rows, on: %i[create update]
   before_validation :skip_thematic_head_for_single_vendor
@@ -281,8 +289,9 @@ end
     update_columns(selected_vendor_registration_id: vendor_id, updated_at: Time.current)
   end
 
+  # Every value above 10K follows the Above 10K rules (vendor count, committee).
   def above_10k?
-    procurement_amount_bucket == "above_10k"
+    procurement_amount_bucket.in?(%w[above_10k upto_50k above_50k])
   end
 
   def below_10k?
@@ -290,7 +299,24 @@ end
   end
 
   def procurement_amount_bucket_label
-    below_10k? ? "Below 10K" : "Above 10K"
+    PROCUREMENT_AMOUNT_LABELS.fetch(procurement_amount_bucket.to_s, "Above 10K")
+  end
+
+  def vendor_registration_optional?
+    procurement_amount_bucket.in?(REGISTRATION_OPTIONAL_BUCKETS)
+  end
+
+  # The selected vendor is not yet a registered, approved vendor.
+  # Only quotations up to 50K can hold an unregistered vendor; above that the
+  # vendor was approved when it was chosen, as before.
+  def selected_vendor_registration_pending?
+    vendor = selected_vendor_registration
+    vendor.present? && vendor_registration_optional? && !vendor.registration_approved?
+  end
+
+  # WRD works (stop dam, doha ...) get an agreement instead of a purchase order.
+  def agreement_mode?
+    theme&.wrd? == true
   end
 
   def criteria_based_scoring?
@@ -437,6 +463,12 @@ end
     maker_copy_results = []
     quotation_proposal_vendors.includes(:vendor_registration).find_each do |proposal_vendor|
       dispatch = proposal_vendor.dispatch_record!
+      # An unregistered vendor (up to 50K) gets no SMS: the maker enters its
+      # quotation (rates and/or scan) with Enter Physical Quote.
+      if proposal_vendor.try(:vendor_registration)&.provisional?
+        dispatch.update!(sent_at: Time.current, status: "sent", access_granted: false, access_expires_at: nil, otp_verified_at: nil)
+        next
+      end
       ensure_vendor_dispatch_ready!(dispatch)
 
       sent = QuotationVendorSmsGateway.send_vendor_link(dispatch)
@@ -1097,6 +1129,15 @@ end
     return if committee_member_ids.uniq.size == committee_member_ids.size
 
     errors.add(:base, "Committee members must be unique.")
+  end
+
+  def unregistered_vendors_only_up_to_50k
+    return if vendor_registration_optional?
+
+    provisional = vendor_registrations.select(&:provisional?)
+    return if provisional.empty?
+
+    errors.add(:base, "Unregistered vendors (#{provisional.map(&:display_name).join(', ')}) can only be used for quotations of 10K - 50K.")
   end
 
   def selected_vendors_must_match_stakeholder

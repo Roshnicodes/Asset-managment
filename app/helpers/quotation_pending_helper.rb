@@ -57,6 +57,17 @@ module QuotationPendingHelper
       )
     end
 
+    # 10K-50K: the selected vendor still has to register (Finance approves).
+    if proposal.selected_vendor_registration_pending?
+      vendor = proposal.selected_vendor_registration
+      finance_pending = vendor.approval_request&.status == "pending"
+      actors = finance_pending ? vendor.approval_request.approval_steps.select { |step| step.status == "pending" }.filter_map { |step| step.employee_master&.name } : [vendor.display_name]
+      return QuotationStage.new(
+        kind: :vendor_registration, label: finance_pending ? "Vendor registration - Finance approval" : "Vendor registration",
+        actors: actors, mine: finance_pending ? vendor.approval_request.approval_steps.any? { |step| step.status == "pending" && employee_ids.include?(step.employee_master_id) } : maker?(proposal)
+      )
+    end
+
     if proposal.selected_vendor_registration_id.present?
       return QuotationStage.new(kind: :selected, label: "Vendor selected", actors: [], mine: false)
     end

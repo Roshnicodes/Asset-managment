@@ -21,6 +21,9 @@ class VendorRegistrationsController < ApplicationController
       approval_request: :approval_steps
     )
 
+    # Unregistered vendors of quotations up to 50K are not registrations yet.
+    base_scope = base_scope.registered
+
     if admin_user?
       @vendor_registrations = base_scope.order(created_at: :desc)
     else

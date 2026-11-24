@@ -62,7 +62,7 @@ class DashboardController < ApplicationController
   end
 
   def vendor_scope
-    @admin ? VendorRegistration.all : VendorRegistration.where(user_id: current_user.id)
+    @admin ? VendorRegistration.registered : VendorRegistration.registered.where(user_id: current_user.id)
   end
 
   def quotation_maker?

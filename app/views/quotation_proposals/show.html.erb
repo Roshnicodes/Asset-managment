@@ -349,8 +349,16 @@
            end %>
         <%= button_to send_button_label, send_to_vendors_quotation_proposal_path(@quotation_proposal), method: :post, class: "app-form-submit" %>
       <% end %>
-      <% if creator_can_dispatch && @quotation_proposal.quotation_currently_usable? %>
+      <% if creator_can_dispatch && @quotation_proposal.selected_vendor_registration_pending? %>
+        <%# 10K-50K: the selected vendor registers (Finance approval) before the PO / agreement. %>
+        <%= button_to "Send Registration Link: #{@quotation_proposal.selected_vendor_registration.display_name}",
+                      send_vendor_registration_link_quotation_proposal_path(@quotation_proposal),
+                      method: :post, class: "app-secondary-btn" %>
+      <% elsif creator_can_dispatch && @quotation_proposal.quotation_currently_usable? %>
         <%= link_to "Reuse Quote / Direct PO", reuse_quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn" %>
+      <% end %>
+      <% if creator_can_dispatch && @quotation_proposal.agreement_mode? && @quotation_proposal.selected_vendor_registration_id.present? && !@quotation_proposal.selected_vendor_registration_pending? %>
+        <%= link_to "Create Agreement", agreement_quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn" %>
       <% end %>
       <% if creator_can_dispatch && @quotation_proposal.committee_completed? %>
         <% @quotation_proposal.quotation_proposal_vendors.includes(:vendor_registration).each do |proposal_vendor| %>
@@ -487,12 +495,32 @@
               <div class="quotation-proposal-show__tag-list quotation-proposal-show__tag-list--table">
                 <% @quotation_proposal.vendor_registrations.each do |vendor| %>
                   <span class="badge border bg-light text-dark px-3 py-2 quotation-proposal-show__tag">
-                    <%= vendor.display_name %>
+                    <%= vendor.display_name %><%= " · Unregistered" if vendor.provisional? %>
                   </span>
                 <% end %>
               </div>
             </td>
           </tr>
+          <% unregistered_vendors = @quotation_proposal.quotation_proposal_vendors.includes(:vendor_registration, vendor_documents_attachments: :blob).select { |proposal_vendor| proposal_vendor.vendor_registration.provisional? } %>
+          <% if unregistered_vendors.any? %>
+            <tr>
+              <th scope="row">Unregistered Vendors' Quotations</th>
+              <td colspan="3">
+                <% unregistered_vendors.each do |proposal_vendor| %>
+                  <div>
+                    <strong><%= proposal_vendor.vendor_registration.display_name %></strong> (<%= proposal_vendor.vendor_registration.mobile_no %>):
+                    <% if proposal_vendor.vendor_documents.attached? %>
+                      <% proposal_vendor.vendor_documents.each do |document| %>
+                        <%= link_to document.filename.to_s, rails_blob_path(document, disposition: "inline"), target: "_blank", rel: "noopener" %>
+                      <% end %>
+                    <% else %>
+                      <span class="text-muted">scan not uploaded yet</span>
+                    <% end %>
+                  </div>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
           <% if @quotation_proposal.single_vendor? %>
             <tr>
               <th scope="row">Logic Note</th>
@@ -815,10 +843,24 @@
                       <span class="badge border bg-success bg-opacity-10 text-success">Selected</span>
                       <% if creator_can_dispatch %>
                         <div style="display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; margin: 0;">
-                          <%= link_to "Create Purchase Order",
-                                purchase_order_quotation_proposal_path(@quotation_proposal),
-                                class: "app-secondary-btn",
-                                style: "padding: 0.35rem 0.8rem; font-size: 0.82rem;" %>
+                          <% if @quotation_proposal.selected_vendor_registration_pending? %>
+                            <%# Up to 50K: the vendor registers (Finance approval) before the PO / agreement. %>
+                            <span class="badge border bg-warning bg-opacity-10 text-warning">Registration pending</span>
+                            <%= button_to "Send Registration Link",
+                                  send_vendor_registration_link_quotation_proposal_path(@quotation_proposal),
+                                  method: :post, class: "app-secondary-btn", form: { class: "d-inline" },
+                                  style: "padding: 0.35rem 0.8rem; font-size: 0.82rem;" %>
+                          <% elsif @quotation_proposal.agreement_mode? %>
+                            <%= link_to "Create Agreement",
+                                  agreement_quotation_proposal_path(@quotation_proposal),
+                                  class: "app-secondary-btn",
+                                  style: "padding: 0.35rem 0.8rem; font-size: 0.82rem;" %>
+                          <% else %>
+                            <%= link_to "Create Purchase Order",
+                                  purchase_order_quotation_proposal_path(@quotation_proposal),
+                                  class: "app-secondary-btn",
+                                  style: "padding: 0.35rem 0.8rem; font-size: 0.82rem;" %>
+                          <% end %>
                         </div>
                       <% end %>
                       <% if proposal_vendor.purchase_order_status.present? && proposal_vendor.purchase_order_status != "draft" %>

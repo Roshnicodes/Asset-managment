@@ -4,9 +4,10 @@ class QuotationProposalsController < ApplicationController
   before_action :set_quotation_proposal, only: %i[
     show edit update destroy approve_committee return_committee thematic_head_decision
     send_to_vendors score_vendor score_vendors select_vendor purchase_order send_purchase_order update_purchase_order_reply goods_receive update_goods_receive reuse physical_quotation
+    send_vendor_registration_link agreement
     new_invoice_request_assets create_invoice_request_assets review_invoice_request assign_payment_references purchase_order_print quotation_print comparison_print
   ]
-  before_action :ensure_quotation_owner_access!, only: %i[edit update destroy purchase_order purchase_order_print send_purchase_order goods_receive update_goods_receive new_invoice_request_assets create_invoice_request_assets review_invoice_request reuse physical_quotation]
+  before_action :ensure_quotation_owner_access!, only: %i[edit update destroy send_vendor_registration_link agreement purchase_order purchase_order_print send_purchase_order goods_receive update_goods_receive new_invoice_request_assets create_invoice_request_assets review_invoice_request reuse physical_quotation]
   before_action :ensure_quotation_owner_access!, only: %i[assign_payment_references]
   before_action :ensure_quotation_change_allowed!, only: %i[edit update]
   before_action :authorize_quotation_form_access!, only: %i[index new create edit update destroy send_for_approval reuse physical_quotation]
@@ -134,6 +135,7 @@ class QuotationProposalsController < ApplicationController
     attrs.delete("quotation_proposal_items_attributes")
     attrs.delete(:quotation_proposal_items_attributes)
     drop_committee_rows_for_thematic_head!(attrs, nil)
+    unregistered_error = merge_unregistered_vendors!(attrs, nil)
 
     @quotation_proposal = QuotationProposal.new(attrs)
     @quotation_proposal.user = current_user
@@ -142,7 +144,9 @@ class QuotationProposalsController < ApplicationController
     build_quotation_items(@quotation_proposal, item_attributes)
     @selected_vendor_selection_criterion_ids = selected_criteria_ids
 
-    if persist_quotation_proposal_with_criteria(@quotation_proposal, selected_criteria_ids)
+    @quotation_proposal.errors.add(:base, unregistered_error) if unregistered_error
+    if unregistered_error.nil? && persist_quotation_proposal_with_criteria(@quotation_proposal, selected_criteria_ids)
+      attach_unregistered_vendor_scans!(@quotation_proposal)
       @quotation_proposal.refresh_response_status!
       redirect_to quotation_proposal_path(@quotation_proposal), notice: "Quotation proposal saved successfully."
     else
@@ -159,6 +163,7 @@ class QuotationProposalsController < ApplicationController
     attrs.delete("quotation_proposal_items_attributes")
     attrs.delete(:quotation_proposal_items_attributes)
     drop_committee_rows_for_thematic_head!(attrs, @quotation_proposal)
+    unregistered_error = merge_unregistered_vendors!(attrs, @quotation_proposal)
     approval_needs_restart = @quotation_proposal.approval_request&.status.in?(%w[pending returned])
     previous_thematic_head_id = @quotation_proposal.thematic_head_id
     @selected_vendor_selection_criterion_ids = selected_criteria_ids
@@ -172,9 +177,11 @@ class QuotationProposalsController < ApplicationController
       end
     end
 
-    updated = update_quotation_proposal_with_criteria(@quotation_proposal, attrs, item_attributes, selected_criteria_ids)
+    updated = unregistered_error.nil? && update_quotation_proposal_with_criteria(@quotation_proposal, attrs, item_attributes, selected_criteria_ids)
+    @quotation_proposal.errors.add(:base, unregistered_error) if unregistered_error
 
     if updated
+      attach_unregistered_vendor_scans!(@quotation_proposal)
       if @quotation_proposal.awaiting_thematic_head_decision? && @quotation_proposal.thematic_head_id != previous_thematic_head_id
         NotificationDispatcher.notify_thematic_head_decision_requested(@quotation_proposal)
       end
@@ -203,6 +210,25 @@ class QuotationProposalsController < ApplicationController
     redirect_to quotation_proposals_path, notice: "Quotation proposal deleted successfully.", status: :see_other
   end
 
+  # Up to 50K the selected vendor may be unregistered: send it the vendor
+  # registration link (its quotation stays linked to the same vendor record).
+  def send_vendor_registration_link
+    vendor = @quotation_proposal.selected_vendor_registration
+    unless vendor.present? && @quotation_proposal.selected_vendor_registration_pending?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "The selected vendor is already registered."
+      return
+    end
+
+    invitation = VendorRegistrationInvitation.where(vendor_registration: vendor).order(:created_at).last ||
+      VendorRegistrationInvitation.create!(mobile_no: vendor.mobile_no, vendor_registration: vendor, user: current_user,
+                                           stakeholder_category_id: vendor.stakeholder_category_id, status: "draft")
+    invitation.send_registration_link!
+    redirect_to quotation_proposal_path(@quotation_proposal),
+                notice: "Registration link sent to #{vendor.display_name} (#{vendor.mobile_no}). The purchase order opens once Finance approves the registration."
+  rescue VendorRegistrationInvitation::SmsDeliveryError, ActiveRecord::RecordInvalid => error
+    redirect_to quotation_proposal_path(@quotation_proposal), alert: "Registration link could not be sent: #{error.message}"
+  end
+
   def physical_quotation
     unless @quotation_proposal.committee_completed?
       redirect_to quotation_proposal_path(@quotation_proposal), alert: "Committee approval is required before recording a physical quotation."
@@ -221,6 +247,11 @@ class QuotationProposalsController < ApplicationController
   end
 
   def reuse
+    if @quotation_proposal.selected_vendor_registration_pending?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "The selected vendor must complete the vendor registration before this quotation can be reused."
+      return
+    end
+
     unless @quotation_proposal.quotation_currently_usable?
       redirect_to quotation_proposal_path(@quotation_proposal), alert: "This quotation is no longer valid for reuse."
       return
@@ -388,6 +419,33 @@ class QuotationProposalsController < ApplicationController
 
   def purchase_order
     load_purchase_order_context!
+    return if performed?
+
+    # WRD works (stop dam, doha ...) get an agreement instead of a purchase
+    # order; a PO already sent before this rule stays as it is.
+    if @quotation_proposal.agreement_mode? && !@selected_proposal_vendor.purchase_order_sent?
+      redirect_to agreement_quotation_proposal_path(@quotation_proposal)
+    end
+  end
+
+  # Standard agreement for WRD works, filled from the approved quotation and
+  # the selected vendor's rates. The format will be replaced by the official one.
+  def agreement
+    unless @quotation_proposal.agreement_mode?
+      redirect_to purchase_order_quotation_proposal_path(@quotation_proposal)
+      return
+    end
+
+    load_purchase_order_context!
+    return if performed?
+
+    @agreement_number = @purchase_order_number.sub("/PO/", "/AGR/")
+    # Work site, time and EMD are not in the quotation: the maker fills them on
+    # the agreement page before printing (blank lines when left empty).
+    @agreement_details = params.permit(:village, :block_district, :state, :completion_period, :completion_deadline,
+                                       :emd_amount, :community_percent).to_h.symbolize_keys
+    @agreement_details[:community_percent] = (@agreement_details[:community_percent].presence || "10").to_d.clamp(0, 100)
+    render :agreement, layout: "print"
   end
 
   def purchase_order_print
@@ -1103,6 +1161,7 @@ class QuotationProposalsController < ApplicationController
       :single_vendor_justification,
       :activity_product_id,
       vendor_registration_ids: [],
+      unregistered_vendors: [:vendor_name, :firm_name, :mobile_no, :scan],
       vendor_selection_criterion_ids: [],
       quotation_proposal_items_attributes: [:id, :item_name, :unit_id, :quantity, :max_rate, :remark, :_destroy],
       committee_steps_attributes: [:id, :level, :employee_master_id, :remark, :status, :_destroy]
@@ -1335,6 +1394,53 @@ class QuotationProposalsController < ApplicationController
                 alert: "Approved quotation proposals cannot be edited or deleted."
   end
 
+  # Up to 50K the maker may add vendors without a registration (name, firm,
+  # mobile). They become provisional vendor registrations and join the chosen
+  # vendors. Returns an error message, or nil.
+  def merge_unregistered_vendors!(attrs, quotation_proposal)
+    rows = Array(attrs.delete("unregistered_vendors") || attrs.delete(:unregistered_vendors))
+      .map { |row| row.to_h.stringify_keys }
+      .reject { |row| row.values_at("vendor_name", "firm_name", "mobile_no").all?(&:blank?) }
+    return if rows.empty?
+
+    bucket = attrs["procurement_amount_bucket"].presence || quotation_proposal&.procurement_amount_bucket
+    return "Unregistered vendors can only be added for quotations of 10K - 50K." unless bucket.in?(QuotationProposal::REGISTRATION_OPTIONAL_BUCKETS)
+
+    rows.each do |row|
+      return "Enter the name of every unregistered vendor." if row["vendor_name"].to_s.strip.blank?
+      mobile = row["mobile_no"].to_s.gsub(/\D/, "").last(10)
+      return "Enter a valid 10-digit mobile number for #{row['vendor_name']}." unless mobile.match?(VendorRegistration::MOBILE_NO_FORMAT)
+    end
+
+    theme = Theme.find_by(id: attrs["theme_id"].presence || quotation_proposal&.theme_id)
+    ids = if attrs.key?("vendor_registration_ids")
+      Array(attrs["vendor_registration_ids"]).reject(&:blank?).map(&:to_i)
+    else
+      quotation_proposal&.vendor_registration_ids || []
+    end
+    @unregistered_vendor_scans = {}
+    rows.each do |row|
+      vendor = VendorRegistration.create_provisional!(vendor_name: row["vendor_name"], firm_name: row["firm_name"],
+                                                      mobile_no: row["mobile_no"], user: current_user, theme: theme)
+      ids << vendor.id
+      @unregistered_vendor_scans[vendor.id] = row["scan"] if row["scan"].respond_to?(:original_filename)
+    end
+    attrs["vendor_registration_ids"] = ids.uniq
+    nil
+  rescue ArgumentError, ActiveRecord::RecordInvalid => error
+    error.message
+  end
+
+  # The quotation scans uploaded with unregistered vendors go to their
+  # quotation documents (the same place as "Enter Physical Quote").
+  def attach_unregistered_vendor_scans!(quotation_proposal)
+    return if @unregistered_vendor_scans.blank?
+
+    quotation_proposal.quotation_proposal_vendors.where(vendor_registration_id: @unregistered_vendor_scans.keys).each do |proposal_vendor|
+      proposal_vendor.vendor_documents.attach(@unregistered_vendor_scans[proposal_vendor.vendor_registration_id])
+    end
+  end
+
   def load_form_collections
     stakeholder_id = quotation_form_stakeholder_id
 
@@ -1354,6 +1460,12 @@ class QuotationProposalsController < ApplicationController
     # stakeholder or theme (vendors of the chosen theme are listed first).
     @vendors = @vendors.distinct
       .order(:vendor_name)
+    # Unregistered (provisional) vendors already on this quotation stay selectable.
+    provisional_ids = @quotation_proposal&.vendor_registration_ids.to_a
+    if provisional_ids.any?
+      provisional = VendorRegistration.includes(:themes).where(id: provisional_ids, provisional: true).to_a
+      @vendors = (@vendors.to_a + provisional).uniq
+    end
     @vendor_selection_criteria = VendorSelectionCriterion
       .includes(:theme)
       .where(theme_id: @themes.select(:id))
@@ -1487,6 +1599,14 @@ class QuotationProposalsController < ApplicationController
 
     if @selected_proposal_vendor.blank?
       redirect_to quotation_proposal_path(@quotation_proposal), alert: "Selected vendor response was not found for purchase order."
+      return
+    end
+
+    # Up to 50K the selected vendor may not be registered yet: the purchase
+    # order (or agreement) waits until its registration is approved.
+    if @quotation_proposal.selected_vendor_registration_pending?
+      redirect_to quotation_proposal_path(@quotation_proposal),
+                  alert: "#{@selected_proposal_vendor.vendor_registration.display_name} must complete the vendor registration (approved by Finance) before the purchase order. Use Send Registration Link."
       return
     end
 

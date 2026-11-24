@@ -52,6 +52,8 @@ Rails.application.routes.draw do
       post :send_for_approval
     end
     member do
+      post :send_vendor_registration_link
+      get :agreement
       post :send_for_approval
       post :thematic_head_decision
       patch :approve_committee

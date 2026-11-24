@@ -1,6 +1,8 @@
 <%
   direct_access_mode = params[:direct_access] == "1" && (@quotation_proposal.below_10k? || params[:physical_entry] == "1")
   physical_entry_mode = params[:physical_entry] == "1"
+  # An unregistered vendor's quotation may be only its scanned copy (no rates).
+  rates_optional = direct_access_mode && @quotation_proposal_vendor.vendor_registration.provisional?
   otp_verified = direct_access_mode ? (@otp_verified_for_render || false) : ((@otp_verified_for_render || false) && @quotation_vendor_dispatch.access_open?)
   vendor_remark_lines = @quotation_proposal_vendor.vendor_remark.to_s.lines.map(&:strip).reject(&:blank?)
   default_cover_note = "Dear Sir / Madam,\n\nWe are pleased to submit our quotation for your kind consideration. Please find our best rates and commercial details below."
@@ -816,7 +818,7 @@
                         <td data-label="Unit"><%= vendor_item.quotation_proposal_item.unit.name %></td>
                         <td data-label="Quantity" data-quote-quantity><%= number_with_precision(vendor_item.quotation_proposal_item.quantity, precision: 2, strip_insignificant_zeros: true) %></td>
                         <td data-label="Proposal Remark"><%= vendor_item.quotation_proposal_item.remark.presence || "-" %></td>
-                        <td data-label="Your Rate"><%= item_form.number_field :quoted_rate, step: :any, min: 0, required: true, data: { quote_rate: true } %></td>
+                        <td data-label="Your Rate"><%= item_form.number_field :quoted_rate, step: :any, min: 0, required: !rates_optional, data: { quote_rate: true } %></td>
                         <td data-label="Amount" data-amount-total><%= number_with_precision(vendor_item.line_total || 0, precision: 2) %></td>
                         <td data-label="GST %"><%= item_form.number_field :gst_percentage, step: :any, min: 0, placeholder: "GST %", data: { quote_gst: true } %></td>
                         <td data-label="Grand Total" data-grand-total><%= number_with_precision(vendor_item.grand_total || 0, precision: 2) %></td>

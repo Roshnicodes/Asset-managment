@@ -2,6 +2,17 @@ class ApprovalRequestBuilder
   DIRECT_VENDOR_REGISTRATION_APPROVER = "Senior Manager Finance".freeze
 
   def self.create_for!(record, form_name:)
+    # A vendor registration has one approval: the Senior Manager Finance,
+    # whoever sent it (maker or the vendor's own registration link).
+    if form_name == "Vendor Registration"
+      begin
+        return create_direct_finance_for_vendor_invitation!(record)
+      rescue ActiveRecord::RecordNotFound => error
+        Rails.logger.warn("Vendor Registration approval not created for #{record.class.name} #{record.id}: #{error.message}")
+        return nil
+      end
+    end
+
     approval_channel = approval_channel_for(record, form_name: form_name)
     return nil unless approval_channel
 

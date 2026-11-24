@@ -34,6 +34,12 @@
   .app-rfp-items-table > thead > tr > th:nth-child(6) { width: 140px; }
   .app-rfp-items-table .app-rfp-table-cell--action .app-action-button,
   .app-rfp-committee-table .app-rfp-table-cell--action .app-action-button { width: 100%; }
+  .app-unregistered-vendors { display: grid; gap: .6rem; margin-top: .9rem; padding: .9rem 1rem; border: 1px dashed #cfe3d8; border-radius: 14px; background: #fbfdfc; }
+  .app-unregistered-vendors[hidden] { display: none; }
+  .app-unregistered-vendor-row { display: grid; grid-template-columns: 1.3fr 1.3fr 1fr auto; gap: .5rem; align-items: center; margin-top: .5rem; padding-bottom: .6rem; border-bottom: 1px solid #edf3ef; }
+  .app-unregistered-vendor-scan { grid-column: 1 / -1; display: flex; align-items: center; gap: .6rem; margin: 0; font-size: .85rem; font-weight: 700; color: #064f45; }
+  .app-unregistered-vendor-scan input { max-width: 420px; }
+  @media (max-width: 767px) { .app-unregistered-vendor-row { grid-template-columns: 1fr; } }
   .app-committee-amount { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: .2rem 1rem; margin-bottom: 1rem; padding: .9rem 1.1rem; border: 1px solid #cfe3d8; border-radius: 14px; background: linear-gradient(135deg, #f3faf6, #ffffff); }
   .app-committee-amount__label { color: #4f6b62; font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
   .app-committee-amount__value { color: #064f45; font-size: 1.2rem; font-weight: 800; text-align: right; }
@@ -68,7 +74,7 @@
      saved_items = quotation_proposal.quotation_proposal_items.reject(&:new_record?)
      [quotation_proposal.updated_at.to_i, saved_items.map(&:id).sort.join("-"), saved_items.map { |item| item.updated_at.to_i }.max].join(":")
    end %>
-<%= form_with(model: quotation_proposal, html: { class: "app-rfp-form", data: { quotation_validation_form: true, ui_form_pager: true, draft_autosave: true, draft_key: ["quotation-proposal:#{request.path}:#{quotation_proposal.to_key&.join('-') || 'new'}", draft_version].compact.join(":") }, novalidate: true }) do |form| %>
+<%= form_with(model: quotation_proposal, html: { multipart: true, class: "app-rfp-form", data: { quotation_validation_form: true, ui_form_pager: true, draft_autosave: true, draft_key: ["quotation-proposal:#{request.path}:#{quotation_proposal.to_key&.join('-') || 'new'}", draft_version].compact.join(":") }, novalidate: true }) do |form| %>
   <% approval_request = quotation_proposal.approval_request %>
   <% field_errors = ->(field_name) { quotation_proposal.errors.full_messages_for(field_name) } %>
   <% selected_criterion_ids = Array(@selected_vendor_selection_criterion_ids).map(&:to_i) %>
@@ -122,7 +128,10 @@
             <td class="app-rfp-table-value">
               <div class="app-form-field app-rfp-cell-field">
                 <%= form.label :procurement_amount_bucket, "Quotation Value", class: "visually-hidden" %>
-                <%= form.select :procurement_amount_bucket, [["Above 10K", "above_10k"], ["Below 10K", "below_10k"]], {}, class: "form-control", id: "quotation_proposal_procurement_amount_bucket" %>
+                <% bucket_options = [["Below 10K", "below_10k"], ["10K - 50K", "upto_50k"], ["Above 50K", "above_50k"]] %>
+                <% bucket_options << ["Above 10K", "above_10k"] if quotation_proposal.procurement_amount_bucket == "above_10k" && quotation_proposal.persisted? %>
+                <%= form.select :procurement_amount_bucket, bucket_options, {}, class: "form-control", id: "quotation_proposal_procurement_amount_bucket" %>
+                <small class="app-field-hint">From 10K to 50K, vendors without a registration can also be added; the selected vendor registers before the purchase order.</small>
               </div>
             </td>
           </tr>
@@ -292,7 +301,7 @@
                      data-vendor-option>
                 <%= check_box_tag "quotation_proposal[vendor_registration_ids][]", vendor.id, quotation_proposal.vendor_registration_ids.include?(vendor.id), class: "quotation-vendor-checkbox" %>
                 <span>
-                  <strong><%= vendor.display_name %></strong><br>
+                  <strong><%= vendor.display_name %></strong><% if vendor.provisional? %> <small class="badge text-bg-warning">Unregistered</small><% end %><br>
                   <% if (firm_name = vendor.firm_name_for_display) %><small>Firm: <%= firm_name %></small><br><% end %>
                   <small><%= [vendor.email, vendor.stakeholder_category&.name].compact.join(" | ") %></small>
                 </span>
@@ -302,6 +311,26 @@
 
           <p class="app-multiselect-empty is-hidden" data-quotation-vendor-empty>No vendor matches the selected theme or search.</p>
         </div>
+      </div>
+      <div class="app-unregistered-vendors" data-unregistered-vendors hidden>
+        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+          <strong>Vendors without registration (10K - 50K)</strong>
+          <button type="button" class="app-secondary-btn" data-add-unregistered-vendor>+ Add Unregistered Vendor</button>
+        </div>
+        <p class="app-section-note mb-0">Enter the vendor's name and mobile, and upload its quotation scan now if you have it. After approval, <strong>Enter Physical Quote</strong> lets you enter the rates or keep only the scan. The selected vendor gets a registration link before the purchase order.</p>
+        <div data-unregistered-vendor-list></div>
+        <template data-unregistered-vendor-template>
+          <div class="app-unregistered-vendor-row" data-unregistered-vendor-row>
+            <input type="text" name="quotation_proposal[unregistered_vendors][][vendor_name]" placeholder="Vendor name" class="form-control" autocomplete="off">
+            <input type="text" name="quotation_proposal[unregistered_vendors][][firm_name]" placeholder="Firm name (optional)" class="form-control" autocomplete="off">
+            <input type="tel" name="quotation_proposal[unregistered_vendors][][mobile_no]" placeholder="Mobile (10 digits)" class="form-control" maxlength="10" inputmode="numeric" autocomplete="off">
+            <button type="button" class="app-action-button app-delete-button app-delete-button-soft" data-remove-unregistered-vendor>Remove</button>
+            <label class="app-unregistered-vendor-scan">
+              <span>Quotation scan (optional)</span>
+              <input type="file" name="quotation_proposal[unregistered_vendors][][scan]" accept=".pdf,image/*" class="form-control">
+            </label>
+          </div>
+        </template>
       </div>
       <div class="app-form-error app-form-error-client" data-vendor-selection-error="true"></div>
       <% justification_errors = quotation_proposal.errors[:single_vendor_justification] %>

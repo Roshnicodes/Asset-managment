@@ -18,6 +18,7 @@ module QuotationVendorQrsHelper
   def number_to_words(number)
     number = number.to_i
     return ONES[number] if number < 20
+    return TENS[number / 10] if number < 100 && (number % 10).zero?
     return "#{TENS[number / 10]} #{ONES[number % 10]}".strip if number < 100
     return "#{ONES[number / 100]} hundred #{number_to_words(number % 100)}".strip if number < 1000 && (number % 100).positive?
     return "#{ONES[number / 100]} hundred" if number < 1000
