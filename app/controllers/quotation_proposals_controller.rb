@@ -150,6 +150,7 @@ class QuotationProposalsController < ApplicationController
       @quotation_proposal.refresh_response_status!
       redirect_to quotation_proposal_path(@quotation_proposal), notice: "Quotation proposal saved successfully."
     else
+      undo_unregistered_vendors_for_new!(@quotation_proposal)
       build_committee_steps(@quotation_proposal)
       load_form_collections
       render :new, status: :unprocessable_entity
@@ -1407,10 +1408,22 @@ class QuotationProposalsController < ApplicationController
     bucket = attrs["procurement_amount_bucket"].presence || quotation_proposal&.procurement_amount_bucket
     return "Unregistered vendors can only be added for quotations of 10K - 50K." unless bucket.in?(QuotationProposal::REGISTRATION_OPTIONAL_BUCKETS)
 
+    # Kept so a form shown again after an error still has the typed rows.
+    @unregistered_vendor_rows = rows.map { |row| row.slice("vendor_name", "firm_name", "mobile_no") }
+
+    mobiles = []
     rows.each do |row|
       return "Enter the name of every unregistered vendor." if row["vendor_name"].to_s.strip.blank?
       mobile = row["mobile_no"].to_s.gsub(/\D/, "").last(10)
       return "Enter a valid 10-digit mobile number for #{row['vendor_name']}." unless mobile.match?(VendorRegistration::MOBILE_NO_FORMAT)
+      return "Mobile #{mobile} is entered for more than one unregistered vendor. Each vendor needs its own mobile number." if mobiles.include?(mobile)
+      mobiles << mobile
+
+      registered = VendorRegistration.registered.find_by(mobile_no: mobile)
+      if registered
+        return "Mobile #{mobile} already belongs to the registered vendor #{registered.display_name}. " \
+               "Select that vendor from the Vendor List instead of adding it as unregistered."
+      end
     end
 
     theme = Theme.find_by(id: attrs["theme_id"].presence || quotation_proposal&.theme_id)
@@ -1420,16 +1433,32 @@ class QuotationProposalsController < ApplicationController
       quotation_proposal&.vendor_registration_ids || []
     end
     @unregistered_vendor_scans = {}
+    @unregistered_vendor_ids = []
+    @created_unregistered_vendor_ids = []
     rows.each do |row|
       vendor = VendorRegistration.create_provisional!(vendor_name: row["vendor_name"], firm_name: row["firm_name"],
                                                       mobile_no: row["mobile_no"], user: current_user, theme: theme)
       ids << vendor.id
+      @unregistered_vendor_ids << vendor.id
+      @created_unregistered_vendor_ids << vendor.id if vendor.previously_new_record?
       @unregistered_vendor_scans[vendor.id] = row["scan"] if row["scan"].respond_to?(:original_filename)
     end
     attrs["vendor_registration_ids"] = ids.uniq
     nil
   rescue ArgumentError, ActiveRecord::RecordInvalid => error
     error.message
+  end
+
+  # A new quotation that failed to save: the typed unregistered rows are shown
+  # again (they are not ticked in the Vendor List), and vendors created just
+  # now for them are removed, so a second save does not leave extras behind.
+  def undo_unregistered_vendors_for_new!(quotation_proposal)
+    return if @unregistered_vendor_ids.blank?
+
+    quotation_proposal.vendor_registration_ids = quotation_proposal.vendor_registrations.map(&:id) - @unregistered_vendor_ids
+    VendorRegistration.where(id: @created_unregistered_vendor_ids, provisional: true).find_each do |vendor|
+      vendor.destroy! unless QuotationProposalVendor.exists?(vendor_registration_id: vendor.id)
+    end
   end
 
   # The quotation scans uploaded with unregistered vendors go to their

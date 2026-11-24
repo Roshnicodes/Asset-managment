@@ -93,6 +93,45 @@ class Upto50kUnregisteredVendorTest < ActionDispatch::IntegrationTest
     assert_equal ["Seed"], quotation.quotation_proposal_items.map(&:item_name)
   end
 
+  test "a registered vendor's mobile is refused as unregistered and the typed rows come back" do
+    registered = registered_vendor("9876500020")
+    sign_in user_for(@maker)
+
+    assert_no_difference -> { VendorRegistration.count } do
+      post quotation_proposals_url, params: quotation_params(bucket: "upto_50k", unregistered: [
+        { vendor_name: "New Traders", mobile_no: "9876500021" },
+        { vendor_name: "Same Mobile", mobile_no: registered.mobile_no }
+      ])
+    end
+    assert_response :unprocessable_entity
+    assert_match "already belongs to the registered vendor #{registered.display_name}", response.body
+    assert_match 'value="New Traders"', response.body
+    assert_match 'value="9876500021"', response.body
+  end
+
+  test "the same mobile for two unregistered vendors is refused" do
+    sign_in user_for(@maker)
+
+    assert_no_difference -> { VendorRegistration.count } do
+      post quotation_proposals_url, params: quotation_params(bucket: "upto_50k", unregistered: [
+        { vendor_name: "First", mobile_no: "9876500022" }, { vendor_name: "Second", mobile_no: "9876500022" }
+      ])
+    end
+    assert_match "entered for more than one unregistered vendor", response.body
+  end
+
+  test "a quotation that fails to save leaves no unregistered vendor behind" do
+    sign_in user_for(@maker)
+    params = quotation_params(bucket: "upto_50k", unregistered: [{ vendor_name: "Left Behind", mobile_no: "9876500023" }])
+    params[:quotation_proposal][:subject] = ""
+
+    assert_no_difference -> { VendorRegistration.count } do
+      post quotation_proposals_url, params: params
+    end
+    assert_response :unprocessable_entity
+    assert_match 'value="Left Behind"', response.body
+  end
+
   test "above 50K an unregistered vendor is refused and nothing is created" do
     sign_in user_for(@maker)
 

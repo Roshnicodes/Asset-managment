@@ -3107,6 +3107,16 @@ if (!window.__sidebarToggleBound) {
 
 document.addEventListener("turbo:load", scheduleAppInitializers)
 document.addEventListener("DOMContentLoaded", scheduleAppInitializers)
+// A form that fails to save is shown again by Turbo without "turbo:load";
+// set the page up again so its steps and fields work.
+document.addEventListener("turbo:submit-end", (event) => {
+  if (!event.detail.success) window.__formRenderPending = true
+})
+document.addEventListener("turbo:render", () => {
+  if (!window.__formRenderPending) return
+  window.__formRenderPending = false
+  scheduleAppInitializers()
+})
 if (document.readyState !== "loading") {
   scheduleAppInitializers()
 }

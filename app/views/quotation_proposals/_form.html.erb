@@ -318,7 +318,20 @@
           <button type="button" class="app-secondary-btn" data-add-unregistered-vendor>+ Add Unregistered Vendor</button>
         </div>
         <p class="app-section-note mb-0">Enter the vendor's name and mobile, and upload its quotation scan now if you have it. After approval, <strong>Enter Physical Quote</strong> lets you enter the rates or keep only the scan. The selected vendor gets a registration link before the purchase order.</p>
-        <div data-unregistered-vendor-list></div>
+        <div data-unregistered-vendor-list>
+          <% Array(@unregistered_vendor_rows).each do |row| %>
+            <div class="app-unregistered-vendor-row" data-unregistered-vendor-row>
+              <input type="text" name="quotation_proposal[unregistered_vendors][][vendor_name]" value="<%= row["vendor_name"] %>" placeholder="Vendor name" class="form-control" autocomplete="off">
+              <input type="text" name="quotation_proposal[unregistered_vendors][][firm_name]" value="<%= row["firm_name"] %>" placeholder="Firm name (optional)" class="form-control" autocomplete="off">
+              <input type="tel" name="quotation_proposal[unregistered_vendors][][mobile_no]" value="<%= row["mobile_no"] %>" placeholder="Mobile (10 digits)" class="form-control" maxlength="10" inputmode="numeric" autocomplete="off">
+              <button type="button" class="app-action-button app-delete-button app-delete-button-soft" data-remove-unregistered-vendor>Remove</button>
+              <label class="app-unregistered-vendor-scan">
+                <span>Quotation scan (optional, upload again)</span>
+                <input type="file" name="quotation_proposal[unregistered_vendors][][scan]" accept=".pdf,image/*" class="form-control">
+              </label>
+            </div>
+          <% end %>
+        </div>
         <template data-unregistered-vendor-template>
           <div class="app-unregistered-vendor-row" data-unregistered-vendor-row>
             <input type="text" name="quotation_proposal[unregistered_vendors][][vendor_name]" placeholder="Vendor name" class="form-control" autocomplete="off">
