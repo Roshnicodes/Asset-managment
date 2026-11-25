@@ -1834,7 +1834,7 @@ class QuotationProposalsController < ApplicationController
     end
 
     unless @goods_receive_vendor.purchase_order_status == "accepted"
-      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Goods receive can be updated only after the purchase order is accepted."
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "Goods receive can be updated only after the #{@quotation_proposal.order_document_label.downcase} is accepted."
       return
     end
   end

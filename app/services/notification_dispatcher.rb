@@ -205,8 +205,8 @@ class NotificationDispatcher
         user: user,
         notifiable: quotation_proposal,
         mail_kind: "purchase_order_sent",
-        title: "Purchase Order Sent",
-        message: "Purchase order has been sent to #{proposal_vendor.vendor_registration.display_name} for #{quotation_proposal.subject}."
+        title: "#{quotation_proposal.order_document_label} Sent",
+        message: "#{quotation_proposal.order_document_label} has been sent to #{proposal_vendor.vendor_registration.display_name} for #{quotation_proposal.subject}."
       )
     end
   end
@@ -222,8 +222,8 @@ class NotificationDispatcher
         user: user,
         notifiable: quotation_proposal,
         mail_kind: "purchase_order_reply_updated",
-        title: "Purchase Order Reply Updated",
-        message: "Purchase order reply for vendor #{proposal_vendor.vendor_registration.display_name} was updated by #{actor_name}."
+        title: "#{quotation_proposal.order_document_label} Reply Updated",
+        message: "#{quotation_proposal.order_document_label} reply for vendor #{proposal_vendor.vendor_registration.display_name} was updated by #{actor_name}."
       )
     end
   end
@@ -242,8 +242,8 @@ class NotificationDispatcher
         user: user,
         notifiable: quotation_proposal,
         mail_kind: "purchase_order_vendor_response",
-        title: "Vendor Purchase Order Response",
-        message: "#{proposal_vendor.vendor_registration.display_name} marked the purchase order as #{decision}.#{remark.present? ? " Remark: #{remark}" : ""}"
+        title: "Vendor #{quotation_proposal.order_document_label} Response",
+        message: "#{proposal_vendor.vendor_registration.display_name} marked the #{quotation_proposal.order_document_label.downcase} as #{decision}.#{remark.present? ? " Remark: #{remark}" : ""}"
       )
     end
   end

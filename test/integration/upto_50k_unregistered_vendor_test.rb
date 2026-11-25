@@ -356,6 +356,9 @@ class Upto50kUnregisteredVendorTest < ActionDispatch::IntegrationTest
     proposal_vendor.update!(purchase_order_status: "accepted", purchase_order_actioned_at: Time.current)
     get goods_receive_quotation_proposal_url(quotation)
     assert_response :success
+    assert_match "Agreement Status", response.body
+    assert_match "Agreement Accepted At", response.body
+    assert_equal "Agreement Sent", Notification.where(notifiable: quotation).order(:id).last&.title
 
     # The quotation calls it an agreement, not a PO.
     get quotation_proposal_url(quotation)

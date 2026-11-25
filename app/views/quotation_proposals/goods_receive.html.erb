@@ -75,11 +75,11 @@
       <div class="app-detail-value"><%= @goods_receive_vendor.vendor_registration.display_name %></div>
     </div>
     <div class="app-detail-item">
-      <div class="app-detail-label">PO Status</div>
+      <div class="app-detail-label"><%= @quotation_proposal.order_document_badge %> Status</div>
       <div class="app-detail-value"><%= @goods_receive_vendor.purchase_order_status.to_s.humanize %></div>
     </div>
     <div class="app-detail-item">
-      <div class="app-detail-label">PO Accepted At</div>
+      <div class="app-detail-label"><%= @quotation_proposal.order_document_badge %> Accepted At</div>
       <div class="app-detail-value"><%= @goods_receive_vendor.purchase_order_actioned_at&.strftime("%d-%m-%Y %H:%M") || "-" %></div>
     </div>
   </div>

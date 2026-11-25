@@ -82,7 +82,7 @@
           <% end %>
         </tr>
         <tr>
-          <td class="comparison-print-field">Purchase Order</td>
+          <td class="comparison-print-field"><%= @quotation_proposal.order_document_label %></td>
           <% @comparison_vendors.each do |proposal_vendor| %>
             <td>
               <%= proposal_vendor.purchase_order_status.to_s.humanize.presence || "Draft" %>
