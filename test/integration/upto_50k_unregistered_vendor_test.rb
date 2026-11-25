@@ -68,6 +68,41 @@ class Upto50kUnregisteredVendorTest < ActionDispatch::IntegrationTest
     assert_not_includes controller.instance_variable_get(:@vendor_registrations).to_a, vendor, "not listed as a registration"
   end
 
+  test "unregistered vendors can be changed or removed when the quotation is edited" do
+    sign_in user_for(@maker)
+    post quotation_proposals_url, params: quotation_params(bucket: "upto_50k", unregistered: [{ vendor_name: "Edit One", mobile_no: "9876500051" }])
+    quotation = QuotationProposal.order(:id).last
+    one = quotation.vendor_registrations.first
+    post quotation_proposals_url, params: quotation_params(bucket: "upto_50k", unregistered: [{ vendor_name: "Other Quote", mobile_no: "9876500052" }])
+    other = QuotationProposal.order(:id).last.vendor_registrations.first
+    assert_not_equal quotation.id, QuotationProposal.order(:id).last.id
+
+    get edit_quotation_proposal_url(quotation)
+    assert_response :success
+    assert_select "[data-unregistered-vendor-list] input[name='quotation_proposal[unregistered_vendors][][id]'][value='#{one.id}']"
+    assert_select "[data-unregistered-vendor-list] input[value='Edit One']"
+    assert_select "input.quotation-vendor-checkbox[value='#{one.id}']", count: 0
+
+    # Change its name and mobile.
+    patch quotation_proposal_url(quotation),
+          params: edit_form_params(quotation, [{ "vendor_name" => "Edit One Changed", "id" => one.id.to_s, "firm_name" => "", "mobile_no" => "9876500059" }])
+    assert_redirected_to quotation_proposal_path(quotation), response.body.scan(/<li>([^<]+)<\/li>/).flatten.join(" | ")
+    assert_equal [one.id], quotation.reload.vendor_registration_ids
+    assert_equal ["Edit One Changed", "9876500059"], [one.reload.vendor_name, one.mobile_no]
+
+    # Another quotation's vendor cannot be edited through this one.
+    patch quotation_proposal_url(quotation),
+          params: edit_form_params(quotation, [{ "vendor_name" => "Hijack", "id" => other.id.to_s, "mobile_no" => "9876500058" }])
+    assert_response :unprocessable_entity
+    assert_match "no longer on the quotation", response.body
+    assert_equal "Other Quote", other.reload.vendor_name
+
+    # Removing its row and adding a new one replaces the vendor.
+    patch quotation_proposal_url(quotation), params: edit_form_params(quotation, [{ "vendor_name" => "Edit New", "mobile_no" => "9876500057" }])
+    assert_redirected_to quotation_proposal_path(quotation), response.body.scan(/<li>([^<]+)<\/li>/).flatten.join(" | ")
+    assert_equal ["Edit New"], quotation.reload.vendor_registrations.map(&:vendor_name)
+  end
+
   test "the quotation scan uploaded with an unregistered vendor is kept with its quotation" do
     sign_in user_for(@maker)
     scan = Rack::Test::UploadedFile.new(StringIO.new("%PDF-1.4 scan"), "application/pdf", original_filename: "ramu-quote.pdf")
@@ -405,6 +440,28 @@ class Upto50kUnregisteredVendorTest < ActionDispatch::IntegrationTest
   end
 
   private
+
+  # The fields the Edit page's form sends (as a browser would), with the
+  # unregistered vendor rows replaced.
+  def edit_form_params(quotation, unregistered_rows)
+    get edit_quotation_proposal_url(quotation)
+    form = Nokogiri::HTML(response.body).at_css("form.app-rfp-form")
+    pairs = form.css("input, select, textarea").filter_map do |field|
+      name = field["name"]
+      next if name.blank? || field["disabled"] || field.ancestors("template").any? || field["type"] == "file"
+      next if name.include?("[unregistered_vendors]") || name.in?(%w[_method authenticity_token])
+      next if field["type"].in?(%w[checkbox radio]) && !field["checked"]
+      value = case field.name
+              when "select" then field.at_css("option[selected]")&.[]("value") || field.at_css("option")&.[]("value")
+              when "textarea" then field.text
+              else field["value"]
+              end
+      [name, value.to_s]
+    end
+    params = Rack::Utils.parse_nested_query(URI.encode_www_form(pairs))
+    params["quotation_proposal"]["unregistered_vendors"] = unregistered_rows
+    params
+  end
 
   # Opens the vendor's PO / agreement link and verifies the OTP.
   def vendor_verified!(proposal_vendor)

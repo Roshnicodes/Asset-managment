@@ -798,8 +798,19 @@ end
     self.committee_policy_errors = approver ? [] : ["#{designation} is not configured in Employee Master."]
     self.committee_approval_required = true
 
-    committee_steps.each(&:mark_for_destruction)
-    committee_steps.build(level: 1, employee_master: approver, status: "waiting") if approver
+    # Keep one level-1 step (the saved one when editing) for the approver:
+    # replacing it with a new row would clash with the saved level 1.
+    keep = (committee_steps.select { |step| step.level.to_i == 1 && step.persisted? }.first if approver)
+    committee_steps.to_a.each do |step|
+      next if step.equal?(keep)
+
+      step.new_record? ? committee_steps.target.delete(step) : step.mark_for_destruction
+    end
+    if keep
+      keep.assign_attributes(employee_master: approver, status: "waiting") if keep.employee_master_id != approver.id
+    elsif approver
+      committee_steps.build(level: 1, employee_master: approver, status: "waiting")
+    end
     committee_policy_errors.blank?
   end
 

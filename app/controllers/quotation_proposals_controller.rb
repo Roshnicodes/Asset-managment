@@ -1254,7 +1254,7 @@ class QuotationProposalsController < ApplicationController
       :activity_product_id,
       :order_document_type,
       vendor_registration_ids: [],
-      unregistered_vendors: [:vendor_name, :firm_name, :mobile_no, :scan],
+      unregistered_vendors: [:id, :vendor_name, :firm_name, :mobile_no, :scan],
       vendor_selection_criterion_ids: [],
       quotation_proposal_items_attributes: [:id, :item_name, :unit_id, :quantity, :max_rate, :remark, :_destroy],
       committee_steps_attributes: [:id, :level, :employee_master_id, :remark, :status, :_destroy]
@@ -1521,16 +1521,25 @@ class QuotationProposalsController < ApplicationController
     rows = Array(attrs.delete("unregistered_vendors") || attrs.delete(:unregistered_vendors))
       .map { |row| row.to_h.stringify_keys }
       .reject { |row| row.values_at("vendor_name", "firm_name", "mobile_no").all?(&:blank?) }
-    return if rows.empty?
+    # Unregistered vendors already on the quotation come back only through
+    # their rows: a removed row takes the vendor off the quotation.
+    existing_unregistered_ids = quotation_proposal ? quotation_proposal.vendor_registrations.where(provisional: true).pluck(:id) : []
+    return if rows.empty? && existing_unregistered_ids.empty?
 
     bucket = attrs["procurement_amount_bucket"].presence || quotation_proposal&.procurement_amount_bucket
-    return "Unregistered vendors can only be added for quotations of 10K - 50K." unless bucket.in?(QuotationProposal::REGISTRATION_OPTIONAL_BUCKETS)
+    if rows.any? && !bucket.in?(QuotationProposal::REGISTRATION_OPTIONAL_BUCKETS)
+      return "Unregistered vendors can only be added for quotations of 10K - 50K."
+    end
 
     # Kept so a form shown again after an error still has the typed rows.
-    @unregistered_vendor_rows = rows.map { |row| row.slice("vendor_name", "firm_name", "mobile_no") }
+    @unregistered_vendor_rows = rows.map { |row| row.slice("id", "vendor_name", "firm_name", "mobile_no") }
+    # Rows with an id edit an unregistered vendor already on this quotation.
+    editable_ids = existing_unregistered_ids
 
     mobiles = []
     rows.each do |row|
+      row_id = row["id"].presence&.to_i
+      return "This unregistered vendor is no longer on the quotation. Reload the page and try again." if row_id && !editable_ids.include?(row_id)
       return "Enter the name of every unregistered vendor." if row["vendor_name"].to_s.strip.blank?
       mobile = row["mobile_no"].to_s.gsub(/\D/, "").last(10)
       return "Enter a valid 10-digit mobile number for #{row['vendor_name']}." unless mobile.match?(VendorRegistration::MOBILE_NO_FORMAT)
@@ -1542,6 +1551,9 @@ class QuotationProposalsController < ApplicationController
         return "Mobile #{mobile} already belongs to the registered vendor #{registered.display_name}. " \
                "Select that vendor from the Vendor List instead of adding it as unregistered."
       end
+      if row_id && (other = VendorRegistration.where(mobile_no: mobile).where.not(id: row_id).first)
+        return "Mobile #{mobile} already belongs to #{other.display_name}. Each vendor needs its own mobile number."
+      end
     end
 
     theme = Theme.find_by(id: attrs["theme_id"].presence || quotation_proposal&.theme_id)
@@ -1550,12 +1562,21 @@ class QuotationProposalsController < ApplicationController
     else
       quotation_proposal&.vendor_registration_ids || []
     end
+    ids -= existing_unregistered_ids
     @unregistered_vendor_scans = {}
     @unregistered_vendor_ids = []
     @created_unregistered_vendor_ids = []
     rows.each do |row|
-      vendor = VendorRegistration.create_provisional!(vendor_name: row["vendor_name"], firm_name: row["firm_name"],
-                                                      mobile_no: row["mobile_no"], user: current_user, theme: theme)
+      vendor = if row["id"].present?
+        VendorRegistration.find(row["id"]).tap do |existing|
+          name = row["vendor_name"].to_s.squish
+          existing.update_columns(vendor_name: name, firm_name: row["firm_name"].to_s.squish.presence || name,
+                                  mobile_no: row["mobile_no"].to_s.gsub(/\D/, "").last(10), updated_at: Time.current)
+        end
+      else
+        VendorRegistration.create_provisional!(vendor_name: row["vendor_name"], firm_name: row["firm_name"],
+                                               mobile_no: row["mobile_no"], user: current_user, theme: theme)
+      end
       ids << vendor.id
       @unregistered_vendor_ids << vendor.id
       @created_unregistered_vendor_ids << vendor.id if vendor.previously_new_record?
@@ -1608,11 +1629,12 @@ class QuotationProposalsController < ApplicationController
     # stakeholder or theme (vendors of the chosen theme are listed first).
     @vendors = @vendors.distinct
       .order(:vendor_name)
-    # Unregistered (provisional) vendors already on this quotation stay selectable.
-    provisional_ids = @quotation_proposal&.vendor_registration_ids.to_a
-    if provisional_ids.any?
-      provisional = VendorRegistration.includes(:themes).where(id: provisional_ids, provisional: true).to_a
-      @vendors = (@vendors.to_a + provisional).uniq
+    # Unregistered (provisional) vendors already on this quotation are shown as
+    # editable rows in the unregistered vendors box, not in the Vendor List.
+    if @quotation_proposal&.persisted?
+      @unregistered_vendor_rows ||= @quotation_proposal.vendor_registrations.where(provisional: true).order(:id).map do |vendor|
+        { "id" => vendor.id, "vendor_name" => vendor.vendor_name, "firm_name" => vendor.firm_name_for_display, "mobile_no" => vendor.mobile_no }
+      end
     end
     @vendor_selection_criteria = VendorSelectionCriterion
       .includes(:theme)
@@ -1639,8 +1661,30 @@ class QuotationProposalsController < ApplicationController
     false
   end
 
+  # A vendor taken off the quotation has an empty row per item, which blocks a
+  # plain delete (foreign key); its rows go with it. A vendor that already
+  # responded is kept and the maker is told why.
+  def remove_deselected_vendors!(quotation_proposal, attrs)
+    return unless attrs.key?("vendor_registration_ids") || attrs.key?(:vendor_registration_ids)
+
+    keep_ids = Array(attrs["vendor_registration_ids"] || attrs[:vendor_registration_ids]).reject(&:blank?).map(&:to_i)
+    removed = quotation_proposal.quotation_proposal_vendors.includes(:vendor_registration).where.not(vendor_registration_id: keep_ids).to_a
+    return if removed.empty?
+
+    responded = removed.select(&:response_submitted?)
+    if responded.any?
+      quotation_proposal.errors.add(:base, "#{responded.map { |row| row.vendor_registration.display_name }.to_sentence} already responded and cannot be removed.")
+      raise ActiveRecord::RecordInvalid, quotation_proposal
+    end
+
+    removed.each(&:destroy!)
+    quotation_proposal.quotation_proposal_vendors.reset
+    quotation_proposal.vendor_registrations.reset
+  end
+
   def update_quotation_proposal_with_criteria(quotation_proposal, attrs, item_attributes, selected_criteria_ids)
     QuotationProposal.transaction do
+      remove_deselected_vendors!(quotation_proposal, attrs)
       quotation_proposal.assign_attributes(attrs)
       quotation_proposal.apply_configured_committee! unless quotation_proposal.approval_locked?
       quotation_proposal.save!

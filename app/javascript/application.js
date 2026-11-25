@@ -1234,6 +1234,9 @@ const setupFormDraftAutosave = () => {
     !field.name ||
     ignoredFieldNames.has(field.name) ||
     field.name.endsWith("_form_step") ||
+    // Unregistered vendor rows share one field name per column, so a draft
+    // would copy the first row into every row; the server keeps them instead.
+    field.name.includes("[unregistered_vendors]") ||
     field.disabled ||
     field.type === "file" ||
     field.type === "submit" ||
