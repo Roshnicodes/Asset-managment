@@ -36,10 +36,18 @@
   .app-rfp-committee-table .app-rfp-table-cell--action .app-action-button { width: 100%; }
   .app-unregistered-vendors { display: grid; gap: .6rem; margin-top: .9rem; padding: .9rem 1rem; border: 1px dashed #cfe3d8; border-radius: 14px; background: #fbfdfc; }
   .app-unregistered-vendors[hidden] { display: none; }
-  .app-unregistered-vendor-row { display: grid; grid-template-columns: 1.3fr 1.3fr 1fr auto; gap: .5rem; align-items: center; margin-top: .5rem; padding-bottom: .6rem; border-bottom: 1px solid #edf3ef; }
-  .app-unregistered-vendor-scan { grid-column: 1 / -1; display: flex; align-items: center; gap: .6rem; margin: 0; font-size: .85rem; font-weight: 700; color: #064f45; }
+  [data-unregistered-vendor-list] { counter-reset: unregistered-vendor; display: grid; gap: .7rem; }
+  .app-unregistered-vendor-row { counter-increment: unregistered-vendor; position: relative; display: grid; grid-template-columns: 1.3fr 1.3fr 1fr auto; gap: .5rem; align-items: center;
+                                 margin-top: .9rem; padding: 1.1rem .85rem .75rem; border: 1px solid #e1ece6; border-radius: 12px; background: #fff; box-shadow: 0 4px 12px rgba(6, 79, 69, .04); }
+  .app-unregistered-vendor-row::before { content: "Vendor " counter(unregistered-vendor); position: absolute; top: -.7rem; left: .8rem; padding: .1rem .6rem; border-radius: 999px;
+                                         background: #e3f2ec; color: #0f6b4f; font-size: .72rem; font-weight: 800; letter-spacing: .02em; }
+  .app-unregistered-vendor-scan { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin: 0; font-size: .85rem; font-weight: 700; color: #064f45; }
   .app-unregistered-vendor-scan input { max-width: 420px; }
-  @media (max-width: 767px) { .app-unregistered-vendor-row { grid-template-columns: 1fr; } }
+  @media (max-width: 767px) {
+    .app-unregistered-vendor-row { grid-template-columns: 1fr; }
+    .app-unregistered-vendor-scan { display: grid; gap: .35rem; }
+    .app-unregistered-vendor-scan input { max-width: none; width: 100%; }
+  }
   .app-committee-amount { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: .2rem 1rem; margin-bottom: 1rem; padding: .9rem 1.1rem; border: 1px solid #cfe3d8; border-radius: 14px; background: linear-gradient(135deg, #f3faf6, #ffffff); }
   .app-committee-amount__label { color: #4f6b62; font-size: .82rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
   .app-committee-amount__value { color: #064f45; font-size: 1.2rem; font-weight: 800; text-align: right; }

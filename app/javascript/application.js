@@ -861,6 +861,9 @@ const setupWrdActivity = () => {
         orderTypeSelect.disabled = !wrd
         orderTypeSelect.required = wrd
       }
+      // Red required mark on the two WRD-only fields.
+      activityRow.querySelector("th")?.classList.toggle("is-required", wrd)
+      orderTypeSelect?.closest(".app-form-field")?.querySelector("label:not(.visually-hidden)")?.classList.toggle("is-required", wrd)
       if (wrd) {
         Array.from(activitySelect.options).forEach((option) => {
           if (!option.value) return

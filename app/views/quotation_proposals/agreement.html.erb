@@ -32,126 +32,209 @@
                 end
 %>
 
+<%
+  status_tone = { "pending" => "amber", "approved" => "green", "returned" => "orange", "rejected" => "red" }.fetch(agreement_status, "slate")
+  # Progress: details -> COO approval -> signed by ASA -> sent to vendor -> accepted.
+  steps = [
+    ["Details", missing.empty?],
+    ["COO approval", proposal_vendor.agreement_approved?],
+    ["Signed by ASA", signed_copy.attached?],
+    ["Sent to vendor", sent_to_vendor],
+    ["Accepted", po_status == "accepted"]
+  ]
+  current_step = steps.index { |_, done| !done }
+%>
+
 <style>
   /* The app shell locks page scrolling; the agreement is a long page, so let it scroll. */
   html, body.print-layout { height: auto !important; max-height: none !important; overflow: auto !important; position: static !important; }
-  .agr-panel { max-width: 210mm; margin: 0 auto 12px; padding: 12px 14px; border: 1px solid #d8e6dd; border-radius: 12px; background: #f7fbf8; font-family: Arial, sans-serif; font-size: 13px; color: #1f2d3d; }
-  .agr-panel h3 { margin: 0 0 8px; font-size: 14px; color: #0b4a4f; }
-  .agr-panel form.agr-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px 12px; align-items: end; }
-  .agr-panel label { display: grid; gap: 3px; font-weight: 700; color: #0b4a4f; }
-  .agr-panel input { padding: 6px 8px; border: 1px solid #c9d5e3; border-radius: 6px; font-weight: 400; }
-  .agr-panel .agr-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .agr-panel .agr-note { color: #5b6b7b; margin: 6px 0 0; }
-  .agr-panel .agr-warn { color: #a15c00; margin: 6px 0 0; }
-  .agr-panel button[disabled] { opacity: 0.55; cursor: not-allowed; }
-  .agr-status { display: grid; gap: 4px; }
-  .agr-status b { color: #0b4a4f; }
-  .agr-flash { max-width: 210mm; margin: 0 auto 10px; padding: 10px 14px; border-radius: 10px; font-family: Arial, sans-serif; font-size: 13px; }
+  body.print-layout { background: #f3f7f5; }
+  .agr-ui { max-width: 210mm; margin: 0 auto; padding: 0 14px; font-family: inherit; color: #1f2d3d; }
+  .agr-toolbar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;
+                 padding: 12px 14px; margin: 0 -14px 14px; background: rgba(243, 247, 245, 0.92); backdrop-filter: blur(6px); border-bottom: 1px solid #dfe9e3; }
+  .agr-toolbar__title { display: grid; gap: 2px; }
+  .agr-toolbar__title strong { font-size: 1.05rem; color: #0b4a4f; }
+  .agr-toolbar__title span { font-size: 0.8rem; color: #5b6b7b; }
+  .agr-toolbar__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .agr-card { background: #fff; border: 1px solid #dfe9e3; border-radius: 16px; padding: 16px 18px; margin-bottom: 14px; box-shadow: 0 6px 18px rgba(11, 74, 79, 0.05); }
+  .agr-card h3 { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; font-size: 0.98rem; color: #0b4a4f; }
+  .agr-num { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #e3f2ec; color: #0f6b4f; font-size: 0.8rem; font-weight: 800; flex-shrink: 0; }
+  .agr-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; font-size: 0.8rem; font-weight: 700; }
+  .agr-pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .agr-pill--slate { background: #eef1f5; color: #4b5b6b; }
+  .agr-pill--amber { background: #fff4dc; color: #a36a00; }
+  .agr-pill--green { background: #e3f6ec; color: #14724f; }
+  .agr-pill--orange { background: #ffeadb; color: #b4520f; }
+  .agr-pill--red { background: #fdecec; color: #b42323; }
+  .agr-progress { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 14px 0 4px; list-style: none; padding: 0; }
+  .agr-progress li { display: grid; gap: 6px; font-size: 0.74rem; font-weight: 700; color: #8a99a8; text-align: center; }
+  .agr-progress li::before { content: ""; height: 6px; border-radius: 999px; background: #e4ebe7; }
+  .agr-progress li.is-done { color: #14724f; }
+  .agr-progress li.is-done::before { background: #1f9a6b; }
+  .agr-progress li.is-current { color: #0b4a4f; }
+  .agr-progress li.is-current::before { background: linear-gradient(90deg, #1f9a6b 50%, #e4ebe7 50%); }
+  .agr-facts:not(:has(div)) { display: none; }
+  .agr-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 18px; margin-top: 12px; font-size: 0.86rem; }
+  .agr-facts div { display: grid; gap: 2px; }
+  .agr-facts dt { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: #7a8a99; font-weight: 700; }
+  .agr-facts dd { margin: 0; color: #1f2d3d; word-break: break-word; }
+  .agr-facts a { color: #0f6b4f; font-weight: 600; }
+  .agr-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px 14px; align-items: end; }
+  .agr-field { display: grid; gap: 5px; font-size: 0.8rem; font-weight: 700; color: #0b4a4f; }
+  .agr-field em { color: #c0392b; font-style: normal; }
+  .agr-ui input[type=text], .agr-ui input[type=number], .agr-ui input[type=date], .agr-ui input[type=file], .agr-ui textarea {
+    width: 100%; min-height: 42px; padding: 8px 12px; border: 1px solid #cfdcd5; border-radius: 10px; background: #fbfdfc; font: inherit; font-weight: 400; color: #1f2d3d; box-sizing: border-box; }
+  .agr-ui input:focus, .agr-ui textarea:focus { outline: none; border-color: #1f9a6b; box-shadow: 0 0 0 3px rgba(31, 154, 107, 0.15); background: #fff; }
+  .agr-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+  .agr-row .agr-field { flex: 1 1 220px; }
+  .agr-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .agr-actions form { margin: 0; }
+  .agr-ui button[disabled], .agr-ui input[type=submit][disabled] { opacity: 0.5; cursor: not-allowed; }
+  .agr-note { color: #5b6b7b; font-size: 0.84rem; margin: 10px 0 0; }
+  .agr-warn { color: #a36a00; font-size: 0.84rem; margin: 10px 0 0; }
+  .agr-reject { border-color: #dc3545 !important; color: #dc3545 !important; }
+  .agr-flash { padding: 11px 14px; border-radius: 12px; margin-bottom: 12px; font-size: 0.88rem; font-weight: 600; }
   .agr-flash--notice { background: #e3f6ec; color: #14724f; }
   .agr-flash--alert { background: #fdecec; color: #a12a2a; }
+  .agr-doc-frame { background: #fff; border-radius: 16px; box-shadow: 0 10px 30px rgba(11, 74, 79, 0.08); margin: 6px auto 32px; max-width: 210mm; overflow: hidden; }
+  @media (max-width: 640px) {
+    .agr-toolbar { position: static; }
+    .agr-toolbar__actions { width: 100%; }
+    .agr-toolbar__actions > * { flex: 1 1 auto; text-align: center; }
+    .agr-card { padding: 14px; border-radius: 14px; }
+    .agr-progress li { font-size: 0.62rem; }
+    .agr-actions > *, .agr-actions form, .agr-actions button, .agr-actions input[type=submit] { flex: 1 1 100%; width: 100%; }
+    .agr-doc-frame { margin: 6px 14px 24px; }
+    .agr-doc-frame .agr-sheet { padding: 18px 14px; font-size: 12px; }
+    .agr-doc-frame .agr-sheet table { display: block; overflow-x: auto; }
+    .agr-doc-frame .agr-sheet .agr-sign { grid-template-columns: 1fr; gap: 18px; }
+  }
   /* The print layout hides .print-hide on screen too, so this page uses its own class. */
-  @media print { .agr-screen-only { display: none !important; } }
+  @media print {
+    .agr-screen-only { display: none !important; }
+    body.print-layout { background: #fff; }
+    .agr-doc-frame { box-shadow: none; border-radius: 0; margin: 0; max-width: none; }
+  }
 </style>
 
-<div class="agr-screen-only" style="display:flex; justify-content:flex-end; gap:0.75rem; padding: 1rem;">
-  <button type="button" class="app-form-submit" onclick="window.print()">Print / Save PDF</button>
-  <% if maker %>
-    <%= link_to "Back to Quotation", quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn" %>
-  <% else %>
-    <%= link_to "Back to My Approvals", approval_requests_path(form_name: QuotationProposalVendor::AGREEMENT_FORM_NAME), class: "app-secondary-btn" %>
-  <% end %>
-</div>
+<div class="agr-ui agr-screen-only">
+  <div class="agr-toolbar">
+    <div class="agr-toolbar__title">
+      <strong>Contract Agreement</strong>
+      <span><%= @agreement_number %> · <%= proposal_vendor.vendor_registration.display_name %></span>
+    </div>
+    <div class="agr-toolbar__actions">
+      <button type="button" class="app-form-submit" onclick="window.print()">Print / Save PDF</button>
+      <% if maker %>
+        <%= link_to "Back to Quotation", quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn" %>
+      <% else %>
+        <%= link_to "Back to My Approvals", approval_requests_path(form_name: QuotationProposalVendor::AGREEMENT_FORM_NAME), class: "app-secondary-btn" %>
+      <% end %>
+    </div>
+  </div>
 
-<div class="agr-screen-only">
   <% if notice.present? %><div class="agr-flash agr-flash--notice"><%= notice %></div><% end %>
   <% if alert.present? %><div class="agr-flash agr-flash--alert"><%= alert %></div><% end %>
-</div>
 
-<div class="agr-panel agr-screen-only">
-  <div class="agr-status">
-    <div><b>Agreement <%= @agreement_number %>:</b> <%= status_text %></div>
-    <% if approval_step&.remark.present? && agreement_status != "pending" %>
-      <div><b>COO remark:</b> <%= approval_step.remark %></div>
-    <% end %>
-    <% if vendor_text %>
-      <div><b>Vendor:</b> <%= vendor_text %><%= " · last date #{proposal_vendor.purchase_order_due_date.strftime('%d-%m-%Y')}" if proposal_vendor.purchase_order_due_date && po_status.in?(%w[sent returned]) %></div>
-      <% if proposal_vendor.purchase_order_remark.present? %><div><b>Vendor remark:</b> <%= proposal_vendor.purchase_order_remark %></div><% end %>
-    <% end %>
-    <% if proposal_vendor.vendor_signed_agreement.attached? %>
-      <div><b>Signed by vendor:</b> <%= link_to proposal_vendor.vendor_signed_agreement.filename.to_s, rails_blob_path(proposal_vendor.vendor_signed_agreement, disposition: "inline"), target: "_blank", rel: "noopener" %></div>
-    <% end %>
-    <% if signed_copy.attached? %>
-      <div><b>Signed by ASA:</b> <%= link_to signed_copy.filename.to_s, rails_blob_path(signed_copy, disposition: "inline"), target: "_blank", rel: "noopener" %></div>
+  <div class="agr-card">
+    <span class="agr-pill agr-pill--<%= status_tone %>"><%= status_text %></span>
+    <ol class="agr-progress">
+      <% steps.each_with_index do |(label, done), index| %>
+        <li class="<%= 'is-done' if done %> <%= 'is-current' if index == current_step %>"><%= label %></li>
+      <% end %>
+    </ol>
+    <dl class="agr-facts">
+      <% if approval_step&.remark.present? && agreement_status != "pending" %>
+        <div><dt>COO remark</dt><dd><%= approval_step.remark %></dd></div>
+      <% end %>
+      <% if vendor_text %>
+        <div><dt>Vendor</dt><dd><%= vendor_text %><%= " · last date #{proposal_vendor.purchase_order_due_date.strftime('%d-%m-%Y')}" if proposal_vendor.purchase_order_due_date && po_status.in?(%w[sent returned]) %></dd></div>
+        <% if proposal_vendor.purchase_order_remark.present? %><div><dt>Vendor remark</dt><dd><%= proposal_vendor.purchase_order_remark %></dd></div><% end %>
+      <% end %>
+      <% if signed_copy.attached? %>
+        <div><dt>Signed by ASA:</dt><dd><%= link_to signed_copy.filename.to_s, rails_blob_path(signed_copy, disposition: "inline"), target: "_blank", rel: "noopener" %></dd></div>
+      <% end %>
+      <% if proposal_vendor.vendor_signed_agreement.attached? %>
+        <div><dt>Signed by vendor:</dt><dd><%= link_to proposal_vendor.vendor_signed_agreement.filename.to_s, rails_blob_path(proposal_vendor.vendor_signed_agreement, disposition: "inline"), target: "_blank", rel: "noopener" %></dd></div>
+      <% end %>
+    </dl>
+    <% if !maker && agreement_status == "pending" && !(approval_step&.status == "pending" && employee_matches_current_login?(approver)) %>
+      <p class="agr-note">Approve, return or reject this agreement from <%= link_to "My Approvals", approval_requests_path(form_name: QuotationProposalVendor::AGREEMENT_FORM_NAME) %>.</p>
     <% end %>
   </div>
-  <% if !maker && agreement_status == "pending" && !(approval_step&.status == "pending" && employee_matches_current_login?(approver)) %>
-    <p class="agr-note">Approve, return or reject this agreement from <%= link_to "My Approvals", approval_requests_path(form_name: QuotationProposalVendor::AGREEMENT_FORM_NAME) %>.</p>
+
+  <% if agreement_status == "pending" && approval_step&.status == "pending" && employee_matches_current_login?(approver) %>
+    <%# The COO decides here, after reading the agreement below (same actions as My Approvals). %>
+    <div class="agr-card">
+      <h3><span class="agr-num">✓</span>Your decision</h3>
+      <%= form_with url: approve_approval_request_path(approval_request), method: :patch, local: true do %>
+        <%= hidden_field_tag :return_target, "employee" %>
+        <label class="agr-field">Remark (needed to Return or Reject)
+          <%= text_area_tag :remark, nil, rows: 2 %>
+        </label>
+        <div class="agr-actions">
+          <button type="submit" class="app-form-submit">Approve</button>
+          <button type="submit" class="app-secondary-btn" formaction="<%= return_request_approval_request_path(approval_request) %>">Return to Maker</button>
+          <button type="submit" class="app-secondary-btn agr-reject" formaction="<%= reject_approval_request_path(approval_request) %>">Reject</button>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if editable %>
+    <div class="agr-card">
+      <h3><span class="agr-num">1</span>Agreement details</h3>
+      <%= form_with url: save_agreement_quotation_proposal_path(@quotation_proposal), method: :patch, local: true, scope: :agreement do |f| %>
+        <div class="agr-grid">
+          <label class="agr-field"><span>Village <em>*</em></span> <%= f.text_field :village, value: details[:village] %></label>
+          <label class="agr-field"><span>Block / District <em>*</em></span> <%= f.text_field :block_district, value: details[:block_district], placeholder: "Batouli/Sarguja" %></label>
+          <label class="agr-field"><span>State <em>*</em></span> <%= f.text_field :state, value: details[:state] %></label>
+          <label class="agr-field"><span>Completion period <em>*</em></span> <%= f.text_field :completion_period, value: details[:completion_period], placeholder: "two and half (2.5) months" %></label>
+          <label class="agr-field"><span>Completion deadline <em>*</em></span> <%= f.date_field :completion_deadline, value: details[:completion_deadline] %></label>
+          <label class="agr-field">EMD amount (Rs.) <%= f.number_field :emd_amount, value: details[:emd_amount], min: 0 %></label>
+          <label class="agr-field">Community contribution % <%= f.number_field :community_percent, value: details[:community_percent].to_s("F").sub(/\.0\z/, ""), min: 0, max: 100, step: "any" %></label>
+        </div>
+        <div class="agr-actions"><button type="submit" class="app-secondary-btn">Save Details</button></div>
+      <% end %>
+    </div>
+
+    <div class="agr-card">
+      <h3><span class="agr-num">2</span>Send for COO approval</h3>
+      <div class="agr-actions" style="margin-top: 0;">
+        <%= button_to "Send to COO for Approval", submit_agreement_quotation_proposal_path(@quotation_proposal), method: :post,
+                      class: "app-form-submit", disabled: missing.any? %>
+      </div>
+      <% if missing.any? %>
+        <p class="agr-warn">Fill and save first: <%= missing.to_sentence %>.</p>
+      <% end %>
+    </div>
+  <% end %>
+
+  <% if maker && proposal_vendor.agreement_approved? && po_status != "accepted" %>
+    <div class="agr-card">
+      <h3><span class="agr-num">3</span>Upload the agreement signed by ASA</h3>
+      <%= form_with url: upload_signed_agreement_quotation_proposal_path(@quotation_proposal), method: :post, local: true, multipart: true, html: { class: "agr-row" } do %>
+        <label class="agr-field">Signed copy (PDF or image) <%= file_field_tag :signed_agreement, accept: ".pdf,image/*", required: true %></label>
+        <button type="submit" class="app-secondary-btn"><%= signed_copy.attached? ? "Replace Signed Copy" : "Upload Signed Copy" %></button>
+      <% end %>
+    </div>
+
+    <% unless po_status == "rejected" %>
+      <div class="agr-card">
+        <h3><span class="agr-num">4</span>Send to the vendor for acceptance</h3>
+        <% if signed_copy.attached? %>
+          <%= form_with url: send_purchase_order_quotation_proposal_path(@quotation_proposal), method: :post, local: true, html: { class: "agr-row" } do %>
+            <label class="agr-field">Last date <%= date_field_tag :purchase_order_due_date, proposal_vendor.purchase_order_due_date, min: Date.current.iso8601, required: true %></label>
+            <button type="submit" class="app-form-submit"><%= sent_to_vendor ? "Resend to Vendor" : "Send to Vendor" %></button>
+          <% end %>
+        <% else %>
+          <p class="agr-warn" style="margin-top: 0;">Upload the signed copy first.</p>
+        <% end %>
+      </div>
+    <% end %>
   <% end %>
 </div>
 
-<% if agreement_status == "pending" && approval_step&.status == "pending" && employee_matches_current_login?(approver) %>
-  <%# The COO decides here, after reading the agreement below (same actions as My Approvals). %>
-  <div class="agr-panel agr-screen-only">
-    <h3>Your decision</h3>
-    <%= form_with url: approve_approval_request_path(approval_request), method: :patch, local: true, html: { class: "agr-decision" } do %>
-      <%= hidden_field_tag :return_target, "employee" %>
-      <label>Remark (needed to Return or Reject)
-        <%= text_area_tag :remark, nil, rows: 2, style: "width: 100%; padding: 6px 8px; border: 1px solid #c9d5e3; border-radius: 6px; font-weight: 400;" %>
-      </label>
-      <div class="agr-row" style="margin-top: 8px;">
-        <button type="submit" class="app-form-submit">Approve</button>
-        <button type="submit" class="app-secondary-btn" formaction="<%= return_request_approval_request_path(approval_request) %>">Return to Maker</button>
-        <button type="submit" class="app-secondary-btn" style="border-color: #dc3545; color: #dc3545;" formaction="<%= reject_approval_request_path(approval_request) %>">Reject</button>
-      </div>
-    <% end %>
-  </div>
-<% end %>
-
-<% if editable %>
-  <div class="agr-panel agr-screen-only">
-    <h3>1. Agreement details</h3>
-    <%= form_with url: save_agreement_quotation_proposal_path(@quotation_proposal), method: :patch, local: true, scope: :agreement, html: { class: "agr-grid" } do |f| %>
-      <label>Village * <%= f.text_field :village, value: details[:village] %></label>
-      <label>Block / District * <%= f.text_field :block_district, value: details[:block_district], placeholder: "Batouli/Sarguja" %></label>
-      <label>State * <%= f.text_field :state, value: details[:state] %></label>
-      <label>Completion period * <%= f.text_field :completion_period, value: details[:completion_period], placeholder: "two and half (2.5) months" %></label>
-      <label>Completion deadline * <%= f.date_field :completion_deadline, value: details[:completion_deadline] %></label>
-      <label>EMD amount (Rs.) <%= f.number_field :emd_amount, value: details[:emd_amount], min: 0 %></label>
-      <label>Community contribution % <%= f.number_field :community_percent, value: details[:community_percent].to_s("F").sub(/\.0\z/, ""), min: 0, max: 100, step: "any" %></label>
-      <button type="submit" class="app-form-submit">Save Details</button>
-    <% end %>
-
-    <h3 style="margin-top: 14px;">2. Send for COO approval</h3>
-    <div class="agr-row">
-      <%= button_to "Send to COO for Approval", submit_agreement_quotation_proposal_path(@quotation_proposal), method: :post,
-                    class: "app-form-submit", disabled: missing.any? %>
-    </div>
-    <% if missing.any? %>
-      <p class="agr-warn">Fill and save first: <%= missing.to_sentence %>.</p>
-    <% end %>
-  </div>
-<% end %>
-
-<% if maker && proposal_vendor.agreement_approved? && po_status != "accepted" %>
-  <div class="agr-panel agr-screen-only">
-    <h3>3. Upload the agreement signed by ASA</h3>
-    <%= form_with url: upload_signed_agreement_quotation_proposal_path(@quotation_proposal), method: :post, local: true, multipart: true, html: { class: "agr-row" } do %>
-      <%= file_field_tag :signed_agreement, accept: ".pdf,image/*", required: true %>
-      <button type="submit" class="app-secondary-btn"><%= signed_copy.attached? ? "Replace Signed Copy" : "Upload Signed Copy" %></button>
-    <% end %>
-
-    <% unless po_status == "rejected" %>
-      <h3 style="margin-top: 14px;">4. Send to the vendor for acceptance</h3>
-      <% if signed_copy.attached? %>
-        <%= form_with url: send_purchase_order_quotation_proposal_path(@quotation_proposal), method: :post, local: true, html: { class: "agr-row" } do %>
-          <label>Last date <%= date_field_tag :purchase_order_due_date, proposal_vendor.purchase_order_due_date, min: Date.current.iso8601, required: true %></label>
-          <button type="submit" class="app-form-submit"><%= sent_to_vendor ? "Resend to Vendor" : "Send to Vendor" %></button>
-        <% end %>
-      <% else %>
-        <p class="agr-warn">Upload the signed copy first.</p>
-      <% end %>
-    <% end %>
-  </div>
-<% end %>
-
+<div class="agr-doc-frame">
 <%= render "agreement_document", quotation_proposal: @quotation_proposal, proposal_vendor: proposal_vendor, details: details %>
+</div>
