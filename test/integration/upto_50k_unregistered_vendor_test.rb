@@ -356,6 +356,11 @@ class Upto50kUnregisteredVendorTest < ActionDispatch::IntegrationTest
     proposal_vendor.update!(purchase_order_status: "accepted", purchase_order_actioned_at: Time.current)
     get goods_receive_quotation_proposal_url(quotation)
     assert_response :success
+
+    # The quotation calls it an agreement, not a PO.
+    get quotation_proposal_url(quotation)
+    assert_match "View Agreement", response.body
+    assert_no_match(/>\s*PO Accepted/, response.body)
   end
 
   test "the vendor accepts an agreement only with its signed copy; a PO is accepted as before" do

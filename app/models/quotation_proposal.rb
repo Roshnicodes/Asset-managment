@@ -340,9 +340,20 @@ end
     work_order? ? "Work Order" : "Purchase Order"
   end
 
-  # Short form used in numbers and badges: PO or WO.
+  # Short form used in numbers: PO or WO.
   def order_document_short
     work_order? ? "WO" : "PO"
+  end
+
+  # Badge and section names: PO, WO or Agreement.
+  def order_document_badge
+    agreement_mode? ? "Agreement" : order_document_short
+  end
+
+  # "Create Agreement" until it is sent to the COO, then "View Agreement".
+  def agreement_link_label
+    selected = quotation_proposal_vendors.detect { |row| row.vendor_registration_id == selected_vendor_registration_id }
+    selected&.agreement_approval_request.present? ? "View Agreement" : "Create Agreement"
   end
 
   def criteria_based_scoring?
