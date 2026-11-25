@@ -446,7 +446,7 @@ class QuotationProposalsController < ApplicationController
     load_purchase_order_context!
     return if performed?
 
-    @agreement_number = @purchase_order_number.sub("/PO/", "/AGR/")
+    @agreement_number = @purchase_order_number.sub(%r{/(PO|WO)/}, "/AGR/")
     @agreement_details = @selected_proposal_vendor.agreement_document_details
     @agreement_maker_view = admin_user? || @quotation_proposal.user_id == current_user.id
     render :agreement, layout: "print"
@@ -605,14 +605,14 @@ class QuotationProposalsController < ApplicationController
       action_type: was_sent_before ? "resent_to_vendor" : "sent_to_vendor",
       actor_name: actor_display_name,
       actor_role: actor_role_label,
-      note: "#{agreement ? 'Agreement' : 'Purchase order'} sent to vendor mobile number #{@selected_proposal_vendor.vendor_registration.mobile_no}. Last response date: #{due_date.strftime("%d-%m-%Y")}.",
+      note: "#{@quotation_proposal.order_document_label} sent to vendor mobile number #{@selected_proposal_vendor.vendor_registration.mobile_no}. Last response date: #{due_date.strftime("%d-%m-%Y")}.",
       employee_master: approval_actor_for(@quotation_proposal),
       user: current_user,
       occurred_at: Time.current
     )
     NotificationDispatcher.notify_purchase_order_sent(@quotation_proposal, @selected_proposal_vendor)
     redirect_to purchase_order_quotation_proposal_path(@quotation_proposal, authorized_by_id: @authorized_by&.id),
-                notice: "#{agreement ? 'Agreement' : 'Purchase order'} link has been sent to the selected vendor."
+                notice: "#{@quotation_proposal.order_document_label} link has been sent to the selected vendor."
   end
 
   def update_purchase_order_reply
@@ -1190,6 +1190,9 @@ class QuotationProposalsController < ApplicationController
     QuotationProposal.transaction do
       created = QuotationProposal.new(
         theme: source_quotation.theme,
+        # WRD: the same activity and order type (PO / Work Order / Agreement).
+        activity_product: source_quotation.activity_product,
+        order_document_type: source_quotation.order_document_type.presence || (source_quotation.agreement_mode? ? "agreement" : "purchase_order"),
         user: current_user,
         subject: "Purchase order created from reused quotation #{source_quotation.id}",
         proposal_end_date: Date.current + 7.days,
@@ -1249,6 +1252,7 @@ class QuotationProposalsController < ApplicationController
       :thematic_head_id,
       :single_vendor_justification,
       :activity_product_id,
+      :order_document_type,
       vendor_registration_ids: [],
       unregistered_vendors: [:vendor_name, :firm_name, :mobile_no, :scan],
       vendor_selection_criterion_ids: [],
@@ -1763,7 +1767,7 @@ class QuotationProposalsController < ApplicationController
     next_year_short = (current_year + 1).to_s.last(2)
     @purchase_order_year_label = "#{current_year}-#{next_year_short}"
     stakeholder_code = @quotation_proposal.theme&.stakeholder_category&.name.to_s.strip.presence || "ASA"
-    @purchase_order_number = "#{stakeholder_code}/PO/#{@quotation_proposal.id}/#{@purchase_order_year_label}"
+    @purchase_order_number = "#{stakeholder_code}/#{@quotation_proposal.order_document_short}/#{@quotation_proposal.id}/#{@purchase_order_year_label}"
     @authorized_by_options = EmployeeMaster.order(:name)
     @purchase_order_authorized_by_locked = @selected_proposal_vendor.purchase_order_sent_at.present? && @selected_proposal_vendor.purchase_order_authorized_by.present?
     @authorized_by =

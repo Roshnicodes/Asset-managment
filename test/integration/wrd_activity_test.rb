@@ -64,10 +64,11 @@ class WrdActivityTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "select#quotation_proposal_theme_id option[data-wrd='true']", text: /WRD/
     assert_select "tr[data-quotation-activity-row][hidden] select[data-quotation-activity] option", text: "Stop Dam"
+    assert_select "tr[data-quotation-activity-row] select[data-quotation-order-type][disabled] option", text: "Work Order"
     assert_select "template[data-quotation-item-template] input[data-proposal-item-custom][disabled]"
 
     post quotation_proposals_url, params: { quotation_proposal: {
-      theme_id: @wrd.id, activity_product_id: @stop_dam.id, subject: "Stop dam construction work at the village site",
+      theme_id: @wrd.id, activity_product_id: @stop_dam.id, order_document_type: "work_order", subject: "Stop dam construction work at the village site",
       proposal_end_date: Date.current + 7.days, remark: "WRD remark", procurement_amount_bucket: "below_10k",
       vendor_registration_ids: [@vendor.id],
       committee_steps_attributes: { "0" => { level: 1, employee_master_id: @first_member.id } },
@@ -82,10 +83,12 @@ class WrdActivityTest < ActionDispatch::IntegrationTest
     quotation = QuotationProposal.order(:id).last
     assert_redirected_to quotation_proposal_path(quotation)
     assert_equal @stop_dam, quotation.activity_product
+    assert_equal "work_order", quotation.order_document_type
     assert_equal ["Earth excavation", "Stone pitching"], quotation.quotation_proposal_items.order(:id).pluck(:item_name)
 
     get quotation_proposal_url(quotation)
     assert_select "td", text: /Activity: Stop Dam/
+    assert_select "td", text: /Order: Work Order/
 
     get edit_quotation_proposal_url(quotation)
     assert_select "tr[data-quotation-activity-row]:not([hidden]) option[selected]", text: "Stop Dam"

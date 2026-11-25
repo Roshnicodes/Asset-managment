@@ -20,16 +20,16 @@
 <div class="po-page">
   <div class="app-page-header app-page-header-top po-page-header print-hide">
     <div>
-      <h1 class="app-page-title">Purchase Order Preview</h1>
+      <h1 class="app-page-title"><%= @quotation_proposal.order_document_label %> Preview</h1>
       <div class="po-page-meta">
-        <span>PO No. <%= @purchase_order_number %></span>
+        <span><%= @quotation_proposal.order_document_short %> No. <%= @purchase_order_number %></span>
         <span><%= selected_vendor.display_name %></span>
         <span><%= @selected_proposal_vendor.vendor_items.size %> Items</span>
         <span class="po-status-badge <%= purchase_order_status_class %>"><%= purchase_order_status_label %></span>
       </div>
     </div>
     <div class="po-header-actions">
-      <%= link_to "Print Purchase Order", purchase_order_print_quotation_proposal_path(@quotation_proposal), class: "app-form-submit", target: "_blank", rel: "noopener" %>
+      <%= link_to "Print #{@quotation_proposal.order_document_label}", purchase_order_print_quotation_proposal_path(@quotation_proposal), class: "app-form-submit", target: "_blank", rel: "noopener" %>
       <%= link_to "Back to Quotation", quotation_proposal_path(@quotation_proposal), class: "po-back-link" %>
     </div>
   </div>

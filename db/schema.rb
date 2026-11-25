@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_25_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_25_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -532,6 +532,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_25_100000) do
     t.bigint "activity_product_id"
     t.boolean "committee_approval_required", default: true, null: false
     t.datetime "created_at", null: false
+    t.string "order_document_type"
     t.string "procurement_amount_bucket", default: "above_10k", null: false
     t.date "proposal_end_date", null: false
     t.date "quotation_valid_until"

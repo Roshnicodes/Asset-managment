@@ -314,13 +314,35 @@ end
     vendor.present? && vendor_registration_optional? && !vendor.registration_approved?
   end
 
-  # WRD Stop Dam and Earthen Dam works get a contract agreement (COO approval,
-  # then the vendor accepts it like a PO) instead of a purchase order. Every
-  # other activity and theme keeps the purchase order.
+  # WRD: chosen with the Activity. A Work Order runs exactly like a purchase
+  # order under another name; an Agreement goes to the COO for approval and
+  # the vendor then accepts it like a PO. Other themes keep the purchase order.
+  ORDER_DOCUMENT_TYPES = { "purchase_order" => "Purchase Order", "work_order" => "Work Order", "agreement" => "Agreement" }.freeze
+  # WRD requests saved before the choice existed: stop dam and earthen dam
+  # works got an agreement.
   AGREEMENT_ACTIVITY_PATTERN = /\A\s*(stop|earthen)\s*dam\b/i
 
   def agreement_mode?
-    theme&.wrd? == true && activity_product&.name.to_s.match?(AGREEMENT_ACTIVITY_PATTERN)
+    return false unless theme&.wrd?
+    return order_document_type == "agreement" if order_document_type.present?
+
+    activity_product&.name.to_s.match?(AGREEMENT_ACTIVITY_PATTERN)
+  end
+
+  def work_order?
+    theme&.wrd? == true && order_document_type == "work_order"
+  end
+
+  # "Purchase Order", "Work Order" or "Agreement" on pages and buttons.
+  def order_document_label
+    return "Agreement" if agreement_mode?
+
+    work_order? ? "Work Order" : "Purchase Order"
+  end
+
+  # Short form used in numbers and badges: PO or WO.
+  def order_document_short
+    work_order? ? "WO" : "PO"
   end
 
   def criteria_based_scoring?
@@ -785,9 +807,12 @@ end
     theme&.wrd? || false
   end
 
-  # Only WRD requests keep an Activity.
+  # Only WRD requests keep an Activity and an order type.
   def clear_activity_unless_wrd
-    self.activity_product_id = nil unless wrd_theme?
+    return if wrd_theme?
+
+    self.activity_product_id = nil
+    self.order_document_type = nil
   end
 
   # New WRD requests need an Activity of the WRD theme; older ones keep working.
@@ -798,6 +823,12 @@ end
       errors.add(:activity_product, "must be selected for WRD") if new_record?
     elsif activity_product.theme_id != theme_id
       errors.add(:activity_product, "must be a product of the WRD theme")
+    end
+
+    if order_document_type.blank?
+      errors.add(:order_document_type, "must be selected for WRD (Purchase Order, Work Order or Agreement)") if new_record?
+    elsif !ORDER_DOCUMENT_TYPES.key?(order_document_type)
+      errors.add(:order_document_type, "is not a valid order type")
     end
   end
 

@@ -850,11 +850,17 @@ const setupWrdActivity = () => {
       datalist.innerHTML = names.map((name) => `<option value="${String(name).replace(/"/g, "&quot;")}"></option>`).join("")
     }
 
+    const orderTypeSelect = form.querySelector("[data-quotation-order-type]")
+
     const apply = () => {
       const wrd = isWrd()
       activityRow.hidden = !wrd
       activitySelect.disabled = !wrd
       activitySelect.required = wrd
+      if (orderTypeSelect) {
+        orderTypeSelect.disabled = !wrd
+        orderTypeSelect.required = wrd
+      }
       if (wrd) {
         Array.from(activitySelect.options).forEach((option) => {
           if (!option.value) return

@@ -34,3 +34,4 @@ en:
       quotation_proposal:
         single_vendor_justification: "Logic Note"
         activity_product: "Activity"
+        order_document_type: "Order type"

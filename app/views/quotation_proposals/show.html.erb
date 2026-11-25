@@ -466,7 +466,7 @@
             <th scope="row">Subject</th>
             <td><%= @quotation_proposal.subject %></td>
             <th scope="row">Theme</th>
-            <td><%= @quotation_proposal.theme.name %><% if @quotation_proposal.activity_product.present? %> · <span class="badge border bg-success bg-opacity-10 text-success" title="Activity">Activity: <%= @quotation_proposal.activity_product.name %></span><% end %></td>
+            <td><%= @quotation_proposal.theme.name %><% if @quotation_proposal.activity_product.present? %> · <span class="badge border bg-success bg-opacity-10 text-success" title="Activity">Activity: <%= @quotation_proposal.activity_product.name %></span><% end %><% if @quotation_proposal.theme&.wrd? %> · <span class="badge border bg-primary bg-opacity-10 text-primary" title="Order type">Order: <%= @quotation_proposal.order_document_label %></span><% end %></td>
           </tr>
           <tr>
             <th scope="row">Proposal End Date</th>
@@ -856,7 +856,7 @@
                                   class: "app-secondary-btn",
                                   style: "padding: 0.35rem 0.8rem; font-size: 0.82rem;" %>
                           <% else %>
-                            <%= link_to "Create Purchase Order",
+                            <%= link_to "Create #{@quotation_proposal.order_document_label}",
                                   purchase_order_quotation_proposal_path(@quotation_proposal),
                                   class: "app-secondary-btn",
                                   style: "padding: 0.35rem 0.8rem; font-size: 0.82rem;" %>
@@ -865,7 +865,7 @@
                       <% end %>
                       <% if proposal_vendor.purchase_order_status.present? && proposal_vendor.purchase_order_status != "draft" %>
                         <span class="badge border <%= proposal_vendor.purchase_order_status == "accepted" ? "bg-success bg-opacity-10 text-success" : proposal_vendor.purchase_order_status == "returned" ? "bg-warning bg-opacity-10 text-warning" : proposal_vendor.purchase_order_status == "rejected" ? "bg-danger bg-opacity-10 text-danger" : "bg-primary bg-opacity-10 text-primary" %>">
-                          PO <%= proposal_vendor.purchase_order_status.humanize %>
+                          <%= @quotation_proposal.order_document_short %> <%= proposal_vendor.purchase_order_status.humanize %>
                         </span>
                       <% end %>
                     <% end %>
@@ -1035,7 +1035,7 @@
             <% end %>
           </tr>
           <tr>
-            <td style="position: sticky; left: 0; z-index: 2; background: #fdfefe; box-shadow: 8px 0 18px rgba(26, 58, 42, 0.03);"><strong>Purchase Order</strong></td>
+            <td style="position: sticky; left: 0; z-index: 2; background: #fdfefe; box-shadow: 8px 0 18px rgba(26, 58, 42, 0.03);"><strong><%= @quotation_proposal.order_document_label %></strong></td>
             <% comparison_vendors.each do |proposal_vendor| %>
               <td>
                 <%= proposal_vendor.purchase_order_status.to_s.humanize.presence || "Draft" %>
@@ -1120,7 +1120,7 @@
         <details class="quotation-proposal-show__nested-details quotation-proposal-show__section-details" open>
           <summary class="quotation-proposal-show__nested-summary quotation-proposal-show__section-summary">
             <div class="quotation-proposal-show__summary-copy">
-              <span class="quotation-proposal-show__summary-title">Selected Vendor PO Workflow</span>
+              <span class="quotation-proposal-show__summary-title">Selected Vendor <%= @quotation_proposal.order_document_short %> Workflow</span>
             </div>
             <div class="quotation-proposal-show__summary-meta">
               <span class="badge border bg-light text-dark"><%= @selected_vendor_response.invoice_requests.size %> invoice requests</span>

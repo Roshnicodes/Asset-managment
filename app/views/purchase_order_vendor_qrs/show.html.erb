@@ -611,11 +611,11 @@
       <div class="po-otp-side">
         <div>
           <div class="po-otp-eyebrow">Secure Verification</div>
-          <h1 class="po-otp-title">Purchase Order OTP Verification</h1>
-          <p class="po-otp-copy">Enter the OTP sent to your registered mobile number to review the purchase order securely and continue.</p>
+          <h1 class="po-otp-title"><%= @quotation_proposal.order_document_label %> OTP Verification</h1>
+          <p class="po-otp-copy">Enter the OTP sent to your registered mobile number to review the <%= @quotation_proposal.order_document_label.downcase %> securely and continue.</p>
         </div>
         <div class="po-otp-mark">OTP</div>
-        <div class="po-otp-mini">Protected purchase order access</div>
+        <div class="po-otp-mini">Protected <%= @quotation_proposal.order_document_label.downcase %> access</div>
       </div>
 
       <div class="po-otp-form">

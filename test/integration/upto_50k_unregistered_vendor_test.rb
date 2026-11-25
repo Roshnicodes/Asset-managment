@@ -206,19 +206,40 @@ class Upto50kUnregisteredVendorTest < ActionDispatch::IntegrationTest
     assert_match "Rs. 1,30,000/- (Rupees One Lakh Thirty Thousand only)", response.body
   end
 
-  test "only stop dam and earthen dam get an agreement; other WRD activities keep the purchase order" do
+  test "the order type chosen with the activity decides PO, Work Order or Agreement" do
     sign_in user_for(@maker)
-    { @stop_dam => true, @earthen_dam => true, @doha => false }.each_with_index do |(activity, agreement), index|
-      quotation = quotation_with_selected(registered_vendor("98765001#{index}0"), theme: @wrd_theme, activity: activity)
-      assert_equal agreement, quotation.agreement_mode?, activity.name
-
+    cases = [["purchase_order", @stop_dam, :po], ["work_order", @doha, :wo], ["agreement", @doha, :agreement],
+             [nil, @earthen_dam, :agreement], [nil, @doha, :po]] # nil: WRD requests saved before the choice existed
+    cases.each_with_index do |(order, activity, expected), index|
+      quotation = quotation_with_selected(registered_vendor("98765001#{index}0"), theme: @wrd_theme, activity: activity, order: order)
       get purchase_order_quotation_proposal_url(quotation)
-      if agreement
-        assert_redirected_to agreement_quotation_proposal_path(quotation)
+      label = "#{order.inspect} / #{activity.name}"
+      case expected
+      when :agreement
+        assert_redirected_to agreement_quotation_proposal_path(quotation), label
+      when :wo
+        assert_response :success, label
+        assert_match "Work Order Preview", response.body
+        assert_match "WORK ORDER", response.body
+        assert_match "/WO/#{quotation.id}/", response.body
+        assert_no_match "PURCHASE ORDER", response.body
       else
-        assert_response :success, activity.name
+        assert_response :success, label
+        assert_match "Purchase Order Preview", response.body
+        assert_match "PURCHASE ORDER", response.body
       end
     end
+  end
+
+  test "a new WRD request needs an order type; other themes keep none" do
+    wrd = QuotationProposal.new(theme: @wrd_theme, activity_product: @stop_dam)
+    wrd.validate
+    assert_includes wrd.errors.full_messages.join, "Order type must be selected for WRD"
+
+    other = QuotationProposal.new(theme: @theme, order_document_type: "work_order")
+    other.validate
+    assert_nil other.order_document_type
+    assert_equal "Purchase Order", other.order_document_label
   end
 
   test "the agreement goes to the COO, then the signed copy, then the vendor like a PO" do
@@ -383,9 +404,11 @@ class Upto50kUnregisteredVendorTest < ActionDispatch::IntegrationTest
     vendor
   end
 
-  def quotation_with_selected(vendor, bucket: "upto_50k", theme: @theme, activity: (theme == @wrd_theme ? @stop_dam : nil))
+  def quotation_with_selected(vendor, bucket: "upto_50k", theme: @theme, activity: (theme == @wrd_theme ? @stop_dam : nil),
+                              order: (theme == @wrd_theme ? "agreement" : nil))
     quotation = QuotationProposal.new(procurement_amount_bucket: bucket, proposal_end_date: Date.current + 7.days, remark: "Remark",
                                       subject: "Selected vendor quotation subject for the test", theme: theme, activity_product: activity,
+                                      order_document_type: order,
                                       user: user_for(@maker), workflow_status: "vendor_selected", vendor_rule_enforced: true)
     quotation.save!(validate: false)
     item = quotation.quotation_proposal_items.create!(item_name: "Seed", unit: @unit, quantity: 2, max_rate: 1000, remark: "Item")
