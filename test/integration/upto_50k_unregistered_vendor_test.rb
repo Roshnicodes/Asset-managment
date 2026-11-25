@@ -21,10 +21,13 @@ class Upto50kUnregisteredVendorTest < ActionDispatch::IntegrationTest
     @district = District.create!(name: "Upto50 District", state: @state)
     @block = Block.create!(name: "Upto50 Block", district: @district)
     @unit = Unit.create!(name: "Upto50 Unit")
+    @stop_dam = Product.create!(name: "Stop Dam", theme: @wrd_theme, product_code: "U50-SD")
+    @earthen_dam = Product.create!(name: "Earthen Dam", theme: @wrd_theme, product_code: "U50-ED")
+    @doha = Product.create!(name: "Doha Construction", theme: @wrd_theme, product_code: "U50-DH")
 
     @maker = employee("U50 Maker", "u50.maker@example.com", "U50-MAKER", "Procurement Maker")
     employee("U50 Director", "u50.director@example.com", "U50-DIR", "Director")
-    employee("U50 COO", "u50.coo@example.com", "U50-COO", "COO")
+    @coo = employee("U50 COO", "u50.coo@example.com", "U50-COO", "COO")
     @finance = employee("U50 Finance", "u50.finance@example.com", "U50-FIN", "Senior Manager Finance")
     %w[quotation_proposal_form quotation_proposal_list quotation_proposal_main vendor_registration].each do |menu|
       MenuPermission.create!(stakeholder_category: @stakeholder, designation: "Procurement Maker", menu_identifier: menu, can_view: true)
@@ -181,7 +184,7 @@ class Upto50kUnregisteredVendorTest < ActionDispatch::IntegrationTest
     assert_not quotation.selected_vendor_registration_pending?
   end
 
-  test "a WRD work gets an agreement instead of a purchase order" do
+  test "a stop dam work gets an agreement filled from the saved details" do
     quotation = quotation_with_selected(registered_vendor("9876500015"), theme: @wrd_theme)
     sign_in user_for(@maker)
 
@@ -195,11 +198,119 @@ class Upto50kUnregisteredVendorTest < ActionDispatch::IntegrationTest
     assert_match "ACTION FOR SOCIAL ADVANCEMENT (ASA)</strong>, a non-profit development organization", response.body
     assert_match "Rs. 1,890/- (Rupees One Thousand Eight Hundred Ninety only inclusive all taxes)", response.body
 
-    get agreement_quotation_proposal_url(quotation, village: "Bataikela-ll", block_district: "Batouli/Sarguja", state: "C.G.",
-                                                    completion_period: "two and half (2.5) months", completion_deadline: "2026-12-25", emd_amount: "130000")
+    patch save_agreement_quotation_proposal_url(quotation), params: { agreement: agreement_details }
+    assert_redirected_to agreement_quotation_proposal_path(quotation)
+    get agreement_quotation_proposal_url(quotation)
     assert_match "Village- Bataikela-ll, Batouli/Sarguja, C.G.", response.body
     assert_match "complete all works within two and half (2.5) months from the commencement date, subject to the overall completion deadline of 25th Dec. 2026", response.body
     assert_match "Rs. 1,30,000/- (Rupees One Lakh Thirty Thousand only)", response.body
+  end
+
+  test "only stop dam and earthen dam get an agreement; other WRD activities keep the purchase order" do
+    sign_in user_for(@maker)
+    { @stop_dam => true, @earthen_dam => true, @doha => false }.each_with_index do |(activity, agreement), index|
+      quotation = quotation_with_selected(registered_vendor("98765001#{index}0"), theme: @wrd_theme, activity: activity)
+      assert_equal agreement, quotation.agreement_mode?, activity.name
+
+      get purchase_order_quotation_proposal_url(quotation)
+      if agreement
+        assert_redirected_to agreement_quotation_proposal_path(quotation)
+      else
+        assert_response :success, activity.name
+      end
+    end
+  end
+
+  test "the agreement goes to the COO, then the signed copy, then the vendor like a PO" do
+    quotation = quotation_with_selected(registered_vendor("9876500031"), theme: @wrd_theme)
+    proposal_vendor = quotation.quotation_proposal_vendors.first
+    sign_in user_for(@maker)
+
+    post submit_agreement_quotation_proposal_url(quotation)
+    assert_match "Fill and save Village", flash[:alert]
+    assert_nil proposal_vendor.reload.agreement_approval_request
+
+    patch save_agreement_quotation_proposal_url(quotation), params: { agreement: agreement_details }
+    post send_purchase_order_quotation_proposal_url(quotation), params: { purchase_order_due_date: (Date.current + 5).iso8601 }
+    assert_redirected_to agreement_quotation_proposal_path(quotation)
+    assert_match "must be approved by the COO", flash[:alert]
+
+    post submit_agreement_quotation_proposal_url(quotation)
+    request = proposal_vendor.reload.agreement_approval_request
+    assert_equal ["Agreement", "pending"], [request.form_name, request.status]
+    assert_equal [@coo], request.approval_steps.map(&:employee_master)
+    assert_not proposal_vendor.agreement_editable?
+    assert_equal Date.current.iso8601, proposal_vendor.agreement_details["agreement_date"]
+
+    # The COO sees it in My Approvals and opens it; another employee cannot.
+    sign_out :user
+    sign_in user_for(@coo)
+    get approval_requests_url
+    assert_response :success
+    assert_match format("AGR-%03d", quotation.id), response.body
+    assert_match agreement_quotation_proposal_path(quotation), response.body
+    get agreement_quotation_proposal_url(quotation)
+    assert_response :success
+    assert_match "My Approvals", response.body
+    sign_out :user
+    sign_in user_for(@finance)
+    get agreement_quotation_proposal_url(quotation)
+    assert_response :redirect
+    assert_no_match "CONTRACT AGREEMENT", response.body
+
+    request.approve!(employee: @coo, remark: "OK")
+    sign_out :user
+    sign_in user_for(@maker)
+    post send_purchase_order_quotation_proposal_url(quotation), params: { purchase_order_due_date: (Date.current + 5).iso8601 }
+    assert_match "Upload the agreement signed by ASA", flash[:alert]
+
+    post upload_signed_agreement_quotation_proposal_url(quotation),
+         params: { signed_agreement: Rack::Test::UploadedFile.new(StringIO.new("text"), "text/plain", original_filename: "note.txt") }
+    assert_match "PDF or an image", flash[:alert]
+    post upload_signed_agreement_quotation_proposal_url(quotation),
+         params: { signed_agreement: Rack::Test::UploadedFile.new(StringIO.new("%PDF-1.4 signed"), "application/pdf", original_filename: "signed.pdf") }
+    assert proposal_vendor.reload.signed_agreement.attached?
+
+    QuotationVendorSmsGateway.stub(:send_purchase_order_link, true) do
+      post send_purchase_order_quotation_proposal_url(quotation), params: { purchase_order_due_date: (Date.current + 5).iso8601 }
+    end
+    proposal_vendor.reload
+    assert_equal "sent", proposal_vendor.purchase_order_status
+    assert_equal @coo, proposal_vendor.purchase_order_authorized_by
+    follow_redirect!
+    assert_redirected_to agreement_quotation_proposal_path(quotation), "after sending, the PO page still opens the agreement"
+
+    # The vendor's link shows the agreement and the copy signed by ASA (a past
+    # last date shows the document without the OTP step).
+    proposal_vendor.update_columns(purchase_order_due_date: Date.current - 1)
+    get purchase_order_vendor_qr_url(proposal_vendor.po_token)
+    assert_response :success
+    assert_match "CONTRACT AGREEMENT", response.body
+    assert_match "signed.pdf", response.body
+    proposal_vendor.update_columns(purchase_order_due_date: Date.current + 5)
+
+    # The vendor accepts it like a purchase order; goods receive then opens.
+    proposal_vendor.update!(purchase_order_status: "accepted", purchase_order_actioned_at: Time.current)
+    get goods_receive_quotation_proposal_url(quotation)
+    assert_response :success
+  end
+
+  test "an agreement returned by the COO can be changed and sent again" do
+    quotation = quotation_with_selected(registered_vendor("9876500032"), theme: @wrd_theme)
+    proposal_vendor = quotation.quotation_proposal_vendors.first
+    sign_in user_for(@maker)
+    patch save_agreement_quotation_proposal_url(quotation), params: { agreement: agreement_details }
+    post submit_agreement_quotation_proposal_url(quotation)
+    proposal_vendor.reload.agreement_approval_request.return_to_employee!(employee: @coo, remark: "Fix the EMD")
+
+    assert proposal_vendor.reload.agreement_editable?
+    get agreement_quotation_proposal_url(quotation)
+    assert_match "Fix the EMD", response.body
+    patch save_agreement_quotation_proposal_url(quotation), params: { agreement: { emd_amount: "50000" } }
+    post submit_agreement_quotation_proposal_url(quotation)
+    assert_equal "pending", proposal_vendor.reload.agreement_status
+    assert_equal "50000", proposal_vendor.agreement_details["emd_amount"]
+    assert_equal 2, proposal_vendor.agreement_approval_requests.count
   end
 
   test "a WRD work of 10K-50K waits for the vendor's registration before the agreement" do
@@ -231,6 +342,11 @@ class Upto50kUnregisteredVendorTest < ActionDispatch::IntegrationTest
   end
 
   private
+
+  def agreement_details
+    { village: "Bataikela-ll", block_district: "Batouli/Sarguja", state: "C.G.", completion_period: "two and half (2.5) months",
+      completion_deadline: "2026-12-25", emd_amount: "130000" }
+  end
 
   def employee(name, email, code, designation)
     EmployeeMaster.create!(designation: designation, employee_code: code, email_id: email, name: name,
@@ -267,9 +383,9 @@ class Upto50kUnregisteredVendorTest < ActionDispatch::IntegrationTest
     vendor
   end
 
-  def quotation_with_selected(vendor, bucket: "upto_50k", theme: @theme)
+  def quotation_with_selected(vendor, bucket: "upto_50k", theme: @theme, activity: (theme == @wrd_theme ? @stop_dam : nil))
     quotation = QuotationProposal.new(procurement_amount_bucket: bucket, proposal_end_date: Date.current + 7.days, remark: "Remark",
-                                      subject: "Selected vendor quotation subject for the test", theme: theme,
+                                      subject: "Selected vendor quotation subject for the test", theme: theme, activity_product: activity,
                                       user: user_for(@maker), workflow_status: "vendor_selected", vendor_rule_enforced: true)
     quotation.save!(validate: false)
     item = quotation.quotation_proposal_items.create!(item_name: "Seed", unit: @unit, quantity: 2, max_rate: 1000, remark: "Item")

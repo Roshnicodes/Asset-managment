@@ -146,6 +146,8 @@ class PurchaseOrderVendorQrsController < ApplicationController
     next_year_short = (current_year + 1).to_s.last(2)
     @purchase_order_year_label = "#{current_year}-#{next_year_short}"
     @purchase_order_expired = @quotation_proposal_vendor.purchase_order_expired?
+    # Stop dam / earthen dam: the vendor reads and accepts the agreement.
+    @agreement_mode = @quotation_proposal.agreement_mode? && @quotation_proposal_vendor.agreement_approval_request.present?
   end
 
   def ensure_purchase_order_open!

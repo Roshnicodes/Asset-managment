@@ -4,10 +4,10 @@ class QuotationProposalsController < ApplicationController
   before_action :set_quotation_proposal, only: %i[
     show edit update destroy approve_committee return_committee thematic_head_decision
     send_to_vendors score_vendor score_vendors select_vendor purchase_order send_purchase_order update_purchase_order_reply goods_receive update_goods_receive reuse physical_quotation
-    send_vendor_registration_link agreement
+    send_vendor_registration_link agreement save_agreement submit_agreement upload_signed_agreement
     new_invoice_request_assets create_invoice_request_assets review_invoice_request assign_payment_references purchase_order_print quotation_print comparison_print
   ]
-  before_action :ensure_quotation_owner_access!, only: %i[edit update destroy send_vendor_registration_link agreement purchase_order purchase_order_print send_purchase_order goods_receive update_goods_receive new_invoice_request_assets create_invoice_request_assets review_invoice_request reuse physical_quotation]
+  before_action :ensure_quotation_owner_access!, only: %i[edit update destroy send_vendor_registration_link save_agreement submit_agreement upload_signed_agreement purchase_order purchase_order_print send_purchase_order goods_receive update_goods_receive new_invoice_request_assets create_invoice_request_assets review_invoice_request reuse physical_quotation]
   before_action :ensure_quotation_owner_access!, only: %i[assign_payment_references]
   before_action :ensure_quotation_change_allowed!, only: %i[edit update]
   before_action :authorize_quotation_form_access!, only: %i[index new create edit update destroy send_for_approval reuse physical_quotation]
@@ -17,6 +17,8 @@ class QuotationProposalsController < ApplicationController
   before_action :authorize_quotation_view_access!, only: %i[show approve_committee return_committee quotation_print comparison_print]
   before_action :authorize_committee_comparison_access!, only: %i[score_vendor score_vendors select_vendor]
   before_action :authorize_thematic_head!, only: %i[thematic_head_decision]
+  # The maker, an admin, and the COO it was sent to for approval may open it.
+  before_action :ensure_agreement_view_access!, only: %i[agreement]
 
   def index
     @quotation_proposals = own_quotation_scope.order(created_at: :desc)
@@ -422,15 +424,19 @@ class QuotationProposalsController < ApplicationController
     load_purchase_order_context!
     return if performed?
 
-    # WRD works (stop dam, doha ...) get an agreement instead of a purchase
+    # Stop dam / earthen dam works get an agreement instead of a purchase
     # order; a PO already sent before this rule stays as it is.
-    if @quotation_proposal.agreement_mode? && !@selected_proposal_vendor.purchase_order_sent?
+    if agreement_flow_for?(@selected_proposal_vendor)
+      flash.keep
       redirect_to agreement_quotation_proposal_path(@quotation_proposal)
     end
   end
 
-  # Standard agreement for WRD works, filled from the approved quotation and
-  # the selected vendor's rates. The format will be replaced by the official one.
+  # Standard ASA contract agreement for stop dam / earthen dam works, filled
+  # from the approved quotation, the selected vendor's rates and the work site,
+  # time and EMD the maker saves here. It goes to the COO for approval; once
+  # approved, the maker uploads the copy signed by ASA and sends it to the
+  # vendor, who accepts it like a purchase order.
   def agreement
     unless @quotation_proposal.agreement_mode?
       redirect_to purchase_order_quotation_proposal_path(@quotation_proposal)
@@ -441,12 +447,77 @@ class QuotationProposalsController < ApplicationController
     return if performed?
 
     @agreement_number = @purchase_order_number.sub("/PO/", "/AGR/")
-    # Work site, time and EMD are not in the quotation: the maker fills them on
-    # the agreement page before printing (blank lines when left empty).
-    @agreement_details = params.permit(:village, :block_district, :state, :completion_period, :completion_deadline,
-                                       :emd_amount, :community_percent).to_h.symbolize_keys
-    @agreement_details[:community_percent] = (@agreement_details[:community_percent].presence || "10").to_d.clamp(0, 100)
+    @agreement_details = @selected_proposal_vendor.agreement_document_details
+    @agreement_maker_view = admin_user? || @quotation_proposal.user_id == current_user.id
     render :agreement, layout: "print"
+  end
+
+  def save_agreement
+    return unless load_agreement_context!
+
+    unless @selected_proposal_vendor.agreement_editable?
+      redirect_to agreement_quotation_proposal_path(@quotation_proposal), alert: "The agreement can no longer be changed (it is with the COO, approved or sent to the vendor)."
+      return
+    end
+
+    details = params.fetch(:agreement, {}).permit(*QuotationProposalVendor::AGREEMENT_DETAIL_KEYS).to_h
+                    .transform_values { |value| value.to_s.strip }
+    @selected_proposal_vendor.update!(agreement_details: @selected_proposal_vendor.agreement_details.to_h.merge(details))
+    redirect_to agreement_quotation_proposal_path(@quotation_proposal), notice: "Agreement details saved."
+  end
+
+  def submit_agreement
+    return unless load_agreement_context!
+
+    unless @selected_proposal_vendor.agreement_editable?
+      redirect_to agreement_quotation_proposal_path(@quotation_proposal), alert: "The agreement is already with the COO or approved."
+      return
+    end
+
+    missing = @selected_proposal_vendor.missing_agreement_details
+    if missing.any?
+      redirect_to agreement_quotation_proposal_path(@quotation_proposal), alert: "Fill and save #{missing.to_sentence} before sending the agreement for approval."
+      return
+    end
+
+    # The agreement is dated the day it goes for approval.
+    @selected_proposal_vendor.update!(agreement_details: @selected_proposal_vendor.agreement_details.to_h.merge("agreement_date" => Date.current.iso8601))
+    ApprovalRequestBuilder.create_agreement_approval!(@selected_proposal_vendor)
+    @selected_proposal_vendor.add_purchase_order_activity!(
+      action_type: "agreement_sent_for_approval", actor_name: actor_display_name, actor_role: actor_role_label,
+      note: "Agreement sent to the COO for approval.", employee_master: approval_actor_for(@quotation_proposal),
+      user: current_user, occurred_at: Time.current
+    )
+    redirect_to agreement_quotation_proposal_path(@quotation_proposal), notice: "Agreement sent to the COO for approval."
+  rescue ActiveRecord::RecordNotFound => error
+    redirect_to agreement_quotation_proposal_path(@quotation_proposal), alert: error.message
+  end
+
+  def upload_signed_agreement
+    return unless load_agreement_context!
+
+    file = params[:signed_agreement]
+    if !@selected_proposal_vendor.agreement_approved?
+      alert = "Upload the signed copy after the COO approves the agreement."
+    elsif @selected_proposal_vendor.purchase_order_status == "accepted"
+      alert = "The vendor has already accepted the agreement."
+    elsif !file.respond_to?(:original_filename)
+      alert = "Choose the scan of the agreement signed by ASA."
+    elsif !(file.content_type.to_s == "application/pdf" || file.content_type.to_s.start_with?("image/"))
+      alert = "Upload the signed agreement as a PDF or an image."
+    end
+    if alert
+      redirect_to agreement_quotation_proposal_path(@quotation_proposal), alert: alert
+      return
+    end
+
+    @selected_proposal_vendor.signed_agreement.attach(file)
+    @selected_proposal_vendor.add_purchase_order_activity!(
+      action_type: "signed_agreement_uploaded", actor_name: actor_display_name, actor_role: actor_role_label,
+      note: "Agreement signed by ASA uploaded (#{file.original_filename}).", employee_master: approval_actor_for(@quotation_proposal),
+      user: current_user, occurred_at: Time.current
+    )
+    redirect_to agreement_quotation_proposal_path(@quotation_proposal), notice: "Signed agreement uploaded. You can now send it to the vendor."
   end
 
   def purchase_order_print
@@ -487,6 +558,22 @@ class QuotationProposalsController < ApplicationController
     due_date = parse_purchase_order_due_date
     locked_authorized_by = @selected_proposal_vendor.purchase_order_authorized_by if was_sent_before
 
+    # Stop dam / earthen dam: the agreement goes to the vendor only after the
+    # COO approved it and the copy signed by ASA is uploaded.
+    agreement = agreement_flow_for?(@selected_proposal_vendor)
+    if agreement
+      agreement_alert = if !@selected_proposal_vendor.agreement_approved?
+        "The agreement must be approved by the COO before it is sent to the vendor."
+      elsif !@selected_proposal_vendor.signed_agreement.attached?
+        "Upload the agreement signed by ASA before sending it to the vendor."
+      end
+      if agreement_alert
+        redirect_to agreement_quotation_proposal_path(@quotation_proposal), alert: agreement_alert
+        return
+      end
+      @authorized_by = @selected_proposal_vendor.agreement_approval_request.approval_steps.first&.employee_master || @authorized_by
+    end
+
     if @selected_proposal_vendor.vendor_registration.mobile_no.blank?
       redirect_to purchase_order_quotation_proposal_path(@quotation_proposal, authorized_by_id: @authorized_by&.id), alert: "Selected vendor does not have a registered mobile number."
       return
@@ -518,13 +605,14 @@ class QuotationProposalsController < ApplicationController
       action_type: was_sent_before ? "resent_to_vendor" : "sent_to_vendor",
       actor_name: actor_display_name,
       actor_role: actor_role_label,
-      note: "Purchase order sent to vendor mobile number #{@selected_proposal_vendor.vendor_registration.mobile_no}. Last response date: #{due_date.strftime("%d-%m-%Y")}.",
+      note: "#{agreement ? 'Agreement' : 'Purchase order'} sent to vendor mobile number #{@selected_proposal_vendor.vendor_registration.mobile_no}. Last response date: #{due_date.strftime("%d-%m-%Y")}.",
       employee_master: approval_actor_for(@quotation_proposal),
       user: current_user,
       occurred_at: Time.current
     )
     NotificationDispatcher.notify_purchase_order_sent(@quotation_proposal, @selected_proposal_vendor)
-    redirect_to purchase_order_quotation_proposal_path(@quotation_proposal, authorized_by_id: @authorized_by&.id), notice: "Purchase order link has been sent to the selected vendor."
+    redirect_to purchase_order_quotation_proposal_path(@quotation_proposal, authorized_by_id: @authorized_by&.id),
+                notice: "#{agreement ? 'Agreement' : 'Purchase order'} link has been sent to the selected vendor."
   end
 
   def update_purchase_order_reply
@@ -1388,6 +1476,32 @@ class QuotationProposalsController < ApplicationController
 
     redirect_to list_quotation_proposals_path, alert: "Only the creator can perform this action on the quotation proposal."
   end
+
+  def ensure_agreement_view_access!
+    return if admin_user? || @quotation_proposal.user_id == current_user.id
+
+    return if agreement_approver_for_quotation?(@quotation_proposal.id)
+
+    redirect_to list_quotation_proposals_path, alert: "Only the creator or the agreement approver can open this agreement."
+  end
+
+  # Stop dam / earthen dam: the agreement replaces the PO, except where a PO
+  # was already sent before the agreement existed.
+  def agreement_flow_for?(proposal_vendor)
+    @quotation_proposal.agreement_mode? &&
+      (!proposal_vendor.purchase_order_sent? || proposal_vendor.agreement_approval_request.present?)
+  end
+
+  def load_agreement_context!
+    unless @quotation_proposal.agreement_mode?
+      redirect_to quotation_proposal_path(@quotation_proposal), alert: "This quotation uses a purchase order, not an agreement."
+      return false
+    end
+
+    load_purchase_order_context!
+    !performed?
+  end
+
 
   def ensure_quotation_change_allowed!
     return if admin_user? || !@quotation_proposal.approval_locked?

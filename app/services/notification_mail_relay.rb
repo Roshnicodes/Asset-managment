@@ -84,6 +84,7 @@ class NotificationMailRelay
     case record
     when QuotationProposal then helpers.quotation_proposal_url(record, **options)
     when VendorRegistration then helpers.vendor_registration_url(record, **options)
+    when QuotationProposalVendor then helpers.agreement_quotation_proposal_url(record.quotation_proposal, **options)
     else helpers.notifications_url(**options)
     end
   rescue StandardError

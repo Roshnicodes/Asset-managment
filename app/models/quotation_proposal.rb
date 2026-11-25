@@ -314,9 +314,13 @@ end
     vendor.present? && vendor_registration_optional? && !vendor.registration_approved?
   end
 
-  # WRD works (stop dam, doha ...) get an agreement instead of a purchase order.
+  # WRD Stop Dam and Earthen Dam works get a contract agreement (COO approval,
+  # then the vendor accepts it like a PO) instead of a purchase order. Every
+  # other activity and theme keeps the purchase order.
+  AGREEMENT_ACTIVITY_PATTERN = /\A\s*(stop|earthen)\s*dam\b/i
+
   def agreement_mode?
-    theme&.wrd? == true
+    theme&.wrd? == true && activity_product&.name.to_s.match?(AGREEMENT_ACTIVITY_PATTERN)
   end
 
   def criteria_based_scoring?

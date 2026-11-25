@@ -68,6 +68,20 @@ module QuotationPendingHelper
       )
     end
 
+    # Stop dam / earthen dam: the agreement waits for the COO.
+    if proposal.selected_vendor_registration_id.present? && proposal.agreement_mode?
+      selected = proposal.quotation_proposal_vendors.detect { |row| row.vendor_registration_id == proposal.selected_vendor_registration_id }
+      agreement_request = selected&.agreement_approval_request
+      if agreement_request&.status == "pending"
+        waiting = agreement_request.approval_steps.select { |step| step.status == "pending" }
+        return QuotationStage.new(
+          kind: :agreement_approval, label: "Agreement - COO approval",
+          actors: waiting.filter_map { |step| step.employee_master&.name },
+          mine: waiting.any? { |step| employee_ids.include?(step.employee_master_id) }
+        )
+      end
+    end
+
     if proposal.selected_vendor_registration_id.present?
       return QuotationStage.new(kind: :selected, label: "Vendor selected", actors: [], mine: false)
     end

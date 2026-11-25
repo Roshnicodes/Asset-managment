@@ -290,6 +290,7 @@ class ApplicationController < ActionController::Base
         step.reached? && employee_matches_current_login?(step.employee_master)
       end || false
     when "quotation_proposals"
+      return agreement_approver_for_quotation?(params[:id]) if action_name == "agreement"
       return false unless action_name.in?(%w[show quotation_print comparison_print thematic_head_decision send_to_vendors])
       return true if thematic_head_for_quotation?(params[:id])
       return false if action_name.in?(%w[thematic_head_decision send_to_vendors])
@@ -319,6 +320,15 @@ class ApplicationController < ActionController::Base
     return false if quotation_proposal.blank? || quotation_proposal.sent_to_vendors_at.blank?
 
     quotation_proposal.committee_steps.where(employee_master_id: current_approval_employee_ids).exists?
+  end
+
+  # Stop dam / earthen dam agreement: the COO it was sent to may open it.
+  def agreement_approver_for_quotation?(record_id)
+    ApprovalRequest.joins(:approval_steps)
+      .where(approvable_type: "QuotationProposalVendor", form_name: QuotationProposalVendor::AGREEMENT_FORM_NAME,
+             approvable_id: QuotationProposalVendor.where(quotation_proposal_id: record_id).select(:id),
+             approval_steps: { employee_master_id: current_approval_employee_ids })
+      .exists?
   end
 
   def approval_request_for_record(record_class, record_id)

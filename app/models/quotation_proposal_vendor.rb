@@ -1,5 +1,11 @@
 class QuotationProposalVendor < ApplicationRecord
   SMS_TOKEN_LENGTH = 12
+  AGREEMENT_FORM_NAME = "Agreement".freeze
+  AGREEMENT_DETAIL_KEYS = %w[village block_district state completion_period completion_deadline emd_amount community_percent].freeze
+  AGREEMENT_REQUIRED_DETAILS = {
+    "village" => "Village", "block_district" => "Block / District", "state" => "State",
+    "completion_period" => "Completion period", "completion_deadline" => "Completion deadline"
+  }.freeze
 
   belongs_to :quotation_proposal
   belongs_to :vendor_registration
@@ -12,6 +18,11 @@ class QuotationProposalVendor < ApplicationRecord
   has_many :purchase_order_activities, class_name: "QuotationProposalVendorPoActivity", dependent: :destroy
   has_many :invoice_requests, class_name: "QuotationProposalVendorInvoiceRequest", dependent: :destroy
   has_many_attached :vendor_documents
+  # Stop dam / earthen dam agreement: the copy signed by ASA (uploaded by the
+  # maker after COO approval) and the COO approval requests, latest first.
+  has_one_attached :signed_agreement
+  has_many :agreement_approval_requests, -> { where(form_name: AGREEMENT_FORM_NAME).order(id: :desc) },
+           as: :approvable, class_name: "ApprovalRequest", dependent: :destroy
 
   accepts_nested_attributes_for :vendor_items
 
@@ -319,6 +330,50 @@ class QuotationProposalVendor < ApplicationRecord
     end
 
     vendor_items.where.not(quotation_proposal_item_id: proposal_item_ids).destroy_all
+  end
+
+  # The approval request of the agreement now in use (a returned or rejected
+  # one is replaced when the maker sends it again).
+  def agreement_approval_request
+    agreement_approval_requests.first
+  end
+
+  # draft (not sent to the COO yet), pending, approved, returned or rejected.
+  def agreement_status
+    agreement_approval_request&.status || "draft"
+  end
+
+  def agreement_approved?
+    agreement_status == "approved"
+  end
+
+  def agreement_editable?
+    agreement_status.in?(%w[draft returned rejected]) && !purchase_order_sent?
+  end
+
+  # Saved details as the agreement document reads them (community 10% by default).
+  def agreement_document_details
+    details = agreement_details.to_h.slice(*AGREEMENT_DETAIL_KEYS, "agreement_date").symbolize_keys
+    details[:community_percent] = (details[:community_percent].presence || "10").to_d.clamp(0, 100)
+    details
+  end
+
+  def missing_agreement_details
+    AGREEMENT_REQUIRED_DETAILS.filter_map { |key, label| label if agreement_details.to_h[key].to_s.strip.blank? }
+  end
+
+  # The agreement goes to the COO through My Approvals; these let the
+  # approval and its notifications treat it like the quotation it belongs to.
+  def user
+    quotation_proposal&.user
+  end
+
+  def user_id
+    quotation_proposal&.user_id
+  end
+
+  def display_name
+    "Agreement: #{quotation_proposal&.subject} - #{vendor_registration&.display_name}"
   end
 
   private

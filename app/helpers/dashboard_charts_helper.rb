@@ -150,7 +150,7 @@ module DashboardChartsHelper
   def dashboard_stage_tone(stage)
     case stage.kind
     when :selected then "green"
-    when :approval, :thematic_head then stage.mine ? "red" : "amber"
+    when :approval, :thematic_head, :agreement_approval then stage.mine ? "red" : "amber"
     when :returned, :max_rate, :vendor_registration then "orange"
     when :scoring, :vendor_selection then "purple"
     when :vendor_response then "blue"

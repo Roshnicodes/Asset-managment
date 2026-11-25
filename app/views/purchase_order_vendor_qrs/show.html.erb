@@ -474,6 +474,28 @@
 <% if otp_verified || @purchase_order_expired %>
   <div class="po-vendor-page-box">
     <div class="po-vendor-sheet-frame">
+      <% if @agreement_mode %>
+        <style>
+          .po-sheet-terms-acceptance { margin-top: 10px; padding: 8px 10px; border: 1px solid #7f9f8c; border-radius: 8px; background: #f6faf7; }
+          .po-sheet-terms-acceptance__control { display: flex; align-items: flex-start; gap: 8px; cursor: pointer; font-weight: 700; line-height: 1.4; }
+          .po-sheet-terms-acceptance__box { margin-top: 2px; accent-color: #12643c; cursor: pointer; flex-shrink: 0; }
+        </style>
+        <% signed_copy = @quotation_proposal_vendor.signed_agreement %>
+        <% if signed_copy.attached? %>
+          <p style="margin: 0 0 10px;"><strong>Agreement signed by ASA:</strong>
+            <%= link_to signed_copy.filename.to_s, rails_blob_path(signed_copy, disposition: "inline"), target: "_blank", rel: "noopener" %></p>
+        <% end %>
+        <%= render "quotation_proposals/agreement_document", quotation_proposal: @quotation_proposal, proposal_vendor: @quotation_proposal_vendor,
+                                                             details: @quotation_proposal_vendor.agreement_document_details %>
+        <% if !@purchase_order_expired && @quotation_proposal_vendor.purchase_order_status.in?(%w[sent returned]) %>
+          <div class="po-sheet-terms-acceptance">
+            <label class="po-sheet-terms-acceptance__control" for="purchase_order_terms_accepted">
+              <%= check_box_tag :purchase_order_terms_accepted, "1", false, id: "purchase_order_terms_accepted", class: "po-sheet-terms-acceptance__box", form: "purchase_order_response_form", required: true, data: { vendor_terms_checkbox: true } %>
+              <span>I have read this Contract Agreement and agree to its terms.</span>
+            </label>
+          </div>
+        <% end %>
+      <% else %>
       <%= render "quotation_proposals/purchase_order_sheet",
             proposal_vendor: @quotation_proposal_vendor,
             quotation_proposal: @quotation_proposal,
@@ -485,6 +507,7 @@
             po_earnest_money_terms: @po_earnest_money_terms,
             show_terms_acceptance_checkbox: !@purchase_order_expired && @quotation_proposal_vendor.purchase_order_status.in?(%w[sent returned]),
             purchase_order_form_id: "purchase_order_response_form" %>
+      <% end %>
     </div>
 
     <div class="po-vendor-response-card">

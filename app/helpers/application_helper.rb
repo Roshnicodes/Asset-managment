@@ -246,6 +246,8 @@ module ApplicationHelper
     return approval_requests_path unless approvable.respond_to?(:user_id)
     return vendor_registration_path(approvable) if approvable.is_a?(VendorRegistration) && can_view_approvable_record?(approvable)
     return quotation_proposal_path(approvable) if approvable.is_a?(QuotationProposal) && can_view_approvable_record?(approvable)
+    # Stop dam / earthen dam agreement: the agreement page checks who may open it.
+    return agreement_quotation_proposal_path(approvable.quotation_proposal) if approvable.is_a?(QuotationProposalVendor)
 
     approval_requests_path
   end

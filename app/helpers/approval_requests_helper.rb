@@ -68,6 +68,9 @@ module ApprovalRequestsHelper
            when QuotationProposal
              { icon: :document, tone: "purple", code: format("QTN-%03d", record.id),
                title: record.subject, subtitle: record.theme&.name }
+           when QuotationProposalVendor
+             { icon: :document, tone: "orange", code: format("AGR-%03d", record.quotation_proposal_id),
+               title: record.quotation_proposal&.subject, subtitle: "Contract agreement · #{record.vendor_registration&.display_name}" }
            else
              { icon: :approval, tone: "orange", code: "#{approval_request.form_name.to_s.split.map(&:first).join.upcase}-#{format('%03d', approval_request.approvable_id)}",
                title: approval_request.reference_label, subtitle: approval_request.form_name }

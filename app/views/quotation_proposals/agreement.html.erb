@@ -1,270 +1,138 @@
 <%#
-  ASA work Contract Agreement for WRD works (stop dam, doha ...), used instead of a
-  purchase order. Text follows ASA's standard agreement; the contractor, the work,
-  the amounts and Annexure-1 come from the approved quotation and the selected
-  vendor's rates. Site, time and EMD are filled by the maker on this page.
+  Stop dam / earthen dam agreement: the maker saves the work site, time and EMD,
+  sends it to the COO (My Approvals), uploads the copy signed by ASA once it is
+  approved and sends it to the vendor, who accepts it like a purchase order.
+  The COO it was sent to sees it read-only.
 %>
 <%
-  vendor = @selected_proposal_vendor.vendor_registration
+  proposal_vendor = @selected_proposal_vendor
   details = @agreement_details
-  items = @selected_proposal_vendor.vendor_items.includes(quotation_proposal_item: :unit).sort_by(&:quotation_proposal_item_id)
-  agreement_date = Date.current
-  blank = ->(value, width = 18) { value.to_s.strip.presence || ("_" * width) }
-  # Indian grouping as in the format: 14,48,000 and 5,24,076.00
-  indian = lambda do |value, decimals = 0|
-    whole, fraction = format("%.#{decimals}f", value.to_d.abs).split(".")
-    grouped = whole.length > 3 ? "#{whole[0...-3].reverse.scan(/\d{1,2}/).join(',').reverse},#{whole[-3..]}" : whole
-    "#{'-' if value.to_d.negative?}#{grouped}#{".#{fraction}" if fraction}"
-  end
-  rupees = ->(value) { indian.(value.to_d.round) }
-  # "Fourteen Lakh Forty Eight Thousand only" (written after "Rupees").
-  in_words = ->(value) { amount_in_words(value.to_d.round).gsub(/\brupees\b/i, "").split.map(&:capitalize).join(" ").sub(/ Only\z/, " only") }
-
-  work_name = @quotation_proposal.activity_product&.name.presence || @quotation_proposal.subject
-  site = [details[:village].presence && "Village- #{details[:village]}", details[:block_district].presence, details[:state].presence].compact.join(", ")
-  firm_name = vendor.firm_name.presence || vendor.display_name
-  firm_kind = case vendor.firm_type.to_s.strip.downcase
-              when "proprietor", "proprietorship" then "a proprietorship firm"
-              when "partnership" then "a partnership firm"
-              when "company" then "a company"
-              else vendor.firm_type.present? ? "a #{vendor.firm_type.downcase} firm" : "a firm"
-              end
-  vendor_address = [vendor.address, vendor.block&.name, vendor.district&.name, vendor.state&.name, vendor.pin_no].map { |part| part.to_s.strip }.reject(&:blank?).uniq.join(", ")
-
-  subtotal = @selected_proposal_vendor.total_quoted_amount.to_d
-  gst = @selected_proposal_vendor.total_gst_amount.to_d
-  grand_total = @selected_proposal_vendor.grand_total_amount.to_d.round
-  community_percent = details[:community_percent]
-  community = (grand_total * community_percent / 100).round
-  project = grand_total - community
-  emd = details[:emd_amount].to_s.gsub(/[^\d.]/, "").presence&.to_d
-  period = details[:completion_period].presence
-  deadline = details[:completion_deadline].presence && Date.parse(details[:completion_deadline]) rescue nil
+  approval_request = proposal_vendor.agreement_approval_request
+  approval_step = approval_request&.approval_steps&.first
+  approver = approval_step&.employee_master
+  agreement_status = proposal_vendor.agreement_status
+  po_status = proposal_vendor.purchase_order_status.to_s
+  sent_to_vendor = proposal_vendor.purchase_order_sent?
+  maker = @agreement_maker_view
+  editable = maker && proposal_vendor.agreement_editable?
+  missing = proposal_vendor.missing_agreement_details
+  signed_copy = proposal_vendor.signed_agreement
+  status_text = case agreement_status
+                when "pending" then "With #{approver&.name || 'the COO'} (COO) for approval"
+                when "approved" then "Approved by #{approver&.name || 'the COO'}#{" on #{approval_step.actioned_at.strftime('%d-%m-%Y')}" if approval_step&.actioned_at}"
+                when "returned" then "Returned by #{approver&.name || 'the COO'} - change and send again"
+                when "rejected" then "Rejected by #{approver&.name || 'the COO'} - change and send again"
+                else "Draft - not sent to the COO yet"
+                end
+  vendor_text = case po_status
+                when "sent" then "Sent to vendor, waiting for acceptance"
+                when "accepted" then "Accepted by the vendor"
+                when "returned" then "Returned by the vendor"
+                when "rejected" then "Rejected by the vendor"
+                end
 %>
 
 <style>
   /* The app shell locks page scrolling; the agreement is a long page, so let it scroll. */
   html, body.print-layout { height: auto !important; max-height: none !important; overflow: auto !important; position: static !important; }
-  .agr-tools { max-width: 210mm; margin: 0 auto 12px; padding: 12px 14px; border: 1px solid #d8e6dd; border-radius: 12px; background: #f7fbf8; font-family: Arial, sans-serif; font-size: 13px; }
-  .agr-tools form { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px 12px; align-items: end; }
-  .agr-tools label { display: grid; gap: 3px; font-weight: 700; color: #0b4a4f; }
-  .agr-tools input { padding: 6px 8px; border: 1px solid #c9d5e3; border-radius: 6px; font-weight: 400; }
-  .agr-sheet { width: 210mm; max-width: 100%; margin: 0 auto; padding: 14mm 16mm; background: #fff; color: #000; font-family: "Times New Roman", serif; font-size: 12.5px; line-height: 1.5; text-align: justify; }
-  .agr-sheet h1 { margin: 0 0 10px; text-align: center; font-size: 17px; text-decoration: underline; }
-  .agr-sheet h2 { margin: 14px 0 4px; font-size: 13px; text-align: center; }
-  .agr-sheet p { margin: 0 0 8px; }
-  .agr-sheet .center { text-align: center; }
-  .agr-sheet table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; text-align: left; }
-  .agr-sheet th, .agr-sheet td { border: 1px solid #000; padding: 4px 6px; vertical-align: top; }
-  .agr-sheet th { background: #f0f0f0; }
-  .agr-sheet .num { text-align: right; white-space: nowrap; }
-  .agr-sheet ol.agr-clauses { padding-left: 22px; margin: 6px 0; }
-  .agr-sheet ol.agr-clauses > li { margin-bottom: 6px; padding-left: 4px; }
-  .agr-sheet ul { margin: 2px 0 4px; padding-left: 22px; }
-  .agr-sheet .agr-sign { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 36px; }
-  .agr-sheet .agr-sign p { margin: 0 0 6px; }
-  .agr-sheet .page-break { break-before: page; page-break-before: always; }
+  .agr-panel { max-width: 210mm; margin: 0 auto 12px; padding: 12px 14px; border: 1px solid #d8e6dd; border-radius: 12px; background: #f7fbf8; font-family: Arial, sans-serif; font-size: 13px; color: #1f2d3d; }
+  .agr-panel h3 { margin: 0 0 8px; font-size: 14px; color: #0b4a4f; }
+  .agr-panel form.agr-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px 12px; align-items: end; }
+  .agr-panel label { display: grid; gap: 3px; font-weight: 700; color: #0b4a4f; }
+  .agr-panel input { padding: 6px 8px; border: 1px solid #c9d5e3; border-radius: 6px; font-weight: 400; }
+  .agr-panel .agr-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .agr-panel .agr-note { color: #5b6b7b; margin: 6px 0 0; }
+  .agr-panel .agr-warn { color: #a15c00; margin: 6px 0 0; }
+  .agr-panel button[disabled] { opacity: 0.55; cursor: not-allowed; }
+  .agr-status { display: grid; gap: 4px; }
+  .agr-status b { color: #0b4a4f; }
+  .agr-flash { max-width: 210mm; margin: 0 auto 10px; padding: 10px 14px; border-radius: 10px; font-family: Arial, sans-serif; font-size: 13px; }
+  .agr-flash--notice { background: #e3f6ec; color: #14724f; }
+  .agr-flash--alert { background: #fdecec; color: #a12a2a; }
   /* The print layout hides .print-hide on screen too, so this page uses its own class. */
-  @media print { .agr-screen-only { display: none !important; } .agr-sheet { padding: 0; } }
+  @media print { .agr-screen-only { display: none !important; } }
 </style>
 
 <div class="agr-screen-only" style="display:flex; justify-content:flex-end; gap:0.75rem; padding: 1rem;">
   <button type="button" class="app-form-submit" onclick="window.print()">Print / Save PDF</button>
-  <%= link_to "Back to Quotation", quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn" %>
-</div>
-
-<div class="agr-tools agr-screen-only">
-  <strong>Fill before printing</strong> (left empty, a blank line is printed to write by hand)
-  <%= form_with url: agreement_quotation_proposal_path(@quotation_proposal), method: :get, local: true do %>
-    <label>Village <%= text_field_tag :village, details[:village] %></label>
-    <label>Block / District <%= text_field_tag :block_district, details[:block_district], placeholder: "Batouli/Sarguja" %></label>
-    <label>State <%= text_field_tag :state, details[:state] %></label>
-    <label>Completion period <%= text_field_tag :completion_period, details[:completion_period], placeholder: "two and half (2.5) months" %></label>
-    <label>Completion deadline <%= date_field_tag :completion_deadline, details[:completion_deadline] %></label>
-    <label>EMD amount (Rs.) <%= number_field_tag :emd_amount, details[:emd_amount], min: 0 %></label>
-    <label>Community contribution % <%= number_field_tag :community_percent, community_percent.to_s("F").sub(/\.0\z/, ""), min: 0, max: 100, step: "any" %></label>
-    <button type="submit" class="app-form-submit">Update Agreement</button>
+  <% if maker %>
+    <%= link_to "Back to Quotation", quotation_proposal_path(@quotation_proposal), class: "app-secondary-btn" %>
+  <% else %>
+    <%= link_to "Back to My Approvals", approval_requests_path(form_name: QuotationProposalVendor::AGREEMENT_FORM_NAME), class: "app-secondary-btn" %>
   <% end %>
 </div>
 
-<div class="agr-sheet">
-  <h1>CONTRACT AGREEMENT</h1>
-
-  <p>This Contract Agreement made <%= agreement_date.strftime("%A") %> on this <%= agreement_date.day.ordinalize %> of <%= agreement_date.strftime("%b-%Y") %> at Bhopal, Madhya Pradesh</p>
-
-  <p class="center"><strong>BETWEEN</strong></p>
-
-  <p><strong>ACTION FOR SOCIAL ADVANCEMENT (ASA)</strong>, a non-profit development organization registered under the Gujarat Societies Registration Act 1860 having its office at “The Farmer’s House” Plan C, Tulip Greens, Vill. Mahabadiya, Kolar Road, Bhopal-462040. (Hereinafter called “the EMPLOYER” which expression shall mean and include their heirs, representatives, assignees, or assignors etc.) of the one part.</p>
-
-  <p class="center"><strong>AND</strong></p>
-
-  <p><strong><%= firm_name %></strong>, <%= firm_kind %> having its registered office at <%= blank.(vendor_address, 40) %> with PAN # <%= blank.(vendor.pan_no) %> and GSTIN- <%= blank.(vendor.gst_no) %>, (hereinafter called “the CONTRACTOR” which expression shall mean and include their legal heirs, representatives, assignees or assignors etc.) of the other part</p>
-
-  <p>WHEREAS Action for Social Advancement (ASA), Bhopal, M.P (Non-Governmental Organization) working for the livelihoods enhancement of rural poor since 1996. Currently working in the eight states namely Madhya Pradesh, Chhattisgarh, Bihar, Jharkhand, Odisha, Uttar Pradesh, Maharashtra and Gujarat. Majorly works on the land and water resources development, sustainable agriculture and agribusiness promotion for small and marginal farmers, has prepared the drawings, specifications and schedules of quantities etc. describing the work.</p>
-
-  <p>WHEREAS the Employer is desirous of getting executed the civil, electrical, plumbing and sanitary works for the proposed construction of the <%= work_name %><%= " at #{site}" if site.present? %> (hereinafter referred to as “the Work”);</p>
-
-  <p>WHEREAS the Contractor has represented and warranted to the Employer that it possesses the necessary expertise, technical capability, infrastructure and resources to undertake and execute the Work, and has requested the Employer to appoint it as a non-exclusive and independent contractor for the said purpose;</p>
-
-  <p>WHEREAS the Contractor has agreed to execute the Work and shall be wholly responsible for carrying out the same in accordance with the designs, drawings, technical specifications and directions provided by the Employer, using its own funds, machinery, manpower and technical resources;</p>
-
-  <p>AND WHEREAS it is mutually agreed between the Employer and the Contractor that the total estimated cost of the Work is Rs. <%= rupees.(grand_total) %>/- (Rupees <%= in_words.(grand_total) %> inclusive all taxes)<% if community.positive? %>, of which Rs. <%= rupees.(project) %>/- (Rupees <%= in_words.(project) %>) is from project and rest amount Rs <%= rupees.(community) %>/- (Rupees <%= in_words.(community) %>) will be from community contribution<% end %>.</p>
-
-  <table>
-    <thead>
-      <tr><th>S.No.</th><th>Name of Work / Village</th><th>Block/District</th><th>State</th><th class="num">Project Contri (<%= (100 - community_percent).to_s("F").sub(/\.0\z/, "") %>%) including GST</th><th class="num">Community Contri (<%= community_percent.to_s("F").sub(/\.0\z/, "") %>%)</th><th class="num">Grand total (Rs)</th></tr>
-      <tr><th>A</th><th>B</th><th>C</th><th>D</th><th class="num">E</th><th class="num">F</th><th class="num">G=E+F</th></tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>1</td>
-        <td><%= work_name %><%= ", Village- #{details[:village]}" if details[:village].present? %></td>
-        <td><%= blank.(details[:block_district], 12) %></td>
-        <td><%= blank.(details[:state], 8) %></td>
-        <td class="num"><%= rupees.(project) %>/-</td>
-        <td class="num"><%= rupees.(community) %>/-</td>
-        <td class="num"><%= rupees.(grand_total) %>/-</td>
-      </tr>
-      <tr><td></td><th>Total</th><td></td><td></td><th class="num"><%= rupees.(project) %>/-</th><th class="num"><%= rupees.(community) %>/-</th><th class="num"><%= rupees.(grand_total) %>/-</th></tr>
-    </tbody>
-  </table>
-
-  <p>The above estimated amounts shall be paid by the Employer in accordance with the work schedule and stages of payment. For each running bill, a maximum of 80% of the payable amount shall be released, while the remaining 20% shall be retained and released only after completion of the work and its verification by a third party.</p>
-
-  <p>AND WHEREAS, the Employer is desirous of appointing the Contractor for execution of the Work, and the Contractor is willing to accept such appointment, subject to and in accordance with the terms and conditions set forth herein.</p>
-
-  <p><strong>NOW IT’S HEREBY AGREED BY AND BETWEEN THE PARTIES HERETO AS FOLLOWS:</strong></p>
-
-  <ol class="agr-clauses">
-    <li>The Employer shall obtain all the required permissions from the concerned authorities for the CONTRACTOR to continue his work without any hurdles.</li>
-    <li>The Employer reserves the right to change the CONTRACTOR at any stage of the project.</li>
-    <li>The CONTRACTOR shall maintain a site notebook that will keep a signed copy from the EMPLOYER for any work that resulted from change or addition requests from the EMPLOYER. Any finished job that cannot be quantified later must be approved prior to finishing by the EMPLOYER. All signed approvals must be preserved till the final bills are settled.</li>
-    <li>It is expressly agreed by the Contractor that no litigation, arbitration or any other complication should be created to the detrimental or disadvantage of the Employer.</li>
-    <li>This contract is an Item Rate Contract, i.e., a contractor to carry out work in respect to the entire works to be paid for according to actual measured quantities, including variations from BOQ at the rates contained in the Schedule of rates as agreed.</li>
-    <li>The Contractor holds the complete responsibility of the materials procured by him and kept on the site against theft, fire or other hazards.</li>
-    <li>A site Instructions Book must be maintained at the site by the Contractor to receive the Instructions from the Employer. Site meetings should be arranged on a mutually agreed date and time.</li>
-    <li>NO CHILD LABOR SHOULD BE EMPLOYED BY THE CONTRACTOR. Proper toilet facilities and decent work conditions should be arranged by the Contractor for the workers.</li>
-    <li>It is the responsibility of the Contractor to implement the basic safety regulations in the site for the safety of the workers.</li>
-    <li>Liability of Statutory dues, which are labor disputes, workmen’s compensation, Provident Fund, Gratuity shall be the responsibility of the Contractor and Employer has nothing to do with the above.</li>
-    <li>If there arises any doubt or discrepancy of the drawings the Contractor is advised to stop the work and contact the Architect/ Engineer immediately for clarification on the same.</li>
-    <li>It the contractor produces any work that does not satisfy the quality standards as per the Employer, the same should be redone at the contractor’s cost. Employer’s decision should be final in this regard unless otherwise instructed/agreed.</li>
-    <li>The Employer reserved to himself the right to alter the drawings and nature of work, of adding/subtraction to or omitting any items of the work or having portions of the same carried out through alternate agencies without prejudice to this contract.</li>
-    <li>Time is the essence of this Agreement, and the contractor agrees to commence the work within one week after the site is handed over to him along the work order to execute the work.</li>
-    <li>The Contractor shall commence work within seven (7) days of receiving the work order and shall complete all works within <%= blank.(period, 14) %> from the commencement date<% if deadline %>, subject to the overall completion deadline of <%= deadline.day.ordinalize %> <%= deadline.strftime("%b. %Y") %><% end %>. He must also verify sites before come into the agreement.</li>
-    <li>The cost of construction of <%= work_name %> work of the type and specifications mentioned in the estimates, has by mutual agreement between parties hereto, been fixed at rates and conditions hereby putdown in the estimate. The specification may be changed or varied by mutual consent and confirmed in writing.</li>
-    <li>Each bill shall be validated by the employer for payment. The employer shall try to pay within 15 days of the production of bill.</li>
-    <li>The Contractor shall be liable to set right structural defects that may be discovered upto a period of two year, which can be directly attributable to faulty construction, in the opinion of the Engineer.</li>
-    <li>The Employer shall not be liable for any claim by the labor employed by the Contractor, and the same shall be the Contractor’s sole responsibility. In the event of any claims under the Workmen Compensation Act or any service benefit being claimed by the workmen employed by the Contractor, such claim shall be settled by the Contractor and should the Employer suffer any loss or damage by reason of any such claim being lodged, the Contractor shall be liable to indemnify the Employer.</li>
-    <li>For items where the material (finishing materials like tiles etc.) is supplied by the Employer, rates would be exclusive of the basic rate of the material considered in the estimate.</li>
-    <li>Arbitration and Jurisdiction – Any dispute, difference or claim arising out of or in connection with this Agreement, including its interpretation, execution or termination, shall first be attempted to be resolved amicably between the Parties. If the dispute is not resolved within 30 days, it shall be referred to arbitration in accordance with the provisions of the Arbitration and Conciliation Act, 1996, including its statutory modifications or re-enactment. The arbitration shall be conducted by a sole Arbitrator, appointed by mutual consent of both Parties. The seat and venue of arbitration shall be Bhopal (M.P.) and the proceedings shall be in English/Hindi.</li>
-    <li>This agreement shall terminate upon, if ASA or the Contractor shall happen to be in breach of any of the terms hereof and shall have failed to rectify such breach within fifteen (15) days of receipt of notice in this regard from the Party which is not in breach; or For any other reason whatsoever by ASA or the Contractor by serving a fifteen (15) days’ notice.</li>
-    <li>The contractor shall not be entitled to assign its rights or obligations or delegate its duties under this agreement without prior written consent of the ASA.</li>
-    <li>PENALTY AND REWARD CLAUSE: The Contractor’s work schedule is <%= blank.(period, 14) %> from the day of start of execution of work. If the Contractor fails to complete the work within the agreed timeline, and such delay is not due to force majeure conditions or delays attributable to the Employer, a penalty shall be imposed at the rate of 1% of the unexecuted value of work for every two (2) weeks of delay, subject to a maximum penalty cap of 5% of the total contract value. The Engineer’s certification of unexecuted work value shall be final.</li>
-    <li>All notices, demands or other communications required to be given or made hereunder by either Party shall be in writing and delivered personally, sent by registered post, sent through courier, or email addressed to the other Party at its address or email given by the parties.</li>
-    <li>The invoice raised by the Contractor shall contain details of taxes, if applicable.</li>
-    <li>Soil and Material Testing: Soil testing and material testing as an integral requirement for all structural works involving masonry and RCC. Quality Control and Testing to be done as following.
-      <p><strong>Foundation Material – Soil Testing</strong></p>
-      <ul>
-        <li>Soil testing of the foundation area shall be carried out through the contractor at an approved laboratory.</li>
-        <li>Relevant tests (bearing capacity, grain size analysis, moisture content, etc.) shall be conducted as applicable.</li>
-        <li>Soil test reports must be submitted and approved prior to commencement of foundation work.</li>
-      </ul>
-      <p><strong>Concrete Cube Testing</strong></p>
-      <ul>
-        <li>All RCC works shall be subject to mandatory concrete cube testing in accordance with IS 456 and IS 516 or their latest revisions.</li>
-        <li>Minimum frequency: as per relevant IS codes or Engineer’s directions</li>
-        <li>Testing shall be carried out through an approved / recognised laboratory</li>
-        <li>All costs related to cube testing shall be borne by the Contractor</li>
-        <li>Test reports shall be submitted to the Employer / Engineer before further execution of related works</li>
-        <li>Concrete cube tests shall be conducted for both mix ratios 1:2:4 and 1:3:6 through the contractor.</li>
-        <li>Cube casting, curing, and testing shall be done as per standard procedures.</li>
-        <li>7-day and 28-day strength test reports shall be properly maintained and submitted for record and verification.</li>
-        <li>Concrete cubes of size 6” × 6” × 6” shall be taken for strength testing.</li>
-        <li>Cube testing is mandatory at three stages: Foundation stage, Mid-level stage, Final stage.</li>
-        <li>All tests shall be conducted in a NABL-approved laboratory.</li>
-        <li>The cube sampling sheet and laboratory test requisition must be signed by our Site Engineer, confirming correct sampling procedures.</li>
-      </ul>
-      <p><strong>Material Testing</strong></p>
-      <ul><li>Cement, sand, aggregates, steel, and other structural materials shall be tested as directed by the Engineer to ensure conformity with approved specifications.</li></ul>
-      <p><strong>Engineer’s Directions and Compliance</strong></p>
-      <ul>
-        <li>The Contractor shall strictly comply with all technical instructions, quality standards, and execution methodologies issued by the Engineer / Employer from time to time.</li>
-        <li>Any work executed contrary to such directions shall be rectified at the Contractor’s cost, without any additional claim.</li>
-      </ul>
-    </li>
-    <li>Third-Party Guarantee / Insurance: It is mandatory for the contractor to provide third-party guarantee through insurance. The onus must be on the contractor, ensuring protection in the event of any unforeseen casualties at the worksite, thereby safeguarding us as the principal employer.</li>
-    <li>Rectification of Defects: In addition to the defect liability provisions in the Principal Agreement, any defect arising due to non-compliance with testing or technical specifications shall be rectified by the Contractor at his own cost.</li>
-    <li>Compensation under Workmen’s Compensation Act: It is mandatory for contractor to ensuring compensation provisions in line with the Workmen’s Compensation Act.</li>
-    <li>Worksite Facilities: It is mandatory for the vendor/contractor to provide safe drinking water and sanitation facilities at the worksite.</li>
-    <li>That the contractor shall warrant for the satisfactory performance of the materials / equipment supplied and works executed by him, for a minimum the period of 12 months from the date of commissioning of the work for proper fulfilment of performance obligations. The contractor shall deposit Fixed Deposit with reputed Bank or letter of Guarantee or Earnest Money Deposit (EMD) or a PDC issued by a local bank for the amount equivalent to Rs. <%= emd ? "#{rupees.(emd)}/- (Rupees #{in_words.(emd)})" : blank.(nil, 14) %> in favour of Employer which will be returned after the Contractor has been relieved from all obligations under this agreement.</li>
-    <li>JURISDICTION: This agreement including the arbitration clause herein shall be governed by the laws of India and subject to the arbitration clause herein, only the courts at Bhopal have the exclusive jurisdiction to deal any matters arising here from.</li>
-  </ol>
-
-  <p>In witness whereof the Employer and the Contractor have signed this agreement on the date above mentioned.</p>
-
-  <div class="agr-sign">
-    <div>
-      <p><strong>CONTRACTOR</strong></p>
-      <p>Name: <%= vendor.contact_person_name.presence || "___________________________" %></p>
-      <p>Designation: <%= vendor.contact_person_designation.presence || "________________________" %></p>
-      <p>Date: ________</p>
-      <p>Place: ___________</p>
-      <p>SEAL OF THE FIRM</p>
-    </div>
-    <div>
-      <p><strong>EMPLOYER</strong></p>
-      <p>Name: ________________________</p>
-      <p>Designation: _____________________</p>
-      <p>Date: _______________</p>
-      <p>Place: _______________</p>
-      <p>SEAL OF THE FIRM</p>
-    </div>
-  </div>
-
-  <div class="agr-sign" style="margin-top: 24px;">
-    <div>
-      <p><strong>WITNESSES:</strong></p>
-      <p>NAME: ______________________</p>
-      <p>SIGNATURE: __________________</p>
-      <p>CONTACT NUMBER: ____________</p>
-    </div>
-    <div>
-      <p>&nbsp;</p>
-      <p>NAME: _______________________</p>
-      <p>SIGNATURE: ___________________</p>
-      <p>CONTACT NO.: ________________</p>
-    </div>
-  </div>
-
-  <p style="margin-top: 20px;"><strong>Annexure:</strong> Estimate of the work (Annexure-1)</p>
-
-  <div class="page-break"></div>
-  <h2>Annexure: 1</h2>
-  <p class="center"><strong><%= work_name %></strong><br><%= site.presence || "Village: ____________, Block- ____________, Distt.- ____________" %></p>
-
-  <table>
-    <thead>
-      <tr><th colspan="2">ABSTRACT FOR</th><th colspan="5"><%= work_name %><%= " — Village: #{details[:village]}" if details[:village].present? %></th></tr>
-      <tr><th>S.NO</th><th>Description of Item</th><th class="num">QTY</th><th>UNIT</th><th class="num">Rate</th><th class="num">GST %</th><th class="num">Amount Rs</th></tr>
-    </thead>
-    <tbody>
-      <% items.each_with_index do |item, index| %>
-        <% proposal_item = item.quotation_proposal_item %>
-        <tr>
-          <td><%= index + 1 %></td>
-          <td><%= quotation_item_display_name(proposal_item&.item_name) %><%= " — #{proposal_item.remark}" if proposal_item&.remark.present? %></td>
-          <td class="num"><%= number_with_precision(proposal_item&.quantity, precision: 2, strip_insignificant_zeros: true) %></td>
-          <td><%= proposal_item&.unit&.name %></td>
-          <td class="num"><%= indian.(item.quoted_rate, 2) %></td>
-          <td class="num"><%= item.gst_percentage.presence || "-" %></td>
-          <td class="num"><%= indian.(item.line_total, 2) %></td>
-        </tr>
-      <% end %>
-      <tr><th colspan="6" class="num">Subtotal</th><th class="num"><%= indian.(subtotal, 2) %></th></tr>
-      <tr><th colspan="6" class="num">GST</th><th class="num"><%= indian.(gst, 2) %></th></tr>
-      <tr><th colspan="6" class="num">Grand Total (Say Rupees <%= in_words.(grand_total) %>)</th><th class="num">₹ <%= rupees.(grand_total) %></th></tr>
-      <tr><th colspan="6" class="num">Project Contribution</th><th class="num">₹ <%= rupees.(project) %></th></tr>
-      <tr><th colspan="6" class="num">Community contribution</th><th class="num">₹ <%= rupees.(community) %></th></tr>
-    </tbody>
-  </table>
+<div class="agr-screen-only">
+  <% if notice.present? %><div class="agr-flash agr-flash--notice"><%= notice %></div><% end %>
+  <% if alert.present? %><div class="agr-flash agr-flash--alert"><%= alert %></div><% end %>
 </div>
+
+<div class="agr-panel agr-screen-only">
+  <div class="agr-status">
+    <div><b>Agreement <%= @agreement_number %>:</b> <%= status_text %></div>
+    <% if approval_step&.remark.present? && agreement_status != "pending" %>
+      <div><b>COO remark:</b> <%= approval_step.remark %></div>
+    <% end %>
+    <% if vendor_text %>
+      <div><b>Vendor:</b> <%= vendor_text %><%= " · last date #{proposal_vendor.purchase_order_due_date.strftime('%d-%m-%Y')}" if proposal_vendor.purchase_order_due_date && po_status.in?(%w[sent returned]) %></div>
+      <% if proposal_vendor.purchase_order_remark.present? %><div><b>Vendor remark:</b> <%= proposal_vendor.purchase_order_remark %></div><% end %>
+    <% end %>
+    <% if signed_copy.attached? %>
+      <div><b>Signed by ASA:</b> <%= link_to signed_copy.filename.to_s, rails_blob_path(signed_copy, disposition: "inline"), target: "_blank", rel: "noopener" %></div>
+    <% end %>
+  </div>
+  <% if !maker && agreement_status == "pending" %>
+    <p class="agr-note">Approve, return or reject this agreement from <%= link_to "My Approvals", approval_requests_path(form_name: QuotationProposalVendor::AGREEMENT_FORM_NAME) %>.</p>
+  <% end %>
+</div>
+
+<% if editable %>
+  <div class="agr-panel agr-screen-only">
+    <h3>1. Agreement details</h3>
+    <%= form_with url: save_agreement_quotation_proposal_path(@quotation_proposal), method: :patch, local: true, scope: :agreement, html: { class: "agr-grid" } do |f| %>
+      <label>Village * <%= f.text_field :village, value: details[:village] %></label>
+      <label>Block / District * <%= f.text_field :block_district, value: details[:block_district], placeholder: "Batouli/Sarguja" %></label>
+      <label>State * <%= f.text_field :state, value: details[:state] %></label>
+      <label>Completion period * <%= f.text_field :completion_period, value: details[:completion_period], placeholder: "two and half (2.5) months" %></label>
+      <label>Completion deadline * <%= f.date_field :completion_deadline, value: details[:completion_deadline] %></label>
+      <label>EMD amount (Rs.) <%= f.number_field :emd_amount, value: details[:emd_amount], min: 0 %></label>
+      <label>Community contribution % <%= f.number_field :community_percent, value: details[:community_percent].to_s("F").sub(/\.0\z/, ""), min: 0, max: 100, step: "any" %></label>
+      <button type="submit" class="app-form-submit">Save Details</button>
+    <% end %>
+
+    <h3 style="margin-top: 14px;">2. Send for COO approval</h3>
+    <div class="agr-row">
+      <%= button_to "Send to COO for Approval", submit_agreement_quotation_proposal_path(@quotation_proposal), method: :post,
+                    class: "app-form-submit", disabled: missing.any? %>
+    </div>
+    <% if missing.any? %>
+      <p class="agr-warn">Fill and save first: <%= missing.to_sentence %>.</p>
+    <% end %>
+  </div>
+<% end %>
+
+<% if maker && proposal_vendor.agreement_approved? && po_status != "accepted" %>
+  <div class="agr-panel agr-screen-only">
+    <h3>3. Upload the agreement signed by ASA</h3>
+    <%= form_with url: upload_signed_agreement_quotation_proposal_path(@quotation_proposal), method: :post, local: true, multipart: true, html: { class: "agr-row" } do %>
+      <%= file_field_tag :signed_agreement, accept: ".pdf,image/*", required: true %>
+      <button type="submit" class="app-secondary-btn"><%= signed_copy.attached? ? "Replace Signed Copy" : "Upload Signed Copy" %></button>
+    <% end %>
+    <p class="agr-note">Print this agreement, get it signed by ASA and upload the scan. The vendor sees this signed copy.</p>
+
+    <% unless po_status == "rejected" %>
+      <h3 style="margin-top: 14px;">4. Send to the vendor for acceptance</h3>
+      <% if signed_copy.attached? %>
+        <%= form_with url: send_purchase_order_quotation_proposal_path(@quotation_proposal), method: :post, local: true, html: { class: "agr-row" } do %>
+          <label>Last date <%= date_field_tag :purchase_order_due_date, proposal_vendor.purchase_order_due_date, min: Date.current.iso8601, required: true %></label>
+          <button type="submit" class="app-form-submit"><%= sent_to_vendor ? "Resend to Vendor" : "Send to Vendor" %></button>
+        <% end %>
+        <p class="agr-note">The vendor gets the link by SMS (the same SMS as a purchase order), reads the agreement and accepts it. Goods receive, invoice and payment then follow as for a purchase order.</p>
+      <% else %>
+        <p class="agr-warn">Upload the signed copy first.</p>
+      <% end %>
+    <% end %>
+  </div>
+<% end %>
+
+<%= render "agreement_document", quotation_proposal: @quotation_proposal, proposal_vendor: proposal_vendor, details: details %>

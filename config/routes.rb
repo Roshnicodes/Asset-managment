@@ -54,6 +54,9 @@ Rails.application.routes.draw do
     member do
       post :send_vendor_registration_link
       get :agreement
+      patch :save_agreement
+      post :submit_agreement
+      post :upload_signed_agreement
       post :send_for_approval
       post :thematic_head_decision
       patch :approve_committee

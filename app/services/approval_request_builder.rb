@@ -105,6 +105,32 @@ class ApprovalRequestBuilder
     approval_request
   end
 
+  # Stop dam / earthen dam agreement: one approval, by the COO, in My Approvals.
+  # The steps are stored on the request, so any channel only labels it: an
+  # "Agreement" channel when set up, else the quotation's own channel.
+  def self.create_agreement_approval!(proposal_vendor)
+    form_name = QuotationProposalVendor::AGREEMENT_FORM_NAME
+    quotation_proposal = proposal_vendor.quotation_proposal
+    coo = QuotationProposal.committee_member_with_designation("COO")
+    raise ActiveRecord::RecordNotFound, "COO is not set up in Employee Master." unless coo
+
+    approval_channel = approval_channel_for(quotation_proposal, form_name: form_name) ||
+                       fallback_approval_channel_for(form_name: form_name) ||
+                       quotation_proposal.approval_request&.approval_channel ||
+                       approval_channel_for(quotation_proposal, form_name: "Quotation Request") ||
+                       fallback_approval_channel_for(form_name: "Quotation Request")
+    raise ActiveRecord::RecordNotFound, "No approval channel found for the agreement." unless approval_channel
+
+    ApprovalRequest.transaction do
+      approval_request = ApprovalRequest.create!(approval_channel: approval_channel, approvable: proposal_vendor,
+                                                 form_name: form_name, status: "pending", current_level: 1)
+      approval_step = approval_request.approval_steps.create!(employee_master: coo, previous_action: "Agreement Created",
+                                                              current_action: "COO Approval", level: 1, status: "pending")
+      NotificationDispatcher.notify_approval_step(approval_request, approval_step)
+      approval_request
+    end
+  end
+
   def self.approval_channel_for(record, form_name:)
     stakeholder_category_id = record.try(:stakeholder_category_id)
     theme_ids = Array(record.try(:theme_ids).presence || record.try(:theme_id).presence).compact
