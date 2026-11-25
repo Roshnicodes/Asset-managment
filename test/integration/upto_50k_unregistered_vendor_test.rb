@@ -307,16 +307,23 @@ class Upto50kUnregisteredVendorTest < ActionDispatch::IntegrationTest
     assert_match agreement_quotation_proposal_path(quotation), response.body
     get agreement_quotation_proposal_url(quotation)
     assert_response :success
-    assert_match "My Approvals", response.body
+    assert_select "form[action='#{approve_approval_request_path(request)}'] button", text: "Approve"
+    assert_select "button[formaction='#{return_request_approval_request_path(request)}']"
+    assert_select "button[formaction='#{reject_approval_request_path(request)}']"
     sign_out :user
     sign_in user_for(@finance)
     get agreement_quotation_proposal_url(quotation)
     assert_response :redirect
     assert_no_match "CONTRACT AGREEMENT", response.body
 
-    request.approve!(employee: @coo, remark: "OK")
+    sign_out :user
+    sign_in user_for(@coo)
+    patch approve_approval_request_url(request), params: { remark: "OK", return_target: "employee" }
+    assert_equal "approved", request.reload.status
     sign_out :user
     sign_in user_for(@maker)
+    get agreement_quotation_proposal_url(quotation)
+    assert_select "button", text: "Approve", count: 0
     post send_purchase_order_quotation_proposal_url(quotation), params: { purchase_order_due_date: (Date.current + 5).iso8601 }
     assert_match "Upload the agreement signed by ASA", flash[:alert]
 

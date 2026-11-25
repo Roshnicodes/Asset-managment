@@ -84,10 +84,28 @@
       <div><b>Signed by ASA:</b> <%= link_to signed_copy.filename.to_s, rails_blob_path(signed_copy, disposition: "inline"), target: "_blank", rel: "noopener" %></div>
     <% end %>
   </div>
-  <% if !maker && agreement_status == "pending" %>
+  <% if !maker && agreement_status == "pending" && !(approval_step&.status == "pending" && employee_matches_current_login?(approver)) %>
     <p class="agr-note">Approve, return or reject this agreement from <%= link_to "My Approvals", approval_requests_path(form_name: QuotationProposalVendor::AGREEMENT_FORM_NAME) %>.</p>
   <% end %>
 </div>
+
+<% if agreement_status == "pending" && approval_step&.status == "pending" && employee_matches_current_login?(approver) %>
+  <%# The COO decides here, after reading the agreement below (same actions as My Approvals). %>
+  <div class="agr-panel agr-screen-only">
+    <h3>Your decision</h3>
+    <%= form_with url: approve_approval_request_path(approval_request), method: :patch, local: true, html: { class: "agr-decision" } do %>
+      <%= hidden_field_tag :return_target, "employee" %>
+      <label>Remark (needed to Return or Reject)
+        <%= text_area_tag :remark, nil, rows: 2, style: "width: 100%; padding: 6px 8px; border: 1px solid #c9d5e3; border-radius: 6px; font-weight: 400;" %>
+      </label>
+      <div class="agr-row" style="margin-top: 8px;">
+        <button type="submit" class="app-form-submit">Approve</button>
+        <button type="submit" class="app-secondary-btn" formaction="<%= return_request_approval_request_path(approval_request) %>">Return to Maker</button>
+        <button type="submit" class="app-secondary-btn" style="border-color: #dc3545; color: #dc3545;" formaction="<%= reject_approval_request_path(approval_request) %>">Reject</button>
+      </div>
+    <% end %>
+  </div>
+<% end %>
 
 <% if editable %>
   <div class="agr-panel agr-screen-only">
