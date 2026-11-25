@@ -21,6 +21,8 @@ class QuotationProposalVendor < ApplicationRecord
   # Stop dam / earthen dam agreement: the copy signed by ASA (uploaded by the
   # maker after COO approval) and the COO approval requests, latest first.
   has_one_attached :signed_agreement
+  # ...and the copy signed by the vendor, uploaded when it accepts.
+  has_one_attached :vendor_signed_agreement
   has_many :agreement_approval_requests, -> { where(form_name: AGREEMENT_FORM_NAME).order(id: :desc) },
            as: :approvable, class_name: "ApprovalRequest", dependent: :destroy
 

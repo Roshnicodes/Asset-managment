@@ -84,6 +84,21 @@ class PurchaseOrderVendorQrsController < ApplicationController
       return
     end
 
+    # Agreement: accepting needs the copy signed by the vendor.
+    signed_copy = params[:vendor_signed_agreement]
+    if @agreement_mode && decision == "accepted"
+      copy_alert = if !signed_copy.respond_to?(:original_filename)
+        "Upload the agreement signed by you to accept it."
+      elsif !(signed_copy.content_type.to_s == "application/pdf" || signed_copy.content_type.to_s.start_with?("image/"))
+        "Upload the signed agreement as a PDF or an image."
+      end
+      if copy_alert
+        redirect_to purchase_order_vendor_qr_path(params[:token], verified: 1), alert: copy_alert
+        return
+      end
+      @quotation_proposal_vendor.vendor_signed_agreement.attach(signed_copy)
+    end
+
     @quotation_proposal_vendor.update!(
       purchase_order_status: decision,
       purchase_order_remark: remark.presence,
@@ -93,7 +108,8 @@ class PurchaseOrderVendorQrsController < ApplicationController
       action_type: "vendor_#{decision}",
       actor_name: @vendor_registration.display_name,
       actor_role: "Vendor",
-      note: remark.presence || "Vendor marked the purchase order as #{decision.humanize.downcase}.",
+      note: [remark.presence || "Vendor marked the #{@quotation_proposal.order_document_label.downcase} as #{decision.humanize.downcase}.",
+             ("Signed copy uploaded: #{signed_copy.original_filename}." if @agreement_mode && decision == "accepted")].compact.join(" "),
       occurred_at: @quotation_proposal_vendor.purchase_order_actioned_at
     )
     @quotation_vendor_dispatch.update!(
@@ -104,7 +120,7 @@ class PurchaseOrderVendorQrsController < ApplicationController
     )
     NotificationDispatcher.notify_purchase_order_vendor_action(@quotation_proposal, @quotation_proposal_vendor)
 
-    redirect_to purchase_order_vendor_qr_path(params[:token], verified: 1), notice: "Purchase order response has been submitted successfully."
+    redirect_to purchase_order_vendor_qr_path(params[:token], verified: 1), notice: "#{@quotation_proposal.order_document_label} response has been submitted successfully."
   end
 
   private

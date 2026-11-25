@@ -316,6 +316,48 @@ class Upto50kUnregisteredVendorTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "the vendor accepts an agreement only with its signed copy; a PO is accepted as before" do
+    agreement_quotation = quotation_with_selected(registered_vendor("9876500041"), theme: @wrd_theme)
+    agreement_vendor = agreement_quotation.quotation_proposal_vendors.first
+    agreement_vendor.update!(agreement_details: agreement_details.stringify_keys)
+    ApprovalRequestBuilder.create_agreement_approval!(agreement_vendor).approve!(employee: @coo, remark: "OK")
+
+    po_quotation = quotation_with_selected(registered_vendor("9876500042"))
+    po_vendor = po_quotation.quotation_proposal_vendors.first
+
+    [agreement_vendor, po_vendor].each do |proposal_vendor|
+      proposal_vendor.ensure_po_token!
+      proposal_vendor.update!(purchase_order_status: "sent", purchase_order_sent_at: Time.current, purchase_order_due_date: Date.current + 5)
+    end
+
+    QuotationVendorSmsGateway.stub(:send_vendor_otp, true) do
+      vendor_verified!(agreement_vendor)
+      accept = { purchase_order_decision: "accepted", purchase_order_remark: "Agreed", purchase_order_terms_accepted: "1" }
+
+      patch purchase_order_vendor_qr_url(agreement_vendor.po_token, verified: 1), params: accept
+      assert_match "Upload the agreement signed by you", flash[:alert]
+      assert_equal "sent", agreement_vendor.reload.purchase_order_status
+
+      patch purchase_order_vendor_qr_url(agreement_vendor.po_token, verified: 1),
+            params: accept.merge(vendor_signed_agreement: Rack::Test::UploadedFile.new(StringIO.new("%PDF-1.4 vendor"), "application/pdf", original_filename: "vendor-signed.pdf"))
+      agreement_vendor.reload
+      assert_equal "accepted", agreement_vendor.purchase_order_status
+      assert_equal "vendor-signed.pdf", agreement_vendor.vendor_signed_agreement.filename.to_s
+
+      # A purchase order: no upload field, accepted without a copy, as before.
+      vendor_verified!(po_vendor)
+      assert_no_match "vendor_signed_agreement", response.body
+      patch purchase_order_vendor_qr_url(po_vendor.po_token, verified: 1), params: accept
+      assert_equal "accepted", po_vendor.reload.purchase_order_status
+      assert_not po_vendor.vendor_signed_agreement.attached?
+    end
+
+    sign_in user_for(@maker)
+    get agreement_quotation_proposal_url(agreement_quotation)
+    assert_match "Signed by vendor:", response.body
+    assert_match "vendor-signed.pdf", response.body
+  end
+
   test "an agreement returned by the COO can be changed and sent again" do
     quotation = quotation_with_selected(registered_vendor("9876500032"), theme: @wrd_theme)
     proposal_vendor = quotation.quotation_proposal_vendors.first
@@ -363,6 +405,15 @@ class Upto50kUnregisteredVendorTest < ActionDispatch::IntegrationTest
   end
 
   private
+
+  # Opens the vendor's PO / agreement link and verifies the OTP.
+  def vendor_verified!(proposal_vendor)
+    get purchase_order_vendor_qr_url(proposal_vendor.po_token)
+    otp = proposal_vendor.reload.dispatch_record!.latest_active_otp.otp_code
+    post verify_purchase_order_vendor_qr_otp_url(proposal_vendor.po_token), params: { otp_code: otp }
+    get purchase_order_vendor_qr_url(proposal_vendor.po_token, verified: 1)
+    assert_response :success
+  end
 
   def agreement_details
     { village: "Bataikela-ll", block_district: "Batouli/Sarguja", state: "C.G.", completion_period: "two and half (2.5) months",

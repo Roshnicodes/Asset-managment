@@ -529,11 +529,19 @@
       <% elsif @quotation_proposal_vendor.purchase_order_status.in?(%w[sent returned]) %>
         <div class="po-vendor-response-section">
 
-          <%= form_with url: purchase_order_vendor_qr_path(@quotation_proposal_vendor.po_token, verified: 1), method: :patch, local: true, html: { id: "purchase_order_response_form", class: "po-vendor-response-form" } do %>
+          <%= form_with url: purchase_order_vendor_qr_path(@quotation_proposal_vendor.po_token, verified: 1), method: :patch, local: true, multipart: @agreement_mode, html: { id: "purchase_order_response_form", class: "po-vendor-response-form" } do %>
             <div class="mb-3">
               <label for="purchase_order_remark" class="form-label" style="font-weight: 700;">Remark</label>
               <%= text_area_tag :purchase_order_remark, @quotation_proposal_vendor.purchase_order_remark, rows: 4, class: "form-control", placeholder: "Add your detailed response remark here." %>
             </div>
+            <% if @agreement_mode %>
+              <%# Agreement: the vendor signs it and uploads the signed copy to accept. %>
+              <div class="mb-3">
+                <label for="vendor_signed_agreement" class="form-label" style="font-weight: 700;">Agreement signed by you (needed to Accept)</label>
+                <%= file_field_tag :vendor_signed_agreement, accept: ".pdf,image/*", class: "form-control", id: "vendor_signed_agreement" %>
+                <div class="small text-muted mt-1">Print or download the agreement, sign it with your firm's seal, and upload the scan or a clear photo (PDF or image).</div>
+              </div>
+            <% end %>
             <div class="po-vendor-response-actions">
               <%= button_tag "Accept", name: :purchase_order_decision, value: "accepted", class: "app-form-submit", disabled: true, data: { vendor_terms_submit_button: true } %>
               <% unless @quotation_proposal_vendor.purchase_order_returned_once? %>
@@ -557,6 +565,10 @@
           </div>
           <% if @quotation_proposal_vendor.purchase_order_remark.present? %>
             <div class="mt-2"><strong>Remark:</strong> <%= @quotation_proposal_vendor.purchase_order_remark %></div>
+          <% end %>
+          <% if @agreement_mode && @quotation_proposal_vendor.vendor_signed_agreement.attached? %>
+            <div class="mt-2"><strong>Your signed copy:</strong>
+              <%= link_to @quotation_proposal_vendor.vendor_signed_agreement.filename.to_s, rails_blob_path(@quotation_proposal_vendor.vendor_signed_agreement, disposition: "inline"), target: "_blank", rel: "noopener" %></div>
           <% end %>
         </div>
       <% end %>

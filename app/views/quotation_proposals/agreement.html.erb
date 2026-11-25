@@ -77,6 +77,9 @@
       <div><b>Vendor:</b> <%= vendor_text %><%= " · last date #{proposal_vendor.purchase_order_due_date.strftime('%d-%m-%Y')}" if proposal_vendor.purchase_order_due_date && po_status.in?(%w[sent returned]) %></div>
       <% if proposal_vendor.purchase_order_remark.present? %><div><b>Vendor remark:</b> <%= proposal_vendor.purchase_order_remark %></div><% end %>
     <% end %>
+    <% if proposal_vendor.vendor_signed_agreement.attached? %>
+      <div><b>Signed by vendor:</b> <%= link_to proposal_vendor.vendor_signed_agreement.filename.to_s, rails_blob_path(proposal_vendor.vendor_signed_agreement, disposition: "inline"), target: "_blank", rel: "noopener" %></div>
+    <% end %>
     <% if signed_copy.attached? %>
       <div><b>Signed by ASA:</b> <%= link_to signed_copy.filename.to_s, rails_blob_path(signed_copy, disposition: "inline"), target: "_blank", rel: "noopener" %></div>
     <% end %>
@@ -127,7 +130,7 @@
           <label>Last date <%= date_field_tag :purchase_order_due_date, proposal_vendor.purchase_order_due_date, min: Date.current.iso8601, required: true %></label>
           <button type="submit" class="app-form-submit"><%= sent_to_vendor ? "Resend to Vendor" : "Send to Vendor" %></button>
         <% end %>
-        <p class="agr-note">The vendor gets the link by SMS (the same SMS as a purchase order), reads the agreement and accepts it. Goods receive, invoice and payment then follow as for a purchase order.</p>
+        <p class="agr-note">The vendor gets the link by SMS (the same SMS as a purchase order), reads the agreement, uploads the copy signed by the vendor and accepts it. Goods receive, invoice and payment then follow as for a purchase order.</p>
       <% else %>
         <p class="agr-warn">Upload the signed copy first.</p>
       <% end %>
