@@ -131,7 +131,6 @@
                 <% bucket_options = [["Below 10K", "below_10k"], ["10K - 50K", "upto_50k"], ["Above 50K", "above_50k"]] %>
                 <% bucket_options << ["Above 10K", "above_10k"] if quotation_proposal.procurement_amount_bucket == "above_10k" && quotation_proposal.persisted? %>
                 <%= form.select :procurement_amount_bucket, bucket_options, {}, class: "form-control", id: "quotation_proposal_procurement_amount_bucket" %>
-                <small class="app-field-hint">From 10K to 50K, vendors without a registration can also be added; the selected vendor registers before the purchase order.</small>
               </div>
             </td>
           </tr>
@@ -220,7 +219,6 @@
                   <div class="app-form-error"><%= message %></div>
                 <% end %>
                 <div class="app-form-error app-form-error-client" data-field-error="true"></div>
-                <small class="app-field-hint">WRD: choose the activity, then type the items under it in Proposal Items.</small>
               </div>
               <div class="app-form-field app-rfp-cell-field <%= "has-error" if field_errors.call(:order_document_type).any? %>" style="margin-top: 0.6rem;">
                 <label for="quotation_proposal_order_document_type" style="font-weight: 700;">Order Type</label>
@@ -234,7 +232,6 @@
                   <div class="app-form-error"><%= message %></div>
                 <% end %>
                 <div class="app-form-error app-form-error-client" data-field-error="true"></div>
-                <small class="app-field-hint">What the selected vendor gets: Purchase Order, Work Order (same as a PO, named Work Order) or Agreement (COO approval, then the vendor accepts it).</small>
               </div>
               <script type="application/json" data-wrd-item-suggestions><%= raw(wrd_products.to_h { |product| [product.id, @product_varieties.select { |variety| variety.product_id == product.id }.map(&:name)] }.to_json) %></script>
             </td>
@@ -331,7 +328,6 @@
           <strong>Vendors without registration (10K - 50K)</strong>
           <button type="button" class="app-secondary-btn" data-add-unregistered-vendor>+ Add Unregistered Vendor</button>
         </div>
-        <p class="app-section-note mb-0">Enter the vendor's name and mobile, and upload its quotation scan now if you have it. After approval, <strong>Enter Physical Quote</strong> lets you enter the rates or keep only the scan. The selected vendor gets a registration link before the purchase order.</p>
         <div data-unregistered-vendor-list>
           <% Array(@unregistered_vendor_rows).each do |row| %>
             <div class="app-unregistered-vendor-row" data-unregistered-vendor-row>

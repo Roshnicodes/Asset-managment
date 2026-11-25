@@ -121,7 +121,6 @@
       <%= file_field_tag :signed_agreement, accept: ".pdf,image/*", required: true %>
       <button type="submit" class="app-secondary-btn"><%= signed_copy.attached? ? "Replace Signed Copy" : "Upload Signed Copy" %></button>
     <% end %>
-    <p class="agr-note">Print this agreement, get it signed by ASA and upload the scan. The vendor sees this signed copy.</p>
 
     <% unless po_status == "rejected" %>
       <h3 style="margin-top: 14px;">4. Send to the vendor for acceptance</h3>
@@ -130,7 +129,6 @@
           <label>Last date <%= date_field_tag :purchase_order_due_date, proposal_vendor.purchase_order_due_date, min: Date.current.iso8601, required: true %></label>
           <button type="submit" class="app-form-submit"><%= sent_to_vendor ? "Resend to Vendor" : "Send to Vendor" %></button>
         <% end %>
-        <p class="agr-note">The vendor gets the link by SMS (the same SMS as a purchase order), reads the agreement, uploads the copy signed by the vendor and accepts it. Goods receive, invoice and payment then follow as for a purchase order.</p>
       <% else %>
         <p class="agr-warn">Upload the signed copy first.</p>
       <% end %>
